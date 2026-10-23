@@ -1,0 +1,209 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Threading;
+using SnapBar.Core;
+using SnapBar.Windows;
+
+namespace SnapBar.App;
+
+public sealed class SelectionController : IDisposable
+{
+    private readonly Dispatcher dispatcher;
+    private readonly InputMonitor monitor;
+    private readonly ProbeClient probe;
+    private readonly ClipboardSelectionReader clipboardReader;
+    private readonly PopupWindow popup = new();
+    private readonly GenerationGate generation = new();
+    private readonly NativeSelectionCapture nativeCapture = new();
+    private readonly DispatcherTimer foregroundTimer;
+    private SelectionSnapshot? selection;
+    private CancellationTokenSource? delay;
+    private bool executing, disposed;
+    private bool automatic;
+    private bool sublimeClipboardEnabled;
+    private long? readinessTicket;
+    public bool SublimeClipboardEnabled
+    {
+        get => sublimeClipboardEnabled;
+        set { sublimeClipboardEnabled = value; Invalidate(); }
+    }
+    public bool Automatic
+    {
+        get => automatic;
+        set { automatic = value; Invalidate(); }
+    }
+    public bool HotkeyRegistered => monitor.HotkeyRegistered;
+    public bool ClipboardReadPending => clipboardReader.IsBusy;
+    public event Action<string>? Status;
+    internal SelectionSnapshot? ActiveSelection => selection;
+
+    public SelectionController(HwndSource source, string probeExecutable)
+    {
+        dispatcher = source.Dispatcher;
+        probe = new(probeExecutable);
+        clipboardReader = new(source.Handle);
+        monitor = new(source);
+        // Low-level hooks run on this installing UI thread. Invalidate immediately so a queued
+        // click/key cannot leave an old selection valid during an async action continuation.
+        monitor.Input += OnInput;
+        popup.ActionRequested += action => _ = ExecuteAsync(action);
+        foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
+        {
+            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window) Invalidate();
+        }, dispatcher);
+    }
+
+    private void OnInput(InputEvent input)
+    {
+        if (disposed) return;
+        if ((input.Kind is "click" or "selection") && popup.Contains(input.X, input.Y)) return;
+        if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
+        if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
+        {
+            if (executing) return;
+            _ = CaptureAsync(input.Kind == "selection", input.X, input.Y);
+        }
+    }
+
+    internal async Task CaptureAsync(bool pointer, int x, int y)
+    {
+        Invalidate();
+        var ticket = generation.Next();
+        delay = new CancellationTokenSource();
+        var token = delay.Token;
+        var window = Native.GetForegroundWindow();
+        var target = Native.GetIdentity(window);
+        if (target == null || target.ProcessId == Environment.ProcessId) return;
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            await Task.Delay(pointer ? 120 : 40, token);
+            // A hotkey can arrive before the user releases Ctrl/Alt. Never inject through held modifiers.
+            if (!pointer)
+            {
+                for (var n = 0; Native.AnyModifierDown() && n < 20; n++) await Task.Delay(25, token);
+                Native.GetCursorPos(out var position); x = position.X; y = position.Y;
+            }
+            if (!generation.IsCurrent(ticket) || Native.GetIdentity(Native.GetForegroundWindow()) != target) return;
+            var sublime = SublimeCompatibility.IsTarget(target);
+            bool Current() => generation.IsCurrent(ticket) && !disposed
+                && Native.GetIdentity(Native.GetForegroundWindow()) == target;
+            int nativeRequests = 0;
+            var native = await nativeCapture.CaptureAsync(
+                remaining => probe.RequestAsync(new("capture", (long)window, x, y, UsePointer: pointer,
+                    PrepareProvider: !sublime && nativeRequests++ == 0), remaining),
+                Current, retryUnsupported: !sublime, token,
+                () => { readinessTicket = ticket; Status?.Invoke("正在等候 App 的選字介面就緒…"); });
+            var result = native.Response;
+            if (SelectionRoutingPolicy.UseClipboardFallback(result, SublimeClipboardEnabled, sublime))
+                result = await clipboardReader.CaptureAsync(target,
+                    () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
+                    SublimeSelectionAdapter.ReadPlan());
+            if (!generation.IsCurrent(ticket) || disposed || Native.GetIdentity(Native.GetForegroundWindow()) != target) return;
+            if (!result.Success || result.Selection == null)
+            { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
+            selection = result.Selection;
+            popup.Present(selection, x, y);
+            Status?.Invoke(selection.Source == "sublime-clipboard"
+                ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "僅複製")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
+                : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
+        { Report("window-error"); }
+        finally { if (readinessTicket == ticket) readinessTicket = null; }
+    }
+
+    internal async Task ExecuteAsync(TextAction action)
+    {
+        if (executing || selection == null || disposed) return;
+        executing = true;
+        var current = selection;
+        var ticket = generation.Next();
+        popup.Hide();
+        try
+        {
+            var compatibility = current.Source == "sublime-clipboard";
+            if (compatibility && !SublimeClipboardEnabled) { Report("sublime-disabled"); return; }
+            if (action != TextAction.Copy && !SessionPolicy.CanWrite(current, current.Target)) { Report("not-editable"); return; }
+            var actionSequence = Native.GetClipboardSequenceNumber();
+            var validation = compatibility
+                ? await clipboardReader.CaptureAsync(current.Target,
+                    () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
+                    SublimeSelectionAdapter.ReadPlan(requireEditable: action != TextAction.Copy),
+                    expectedSequence: action == TextAction.Paste ? actionSequence : null)
+                : await probe.RequestAsync(new("validate", SessionId: current.Id));
+            if (!generation.IsCurrent(ticket) || disposed) return;
+            var identity = Native.GetIdentity(Native.GetForegroundWindow());
+            if (!validation.Success || validation.Selection == null || identity != current.Target)
+            { Report(validation.Success ? "target-changed" : validation.Status); return; }
+            if (compatibility && validation.Selection.Text != current.Text) { Report("selection-changed"); return; }
+            if (action == TextAction.Copy)
+            {
+                Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
+                Status?.Invoke($"已複製 {current.CharacterCount} 字");
+            }
+            else
+            {
+                if (identity == null || !SessionPolicy.CanWrite(validation.Selection, identity)) { Report("not-editable"); return; }
+                if (Native.AnyModifierDown()) { Report("modifier-held"); return; }
+                if (action == TextAction.Paste && !Clipboard.ContainsText()) { Report("clipboard-no-text"); return; }
+                if (action == TextAction.Paste && !ClipboardActionPolicy.IsUnchanged(
+                    validation.ClipboardSequence ?? actionSequence, Native.GetClipboardSequenceNumber()))
+                { Report("clipboard-changed"); return; }
+                // Recheck immediately before injection; validation is intentionally not treated as an atomic lock.
+                if (Native.GetIdentity(Native.GetForegroundWindow()) != current.Target) { Report("target-changed"); return; }
+                if (!generation.IsCurrent(ticket)) { Report("selection-changed"); return; }
+                var sent = compatibility ? SublimeSelectionAdapter.SendAction(action, current.Target)
+                    : Native.SendControlKey(action == TextAction.Cut ? (ushort)0x58 : (ushort)0x56);
+                if (!sent) { Report("input-blocked"); return; }
+                Status?.Invoke(action == TextAction.Cut ? "已送出剪下指令（請確認原 App 結果）" : "已送出貼上指令（請確認原 App 結果）");
+            }
+        }
+        catch (ExternalException) { Report("clipboard-busy"); }
+        finally { executing = false; Invalidate(); }
+    }
+
+    private void Report(string status) => Status?.Invoke(status switch
+    {
+        "no-selection" => "未取得選取文字；請選取後再試。",
+        "unsupported" => "目前未取得此控制項的選字介面；可能尚未就緒，請稍候重新選字。",
+        "password" => "密碼欄位不提供選字動作。",
+        "timeout" => "選字讀取逾時，已停止此次讀取；請重新選字。",
+        "target-changed" or "focus-changed" or "selection-changed" or "expired" => "目標或選取已變更，已取消動作。",
+        "not-editable" => "無法確認可編輯，已取消寫入。",
+        "modifier-held" => "請先放開 Ctrl、Alt、Shift 等修飾鍵。",
+        "input-blocked" => "輸入指令未完整送出，請確認目標權限。",
+        "clipboard-no-text" => "P0 貼上目前只接受含文字的剪貼簿。",
+        "clipboard-busy" => "剪貼簿正被其他程式使用，請稍後再試。",
+        "sublime-disabled" => "Sublime 不提供 UIA 選字；請勾選「Sublime 剪貼簿相容模式」。",
+        "compatibility-setup-required" => "相容快捷鍵設定不存在或已變更；請重新勾選相容模式。",
+        "sublime-no-selection" => "Sublime 未回傳單段選取；請選取文字，確認設定已載入且快捷鍵無衝突。",
+        "clipboard-format-unsupported" => "剪貼簿含尚未支援備份的特殊格式，未觸發複製。",
+        "clipboard-format-unavailable" => "剪貼簿來源未提供格式資料，請稍後再試。",
+        "clipboard-backup-failed" => "剪貼簿備份失敗，未觸發複製。",
+        "clipboard-backup-too-large" => "剪貼簿備份超過 64 MB，未觸發複製。",
+        "clipboard-changed" => "剪貼簿在讀取期間再次變動，已取消並保留目前內容。",
+        "clipboard-other-owner" => "剪貼簿已由其他程序接手，已取消並保留新內容。",
+        "clipboard-input-changed" => "讀取期間收到新的操作，已取消此次選字。",
+        "clipboard-restore-failed" => "剪貼簿還原失敗；請確認目前剪貼簿內容。",
+        "too-large" => "選取超過原型的 32,768 字元／16 段限制。",
+        "busy" => "上一筆讀取尚未完成，請重新選字。",
+        _ => $"操作未完成（{status}），未寫入原 App。"
+    });
+
+    private void Invalidate()
+    {
+        generation.Next(); delay?.Cancel(); delay?.Dispose(); delay = null;
+        selection = null; popup.Hide();
+        if (readinessTicket != null)
+        { readinessTicket = null; Status?.Invoke("選字等待已取消，請重新選字。"); }
+    }
+
+    public void Dispose()
+    {
+        disposed = true; Invalidate(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
+    }
+}

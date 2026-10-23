@@ -1,0 +1,4 @@
+SnapBar Windows selection fixture.
+繁體中文、English、emoji 😀。
+Select a word, then press Ctrl+Alt+V.
+Keep this line unchanged during Cut/Paste tests.
