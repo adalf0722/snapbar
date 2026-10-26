@@ -16,6 +16,7 @@ internal static class ClipboardRaceTest
     [DllImport("user32.dll")] private static extern bool EmptyClipboard();
     [DllImport("user32.dll")] private static extern nint SetClipboardData(uint format, nint data);
     [DllImport("user32.dll")] private static extern nint GetClipboardData(uint format);
+    [DllImport("user32.dll")] private static extern bool IsClipboardFormatAvailable(uint format);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterClipboardFormat(string name);
     [DllImport("kernel32.dll")] private static extern nint GlobalAlloc(uint flags, nuint size);
     [DllImport("kernel32.dll")] private static extern nint GlobalFree(nint memory);
@@ -23,12 +24,48 @@ internal static class ClipboardRaceTest
     [DllImport("kernel32.dll")] private static extern bool GlobalUnlock(nint memory);
     [DllImport("kernel32.dll")] private static extern nuint GlobalSize(nint memory);
 
+    internal sealed class DelayedBackupFixture : IDisposable
+    {
+        private readonly HwndSource source;
+        public int Renders { get; private set; }
+        public uint Format { get; } = RegisterClipboardFormat("SnapBar.Test.DelayedBackup");
+        public DelayedBackupFixture(uint richFormat, bool eventuallyReady, Action<int>? onRender = null,
+            string originalText = "original paste")
+        {
+            source = new HwndSource(new HwndSourceParameters("SnapBar delayed clipboard owner")
+                { Width = 1, Height = 1, WindowStyle = 0 });
+            source.AddHook((nint hwnd, int message, nint w, nint l, ref bool handled) =>
+            {
+                if (message == 0x0305 && (uint)w == Format) // WM_RENDERFORMAT
+                {
+                    Renders++;
+                    onRender?.Invoke(Renders);
+                    if (eventuallyReady && Renders >= 2) SetBytes(Format, [9, 8, 7, 6]);
+                    handled = true;
+                }
+                return 0;
+            });
+            Locked(source.Handle, () =>
+            {
+                Require(EmptyClipboard(), "Could not seed delayed fixture");
+                SetBytes(13, Encoding.Unicode.GetBytes(originalText + "\0"));
+                SetBytes(richFormat, [1, 7, 13, 29]);
+                _ = SetClipboardData(Format, 0); // Null advertises data rendered on demand.
+                Require(IsClipboardFormatAvailable(Format), "Delayed format was not advertised");
+            });
+        }
+        public void Dispose() => source.Dispose();
+    }
+
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 
     private static void Locked(nint owner, Action work)
     {
-        Require(OpenClipboard(owner), "Desktop clipboard is busy; stop copying and retry");
+        bool opened = false;
+        for (int attempt = 0; attempt < 20 && !opened; attempt++)
+        { opened = OpenClipboard(owner); if (!opened) Thread.Sleep(15); }
+        Require(opened, "Desktop clipboard is busy; stop copying and retry");
         try { work(); } finally { CloseClipboard(); }
     }
 
@@ -167,6 +204,63 @@ internal static class ClipboardRaceTest
                     var result = await reader.CaptureAsync(target, () => true, Plan(new(() => Publish("selection 😀"), true)));
                     Require(result.Selection is { Source: "race-fixture", Text: "selection 😀", Editable: true }, "Missing expected selection");
                     Require(result.ClipboardSequence == Native.GetClipboardSequenceNumber(), "Returned sequence is not restored clipboard");
+                    ExpectClipboard(owner, "original paste", richFormat);
+                });
+                await Check("temporarily unavailable backup format recovers automatically without duplicate copy", async () =>
+                {
+                    using var delayed = new DelayedBackupFixture(richFormat, eventuallyReady: true);
+                    int copies = 0;
+                    var result = await reader.CaptureAsync(target, () => true,
+                        Plan(new(() => { copies++; return Publish("recovered selection"); }, true)),
+                        expectedSequence: Native.GetClipboardSequenceNumber());
+                    Require(result.Selection?.Text == "recovered selection" && copies == 1 && delayed.Renders == 2,
+                        "Transient backup failure did not recover exactly once: " + result.Status);
+                    ExpectClipboard(owner, "original paste", richFormat);
+                    Locked(owner, () =>
+                    {
+                        var data = GetClipboardData(delayed.Format);
+                        Require(data != 0 && GlobalSize(data) == 4, "Rendered format was not restored");
+                        var pointer = GlobalLock(data);
+                        Require(pointer != 0, "Rendered format could not be read");
+                        try { var bytes = new byte[4]; Marshal.Copy(pointer, bytes, 0, 4);
+                            Require(bytes.SequenceEqual(new byte[] { 9, 8, 7, 6 }), "Rendered bytes changed"); }
+                        finally { GlobalUnlock(data); }
+                    });
+                });
+                await Check("permanently unavailable backup stops after bounded retries without copying", async () =>
+                {
+                    using var delayed = new DelayedBackupFixture(richFormat, eventuallyReady: false);
+                    int copies = 0;
+                    var sequence = Native.GetClipboardSequenceNumber();
+                    var result = await reader.CaptureAsync(target, () => true,
+                        Plan(new(() => { copies++; return true; }, true)));
+                    Require(result.Status == "clipboard-format-unavailable" && copies == 0 && delayed.Renders == 3,
+                        "Permanent failure was not bounded: " + result.Status);
+                    Require(Native.GetClipboardSequenceNumber() == sequence && IsClipboardFormatAvailable(delayed.Format),
+                        "Permanent failure changed original clipboard");
+                    ExpectClipboard(owner, "original paste", richFormat);
+                });
+                await Check("external clipboard change between backup retries is preserved", async () =>
+                {
+                    using var delayed = new DelayedBackupFixture(richFormat, eventuallyReady: false,
+                        onRender: attempt => { if (attempt == 1) Later(5, () => Write(owner, "new clipboard during backup")); });
+                    int copies = 0;
+                    var result = await reader.CaptureAsync(target, () => true,
+                        Plan(new(() => { copies++; return true; }, true)));
+                    Require(result.Status == "clipboard-changed" && copies == 0 && delayed.Renders == 1,
+                        "Retry did not reject concurrent replacement: " + result.Status);
+                    ExpectClipboard(owner, "new clipboard during backup");
+                });
+                await Check("input invalidation between backup retries cancels before another render or copy", async () =>
+                {
+                    bool current = true;
+                    using var delayed = new DelayedBackupFixture(richFormat, eventuallyReady: false,
+                        onRender: attempt => { if (attempt == 1) Later(5, () => current = false); });
+                    int copies = 0;
+                    var result = await reader.CaptureAsync(target, () => current,
+                        Plan(new(() => { copies++; return true; }, true)));
+                    Require(result.Status == "target-changed" && copies == 0 && delayed.Renders == 1,
+                        "Retry continued after invalidation: " + result.Status);
                     ExpectClipboard(owner, "original paste", richFormat);
                 });
                 await Check("delayed producer succeeds without duplicate copy", async () =>

@@ -24,6 +24,7 @@ try {
         & (Join-Path $PSScriptRoot 'test-probe.ps1') -Executable (Join-Path $repo 'artifacts\p0\Probe\SnapBar.Probe.exe')
         Copy-Item -LiteralPath (Join-Path $repo 'packaging\README.md') -Destination (Join-Path $repo 'artifacts\p0\README.md') -Force
         Copy-Item -LiteralPath (Join-Path $repo 'docs\p0-validation.md') -Destination (Join-Path $repo 'artifacts\p0\VALIDATION.md') -Force
+        Copy-Item -LiteralPath (Join-Path $repo 'docs\2026-10-26-clipboard-backup-recovery.md') -Destination (Join-Path $repo 'artifacts\p0\CLIPBOARD-RECOVERY.md') -Force
     }
 }
 finally { Pop-Location }

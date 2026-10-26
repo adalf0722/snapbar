@@ -80,8 +80,9 @@ internal static class WebActionsTest
                 var sequence = Native.GetClipboardSequenceNumber();
                 await Capture(FixtureWindow.SearchFixtureText);
                 Require(FindButton(TextAction.Search).IsEnabled && !FindButton(TextAction.Cut).IsEnabled
-                    && !FindButton(TextAction.Paste).IsEnabled && FindButton(TextAction.OpenLink).Visibility == Visibility.Collapsed,
-                    "readonly text offers Search while writes are disabled and Open Link is hidden");
+                    && !FindButton(TextAction.Paste).IsEnabled && FindButton(TextAction.OpenLink).Visibility == Visibility.Collapsed
+                    && FindButton(TextAction.RevealPath).Visibility == Visibility.Collapsed,
+                    "readonly text offers Search while writes are disabled and conditional actions are hidden");
                 Require(Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == child!.Id,
                     "web action bar preserves source foreground");
                 await Click(TextAction.Search);
@@ -101,7 +102,8 @@ internal static class WebActionsTest
 
                 await StartFixture("link");
                 await Capture(FixtureWindow.LinkFixtureText);
-                Require(FindButton(TextAction.OpenLink).IsVisible && FindButton(TextAction.OpenLink).IsEnabled,
+                Require(FindButton(TextAction.OpenLink).IsVisible && FindButton(TextAction.OpenLink).IsEnabled
+                    && FindButton(TextAction.RevealPath).Visibility == Visibility.Collapsed,
                     "complete URL makes Open Link visible for readonly selection");
                 await Click(TextAction.OpenLink);
                 Require(launched.Count == 3 && launched[^1].AbsoluteUri == FixtureWindow.LinkFixtureText,

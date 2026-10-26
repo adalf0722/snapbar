@@ -7,6 +7,7 @@ internal sealed class ClipboardBackup : IDisposable
 {
     private const long MaxBytes = 64L * 1024 * 1024;
     private readonly List<(uint Format, nint Handle)> entries = [];
+    private bool complete;
     [StructLayout(LayoutKind.Sequential)] private struct Bitmap
     { public int Type, Width, Height, WidthBytes; public ushort Planes, BitsPixel; public nint Bits; }
     [DllImport("user32.dll", SetLastError = true)] private static extern uint EnumClipboardFormats(uint format);
@@ -25,12 +26,18 @@ internal sealed class ClipboardBackup : IDisposable
 
     public string Capture()
     {
+        // A retry must start a fresh snapshot, never append to a partial backup.
+        Dispose();
         long total = 0;
         uint format = 0;
         while (true)
         {
             format = EnumClipboardFormats(format);
-            if (format == 0) return Marshal.GetLastPInvokeError() == 0 ? "ok" : "clipboard-backup-failed";
+            if (format == 0)
+            {
+                complete = Marshal.GetLastPInvokeError() == 0;
+                return complete ? "ok" : "clipboard-backup-failed";
+            }
             var source = GetClipboardData(format);
             if (source == 0) return "clipboard-format-unavailable";
             long size;
@@ -58,7 +65,10 @@ internal sealed class ClipboardBackup : IDisposable
 
     public bool Restore()
     {
+        // An incomplete snapshot must never empty the user's clipboard.
+        if (!complete) return false;
         if (!EmptyClipboard()) return false;
+        complete = false;
         bool success = true;
         for (var i = 0; i < entries.Count; i++)
         {
@@ -79,5 +89,6 @@ internal sealed class ClipboardBackup : IDisposable
                 else GlobalFree(handle);
             }
         entries.Clear();
+        complete = false;
     }
 }

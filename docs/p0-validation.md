@@ -1,5 +1,48 @@
 # P0 驗證紀錄
 
+## 2026-10-26 修正：資料夾直接開啟本身
+
+使用者回報選取 `D:\codex` 會打開 `D:\`。原實作將所有項目交給 `SHOpenFolderAndSelectItems`，該 API 在此用法會開啟父目錄並選取項目，符合先前規格但不符合此次資料夾使用預期。現改為資料夾／根目錄直接開啟本身，檔案維持在父目錄選取、不執行。資料夾使用已準備的 PIDL 與明確 `explore` verb；reveal 前再次確認資料夾屬性，拒絕查詢後被替換成檔案的目標。保留隔離 worker、逾時、取消與選取重驗證。
+
+本輪 **252 項檢查通過**：212 核心、6 probe、17 路徑 worker、11 路徑控制器及 6 實際 Shell。新版 smoke 的資料夾案例在修復前失敗，修復後確認中文／空白資料夾直接開啟、檔案與 `.cmd` 仍正確選取且不執行、磁碟根目錄及本工作區上層 `D:\codex` 直接開啟。另確認 prepare 後資料夾被替換成檔案會拒絕 reveal。Release／發布 0 errors／0 warnings。實際 UNC 分享仍待驗收，下方同日各工作包保留為歷史基線。
+
+## 2026-10-26 修復：Sublime 剪貼簿備份暫時失敗
+
+使用者回報「剪貼簿來源未提供格式資料」連續出現，之後表示已恢復。已以 Win32 延遲格式重現相同錯誤類型，補上不持鎖的 40／80 ms 有限重試、前景／輸入／剪貼簿序號重驗證、部分備份清理，以及未完成／已消耗備份禁止還原。永久不可用仍保留內容並拒絕讀取，不強行覆寫。原截圖所對應的精確格式未捕捉，未宣稱已唯一定位其來源。
+
+本輪重跑 **250 項檢查**：212 核心、13 剪貼簿往返、17 競態、6 probe 及 2 真實 Sublime；Release／發布 0 errors／0 warnings。四項新增競態修復前失敗、修復後通過，另新增兩項備份還原保護。真實 Sublime fixture 已驗證延遲備份恢復、完整還原與 Copy，檔案未修改。完整證據、指令與界線見 [備份恢復紀錄](2026-10-26-clipboard-backup-recovery.md)。下方 310 項為前輪功能基線，非本輪全部重跑。
+
+## 2026-10-26 續作：在檔案總管中顯示
+
+已加入條件式「檔案位置」動作。整段路徑格式有效時才顯示；選字時不查詢檔案或網路。支援磁碟機絕對路徑、UNC、開頭的 `%USERPROFILE%`／`~`、中文、emoji、空白、逗號及成對外層雙引號。相對／磁碟機相對／裝置路徑、URI、資料流、萬用字元、其他環境變數、控制字元、保留裝置名稱及超長輸入拒絕。設計見 [路徑設計](superpowers/specs/2026-10-26-path-reveal-design.md)。
+
+點擊先重新驗證選取，再由獨立 path worker 檢查存在性並準備 Shell PIDL；完成後控制器再次驗證原目標與範圍，才要求顯示。每個 worker 請求最多 1.5 秒，取消或逾時終止該 worker，下次操作建立新程序。worker 最終呼叫前另檢查前景身分；不以清理 worker 為由終止 Explorer。路徑透過私有 stdin 管線傳入，不放在程序參數、回應或中性操作紀錄。Shell API 開啟父資料夾並選取項目，不執行檔案。
+
+### 自動驗證與實際 Shell 結果
+
+Release／自含式發布建置 0 errors／0 warnings，共 **310 項檢查通過**：212 項核心、15 項常駐／設定生命週期、7 項排除 App、11 項剪貼簿往返、13 項競態、6 項 probe 協定／結束、4 項 UIA 就緒／深層、11 項搜尋／連結事件、1 項瀏覽器本機啟動、15 項路徑 worker、11 項路徑動作整合及 4 項實際 Shell 選取。
+
+- 新增 48 項核心案例，直接驗證路徑格式與正規化；未掛載磁碟的合法字串仍接受，證明此層不以存在性決定按鈕。
+- 15 項 worker 檢查確認中文／空白／逗號／ampersand 檔案、資料夾及磁碟根目錄可準備 PIDL；無目標身分拒絕 reveal；準備結果只能使用一次；缺檔／錯誤路徑清除舊項目。測試專用停滯子程序確認取消、逾時、原 PID 結束、下次新程序、預先取消不送請求，以及 Dispose 清理。
+- 11 項 WPF／控制器檢查確認唯讀路徑按鈕啟用、寫入停用、網址按鈕隱藏、不搶前景、真正 routed Click 事件傳遞正確路徑、查詢期間失效取消、取消 token 傳遞、資源釋放、無原始路徑的錯誤提示、逾時不 reveal、剪貼簿不變。另透過 UIA 程式化縮短原選取、不發出鍵盤事件，證明查詢後第二次選取驗證會阻止顯示。
+- 上述 11 項最後一項使用產品的真實 worker，從唯讀發布版 README 路徑讀取至實際 Explorer，透過 Shell `SelectedItems()` 核對正確項目及中性成功狀態，剪貼簿序號未變。
+- 獨立 Shell smoke 在忽略的 `artifacts/path-shell-smoke-*` 目錄建立中文／空白／逗號／emoji 檔名、資料夾和 `.cmd`，三者均由真實 Shell 選取並以 `SelectedItems()` 核對。腳本若執行會建立 marker；marker 未出現，確認只選取未執行。桌面畫面亦確認腳本為選取狀態。測試資料與視窗留於 artifacts，方便回看，未操作使用者文件。
+
+```powershell
+./scripts/build.ps1 -Publish
+./.tools/dotnet/dotnet.exe run --project tests/SnapBar.Windows.Tests -c Release --no-build -- --path-worker-tests
+./.tools/dotnet/dotnet.exe run --project tests/SnapBar.Windows.Tests -c Release --no-build -- --path-actions
+./.tools/dotnet/dotnet.exe run --project tests/SnapBar.Windows.Tests -c Release --no-build -- --path-shell-smoke
+# 人工路徑 fixture；需另有主程式執行，選取預設已完成
+./artifacts/p0/SnapBar.App.exe --fixture --path-fixture
+```
+
+既有核心、搜尋／連結、常駐、排除 App、剪貼簿往返／競態及 UIA 檢查均回歸通過。深層 UIA 初次未取得專用 fixture 前景，改以明確啟用專用視窗重跑後冷／暖皆通過；未讀取其 automation tree 預熱。延遲 provider 冷／暖亦通過，瀏覽器仍僅用 loopback 頁驗證。
+
+### 界線
+
+整合測試覆蓋 WPF routed Click 及真實控制器／Shell，未宣稱已用實體滑鼠點擊不搶焦點的浮窗。UNC 僅驗證格式，未連線實際分享或測試權限／離線伺服器；逾時／取消由可控制的停滯 worker 驗證。根目錄僅驗證 PIDL 準備，不承諾不同 Shell 版本的畫面呈現。檢查與 OS 呼叫非原子操作，Shell 已接收的動作無法撤回；回報交由檔案總管不代表所有網路載入已完成。混合 DPI、窄工作區、跨 App 實體按鈕及長時間常駐仍待補齊。動作管理、改鍵、AI、自訂動作與 macOS 未新增。
+
 ## 2026-10-26：搜尋與開啟連結
 
 已完成 P1 的 Search／Open Link。搜尋預設使用 Google，可保存 HTTP／HTTPS 範本及恢復預設；`{query}` 必須只有一個且位於查詢參數值。開啟連結只接受整段完整 HTTP／HTTPS 網址，拒絕帳密、原始空白、錯誤百分比跳脫及其他協定。兩者可用於唯讀文字，均沿用動作前的目標／焦點／選取重新驗證，並經 Windows 預設瀏覽器開啟。沒有自動連線搜尋服務，操作紀錄不包含選取內容或目的網址。

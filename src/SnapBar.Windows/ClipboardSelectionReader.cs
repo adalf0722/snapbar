@@ -33,25 +33,36 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
         using var backup = new ClipboardBackup();
         try
         {
-            bool opened = false;
-            for (var attempt = 0; attempt < 8 && !opened; attempt++)
-            {
-                if (!isCurrent() || Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
-                opened = OpenClipboard(ownerWindow);
-                if (!opened) await Task.Delay(15);
-            }
-            if (!opened) return new("clipboard-busy");
             uint before;
-            try
+            uint? retrySequence = null;
+            for (var backupAttempt = 0; ; backupAttempt++)
             {
-                if (expectedSequence is { } expected && Native.GetClipboardSequenceNumber() != expected)
-                    return new("clipboard-changed");
-                var status = backup.Capture();
-                if (status != "ok") return new(status);
-                // Delayed rendering above may advance the sequence number.
-                before = Native.GetClipboardSequenceNumber();
+                bool opened = false;
+                for (var attempt = 0; attempt < 8 && !opened; attempt++)
+                {
+                    if (!isCurrent() || Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
+                    opened = OpenClipboard(ownerWindow);
+                    if (!opened) await Task.Delay(15);
+                }
+                if (!opened) return new("clipboard-busy");
+                try
+                {
+                    if (!isCurrent() || Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
+                    var expected = retrySequence ?? expectedSequence;
+                    if (expected is { } sequence && Native.GetClipboardSequenceNumber() != sequence)
+                        return new("clipboard-changed");
+                    var status = backup.Capture();
+                    // Rendering may legitimately advance the sequence while we hold the lock.
+                    before = Native.GetClipboardSequenceNumber();
+                    if (status == "ok") break;
+                    if (status != "clipboard-format-unavailable" || backupAttempt >= 2) return new(status);
+                    retrySequence = before;
+                }
+                finally { CloseClipboard(); }
+                // Let the source's message loop finish preparing its data. Keep no lock
+                // across this wait, and reject new clipboard contents before retrying.
+                await Task.Delay(40 * (backupAttempt + 1));
             }
-            finally { CloseClipboard(); }
 
             foreach (var step in plan.Attempts)
             {

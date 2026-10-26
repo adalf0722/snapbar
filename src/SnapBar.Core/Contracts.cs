@@ -11,11 +11,12 @@ public record SelectionSnapshot(
     string Id, TargetIdentity Target, string Text, ScreenRect? Bounds,
     bool? Editable, int RangeCount, int CharacterCount, string Source = "uia");
 public record ProbeRequest(string Operation, long Window = 0, int X = 0, int Y = 0,
-    string? SessionId = null, bool UsePointer = false, bool PrepareProvider = false);
+    string? SessionId = null, bool UsePointer = false, bool PrepareProvider = false,
+    string? Path = null, TargetIdentity? Target = null);
 public record ProbeResponse(string Status, SelectionSnapshot? Selection = null, double ElapsedMs = 0,
     uint? ClipboardSequence = null)
 {
     public bool Success => Status == "ok";
 }
 
-public enum TextAction { Copy, Cut, Paste, Search, OpenLink }
+public enum TextAction { Copy, Cut, Paste, Search, OpenLink, RevealPath }

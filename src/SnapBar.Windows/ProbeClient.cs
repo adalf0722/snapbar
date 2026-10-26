@@ -10,21 +10,26 @@ public sealed class ProbeClient : IDisposable
 {
     private readonly SemaphoreSlim singleRequest = new(1);
     private readonly string executable;
+    private readonly bool pathWorker;
     private Process? process;
     private bool disposed;
-    public ProbeClient(string executable) => this.executable = executable;
+    public ProbeClient(string executable, bool pathWorker = false)
+    { this.executable = executable; this.pathWorker = pathWorker; }
 
-    public async Task<ProbeResponse> RequestAsync(ProbeRequest request, TimeSpan? remainingBudget = null)
+    public async Task<ProbeResponse> RequestAsync(ProbeRequest request, TimeSpan? remainingBudget = null,
+        CancellationToken cancellationToken = default)
     {
         if (!await singleRequest.WaitAsync(0)) return new("busy");
         try
         {
             if (disposed) return new("closed");
+            if (cancellationToken.IsCancellationRequested) return new("cancelled");
             EnsureStarted();
             var limit = TimeSpan.FromMilliseconds(1500);
             if (remainingBudget is { } remaining && remaining < limit) limit = remaining;
             if (limit <= TimeSpan.Zero) return new("timeout");
-            using var timeout = new CancellationTokenSource(limit);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(limit);
             var current = process!;
             await current.StandardInput.WriteLineAsync(JsonSerializer.Serialize(request).AsMemory(), timeout.Token);
             await current.StandardInput.FlushAsync(timeout.Token);
@@ -32,7 +37,7 @@ public sealed class ProbeClient : IDisposable
             if (response == null) { Stop(); return new("helper-exited"); }
             return JsonSerializer.Deserialize<ProbeResponse>(response) ?? new("invalid-response");
         }
-        catch (OperationCanceledException) { Stop(); return new("timeout"); }
+        catch (OperationCanceledException) { Stop(); return new(cancellationToken.IsCancellationRequested ? "cancelled" : "timeout"); }
         catch (Exception e) when (e is IOException or JsonException or InvalidOperationException or System.ComponentModel.Win32Exception)
         { Stop(); return new("helper-unavailable"); }
         finally { singleRequest.Release(); }
@@ -49,6 +54,7 @@ public sealed class ProbeClient : IDisposable
             StandardInputEncoding = new UTF8Encoding(false), StandardOutputEncoding = new UTF8Encoding(false)
         };
         start.ArgumentList.Add(Environment.ProcessId.ToString());
+        if (pathWorker) start.ArgumentList.Add("--path-worker");
         process = Process.Start(start) ?? throw new InvalidOperationException();
     }
 
@@ -56,7 +62,9 @@ public sealed class ProbeClient : IDisposable
     {
         var old = process; process = null;
         if (old == null) return;
-        try { if (!old.HasExited) old.Kill(entireProcessTree: true); }
+        // A path worker can hand work to Explorer. Never terminate Explorer as
+        // part of cancelling the worker after the Shell has accepted a request.
+        try { if (!old.HasExited) old.Kill(entireProcessTree: !pathWorker); }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception) { }
         finally { old.Dispose(); }
     }

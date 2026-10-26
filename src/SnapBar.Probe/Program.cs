@@ -13,7 +13,7 @@ internal static class Program
         Console.InputEncoding = new UTF8Encoding(false);
         Console.OutputEncoding = new UTF8Encoding(false);
         // Parent PID is an inherited local process relationship, not a remote target.
-        if (args.Length == 1 && int.TryParse(args[0], out var parentId))
+        if (args.Length >= 1 && int.TryParse(args[0], out var parentId))
         {
             _ = Task.Run(() =>
             {
@@ -23,6 +23,8 @@ internal static class Program
             });
         }
         var reader = new SelectionReader();
+        using var pathWorker = new PathWorker();
+        bool pathMode = args.Contains("--path-worker");
         string? line;
         while ((line = Console.ReadLine()) != null)
         {
@@ -31,7 +33,7 @@ internal static class Program
             try
             {
                 var request = JsonSerializer.Deserialize<ProbeRequest>(line.TrimStart('\uFEFF'));
-                response = request?.Operation switch
+                response = pathMode && request != null ? pathWorker.Handle(request) : request?.Operation switch
                 {
                     "capture" => reader.Capture(request),
                     "validate" => reader.Validate(request.SessionId),

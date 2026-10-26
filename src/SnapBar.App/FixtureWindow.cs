@@ -9,7 +9,7 @@ public sealed class FixtureWindow : Window
 {
     public const string SearchFixtureText = "SnapBar 中文 & + # ? 😀";
     public const string LinkFixtureText = "https://example.com/snapbar?first=1&second=two#part";
-    public FixtureWindow(bool delayedUia = false, bool deepUia = false, string? webActionMode = null)
+    public FixtureWindow(bool delayedUia = false, bool deepUia = false, string? webActionMode = null, string? pathFixture = null)
     {
         Title = delayedUia ? "SnapBar P0 — Delayed UIA Fixture"
             : deepUia ? "SnapBar P0 — Deep UIA Fixture" : "SnapBar P0 — Test Fixture";
@@ -27,6 +27,7 @@ public sealed class FixtureWindow : Window
             edit.IsReadOnly = true;
         }
         edit.AcceptsReturn = true; edit.Height = 130; edit.Padding = new(12);
+        if (pathFixture != null) { edit.Text = pathFixture; edit.IsReadOnly = true; }
         edit.FontSize = 18; edit.TextWrapping = TextWrapping.Wrap;
         AutomationProperties.SetAutomationId(edit, "EditableSample");
         UIElement editableContent = edit;
@@ -41,6 +42,6 @@ public sealed class FixtureWindow : Window
         var password = new PasswordBox { Password = "fixture-only", Padding = new(12) };
         AutomationProperties.SetAutomationId(password, "PasswordSample"); stack.Children.Add(password);
         Content = stack;
-        Loaded += (_, _) => { edit.Focus(); if (webActionMode != null) edit.SelectAll(); else edit.Select(0, 7); };
+        Loaded += (_, _) => { edit.Focus(); if (webActionMode != null || pathFixture != null) edit.SelectAll(); else edit.Select(0, 7); };
     }
 }

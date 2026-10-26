@@ -71,6 +71,10 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args.Contains("--path-worker")) return PathWorkerTest.RunFake();
+        if (args.Contains("--path-worker-tests")) return PathWorkerTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--path-actions")) return PathActionsTest.Run();
+        if (args.Contains("--path-shell-smoke")) return PathShellSmokeTest.Run();
         if (args.Contains("--web-actions")) return WebActionsTest.Run();
         if (args.Contains("--browser-launch-smoke")) return BrowserLaunchTest.RunAsync().GetAwaiter().GetResult();
         if (args.Contains("--app-exclusions")) return AppExclusionTest.Run();
@@ -137,6 +141,32 @@ internal static class Program
                     if (Native.GetClipboardSequenceNumber() != sequence) throw new Exception("Rejected backup changed clipboard");
                 });
                 RejectedProbe("clipboard-format-unsupported");
+            });
+            Check("incomplete backup cannot empty or partially restore clipboard", () =>
+            {
+                Locked(() => { EmptyClipboard(); SetBytes(13, text); SetBytes(0x81, text); });
+                var sequence = Native.GetClipboardSequenceNumber();
+                using var backup = new ClipboardBackup();
+                Locked(() =>
+                {
+                    if (backup.Capture() != "clipboard-format-unsupported" || backup.Restore())
+                        throw new Exception("Partial backup was treated as restorable");
+                    Equal(ReadBytes(13), text); Equal(ReadBytes(0x81), text);
+                    if (Native.GetClipboardSequenceNumber() != sequence) throw new Exception("Partial restore changed clipboard");
+                });
+            });
+            Check("a restored backup cannot empty clipboard on a second restore", () =>
+            {
+                Locked(() => { EmptyClipboard(); SetBytes(13, text); });
+                using var backup = new ClipboardBackup();
+                Locked(() =>
+                {
+                    if (backup.Capture() != "ok" || !backup.Restore()) throw new Exception("Initial roundtrip failed");
+                    var sequence = Native.GetClipboardSequenceNumber();
+                    if (backup.Restore() || Native.GetClipboardSequenceNumber() != sequence)
+                        throw new Exception("Consumed backup changed clipboard");
+                    Equal(ReadBytes(13), text);
+                });
             });
             Check("backup above 64 MiB is rejected without changing clipboard", () =>
             {

@@ -14,6 +14,7 @@ public sealed class SelectionController : IDisposable
     private readonly InputMonitor monitor;
     private readonly ProbeClient probe;
     private readonly Action<Uri> launchWeb;
+    private readonly Func<IPathRevealSession> createPathSession;
     private readonly ClipboardSelectionReader clipboardReader;
     private readonly PopupWindow popup = new();
     private readonly GenerationGate generation = new();
@@ -21,6 +22,7 @@ public sealed class SelectionController : IDisposable
     private readonly DispatcherTimer foregroundTimer;
     private SelectionSnapshot? selection;
     private CancellationTokenSource? delay;
+    private CancellationTokenSource? pathAction;
     private bool executing, disposed, stopping;
     private bool automatic;
     private bool sublimeClipboardEnabled;
@@ -57,9 +59,11 @@ public sealed class SelectionController : IDisposable
         Invalidate();
     }
 
-    public SelectionController(HwndSource source, string probeExecutable, Action<Uri>? launchWeb = null)
+    public SelectionController(HwndSource source, string probeExecutable, Action<Uri>? launchWeb = null,
+        Func<IPathRevealSession>? createPathSession = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
+        this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
@@ -129,7 +133,7 @@ public sealed class SelectionController : IDisposable
             selection = result.Selection;
             popup.Present(selection, x, y, searchUrlTemplate);
             Status?.Invoke(selection.Source == "sublime-clipboard"
-                ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "僅複製")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
+                ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "不提供寫入")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
                 : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
         }
         catch (OperationCanceledException) { }
@@ -153,12 +157,13 @@ public sealed class SelectionController : IDisposable
             if (compatibility && !SublimeClipboardEnabled) { Report("sublime-disabled"); return; }
             if (writes && !SessionPolicy.CanWrite(current, current.Target)) { Report("not-editable"); return; }
             var actionSequence = Native.GetClipboardSequenceNumber();
-            var validation = compatibility
-                ? await clipboardReader.CaptureAsync(current.Target,
+            Task<ProbeResponse> Validate() => compatibility
+                ? clipboardReader.CaptureAsync(current.Target,
                     () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
                     SublimeSelectionAdapter.ReadPlan(requireEditable: writes),
                     expectedSequence: action == TextAction.Paste ? actionSequence : null)
-                : await probe.RequestAsync(new("validate", SessionId: current.Id));
+                : probe.RequestAsync(new("validate", SessionId: current.Id));
+            var validation = await Validate();
             if (!generation.IsCurrent(ticket) || disposed) return;
             var identity = Native.GetIdentity(Native.GetForegroundWindow());
             if (!validation.Success || validation.Selection == null || identity != current.Target)
@@ -168,6 +173,27 @@ public sealed class SelectionController : IDisposable
             {
                 Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
                 Status?.Invoke($"已複製 {current.CharacterCount} 字");
+            }
+            else if (action == TextAction.RevealPath)
+            {
+                var destination = PathActionPolicy.Resolve(current.Text);
+                if (!destination.Success) { Report(destination.Status); return; }
+                using var cancellation = new CancellationTokenSource();
+                pathAction = cancellation;
+                using var session = createPathSession();
+                var prepared = await session.PrepareAsync(destination.Path!, cancellation.Token);
+                if (!generation.IsCurrent(ticket) || disposed || cancellation.IsCancellationRequested) return;
+                if (prepared != "ok") { Report(prepared); return; }
+                // Lookup can take time: revalidate again before any Shell side effect.
+                var finalValidation = await Validate();
+                if (!generation.IsCurrent(ticket) || disposed || cancellation.IsCancellationRequested) return;
+                if (!finalValidation.Success || finalValidation.Selection?.Text != current.Text
+                    || Native.GetIdentity(Native.GetForegroundWindow()) != current.Target)
+                { Report(finalValidation.Success ? "target-changed" : finalValidation.Status); return; }
+                var result = await session.RevealAsync(current.Target, cancellation.Token);
+                // Explorer may become foreground before its acknowledgement arrives.
+                if (result == "ok") Status?.Invoke("已交由檔案總管顯示項目。");
+                else if (generation.IsCurrent(ticket)) Report(result);
             }
             else if (action is TextAction.Search or TextAction.OpenLink)
             {
@@ -202,7 +228,7 @@ public sealed class SelectionController : IDisposable
             }
         }
         catch (ExternalException) { Report("clipboard-busy"); }
-        finally { executing = false; Invalidate(); }
+        finally { pathAction = null; executing = false; Invalidate(); }
     }
 
     private void Report(string status) => Status?.Invoke(status switch
@@ -218,6 +244,11 @@ public sealed class SelectionController : IDisposable
         "invalid-search-template" => "搜尋網址設定無效，請至設定修正或恢復預設。",
         "web-address-too-long" => "搜尋或連結網址過長，請縮短選取內容後再試。",
         "browser-unavailable" => "無法開啟預設瀏覽器，請檢查 Windows 的預設瀏覽器設定。",
+        "invalid-path" => "選取內容不是支援的完整檔案路徑。",
+        "path-unavailable" => "找不到項目或無法存取，未開啟檔案總管。",
+        "path-not-prepared" or "explorer-unavailable" => "無法在檔案總管顯示項目，請稍後再試。",
+        "path-timeout" => "路徑查詢逾時，已停止此次操作。",
+        "cancelled" => "操作已取消。",
         "modifier-held" => "請先放開 Ctrl、Alt、Shift 等修飾鍵。",
         "input-blocked" => "輸入指令未完整送出，請確認目標權限。",
         "clipboard-no-text" => "P0 貼上目前只接受含文字的剪貼簿。",
@@ -226,7 +257,7 @@ public sealed class SelectionController : IDisposable
         "compatibility-setup-required" => "相容快捷鍵設定不存在或已變更；請重新勾選相容模式。",
         "sublime-no-selection" => "Sublime 未回傳單段選取；請選取文字，確認設定已載入且快捷鍵無衝突。",
         "clipboard-format-unsupported" => "剪貼簿含尚未支援備份的特殊格式，未觸發複製。",
-        "clipboard-format-unavailable" => "剪貼簿來源未提供格式資料，請稍後再試。",
+        "clipboard-format-unavailable" => "目前剪貼簿無法完整備份，自動重試後仍未就緒；已保留原內容，未讀取選字。",
         "clipboard-backup-failed" => "剪貼簿備份失敗，未觸發複製。",
         "clipboard-backup-too-large" => "剪貼簿備份超過 64 MB，未觸發複製。",
         "clipboard-changed" => "剪貼簿在讀取期間再次變動，已取消並保留目前內容。",
@@ -240,6 +271,7 @@ public sealed class SelectionController : IDisposable
 
     private void Invalidate()
     {
+        pathAction?.Cancel();
         generation.Next(); delay?.Cancel(); delay?.Dispose(); delay = null;
         selection = null; popup.Hide();
         if (readinessTicket != null)

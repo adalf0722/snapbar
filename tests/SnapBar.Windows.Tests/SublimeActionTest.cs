@@ -14,6 +14,7 @@ internal static class SublimeActionTest
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(nint window, StringBuilder text, int length);
     [DllImport("user32.dll")] private static extern bool OpenClipboard(nint window);
     [DllImport("user32.dll")] private static extern bool CloseClipboard();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern uint RegisterClipboardFormat(string name);
 
     public static int Run(string[] args)
     {
@@ -53,6 +54,9 @@ internal static class SublimeActionTest
                     saved = true;
                 });
                 Clipboard.SetText("replacement", TextDataFormat.UnicodeText);
+                using var delayed = args.Contains("--delayed-backup")
+                    ? new ClipboardRaceTest.DelayedBackupFixture(RegisterClipboardFormat("SnapBar.Test.Sublime.Rich"),
+                        eventuallyReady: true, originalText: "replacement") : null;
                 using var controller = new SelectionController(owner,
                     System.IO.Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"));
                 controller.SublimeClipboardEnabled = true;
@@ -70,6 +74,11 @@ internal static class SublimeActionTest
                 if (snapshot is not { Text: "selection", Editable: true, Source: SublimeSelectionAdapter.Source })
                     throw new InvalidOperationException("Expected editable single fixture selection");
                 if (Clipboard.GetText() != "replacement") throw new InvalidOperationException("Capture did not restore intended paste data");
+                if (delayed != null)
+                {
+                    if (delayed.Renders != 2) throw new InvalidOperationException("Delayed backup did not recover through the real Sublime path");
+                    Console.WriteLine("PASS Sublime: delayed clipboard backup recovers automatically and restores original text");
+                }
                 var signalIndex = Array.IndexOf(args, "--continue-file");
                 if (signalIndex >= 0)
                 {

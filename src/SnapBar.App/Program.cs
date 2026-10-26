@@ -12,7 +12,8 @@ internal static class Program
         {
             var fixtureApp = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
             fixtureApp.Run(new FixtureWindow(args.Contains("--delayed-uia"), args.Contains("--deep-uia"),
-                args.Contains("--web-link") ? "link" : args.Contains("--web-search") ? "search" : null));
+                args.Contains("--web-link") ? "link" : args.Contains("--web-search") ? "search" : null,
+                args.Contains("--path-fixture") ? System.IO.Path.Combine(AppContext.BaseDirectory, "README.md") : null));
             return;
         }
         using var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\SnapBar.ShowSettings");

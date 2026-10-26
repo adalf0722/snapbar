@@ -10,7 +10,7 @@ namespace SnapBar.App;
 
 public sealed class PopupWindow : Window
 {
-    private readonly Button cut, paste, search, openLink;
+    private readonly Button cut, paste, search, openLink, revealPath;
     private readonly WrapPanel row;
     private readonly TextBlock details;
     private nint handle;
@@ -30,6 +30,8 @@ public sealed class PopupWindow : Window
         }
         Add("複製", TextAction.Copy); cut = Add("剪下", TextAction.Cut); paste = Add("貼上", TextAction.Paste);
         search = Add("搜尋", TextAction.Search); openLink = Add("開啟連結", TextAction.OpenLink);
+        revealPath = Add("檔案位置", TextAction.RevealPath);
+        revealPath.ToolTip = "直接開啟資料夾；檔案則顯示位置並選取，不會執行檔案";
         details = new TextBlock { Foreground = Brushes.LightSteelBlue, VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center, Margin = new(3), Width = 70, Height = 36, Padding = new(0, 10, 0, 0), FontSize = 11 };
         row.Children.Add(details); Content = row;
@@ -54,6 +56,7 @@ public sealed class PopupWindow : Window
         var link = WebActionPolicy.OpenLink(selection.Text);
         openLink.Visibility = link.Success ? Visibility.Visible : Visibility.Collapsed;
         openLink.ToolTip = link.Success ? "開啟網址：" + link.Uri!.Host : null;
+        revealPath.Visibility = PathActionPolicy.Resolve(selection.Text).Success ? Visibility.Visible : Visibility.Collapsed;
         details.Text = $"{selection.CharacterCount} 字";
         var anchor = selection.Bounds ?? new ScreenRect(pointerX, pointerY, 1, 1);
         var area = Native.WorkArea((int)anchor.X, (int)anchor.Y);
