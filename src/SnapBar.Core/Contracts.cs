@@ -18,4 +18,4 @@ public record ProbeResponse(string Status, SelectionSnapshot? Selection = null, 
     public bool Success => Status == "ok";
 }
 
-public enum TextAction { Copy, Cut, Paste }
+public enum TextAction { Copy, Cut, Paste, Search, OpenLink }

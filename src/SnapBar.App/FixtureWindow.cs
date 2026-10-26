@@ -7,7 +7,9 @@ namespace SnapBar.App;
 
 public sealed class FixtureWindow : Window
 {
-    public FixtureWindow(bool delayedUia = false, bool deepUia = false)
+    public const string SearchFixtureText = "SnapBar 中文 & + # ? 😀";
+    public const string LinkFixtureText = "https://example.com/snapbar?first=1&second=two#part";
+    public FixtureWindow(bool delayedUia = false, bool deepUia = false, string? webActionMode = null)
     {
         Title = delayedUia ? "SnapBar P0 — Delayed UIA Fixture"
             : deepUia ? "SnapBar P0 — Deep UIA Fixture" : "SnapBar P0 — Test Fixture";
@@ -19,6 +21,11 @@ public sealed class FixtureWindow : Window
         stack.Children.Add(new TextBlock { Text = "可編輯文字" });
         TextBox edit = delayedUia ? new DelayedTextBox() : new TextBox();
         edit.Text = "SnapBar Windows — 測試選取文字。\nSelect this sentence to test Copy, Cut and Paste.\n第二行保留原文，確認只取代選取範圍。";
+        if (webActionMode != null)
+        {
+            edit.Text = webActionMode == "link" ? LinkFixtureText : SearchFixtureText;
+            edit.IsReadOnly = true;
+        }
         edit.AcceptsReturn = true; edit.Height = 130; edit.Padding = new(12);
         edit.FontSize = 18; edit.TextWrapping = TextWrapping.Wrap;
         AutomationProperties.SetAutomationId(edit, "EditableSample");
@@ -27,13 +34,13 @@ public sealed class FixtureWindow : Window
             for (int depth = 0; depth < 32; depth++)
                 editableContent = new GroupBox { Content = editableContent, Padding = new(0), BorderThickness = new(0) };
         stack.Children.Add(editableContent);
-        stack.Children.Add(new TextBlock { Text = "唯讀文字（只應提供 Copy）", Margin = new(0, 18, 0, 4) });
+        stack.Children.Add(new TextBlock { Text = "唯讀文字（可複製或搜尋）", Margin = new(0, 18, 0, 4) });
         var read = new TextBox { Text = "Read-only sample — 不能剪下或貼上。", IsReadOnly = true, FontSize = 18, Padding = new(12) };
         AutomationProperties.SetAutomationId(read, "ReadOnlySample"); stack.Children.Add(read);
         stack.Children.Add(new TextBlock { Text = "密碼欄位（不應讀取）", Margin = new(0, 18, 0, 4) });
         var password = new PasswordBox { Password = "fixture-only", Padding = new(12) };
         AutomationProperties.SetAutomationId(password, "PasswordSample"); stack.Children.Add(password);
         Content = stack;
-        Loaded += (_, _) => { edit.Focus(); edit.Select(0, 7); };
+        Loaded += (_, _) => { edit.Focus(); if (webActionMode != null) edit.SelectAll(); else edit.Select(0, 7); };
     }
 }

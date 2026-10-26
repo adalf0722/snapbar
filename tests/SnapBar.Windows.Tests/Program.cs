@@ -71,6 +71,12 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args.Contains("--web-actions")) return WebActionsTest.Run();
+        if (args.Contains("--browser-launch-smoke")) return BrowserLaunchTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--app-exclusions")) return AppExclusionTest.Run();
+        if (args.Contains("--tray-lifecycle")) return TrayLifecycleTest.Run();
+        if (args.Contains("--clipboard-race-writer")) return ClipboardRaceTest.RunWriter();
+        if (args.Contains("--clipboard-races")) return ClipboardRaceTest.Run();
         if (args.Contains("--sublime-action")) return SublimeActionTest.Run(args);
         if (args.Contains("--uia-readiness")) return UiaReadinessTest.Run();
         if (args.Contains("--uia-deep-tree")) return UiaReadinessTest.Run(deepTree: true);

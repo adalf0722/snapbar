@@ -13,6 +13,7 @@ public sealed class SelectionController : IDisposable
     private readonly Dispatcher dispatcher;
     private readonly InputMonitor monitor;
     private readonly ProbeClient probe;
+    private readonly Action<Uri> launchWeb;
     private readonly ClipboardSelectionReader clipboardReader;
     private readonly PopupWindow popup = new();
     private readonly GenerationGate generation = new();
@@ -20,9 +21,11 @@ public sealed class SelectionController : IDisposable
     private readonly DispatcherTimer foregroundTimer;
     private SelectionSnapshot? selection;
     private CancellationTokenSource? delay;
-    private bool executing, disposed;
+    private bool executing, disposed, stopping;
     private bool automatic;
     private bool sublimeClipboardEnabled;
+    private ExcludedApplication[] excludedApplications = [];
+    private string searchUrlTemplate = WebActionPolicy.DefaultSearchTemplate;
     private long? readinessTicket;
     public bool SublimeClipboardEnabled
     {
@@ -38,9 +41,25 @@ public sealed class SelectionController : IDisposable
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
     internal SelectionSnapshot? ActiveSelection => selection;
-
-    public SelectionController(HwndSource source, string probeExecutable)
+    public string SearchUrlTemplate
     {
+        get => searchUrlTemplate;
+        set
+        {
+            if (!WebActionPolicy.IsValidSearchTemplate(value)) throw new ArgumentException("Invalid search template");
+            searchUrlTemplate = value; Invalidate();
+        }
+    }
+
+    public void SetExcludedApplications(IReadOnlyList<ExcludedApplication> applications)
+    {
+        excludedApplications = AppExclusionPolicy.Normalize(applications);
+        Invalidate();
+    }
+
+    public SelectionController(HwndSource source, string probeExecutable, Action<Uri>? launchWeb = null)
+    {
+        this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
@@ -57,7 +76,7 @@ public sealed class SelectionController : IDisposable
 
     private void OnInput(InputEvent input)
     {
-        if (disposed) return;
+        if (disposed || stopping) return;
         if ((input.Kind is "click" or "selection") && popup.Contains(input.X, input.Y)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
@@ -69,6 +88,7 @@ public sealed class SelectionController : IDisposable
 
     internal async Task CaptureAsync(bool pointer, int x, int y)
     {
+        if (disposed || stopping) return;
         Invalidate();
         var ticket = generation.Next();
         delay = new CancellationTokenSource();
@@ -76,6 +96,8 @@ public sealed class SelectionController : IDisposable
         var window = Native.GetForegroundWindow();
         var target = Native.GetIdentity(window);
         if (target == null || target.ProcessId == Environment.ProcessId) return;
+        if (pointer && (!Automatic || !AppExclusionPolicy.AllowsAutomaticCapture(excludedApplications,
+            excludedApplications.Length == 0 ? null : Native.GetExecutablePath(target)))) return;
         var watch = Stopwatch.StartNew();
         try
         {
@@ -105,7 +127,7 @@ public sealed class SelectionController : IDisposable
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
             selection = result.Selection;
-            popup.Present(selection, x, y);
+            popup.Present(selection, x, y, searchUrlTemplate);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "僅複製")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
                 : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
@@ -118,21 +140,23 @@ public sealed class SelectionController : IDisposable
 
     internal async Task ExecuteAsync(TextAction action)
     {
-        if (executing || selection == null || disposed) return;
+        if (executing || selection == null || disposed || stopping) return;
         executing = true;
         var current = selection;
         var ticket = generation.Next();
         popup.Hide();
         try
         {
+            if (!Enum.IsDefined(action)) { Report("invalid-action"); return; }
             var compatibility = current.Source == "sublime-clipboard";
+            var writes = action is TextAction.Cut or TextAction.Paste;
             if (compatibility && !SublimeClipboardEnabled) { Report("sublime-disabled"); return; }
-            if (action != TextAction.Copy && !SessionPolicy.CanWrite(current, current.Target)) { Report("not-editable"); return; }
+            if (writes && !SessionPolicy.CanWrite(current, current.Target)) { Report("not-editable"); return; }
             var actionSequence = Native.GetClipboardSequenceNumber();
             var validation = compatibility
                 ? await clipboardReader.CaptureAsync(current.Target,
                     () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
-                    SublimeSelectionAdapter.ReadPlan(requireEditable: action != TextAction.Copy),
+                    SublimeSelectionAdapter.ReadPlan(requireEditable: writes),
                     expectedSequence: action == TextAction.Paste ? actionSequence : null)
                 : await probe.RequestAsync(new("validate", SessionId: current.Id));
             if (!generation.IsCurrent(ticket) || disposed) return;
@@ -144,6 +168,21 @@ public sealed class SelectionController : IDisposable
             {
                 Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
                 Status?.Invoke($"已複製 {current.CharacterCount} 字");
+            }
+            else if (action is TextAction.Search or TextAction.OpenLink)
+            {
+                var destination = action == TextAction.Search ? WebActionPolicy.Search(current.Text, searchUrlTemplate)
+                    : WebActionPolicy.OpenLink(current.Text);
+                if (!destination.Success) { Report(destination.Status); return; }
+                if (!generation.IsCurrent(ticket) || Native.GetIdentity(Native.GetForegroundWindow()) != current.Target)
+                { Report("target-changed"); return; }
+                try
+                {
+                    launchWeb(destination.Uri!);
+                    Status?.Invoke(action == TextAction.Search ? "已交由預設瀏覽器搜尋。" : "已交由預設瀏覽器開啟連結。");
+                }
+                catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
+                { Report("browser-unavailable"); }
             }
             else
             {
@@ -174,6 +213,11 @@ public sealed class SelectionController : IDisposable
         "timeout" => "選字讀取逾時，已停止此次讀取；請重新選字。",
         "target-changed" or "focus-changed" or "selection-changed" or "expired" => "目標或選取已變更，已取消動作。",
         "not-editable" => "無法確認可編輯，已取消寫入。",
+        "invalid-action" => "不支援此動作，已取消。",
+        "invalid-link" => "選取內容不是完整的 HTTP／HTTPS 網址。",
+        "invalid-search-template" => "搜尋網址設定無效，請至設定修正或恢復預設。",
+        "web-address-too-long" => "搜尋或連結網址過長，請縮短選取內容後再試。",
+        "browser-unavailable" => "無法開啟預設瀏覽器，請檢查 Windows 的預設瀏覽器設定。",
         "modifier-held" => "請先放開 Ctrl、Alt、Shift 等修飾鍵。",
         "input-blocked" => "輸入指令未完整送出，請確認目標權限。",
         "clipboard-no-text" => "P0 貼上目前只接受含文字的剪貼簿。",
@@ -202,8 +246,15 @@ public sealed class SelectionController : IDisposable
         { readinessTicket = null; Status?.Invoke("選字等待已取消，請重新選字。"); }
     }
 
+    public void BeginShutdown()
+    {
+        stopping = true;
+        Invalidate();
+    }
+
     public void Dispose()
     {
+        if (disposed) return;
         disposed = true; Invalidate(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
     }
 }

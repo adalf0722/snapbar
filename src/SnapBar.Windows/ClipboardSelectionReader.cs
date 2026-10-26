@@ -62,14 +62,19 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
                 if (!step.SendCopy()) return new("input-blocked");
 
                 // One transaction per gesture; a second condition is tried only if no copy arrived.
-                // Do not cancel cleanup when a user input invalidates the selection ticket.
+                // Once the target/input changes, stop probing. Any late clipboard write has
+                // uncertain ownership and must not be overwritten with the old backup.
                 for (var attempt = 0; attempt < 32; attempt++)
                 {
                     await Task.Delay(25);
+                    if (!isCurrent()) return new("clipboard-input-changed");
+                    if (Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
                     var observed = Native.GetClipboardSequenceNumber();
                     if (observed == before) continue;
                     // Require a stable sequence and recheck it while holding the clipboard lock.
                     await Task.Delay(35);
+                    if (!isCurrent()) return new("clipboard-input-changed");
+                    if (Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
                     if (!OpenClipboard(ownerWindow)) continue;
                     try
                     {

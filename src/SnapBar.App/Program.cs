@@ -8,10 +8,25 @@ internal static class Program
     private static void Main(string[] args)
     {
         bool fixture = args.Contains("--fixture");
+        if (fixture)
+        {
+            var fixtureApp = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
+            fixtureApp.Run(new FixtureWindow(args.Contains("--delayed-uia"), args.Contains("--deep-uia"),
+                args.Contains("--web-link") ? "link" : args.Contains("--web-search") ? "search" : null));
+            return;
+        }
+        using var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\SnapBar.ShowSettings");
         using var instance = new Mutex(true, "Local\\SnapBar.P0", out var first);
-        if (!fixture && !first)
-        { MessageBox.Show("SnapBar P0 已在執行中，請切回原型控制視窗。", "SnapBar"); return; }
-        var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
-        app.Run(fixture ? new FixtureWindow(args.Contains("--delayed-uia"), args.Contains("--deep-uia")) : new MainWindow());
+        if (!first) { showSettings.Set(); return; }
+        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        var window = new MainWindow();
+        var wait = ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) =>
+        {
+            if (!app.Dispatcher.HasShutdownStarted)
+                app.Dispatcher.BeginInvoke(window.ShowSettings);
+        }, null, Timeout.Infinite, executeOnlyOnce: false);
+        app.SessionEnding += (_, _) => window.PrepareSessionEnd();
+        try { app.Run(window); }
+        finally { wait.Unregister(null); }
     }
 }

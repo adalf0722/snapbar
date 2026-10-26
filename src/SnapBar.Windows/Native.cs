@@ -55,6 +55,18 @@ public static class Native
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { return null; }
     }
 
+    public static string? GetExecutablePath(TargetIdentity target)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(target.ProcessId);
+            return process.StartTime.ToUniversalTime().Ticks == target.ProcessStarted
+                ? process.MainModule?.FileName : null;
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        { return null; }
+    }
+
     public static bool AnyModifierDown() => new[] { 0x10, 0x11, 0x12, 0x5B, 0x5C }.Any(k => (GetAsyncKeyState(k) & 0x8000) != 0);
 
     public static bool SendControlKey(ushort key)

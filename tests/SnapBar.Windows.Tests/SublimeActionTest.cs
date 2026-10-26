@@ -18,7 +18,8 @@ internal static class SublimeActionTest
     public static int Run(string[] args)
     {
         var index = Array.IndexOf(args, "--sublime-action");
-        if (index + 1 >= args.Length || !Enum.TryParse<TextAction>(args[index + 1], true, out var action))
+        if (index + 1 >= args.Length || !Enum.TryParse<TextAction>(args[index + 1], true, out var action)
+            || action is not (TextAction.Copy or TextAction.Cut or TextAction.Paste))
             throw new ArgumentException("Expected Copy, Cut or Paste after --sublime-action");
         if (action == TextAction.Paste && !args.Contains("--expect-rejected") && !args.Contains("--after-action-file"))
             throw new ArgumentException("Paste requires --after-action-file: verify the fixture buffer before signaling clipboard cleanup");

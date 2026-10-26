@@ -248,5 +248,8 @@ Check("native success past total deadline is rejected", () =>
         () => true, true, default).GetAwaiter().GetResult();
     return result.Response.Status == "timeout" && result.Response.Selection == null;
 });
+SettingsStoreTests.Run(Check);
+AppExclusionPolicyTests.Run(Check);
+WebActionPolicyTests.Run(Check);
 Console.WriteLine($"{passed} passed, {failed} failed");
 return failed == 0 ? 0 : 1;
