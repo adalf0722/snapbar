@@ -39,7 +39,16 @@ internal sealed class ActionEditorWindow : Window
         kind.ItemsSource = new[] { "網址", "PowerShell", "JavaScript" }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
         kind.Padding = new(9); kind.Margin = new(0, 0, 0, 18); form.Children.Add(kind);
         Field(form, "給它一個好記的名字", name);
-        icon.ItemsSource = ActionUi.Icons; icon.SelectedItem = existing?.Icon ?? "globe"; icon.Padding = new(6); Field(form, "圖示", icon);
+        var iconNames = new[] { "複製", "剪下", "貼上", "搜尋", "連結", "資料夾", "網頁", "翻譯", "程式碼", "終端機", "星芒", "文件", "清理文字" };
+        for (var i = 0; i < ActionUi.Icons.Length; i++)
+        {
+            var option = new StackPanel { Orientation = Orientation.Horizontal };
+            option.Children.Add(ActionUi.Icon(ActionUi.Icons[i], ActionUi.Muted, 16));
+            var label = ActionUi.Text(iconNames[i], 12); label.Margin = new(9, 0, 0, 0); option.Children.Add(label);
+            var item = new ComboBoxItem { Tag = ActionUi.Icons[i], Content = option }; icon.Items.Add(item);
+            if (ActionUi.Icons[i] == (existing?.Icon ?? "globe")) icon.SelectedItem = item;
+        }
+        icon.Padding = new(6); Field(form, "圖示", icon);
         content.AcceptsReturn = true; content.AcceptsTab = true; content.Height = 124; content.TextWrapping = TextWrapping.Wrap;
         content.FontFamily = new("Consolas, Microsoft JhengHei UI"); content.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         var inputHeader = new DockPanel(); var variable = ActionUi.Button("插入選取文字", InsertVariable, "plus"); DockPanel.SetDock(variable, Dock.Right); inputHeader.Children.Add(variable); inputHeader.Children.Add(ActionUi.Text("網址或腳本內容", 12));
@@ -91,7 +100,7 @@ internal sealed class ActionEditorWindow : Window
     private CustomActionDefinition? ReadAction()
     {
         if (currentKind != CustomActionKind.Url && (!int.TryParse(timeout.Text, out var n) || n is < 1 or > 300)) { error.Text = "逾時秒數須為 1–300 的整數。"; return null; }
-        var action = new CustomActionDefinition(id, name.Text.Trim(), currentKind, icon.SelectedItem as string ?? "spark", content.Text,
+        var action = new CustomActionDefinition(id, name.Text.Trim(), currentKind, (icon.SelectedItem as ComboBoxItem)?.Tag as string ?? "spark", content.Text,
             (ActionOutput)Math.Max(0, output.SelectedIndex), currentKind == CustomActionKind.Url ? 10 : int.Parse(timeout.Text), string.IsNullOrWhiteSpace(runtime.Text) ? null : runtime.Text.Trim());
         error.Text = CustomActionPolicy.Validate(action) ?? ""; return error.Text.Length == 0 ? action : null;
     }
