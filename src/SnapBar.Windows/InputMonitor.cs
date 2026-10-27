@@ -15,6 +15,8 @@ public sealed class InputMonitor : IDisposable
     private int clickCount;
     private bool pressed;
     public event Action<InputEvent>? Input;
+    public Func<uint, bool>? KeyFilter { get; set; }
+    private readonly HashSet<uint> filteredKeys = [];
     public bool HotkeyRegistered { get; }
 
     public InputMonitor(HwndSource source)
@@ -72,10 +74,23 @@ public sealed class InputMonitor : IDisposable
 
     private nint KeyboardCallback(int code, nint wParam, nint lParam)
     {
-        if (code >= 0 && ((int)wParam == 0x100 || (int)wParam == 0x104))
+        if (code >= 0 && ((int)wParam is 0x100 or 0x104 or 0x101 or 0x105))
         {
             var data = Marshal.PtrToStructure<Native.KeyboardHookData>(lParam);
-            if (data.ExtraInfo != (nuint)Native.InputMarker) Input?.Invoke(new("key"));
+            if (data.ExtraInfo != (nuint)Native.InputMarker)
+            {
+                var down = (int)wParam is 0x100 or 0x104;
+                // Let the source observe balanced modifier transitions, so asynchronous
+                // state is already correct when the following menu key is inspected.
+                if (data.Key is 0x10 or 0x11 or 0x12 or >= 0xA0 and <= 0xA5)
+                {
+                    if (down && KeyFilter?.Invoke(data.Key) != true) Input?.Invoke(new("key"));
+                    return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
+                }
+                if (!down && filteredKeys.Remove(data.Key)) return 1;
+                if (down && KeyFilter?.Invoke(data.Key) == true) { filteredKeys.Add(data.Key); return 1; }
+                if (down) Input?.Invoke(new("key"));
+            }
         }
         return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
     }

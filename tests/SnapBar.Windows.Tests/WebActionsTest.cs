@@ -50,8 +50,7 @@ internal static class WebActionsTest
                 Button FindButton(TextAction action)
                 {
                     var popup = app.Windows.OfType<PopupWindow>().Single(window => window.IsVisible);
-                    return ((WrapPanel)popup.Content).Children.OfType<Button>().Single(button =>
-                        AutomationProperties.GetAutomationId(button) == action + "Action");
+                    return popup.FindActionButton(action);
                 }
                 async Task Click(TextAction action)
                 {

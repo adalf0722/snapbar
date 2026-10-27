@@ -1,0 +1,125 @@
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Media;
+using SnapBar.App;
+using SnapBar.Core;
+using SnapBar.Windows;
+
+internal static class CustomActionsTest
+{
+    [DllImport("user32.dll")] private static extern bool OpenClipboard(nint owner);
+    [DllImport("user32.dll")] private static extern bool CloseClipboard();
+    private static IEnumerable<T> Children<T>(DependencyObject item) where T : DependencyObject
+    {
+        if (item is T match) yield return match;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(item); i++)
+            foreach (var child in Children<T>(VisualTreeHelper.GetChild(item, i))) yield return child;
+    }
+    public static int Run()
+    {
+        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; var passed = 0; var result = 1;
+        void Check(bool ok, string name) { if (!ok) throw new InvalidOperationException(name); Console.WriteLine("PASS " + name); passed++; }
+        app.Startup += async (_, _) =>
+        {
+            Process? fixture = null;
+            HwndSource? owner = null;
+            using var clipboardBackup = new ClipboardBackup();
+            var clipboardCaptured = false;
+            nint ownerHandle = 0;
+            void Locked(Action action)
+            {
+                if (!OpenClipboard(ownerHandle)) throw new InvalidOperationException("Clipboard busy");
+                try { action(); } finally { CloseClipboard(); }
+            }
+            try
+            {
+                owner = new HwndSource(new HwndSourceParameters("SnapBar custom action checks") { Width = 1, Height = 1, WindowStyle = 0 });
+                ownerHandle = owner.Handle;
+                var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                start.ArgumentList.Add("--fixture"); start.ArgumentList.Add("--web-search"); fixture = Process.Start(start)!;
+                var deadline = DateTime.UtcNow.AddSeconds(60);
+                Console.WriteLine("WAITING: activate the dedicated SnapBar custom fixture (up to 60 seconds)");
+                while (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != fixture.Id)
+                { if (fixture.HasExited || DateTime.UtcNow > deadline) throw new InvalidOperationException("Fixture must be foreground"); await Task.Delay(25); }
+                await Task.Delay(120);
+                var launched = new List<Uri>(); var calls = 0; var cancelled = false;
+                Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>> runner = (_, _, _) => { calls++; return Task.FromResult(new ScriptExecutionResult("ok", "# Result\n\n- Example")); };
+                using var controller = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"), launched.Add,
+                    runCustom: (action, text, token) => runner(action, text, token));
+                var url = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "搜尋測試", CustomActionKind.Url, "globe", "https://example.com/search?q=***");
+                var script = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "JSON 測試", CustomActionKind.JavaScript, "code", "console.log(process.env.POPCLIP_TEXT)", ActionOutput.Markdown);
+                var replace = script with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "替換測試", Output = ActionOutput.ReplaceSelection };
+                var actions = ActionCatalog.Normalize(new() { CustomActions = [url, script, replace] }); controller.ConfigureActions(actions);
+                async Task Capture() { await controller.CaptureAsync(false, 0, 0); Check(controller.ActiveSelection is { Editable: false }, "capture retains readonly source"); }
+                PopupWindow Popup() => app.Windows.OfType<PopupWindow>().Single(w => w.IsVisible);
+                await Capture();
+                var popup = Popup(); var oldOrder = Children<Button>(popup).Where(b => b.IsVisible).Select(AutomationProperties.GetName).ToArray();
+                Check(oldOrder.Take(2).SequenceEqual(new[] { "複製", "搜尋" }), "compact bar hides readonly writes without losing order");
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(popup.MenuOpen && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id, "More opens without stealing foreground");
+                Check(popup.HandleMenuKey(0x4A) && Children<Button>(popup).Any(b => AutomationProperties.GetAutomationId(b) == "MoreAction_" + script.Id), "More keyboard filter searches custom action name");
+                popup.HandleMenuKey(0x1B); Check(popup.MenuOpen, "first Escape clears query"); popup.HandleMenuKey(0x1B); Check(!popup.MenuOpen, "second Escape closes More");
+                await controller.ExecuteCustomAsync(url.Id);
+                Check(launched.Count == 1 && Uri.UnescapeDataString(launched[0].Query[3..]) == FixtureWindow.SearchFixtureText, "custom URL revalidates and encodes full Unicode selection");
+                await Capture(); await controller.ExecuteCustomAsync(script.Id);
+                Check(calls == 1 && app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "script result routes to actual result window");
+                Check(Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id, "result window preserves original foreground");
+                var resultWindow = app.Windows.OfType<ActionResultWindow>().Single(w => w.IsVisible);
+                Check(!Children<Button>(resultWindow).Single(b => AutomationProperties.GetName(b) == "套用至原文").IsEnabled, "readonly result cannot apply");
+                resultWindow.Close(); await Capture(); await controller.ExecuteCustomAsync(replace.Id);
+                Check(calls == 1, "readonly replacement is rejected before executing script");
+                await Capture();
+                runner = async (_, _, token) => { controller.Automatic = false; try { await Task.Delay(5000, token); } catch (OperationCanceledException) { cancelled = true; } return new("ok", "late result"); };
+                await controller.ExecuteCustomAsync(script.Id);
+                Check(cancelled && !app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "invalidated script cancels token and never presents late result");
+                await Capture(); controller.Automatic = false; await controller.ExecuteCustomAsync(url.Id);
+                Check(launched.Count == 1, "stale URL action never launches");
+
+                fixture.CloseMainWindow(); await fixture.WaitForExitAsync(); fixture.Dispose();
+                var editableStart = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                editableStart.ArgumentList.Add("--fixture"); fixture = Process.Start(editableStart)!;
+                Console.WriteLine("WAITING: activate the dedicated editable SnapBar fixture (up to 60 seconds)");
+                deadline = DateTime.UtcNow.AddSeconds(60);
+                while (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != fixture.Id)
+                { if (fixture.HasExited || DateTime.UtcNow > deadline) throw new InvalidOperationException("Editable fixture must be foreground"); await Task.Delay(25); }
+                await Task.Delay(120);
+                Locked(() => { var captured = clipboardBackup.Capture(); if (captured != "ok") throw new InvalidOperationException("Clipboard backup failed"); clipboardCaptured = true; });
+                runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("ok", "Changed"));
+                await controller.CaptureAsync(false, 0, 0);
+                Check(controller.ActiveSelection is { Editable: true }, "editable fixture authorizes result application");
+                await controller.ExecuteCustomAsync(script.Id);
+                var editableResult = app.Windows.OfType<ActionResultWindow>().Single(w => w.IsVisible);
+                var apply = Children<Button>(editableResult).Single(b => AutomationProperties.GetName(b) == "套用至原文");
+                Check(apply.IsEnabled, "editable original selection enables Apply");
+                apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var editElement = AutomationElement.FromHandle(fixture.MainWindowHandle).FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.AutomationIdProperty, "EditableSample"));
+                var value = (ValuePattern)editElement.GetCurrentPattern(ValuePattern.Pattern);
+                deadline = DateTime.UtcNow.AddSeconds(4);
+                while (!value.Current.Value.StartsWith("Changed Windows", StringComparison.Ordinal) && DateTime.UtcNow < deadline) await Task.Delay(30);
+                Check(value.Current.Value.StartsWith("Changed Windows", StringComparison.Ordinal), "Apply replaces only the original selected range in disposable editor");
+                Check(Clipboard.GetText() == "Changed", "Apply leaves expected result on clipboard");
+                editableResult.Close();
+                result = 0;
+            }
+            catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }
+            finally
+            {
+                if (clipboardCaptured)
+                {
+                    try { Locked(() => { if (!clipboardBackup.Restore()) throw new InvalidOperationException("Clipboard restore failed"); }); }
+                    catch (Exception error) { result = 1; Console.WriteLine("FAIL " + error.Message); }
+                }
+                if (fixture != null) { if (!fixture.HasExited) fixture.CloseMainWindow(); fixture.Dispose(); }
+                owner?.Dispose();
+                Console.WriteLine($"{passed} passed, {(result == 0 ? 0 : 1)} failed"); app.Shutdown();
+            }
+        };
+        app.Run(); return result;
+    }
+}

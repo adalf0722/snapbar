@@ -54,8 +54,7 @@ internal static class PathActionsTest
                     if (controller.ActiveSelection is not { Editable: false, Source: "uia" } selection || selection.Text != expected)
                         throw new Exception("Expected readonly path fixture");
                 }
-                Button Button(TextAction action) => ((WrapPanel)app.Windows.OfType<PopupWindow>().Single(p => p.IsVisible).Content)
-                    .Children.OfType<Button>().Single(b => AutomationProperties.GetAutomationId(b) == action + "Action");
+                Button Button(TextAction action) => app.Windows.OfType<PopupWindow>().Single(p => p.IsVisible).FindActionButton(action);
                 var sequence = Native.GetClipboardSequenceNumber();
                 await Capture();
                 Check(Button(TextAction.RevealPath).IsVisible && Button(TextAction.RevealPath).IsEnabled
@@ -130,7 +129,7 @@ internal static class PathActionsTest
                 {
                     var shellDeadline = DateTime.UtcNow.AddSeconds(8);
                     while (!PathShellSmokeTest.IsSelected(shell, Path.GetDirectoryName(expected)!, expected))
-                    { if (DateTime.UtcNow > shellDeadline) throw new Exception("Controller did not reveal exact fixture path"); await Task.Delay(100); }
+                    { if (DateTime.UtcNow > shellDeadline) throw new Exception("Controller did not reveal exact fixture path: " + string.Join(" | ", actualStatuses)); await Task.Delay(100); }
                     Check(actualStatuses.Any(status => status.Contains("已交由檔案總管"))
                         && Native.GetClipboardSequenceNumber() == sequence,
                         "real controller revalidates readonly selection and reveals exact item through isolated Shell worker");

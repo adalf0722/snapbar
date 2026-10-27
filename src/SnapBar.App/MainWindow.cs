@@ -21,6 +21,7 @@ public sealed class MainWindow : Window
     private readonly SettingsStore settingsStore;
     private ApplicationSettings preferences;
     private bool exitRequested, hiddenNoticeShown;
+    private ActionSettingsWindow? actionSettingsWindow;
     internal bool AutomaticDetectionEnabled => controller?.Automatic == true;
     internal IReadOnlyList<ExcludedApplication> ExcludedApplications => preferences.ExcludedApplications;
 
@@ -50,6 +51,9 @@ public sealed class MainWindow : Window
             start.ArgumentList.Add("--fixture"); Process.Start(start);
         };
         buttons.Children.Add(fixture); panel.Children.Add(buttons);
+        var manageActions = ActionUi.Button("管理動作", ShowActionSettings, "settings", true);
+        manageActions.Margin = new(0, 14, 0, 0); manageActions.HorizontalAlignment = HorizontalAlignment.Left;
+        panel.Children.Add(manageActions);
         panel.Children.Add(mode);
         panel.Children.Add(new TextBlock { Text = "自動偵測偏好會自動保存；Sublime 相容模式每次需自行啟用。", Foreground = Brushes.SlateGray, TextWrapping = TextWrapping.Wrap, Margin = new(0, -12, 0, 16) });
         var sublime = new CheckBox { Content = "Sublime 剪貼簿相容模式（可編輯時提供剪下／貼上）", Margin = new(0, 0, 0, 14) };
@@ -100,6 +104,9 @@ public sealed class MainWindow : Window
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
+                controller.ConfigureActions(preferences.Actions);
+                controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; SavePreferences(); };
+                controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
                 AddStatus(controller.HotkeyRegistered ? "準備完成 · Ctrl+Alt+V" : "Ctrl+Alt+V 已被占用；仍可啟用自動偵測。P0 尚無改鍵設定。");
             }
@@ -171,6 +178,20 @@ public sealed class MainWindow : Window
         { AddStatus("本次設定已生效，但無法保存；下次啟動將使用原設定。"); }
     }
 
+    private void ShowActionSettings()
+    {
+        if (exitRequested) return;
+        if (actionSettingsWindow != null) { actionSettingsWindow.Activate(); return; }
+        var window = new ActionSettingsWindow(preferences.Actions, value =>
+        {
+            preferences = preferences with { Actions = value }; controller?.ConfigureActions(value);
+            try { settingsStore.Save(preferences); return true; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
+            { AddStatus("本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。"); return false; }
+        });
+        actionSettingsWindow = window; window.Closed += (_, _) => actionSettingsWindow = null; window.Show();
+    }
+
     internal bool SetSearchUrlTemplate(string value)
     {
         if (exitRequested) return false;
@@ -206,6 +227,7 @@ public sealed class MainWindow : Window
         exitRequested = true;
         IsEnabled = false;
         controller?.BeginShutdown();
+        actionSettingsWindow?.Close();
         while (controller?.ClipboardReadPending == true) await Task.Delay(25);
         Close();
         Application.Current.Shutdown();

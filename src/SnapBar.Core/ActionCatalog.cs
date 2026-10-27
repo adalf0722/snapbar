@@ -5,7 +5,7 @@ public static class ActionCatalog
     private static readonly ActionItem[] BuiltIns = [
         new("copy", "複製", "copy", TextAction.Copy), new("cut", "剪下", "cut", TextAction.Cut),
         new("paste", "貼上", "paste", TextAction.Paste), new("search", "搜尋", "search", TextAction.Search),
-        new("link", "開啟連結", "link", TextAction.OpenLink), new("path", "開啟路徑", "folder", TextAction.RevealPath)];
+        new("link", "開啟連結", "link", TextAction.OpenLink), new("path", "檔案位置", "folder", TextAction.RevealPath)];
 
     public static ActionSettings Normalize(ActionSettings settings)
     {
@@ -42,7 +42,8 @@ public static class ActionCatalog
         TextAction.Cut or TextAction.Paste => SessionPolicy.CanWrite(selection, selection.Target),
         TextAction.OpenLink => WebActionPolicy.OpenLink(selection.Text).Success,
         TextAction.RevealPath => PathActionPolicy.Resolve(selection.Text).Success,
-        _ => !string.IsNullOrWhiteSpace(selection.Text) && (item.Custom?.Output != ActionOutput.ReplaceSelection || SessionPolicy.CanWrite(selection, selection.Target))
+        _ => !string.IsNullOrWhiteSpace(selection.Text) && (item.Custom is not { Kind: not CustomActionKind.Url, Output: ActionOutput.ReplaceSelection }
+            || SessionPolicy.CanWrite(selection, selection.Target))
     };
 
     public static IReadOnlyList<ActionItem> GetBar(ActionSettings settings, SelectionSnapshot selection)

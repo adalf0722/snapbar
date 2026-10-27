@@ -18,7 +18,25 @@
 
 ## 設定保存
 
-自動偵測偏好、排除清單與搜尋網址範本存於 `%LOCALAPPDATA%/SnapBar/settings.json`，不包含選取文字、剪貼簿或診斷紀錄。檔案損壞、無法讀取或版本較新時，採預設值並保留原檔，介面會提示無法保存。舊版 v1／v2 設定會保留偏好並升級至 v3；更新時請使用完整新版套件。Sublime 相容模式仍每次自行啟用，啟動時不自動改寫 Sublime 設定。
+自動偵測偏好、排除清單、搜尋網址與動作設定存於 `%LOCALAPPDATA%/SnapBar/settings.json`，不包含選取文字、剪貼簿或診斷紀錄。檔案損壞、無法讀取或版本較新時，採預設值並保留原檔，介面會提示無法保存。舊版 v1–v3 保留偏好並升級至 v4；更新時請使用完整新版套件。Sublime 相容模式仍每次自行啟用，啟動時不自動改寫 Sublime 設定。
+
+## 動作列與自訂 action
+
+新版動作列維持單排，提供深色／淺色、圖示／圖示加文字。唯讀文字收起剪下與貼上；完整網址或路徑提供適用入口。按「⋯」開啟更多動作，不會搶走原 App 的焦點；可輸入英文名稱／別名，或用 Ctrl+V 貼上中文名稱搜尋。上下鍵選取、Enter 執行，Esc 先清空搜尋再關閉。最近五個動作排在前面，清單內不重複。
+
+設定視窗按「管理動作」，可統一安排內建與自訂動作：每列直接選擇動作列／更多選單／隱藏，動作列最多六個，拖曳名稱或按上下箭頭排序。上方立即預覽。窄工作區的尾端動作暫時收進更多，不改動已保存的配置。
+
+按「新增動作」可建立最多 32 個自訂動作；新增與匯入預設進入更多。名稱最多 32 字元，內容最多 32,768 UTF-16 code units；整份設定上限仍為 64 KiB，超限時明確提示不能保存。
+
+- **網址**：HTTP／HTTPS 範本中的一個 `***` 會替換成編碼後的完整選取文字。編輯器可預覽目的網址，只有實際點擊動作才開啟瀏覽器。
+- **PowerShell**：預設使用 Windows PowerShell，從 `$env:POPCLIP_TEXT` 讀取選取。可指定 PowerShell 7 等執行環境的完整 `.exe` 路徑。
+- **JavaScript**：使用 PATH 上的 `node.exe`，或自行指定完整路徑，從 `process.env.POPCLIP_TEXT` 讀取選取。需要自行安裝 Node.js。
+
+腳本以目前使用者權限執行；保存與匯入不會執行。編輯器的「預覽／測試」會以範例文字**實際執行**腳本，可以取消。逾時 1–300 秒，預設 10 秒；stdout／stderr 各限制 256 Ki 個 UTF-16 字元。每次請求使用獨立程序群組，逾時、取消、輸出超限及主程序結束都會清理所屬子程序。這適合會完成的文字處理腳本，不能用來啟動需持續常駐的子程序。
+
+輸出可選不處理、複製到剪貼簿、替換原選取、短暫提示、結果視窗或 Markdown 視窗。Markdown 支援標題、清單與程式碼區塊等基本本機排版，不執行 HTML 或載入外部內容；複製仍取得原始輸出。替換或按結果視窗「套用至原文」會重新驗證可編輯狀態及原選取，將結果放入剪貼簿並送出貼上；來源已變更便取消。空輸出保留原文，提供結果視窗自行查看。
+
+每個自訂動作的「⋯」提供複製、匯出及刪除；刪除後可復原。`.snapbaraction` 使用版本化 JSON，匯入時先顯示完整內容供確認，再加入更多。macOS 舊格式尚未承諾直接相容。動作列設計及驗證見 [設計規格](docs/superpowers/specs/2026-10-27-action-bar-design.md) 與 [驗證紀錄](docs/p0-validation.md)。
 
 ## 搜尋與開啟連結
 
@@ -79,7 +97,7 @@ Windows／第三方剪貼簿歷程仍可能留下暫存複製；極慢的目標�
 ## 已知限制
 
 - 一般 App 需要提供 UIA 選字介面；只有明確啟用的 Sublime 相容模式會使用剪貼簿。
-- 暫無 ... 選單、改鍵設定、AI、自訂動作與 Planka；依規劃後續加入。
+- 暫無改鍵設定、AI 與 Planka；依規劃後續加入。更多面板的中文搜尋目前以 Ctrl+V 貼上為主，尚未提供直接 IME 組字。
 - Ctrl+Alt+V 衝突會顯示提示；P0 可改用自動偵測，尚未提供改鍵 UI。
 - Cut／Paste 只對原本仍在前景、單段選取、已確認可編輯且有焦點的文字 provider 執行；不嘗試強制恢復前景。檢查與輸入仍受 Windows 非原子操作及 UIPI 限制。
 - 輸入成功插入佇列只顯示「已送出指令」，不宣稱目標 App 已完成處理。
@@ -116,6 +134,15 @@ pwsh -NoProfile -File .\scripts\build.ps1 -Publish
 
 # 搜尋／連結動作：使用唯讀 fixture 與記錄式啟動器，不連線搜尋服務
 & .\.tools\dotnet\dotnet.exe run --project .\tests\SnapBar.Windows.Tests -c Release -- --web-actions
+
+# 自訂腳本：執行可丟棄 PowerShell／Node 範例，驗證逾時、取消及子程序清理
+& .\.tools\dotnet\dotnet.exe run --project .\tests\SnapBar.Windows.Tests -c Release -- --custom-action-runner
+
+# 自訂動作 UI／控制器：專用可丟棄編輯器，套用測試會暫借並還原剪貼簿
+& .\.tools\dotnet\dotnet.exe run --project .\tests\SnapBar.Windows.Tests -c Release -- --custom-actions
+
+# 更多面板實際鍵盤：使用專用來源，暫借並還原剪貼簿，執行時請勿同時複製
+& .\.tools\dotnet\dotnet.exe run --project .\tests\SnapBar.Windows.Tests -c Release -- --menu-keyboard
 
 # 實際預設瀏覽器啟動：僅開啟本機 loopback 測試頁，會留下測試分頁
 & .\.tools\dotnet\dotnet.exe run --project .\tests\SnapBar.Windows.Tests -c Release -- --browser-launch-smoke

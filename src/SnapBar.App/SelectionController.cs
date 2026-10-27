@@ -8,7 +8,7 @@ using SnapBar.Windows;
 
 namespace SnapBar.App;
 
-public sealed class SelectionController : IDisposable
+public sealed partial class SelectionController : IDisposable
 {
     private readonly Dispatcher dispatcher;
     private readonly InputMonitor monitor;
@@ -60,10 +60,12 @@ public sealed class SelectionController : IDisposable
     }
 
     public SelectionController(HwndSource source, string probeExecutable, Action<Uri>? launchWeb = null,
-        Func<IPathRevealSession>? createPathSession = null)
+        Func<IPathRevealSession>? createPathSession = null,
+        Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
+        this.runCustom = runCustom ?? CustomActionRunner.RunAsync;
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
@@ -72,6 +74,10 @@ public sealed class SelectionController : IDisposable
         // click/key cannot leave an old selection valid during an async action continuation.
         monitor.Input += OnInput;
         popup.ActionRequested += action => _ = ExecuteAsync(action);
+        popup.CustomActionRequested += id => _ = ExecuteCustomAsync(id);
+        popup.SettingsChanged += value => { actions = value; ActionsChanged?.Invoke(actions); };
+        popup.ManageRequested += () => { Invalidate(); ManageActionsRequested?.Invoke(); };
+        monitor.KeyFilter = key => selection != null && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
         foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
         {
             if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window) Invalidate();
@@ -81,7 +87,8 @@ public sealed class SelectionController : IDisposable
     private void OnInput(InputEvent input)
     {
         if (disposed || stopping) return;
-        if ((input.Kind is "click" or "selection") && popup.Contains(input.X, input.Y)) return;
+        if ((input.Kind is "click" or "selection" or "scroll")
+            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
         {
@@ -131,7 +138,7 @@ public sealed class SelectionController : IDisposable
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
             selection = result.Selection;
-            popup.Present(selection, x, y, searchUrlTemplate);
+            popup.Present(selection, x, y, searchUrlTemplate, actions);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "不提供寫入")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
                 : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
@@ -148,7 +155,7 @@ public sealed class SelectionController : IDisposable
         executing = true;
         var current = selection;
         var ticket = generation.Next();
-        popup.Hide();
+        popup.Dismiss();
         try
         {
             if (!Enum.IsDefined(action)) { Report("invalid-action"); return; }
@@ -173,6 +180,7 @@ public sealed class SelectionController : IDisposable
             {
                 Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
                 Status?.Invoke($"已複製 {current.CharacterCount} 字");
+                RememberBuiltIn(action);
             }
             else if (action == TextAction.RevealPath)
             {
@@ -192,7 +200,7 @@ public sealed class SelectionController : IDisposable
                 { Report(finalValidation.Success ? "target-changed" : finalValidation.Status); return; }
                 var result = await session.RevealAsync(current.Target, cancellation.Token);
                 // Explorer may become foreground before its acknowledgement arrives.
-                if (result == "ok") Status?.Invoke("已交由檔案總管顯示項目。");
+                if (result == "ok") { Status?.Invoke("已交由檔案總管顯示項目。"); RememberBuiltIn(action); }
                 else if (generation.IsCurrent(ticket)) Report(result);
             }
             else if (action is TextAction.Search or TextAction.OpenLink)
@@ -206,6 +214,7 @@ public sealed class SelectionController : IDisposable
                 {
                     launchWeb(destination.Uri!);
                     Status?.Invoke(action == TextAction.Search ? "已交由預設瀏覽器搜尋。" : "已交由預設瀏覽器開啟連結。");
+                    RememberBuiltIn(action);
                 }
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
                 { Report("browser-unavailable"); }
@@ -225,6 +234,7 @@ public sealed class SelectionController : IDisposable
                     : Native.SendControlKey(action == TextAction.Cut ? (ushort)0x58 : (ushort)0x56);
                 if (!sent) { Report("input-blocked"); return; }
                 Status?.Invoke(action == TextAction.Cut ? "已送出剪下指令（請確認原 App 結果）" : "已送出貼上指令（請確認原 App 結果）");
+                RememberBuiltIn(action);
             }
         }
         catch (ExternalException) { Report("clipboard-busy"); }
@@ -271,9 +281,11 @@ public sealed class SelectionController : IDisposable
 
     private void Invalidate()
     {
+        customAction?.Cancel();
+        resultWindow?.InvalidateTarget();
         pathAction?.Cancel();
         generation.Next(); delay?.Cancel(); delay?.Dispose(); delay = null;
-        selection = null; popup.Hide();
+        selection = null; popup.Dismiss();
         if (readinessTicket != null)
         { readinessTicket = null; Status?.Invoke("選字等待已取消，請重新選字。"); }
     }
@@ -282,11 +294,12 @@ public sealed class SelectionController : IDisposable
     {
         stopping = true;
         Invalidate();
+        resultWindow?.Close();
     }
 
     public void Dispose()
     {
         if (disposed) return;
-        disposed = true; Invalidate(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
+        disposed = true; Invalidate(); resultWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
     }
 }

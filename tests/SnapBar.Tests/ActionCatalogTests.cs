@@ -22,8 +22,10 @@ internal static class ActionCatalogTests
         {
             var readOnly = selection with { Editable = null };
             return !ActionCatalog.GetBar(settings, readOnly).Any(a => a.Id is "cut" or "paste")
-                && !ActionCatalog.IsApplicable(new(action.Id, action.Name, action.Icon, Custom: action with { Output = ActionOutput.ReplaceSelection }), readOnly);
+                && !ActionCatalog.IsApplicable(new(action.Id, action.Name, action.Icon, Custom: action with { Kind = CustomActionKind.PowerShell, Output = ActionOutput.ReplaceSelection }), readOnly);
         });
+        check("URL action remains readable after switching from replace-output script", () =>
+            ActionCatalog.IsApplicable(new(action.Id, action.Name, action.Icon, Custom: action with { Output = ActionOutput.ReplaceSelection }), selection with { Editable = false }));
         check("pin cap rejects seventh pinned item", () =>
         {
             var six = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(settings, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
