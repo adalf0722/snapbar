@@ -34,8 +34,8 @@ internal static class SettingsStoreTests
                 var text = new UTF8Encoding(false, true).GetString(bytes);
                 using var json = System.Text.Json.JsonDocument.Parse(text);
                 return !bytes.Take(3).SequenceEqual(new byte[] { 239, 187, 191 })
-                    && json.RootElement.EnumerateObject().Count() == 4
-                    && json.RootElement.GetProperty("schemaVersion").GetInt32() == 3;
+                    && json.RootElement.EnumerateObject().Count() == 5
+                    && json.RootElement.GetProperty("schemaVersion").GetInt32() == 4;
             });
             check("pause preference replaces previous saved state", () =>
             {
@@ -51,7 +51,7 @@ internal static class SettingsStoreTests
                 });
             check("future settings version is preserved and cannot be downgraded", () =>
             {
-                Seed("{\"schemaVersion\":4,\"automaticDetectionEnabled\":true}");
+                Seed("{\"schemaVersion\":5,\"automaticDetectionEnabled\":true}");
                 var store = new SettingsStore(path); var result = store.Load();
                 return result.Warning == "settings-version" && !result.Settings.AutomaticDetectionEnabled && RejectsSave(store);
             });
@@ -87,11 +87,11 @@ internal static class SettingsStoreTests
                 Seed("{\"schemaVersion\":1,\"automaticDetectionEnabled\":true}");
                 var before = File.ReadAllBytes(path);
                 var store = new SettingsStore(path); var loaded = store.Load();
-                if (loaded.Warning != null || loaded.Settings.SchemaVersion != 3
+                if (loaded.Warning != null || loaded.Settings.SchemaVersion != 4
                     || !loaded.Settings.AutomaticDetectionEnabled || loaded.Settings.ExcludedApplications.Length != 0
                     || !before.SequenceEqual(File.ReadAllBytes(path))) return false;
                 store.Save(loaded.Settings);
-                return File.ReadAllText(path).Contains("\"schemaVersion\": 3");
+                return File.ReadAllText(path).Contains("\"schemaVersion\": 4");
             });
             check("excluded apps and Unicode names survive a new store instance", () =>
             {
@@ -123,7 +123,7 @@ internal static class SettingsStoreTests
             {
                 Seed("{\"schemaVersion\":2,\"automaticDetectionEnabled\":true,\"excludedApplications\":[{\"executablePath\":\"D:/Apps/Editor/editor.exe\",\"displayName\":\"Editor\"}]}");
                 var loaded = new SettingsStore(path).Load();
-                return loaded.Warning == null && loaded.Settings.SchemaVersion == 3
+                return loaded.Warning == null && loaded.Settings.SchemaVersion == 4
                     && loaded.Settings.AutomaticDetectionEnabled && loaded.Settings.ExcludedApplications.Length == 1
                     && loaded.Settings.SearchUrlTemplate == WebActionPolicy.DefaultSearchTemplate;
             });
