@@ -31,6 +31,29 @@ internal static class ActionCatalogTests
             var six = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(settings, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
             return Reject(() => ActionCatalog.SetPlacement(six, action.Id, ActionPlacement.Bar));
         });
+        check("pinning sixth action appends after existing fifth instead of using its old More slot", () =>
+        {
+            var five = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar);
+            var six = ActionCatalog.SetPlacement(five, "link", ActionPlacement.Bar);
+            return ActionCatalog.GetPinned(six).Select(a => a.Id).SequenceEqual(new[] { "copy", "cut", "paste", "search", action.Id, "link" });
+        });
+        check("configuration preview retains all six conditional actions in the configured order", () =>
+        {
+            var six = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(new(), "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
+            six = ActionCatalog.Move(six, "path", -5);
+            return ActionCatalog.GetPinned(six).Select(a => a.Id).SequenceEqual(new[] { "path", "copy", "cut", "paste", "search", "link" })
+                && ActionCatalog.GetBar(six, selection).Select(a => a.Id).SequenceEqual(new[] { "copy", "cut", "paste", "search" });
+        });
+        check("sixth custom action can move to either end and re-pin appends it", () =>
+        {
+            var second = action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "第六個" };
+            var six = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(new() { CustomActions = [action, second] }, action.Id, ActionPlacement.Bar), second.Id, ActionPlacement.Bar);
+            var first = ActionCatalog.Move(six, second.Id, -5);
+            var last = ActionCatalog.Move(first, second.Id, 5);
+            var rePinned = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(first, second.Id, ActionPlacement.More), second.Id, ActionPlacement.Bar);
+            return ActionCatalog.GetPinned(first)[0].Id == second.Id && ActionCatalog.GetPinned(last)[^1].Id == second.Id
+                && ActionCatalog.GetPinned(rePinned).Select(a => a.Id).SequenceEqual(ActionCatalog.GetPinned(six).Select(a => a.Id));
+        });
         check("move reorders pinned actions while preserving More slots", () =>
         {
             var normalized = ActionCatalog.Normalize(settings);

@@ -37,6 +37,13 @@ public static class ActionCatalog
     private static ActionItem[] Items(ActionSettings settings) => BuiltIns.Concat(settings.CustomActions.Select(a => new ActionItem(a.Id, a.Name, a.Icon, Custom: a))).ToArray();
     public static IReadOnlyList<ActionItem> GetItems(ActionSettings settings) => Items(Normalize(settings));
 
+    public static IReadOnlyList<ActionItem> GetPinned(ActionSettings settings)
+    {
+        settings = Normalize(settings);
+        var items = Items(settings).ToDictionary(a => a.Id);
+        return settings.Layout.Where(e => e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).ToArray();
+    }
+
     public static bool IsApplicable(ActionItem item, SelectionSnapshot selection) => item.BuiltIn switch
     {
         TextAction.Cut or TextAction.Paste => SessionPolicy.CanWrite(selection, selection.Target),
@@ -78,7 +85,14 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         if (!Enum.IsDefined(placement) || !settings.Layout.Any(e => e.Id == id)) throw new ArgumentException("動作排列無效。");
-        return Normalize(settings with { Layout = settings.Layout.Select(e => e.Id == id ? e with { Placement = placement } : e).ToArray() });
+        var current = settings.Layout.Single(e => e.Id == id);
+        if (current.Placement == placement) return settings;
+        var layout = settings.Layout.Where(e => e.Id != id).ToList();
+        var changed = current with { Placement = placement };
+        if (placement == ActionPlacement.Bar)
+            layout.Insert(layout.FindLastIndex(e => e.Placement == ActionPlacement.Bar) + 1, changed);
+        else layout.Add(changed);
+        return Normalize(settings with { Layout = layout.ToArray() });
     }
 
     public static ActionSettings Move(ActionSettings settings, string id, int delta)

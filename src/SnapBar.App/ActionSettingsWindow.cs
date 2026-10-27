@@ -18,7 +18,7 @@ internal sealed class ActionSettingsWindow : Window
     private readonly TextBlock status = ActionUi.Text("", 11, ActionUi.Muted);
     private string? dragging;
     private ActionSettings? undo;
-    private readonly SelectionSnapshot sample = new("preview", new(0, 0, 0), "Preview", null, true, 1, 7);
+    private readonly TextBlock previewHeading = ActionUi.Text("", 11, ActionUi.Muted);
 
     public ActionSettingsWindow(ActionSettings initial, Func<ActionSettings, bool> save)
     {
@@ -37,9 +37,11 @@ internal sealed class ActionSettingsWindow : Window
         theme.SelectionChanged += (_, _) => Commit(settings with { Theme = theme.SelectedIndex == 0 ? "Dark" : "Light" }); appearance.Children.Add(theme);
         var labels = new CheckBox { Content = "圖示與文字", IsChecked = settings.ShowLabels, VerticalAlignment = VerticalAlignment.Center };
         labels.Click += (_, _) => Commit(settings with { ShowLabels = labels.IsChecked == true }); appearance.Children.Add(labels); top.Children.Add(appearance);
-        top.Children.Add(ActionUi.Text("動作列即時預覽 · 可編輯來源", 11, ActionUi.Muted));
+        top.Children.Add(previewHeading);
         var previewBox = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new(0, 8, 0, 18) };
         top.Children.Add(previewBox); DockPanel.SetDock(top, Dock.Top); outer.Children.Add(top);
+        var previewHelp = ActionUi.Text("完整顯示釘選順序；實際動作列依選取情境顯示，寬度不足時將尾端收進「⋯」。", 11, ActionUi.Muted);
+        previewHelp.Margin = new(0, -8, 0, 14); top.Children.Add(previewHelp);
         status.Margin = new(0, 10, 0, 0); DockPanel.SetDock(status, Dock.Bottom); outer.Children.Add(status);
         outer.Children.Add(new ScrollViewer { Content = groups, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }); Content = outer; Render();
     }
@@ -53,9 +55,15 @@ internal sealed class ActionSettingsWindow : Window
     private void Render()
     {
         preview.Children.Clear(); var dark = settings.Theme == "Dark"; preview.Background = dark ? ActionUi.Brush("#252B2A") : Brushes.White;
-        foreach (var item in ActionCatalog.GetBar(settings, sample))
+        var pinned = ActionCatalog.GetPinned(settings);
+        previewHeading.Text = $"動作列即時預覽 · 已釘選 {pinned.Count}/6";
+        foreach (var item in pinned)
         {
             var element = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(12, 10, 3, 10) };
+            element.Tag = item.Id; AutomationProperties.SetAutomationId(element, "ActionBarPreview_" + item.Id);
+            element.ToolTip = item.BuiltIn switch
+            { TextAction.OpenLink => "僅選取完整網址時顯示", TextAction.RevealPath => "僅選取完整路徑時顯示",
+                TextAction.Cut or TextAction.Paste => "僅可編輯來源時顯示", _ => item.Name };
             element.Children.Add(ActionUi.Icon(item.Icon, dark ? Brushes.White : ActionUi.Ink, 17));
             if (settings.ShowLabels) { var label = ActionUi.Text(item.Name, 12, dark ? Brushes.White : ActionUi.Ink); label.Margin = new(6, 0, 0, 0); element.Children.Add(label); } preview.Children.Add(element);
         }

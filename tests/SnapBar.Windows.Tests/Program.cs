@@ -71,6 +71,7 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args.Contains("--action-layout")) return ActionLayoutTest.Run();
         if (args.Contains("--menu-keyboard")) return MenuKeyboardTest.Run();
         if (args.Contains("--custom-actions")) return CustomActionsTest.Run();
         if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync().GetAwaiter().GetResult();
