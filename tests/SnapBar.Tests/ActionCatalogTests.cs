@@ -12,10 +12,27 @@ internal static class ActionCatalogTests
         bool Reject(Action test) { try { test(); return false; } catch (ArgumentException) { return true; } }
         check("action defaults pin four builtins and keep custom actions in More", () =>
             ActionCatalog.GetBar(settings, selection).Select(a => a.Id).SequenceEqual(new[] { "copy", "cut", "paste", "search" })
-            && ActionCatalog.GetMore(settings, selection).Single().Id == action.Id);
-        check("link contextual promotion excludes duplicated More item", () =>
-            ActionCatalog.GetBar(settings, selection with { Text = "https://example.com/" }).Any(a => a.Id == "link")
-            && !ActionCatalog.GetMore(settings, selection with { Text = "https://example.com/" }).Any(a => a.Id == "link"));
+            && ActionCatalog.GetMore(settings, selection).Any(a => a.Id == action.Id));
+        check("More placement is respected for valid links without automatic promotion", () =>
+            !ActionCatalog.GetBar(settings, selection with { Text = "https://example.com/" }).Any(a => a.Id == "link")
+            && ActionCatalog.GetMore(settings, selection with { Text = "https://example.com/" }).Any(a => a.Id == "link"));
+        check("configured path remains discoverable in More even for nonpath text", () =>
+            ActionCatalog.GetMore(new(), selection).Any(a => a.Id == "path")
+            && !ActionCatalog.IsApplicable(ActionCatalog.GetMore(new(), selection).Single(a => a.Id == "path"), selection));
+        check("valid paths stay in More and remain executable there", () =>
+        {
+            var pathSelection = selection with { Text = @"D:\Documents\example.txt" };
+            return !ActionCatalog.GetBar(new(), pathSelection).Any(a => a.Id == "path")
+                && ActionCatalog.IsApplicable(ActionCatalog.GetMore(new(), pathSelection).Single(a => a.Id == "path"), pathSelection);
+        });
+        check("unavailable More actions can be searched while hidden actions stay excluded", () =>
+        {
+            var hidden = ActionCatalog.SetPlacement(new(), "path", ActionPlacement.Hidden);
+            return ActionCatalog.GetMore(new(), selection, "PATH").Single().Id == "path"
+                && !ActionCatalog.GetMore(hidden, selection).Any(a => a.Id == "path");
+        });
+        check("inapplicable pinned actions do not silently move into More", () =>
+            !ActionCatalog.GetMore(new(), selection with { Editable = false }).Any(a => a.Id is "cut" or "paste"));
         check("hidden contextual action cannot be promoted", () =>
             !ActionCatalog.GetBar(ActionCatalog.SetPlacement(settings, "link", ActionPlacement.Hidden), selection with { Text = "https://example.com/" }).Any(a => a.Id == "link"));
         check("read only selection excludes built in and custom write actions", () =>

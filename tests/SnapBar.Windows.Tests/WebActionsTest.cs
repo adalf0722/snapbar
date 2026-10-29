@@ -46,6 +46,7 @@ internal static class WebActionsTest
                 var statuses = new List<string>();
                 var probe = Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe");
                 using var controller = new SelectionController(owner, probe, launched.Add);
+                controller.ConfigureActions(ActionCatalog.SetPlacement(new(), "link", ActionPlacement.Bar));
                 controller.Status += statuses.Add;
                 Button FindButton(TextAction action)
                 {

@@ -68,9 +68,9 @@ internal static class MenuKeyboardTest
                 Check(editor.Text == sourceText && editor.SelectionLength == sourceText.Length && invalidations == 0, "menu paste preserves source selection without invalidation");
                 Check(keyDowns.Count(k => k == 0x11) == 1 && keyUps.Count(k => k == 0x11) == 1 && !keyDowns.Contains(0x56) && !keyUps.Contains(0x56), "source receives balanced Control and no swallowed-key release");
                 await Tap(0x1B); Check(popup.MenuOpen, "Escape clears search first");
-                var buttons = Children<Button>(popup).Where(b => AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_")).ToArray();
+                var buttons = Children<Button>(popup).Where(b => b.IsEnabled && AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_")).ToArray();
                 for (var i = 0; i < buttons.Length; i++) await Tap(0x28);
-                var selected = Children<Button>(popup).Last(b => AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_"));
+                var selected = Children<Button>(popup).Last(b => b.IsEnabled && AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_"));
                 var scroll = Children<ScrollViewer>(popup).Single();
                 var bounds = selected.TransformToAncestor(scroll).TransformBounds(new Rect(selected.RenderSize));
                 Check(scroll.VerticalOffset > 0 && bounds.Top >= -1 && bounds.Bottom <= scroll.ActualHeight + 1, "Down navigation scrolls final action fully into view");

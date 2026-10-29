@@ -128,11 +128,28 @@ public sealed class PopupWindow : Window
             pin.Focusable = false; pin.IsTabStop = false; pin.ToolTip = "釘選到動作列"; pin.BorderThickness = new(0); pin.Margin = new(0);
             pin.IsEnabled = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < 6;
             DockPanel.SetDock(pin, Dock.Right); line.Children.Add(pin);
-            var button = ActionUi.Button(item.Name, () => Dispatch(item), item.Icon); button.Focusable = false; button.IsTabStop = false;
+            var button = ActionUi.Button(item.Name, () => { if (ActionCatalog.IsApplicable(item, snapshot)) Dispatch(item); }, item.Icon); button.Focusable = false; button.IsTabStop = false;
             button.BorderThickness = new(0); button.Margin = new(0); AutomationProperties.SetAutomationId(button, "MoreAction_" + item.Id);
-            menuButtons.Add(button); line.Children.Add(button); menuRows.Children.Add(line);
+            button.IsEnabled = ActionCatalog.IsApplicable(item, snapshot)
+                && (item.BuiltIn != TextAction.Search || WebActionPolicy.Search(snapshot.Text, searchTemplate).Success);
+            var reason = item.BuiltIn switch
+            {
+                TextAction.RevealPath => "請選取完整的檔案或資料夾路徑",
+                TextAction.OpenLink => "請選取完整的 HTTP／HTTPS 網址",
+                TextAction.Search => "選取文字過長或搜尋設定無效",
+                _ => "來源未確認可編輯，無法寫入"
+            };
+            button.ToolTip = button.IsEnabled ? item.Name : reason; ToolTipService.SetShowOnDisabled(button, true);
+            if (button.IsEnabled) menuButtons.Add(button);
+            var actionContent = new StackPanel(); actionContent.Children.Add(button);
+            if (!button.IsEnabled)
+            {
+                var unavailable = ActionUi.Text(reason, 10, ActionUi.Muted); unavailable.Margin = new(10, 0, 6, 6);
+                AutomationProperties.SetAutomationId(unavailable, "MoreActionReason_" + item.Id); actionContent.Children.Add(unavailable);
+            }
+            line.Children.Add(actionContent); menuRows.Children.Add(line);
         }
-        if (items.Count == 0) { var empty = ActionUi.Text("找不到動作，試試其他名稱或到管理頁新增。", 12, ActionUi.Muted); empty.Margin = new(10, 18, 10, 18); menuRows.Children.Add(empty); }
+        if (items.Count == 0) { var empty = ActionUi.Text(query.Length == 0 ? "沒有更多動作，請到「管理動作」設定顯示位置。" : "找不到符合名稱的動作，請試試其他搜尋。", 12, ActionUi.Muted); empty.Margin = new(10, 18, 10, 18); menuRows.Children.Add(empty); }
         count.Text = $"{snapshot.CharacterCount} 字 · 來源選取仍保留";
         for (var i = 0; i < menuButtons.Count; i++) menuButtons[i].Background = i == menuIndex ? ActionUi.Pale : Brushes.White;
         if (menuIndex >= 0 && menuIndex < menuButtons.Count)

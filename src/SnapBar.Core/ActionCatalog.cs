@@ -57,19 +57,15 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         var items = Items(settings).ToDictionary(a => a.Id);
-        var result = settings.Layout.Where(e => e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).Where(a => IsApplicable(a, selection)).ToList();
-        foreach (var entry in settings.Layout.Where(e => e.Placement == ActionPlacement.More && e.Id is "link" or "path"))
-            if (result.Count < 6 && IsApplicable(items[entry.Id], selection)) result.Add(items[entry.Id]);
-        return result;
+        return settings.Layout.Where(e => e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).Where(a => IsApplicable(a, selection)).ToArray();
     }
 
     public static IReadOnlyList<ActionItem> GetMore(ActionSettings settings, SelectionSnapshot selection, string query = "")
     {
         settings = Normalize(settings);
-        var bar = GetBar(settings, selection).Select(a => a.Id).ToHashSet(StringComparer.Ordinal);
-        var visible = settings.Layout.Where(e => e.Placement != ActionPlacement.Hidden).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var visible = settings.Layout.Where(e => e.Placement == ActionPlacement.More).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         query = (query ?? "").Trim();
-        return Items(settings).Where(a => visible.Contains(a.Id) && !bar.Contains(a.Id) && IsApplicable(a, selection))
+        return Items(settings).Where(a => visible.Contains(a.Id))
             .Where(a => (a.Name + " " + a.Id + " " + Aliases(a)).Contains(query, StringComparison.OrdinalIgnoreCase))
             .OrderBy(a => { int index = Array.IndexOf(settings.RecentIds, a.Id); return index < 0 ? int.MaxValue : index; })
             .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToArray();

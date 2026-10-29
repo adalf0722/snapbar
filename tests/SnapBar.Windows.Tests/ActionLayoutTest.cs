@@ -62,6 +62,20 @@ internal static class ActionLayoutTest
                 popup = new PopupWindow(); popup.Present(snapshot, 100, 100, actionSettings: current); popup.UpdateLayout();
                 var visible = Children<Button>(popup).Where(b => b.Visibility == Visibility.Visible && b.Tag is ActionItem).Select(b => ((ActionItem)b.Tag).Id).ToArray();
                 Check(visible.SequenceEqual(new[] { "copy", "cut", "paste", "search", fifth.Id }), "actual toolbar filters path for plain text while retaining configured relative order");
+                var menuSettings = ActionCatalog.SetPlacement(new(), "link", ActionPlacement.Hidden);
+                void OpenMore() => Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Button MenuPath() => Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreAction_path");
+                popup.Present(snapshot, 100, 100, actionSettings: menuSettings); OpenMore(); popup.UpdateLayout();
+                Check(MenuPath().IsVisible && !MenuPath().IsEnabled && Children<TextBlock>(popup).Any(t => AutomationProperties.GetAutomationId(t) == "MoreActionReason_path"),
+                    "nonpath selection shows configured path menu item disabled with visible reason");
+                var dispatched = 0; popup.ActionRequested += _ => dispatched++;
+                popup.HandleMenuKey(0x28); popup.HandleMenuKey(0x0D);
+                Check(dispatched == 0, "Enter cannot execute an unavailable path action");
+                popup.Present(snapshot with { Text = @"D:\Documents\example.txt" }, 100, 100, actionSettings: menuSettings); OpenMore(); popup.UpdateLayout();
+                Check(MenuPath().IsVisible && MenuPath().IsEnabled && popup.FindActionButton(TextAction.RevealPath).Visibility == Visibility.Collapsed,
+                    "valid path stays in configured More menu and becomes enabled without promotion");
+                MenuPath().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(dispatched == 1, "enabled path menu item dispatches through the existing action event");
                 result = 0;
             }
             catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }

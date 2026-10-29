@@ -46,6 +46,7 @@ internal static class PathActionsTest
                 RecordingSession? next = null;
                 using var controller = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"),
                     createPathSession: () => { var session = next ?? new(); next = null; sessions.Add(session); return session; });
+                controller.ConfigureActions(ActionCatalog.SetPlacement(new(), "path", ActionPlacement.Bar));
                 var statuses = new List<string>(); controller.Status += statuses.Add;
                 var expected = Path.GetFullPath("artifacts/p0/README.md");
                 async Task Capture()
