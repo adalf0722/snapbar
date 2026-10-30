@@ -20,6 +20,7 @@ public static class Native
     [StructLayout(LayoutKind.Sequential)] private struct Input { public uint Type; public InputUnion Union; }
 
     [DllImport("user32.dll")] public static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(nint window);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(nint window, out uint process);
     [DllImport("user32.dll")] public static extern bool IsWindow(nint window);
     [DllImport("user32.dll")] public static extern nint GetAncestor(nint window, uint flags);

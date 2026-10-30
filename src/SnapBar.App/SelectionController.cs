@@ -77,16 +77,18 @@ public sealed partial class SelectionController : IDisposable
         popup.CustomActionRequested += id => _ = ExecuteCustomAsync(id);
         popup.SettingsChanged += value => { actions = value; ActionsChanged?.Invoke(actions); };
         popup.ManageRequested += () => { Invalidate(); ManageActionsRequested?.Invoke(); };
-        monitor.KeyFilter = key => selection != null && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
+        popup.SessionAbandoned += Invalidate;
+        monitor.KeyFilter = key => selection != null && !popup.HasSearchForeground && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
         foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
         {
-            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window) Invalidate();
+            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground) Invalidate();
         }, dispatcher);
     }
 
     private void OnInput(InputEvent input)
     {
         if (disposed || stopping) return;
+        if (input.Kind == "key" && popup.HasSearchForeground) return;
         if ((input.Kind is "click" or "selection" or "scroll")
             && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
@@ -152,6 +154,7 @@ public sealed partial class SelectionController : IDisposable
     internal async Task ExecuteAsync(TextAction action)
     {
         if (executing || selection == null || disposed || stopping) return;
+        if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
         executing = true;
         var current = selection;
         var ticket = generation.Next();

@@ -14,6 +14,8 @@ internal static class MenuKeyboardTest
     [DllImport("user32.dll")] static extern bool OpenClipboard(nint owner);
     [DllImport("user32.dll")] static extern bool CloseClipboard();
     [DllImport("user32.dll")] static extern bool SetForegroundWindow(nint window);
+    [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] static extern void mouse_event(uint flags, uint dx, uint dy, uint data, nuint extra);
     static IEnumerable<T> Children<T>(DependencyObject node) where T : DependencyObject
     {
         if (node is T match) yield return match;
@@ -61,8 +63,8 @@ internal static class MenuKeyboardTest
                 var keyDowns = new List<int>(); var keyUps = new List<int>(); var invalidations = 0;
                 HwndSource.FromHwnd(handle).AddHook((nint h, int msg, nint w, nint l, ref bool handled) => { if (msg == 0x100) keyDowns.Add((int)w); if (msg == 0x101) keyUps.Add((int)w); return 0; });
                 using var monitor = new InputMonitor(HwndSource.FromHwnd(handle));
-                monitor.KeyFilter = key => popup.HandleMenuKey(key);
-                monitor.Input += e => { if (e.Kind == "key") { invalidations++; popup.Dismiss(); } };
+                monitor.KeyFilter = key => !popup.HasSearchForeground && popup.HandleMenuKey(key);
+                monitor.Input += e => { if (e.Kind == "key" && !popup.HasSearchForeground) { invalidations++; popup.Dismiss(); } };
                 await Key(0x11, true); await Tap(0x56); await Key(0x11, false);
                 Check(popup.MenuOpen && Children<Button>(popup).Count(b => AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_")) == 1, "native Ctrl+V filters Unicode clipboard query");
                 Check(editor.Text == sourceText && editor.SelectionLength == sourceText.Length && invalidations == 0, "menu paste preserves source selection without invalidation");
@@ -71,7 +73,7 @@ internal static class MenuKeyboardTest
                 var buttons = Children<Button>(popup).Where(b => b.IsEnabled && AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_")).ToArray();
                 for (var i = 0; i < buttons.Length; i++) await Tap(0x28);
                 var selected = Children<Button>(popup).Last(b => b.IsEnabled && AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_"));
-                var scroll = Children<ScrollViewer>(popup).Single();
+                var scroll = Children<ScrollViewer>(popup).Single(s => s.Content is StackPanel);
                 var bounds = selected.TransformToAncestor(scroll).TransformBounds(new Rect(selected.RenderSize));
                 Check(scroll.VerticalOffset > 0 && bounds.Top >= -1 && bounds.Bottom <= scroll.ActualHeight + 1, "Down navigation scrolls final action fully into view");
                 string? dispatched = null; popup.CustomActionRequested += id => dispatched = id;
@@ -83,6 +85,34 @@ internal static class MenuKeyboardTest
                 Check(editor.SelectionLength == sourceText.Length && editor.Text == sourceText && keyUps.Contains(0x41)
                     && keyDowns.Count(k => k == 0x11) == 2 && keyUps.Count(k => k == 0x11) == 2,
                     "unrelated Control shortcut survives menu closure with balanced modifiers");
+                popup.Present(snapshot, 40, 260, actionSettings: settings);
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                popup.UpdateLayout();
+                var search = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
+                var click = search.PointToScreen(new Point(20, Math.Max(1, search.ActualHeight / 2)));
+                SetCursorPos((int)click.X, (int)click.Y); mouse_event(2, 0, 0, 0, 0); mouse_event(4, 0, 0, 0, 0); await Task.Delay(150);
+                Check(search.IsKeyboardFocused && popup.HasSearchForeground, "real mouse click focuses editable search field with native caret");
+                await Key(0x11, true); await Tap(0x56); await Key(0x11, false);
+                Check(search.Text == query && search.CaretIndex == query.Length, "focused TextBox accepts native Unicode clipboard paste at caret");
+                await Tap(0x25); await Tap(0x08);
+                Check(search.Text == query.Remove(query.Length - 2, 1), "native Left and Backspace edit at cursor rather than append-only filtering");
+                await Key(0x11, true); await Tap(0x41); await Key(0x11, false);
+                Check(search.SelectionLength == search.Text.Length, "native Control+A selects search text");
+                await Tap(0x08); Check(search.Text.Length == 0 && popup.MenuOpen, "native selected-text deletion keeps More open");
+                Check(editor.Text == sourceText && editor.SelectionLength == sourceText.Length, "focused search edits preserve original source text and range");
+                await Tap(0x1B);
+                Check(!popup.MenuOpen && Native.GetForegroundWindow() == handle, "Escape from native search restores only the original source focus");
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(popup.BeginSearchInput(), "search can be focused again after dismissal");
+                await Key(0x12, true); await Tap(0x73); await Key(0x12, false);
+                Check(!popup.IsVisible && Native.GetForegroundWindow() == handle, "Alt+F4 dismisses search without destroying reusable toolbar window");
+                popup.Present(snapshot, 40, 260, actionSettings: settings);
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(popup.BeginSearchInput(), "toolbar remains reusable after native close command");
+                var other = new Window { Title = "SnapBar unrelated keyboard fixture", Content = new TextBox(), Width = 250, Height = 140 };
+                other.Show(); other.Activate(); var otherHandle = new WindowInteropHelper(other).Handle; SetForegroundWindow(otherHandle); await Task.Delay(100);
+                Check(!popup.TryRestoreSourceFocus() && Native.GetForegroundWindow() == otherHandle, "leaving search for another window never pulls focus back to source");
+                other.Close();
                 result = 0;
             }
             catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }

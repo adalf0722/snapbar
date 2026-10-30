@@ -14,6 +14,8 @@ internal static class CustomActionsTest
 {
     [DllImport("user32.dll")] private static extern bool OpenClipboard(nint owner);
     [DllImport("user32.dll")] private static extern bool CloseClipboard();
+    [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint dx, uint dy, uint data, nuint extra);
     private static IEnumerable<T> Children<T>(DependencyObject item) where T : DependencyObject
     {
         if (item is T match) yield return match;
@@ -77,8 +79,51 @@ internal static class CustomActionsTest
                 runner = async (_, _, token) => { controller.Automatic = false; try { await Task.Delay(5000, token); } catch (OperationCanceledException) { cancelled = true; } return new("ok", "late result"); };
                 await controller.ExecuteCustomAsync(script.Id);
                 Check(cancelled && !app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "invalidated script cancels token and never presents late result");
+                await Capture();
+                popup = Popup(); Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                popup.UpdateLayout(); var search = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
+                var point = search.PointToScreen(new Point(20, Math.Max(1, search.ActualHeight / 2)));
+                SetCursorPos((int)point.X, (int)point.Y); mouse_event(2, 0, 0, 0, 0); mouse_event(4, 0, 0, 0, 0); await Task.Delay(250);
+                Check(search.IsKeyboardFocused && popup.HasSearchForeground && controller.ActiveSelection != null,
+                    "search owns native focus without invalidating source session across foreground timer ticks");
+                search.Text = "搜尋測試";
+                var completion = new TaskCompletionSource();
+                void Completed(string _) => completion.TrySetResult();
+                controller.Status += Completed;
+                try
+                {
+                    Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreAction_" + url.Id).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    await completion.Task.WaitAsync(TimeSpan.FromSeconds(4));
+                }
+                finally { controller.Status -= Completed; }
+                Check(launched.Count == 2 && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
+                    "search result action restores original foreground and revalidates before URL launch");
+                await Capture(); popup = Popup();
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                popup.UpdateLayout(); search = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
+                point = search.PointToScreen(new Point(20, Math.Max(1, search.ActualHeight / 2)));
+                SetCursorPos((int)point.X, (int)point.Y); mouse_event(2, 0, 0, 0, 0); mouse_event(4, 0, 0, 0, 0); await Task.Delay(100);
+                var sourceElement = AutomationElement.FromHandle(fixture.MainWindowHandle).FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.AutomationIdProperty, "EditableSample"));
+                var sourcePattern = (TextPattern)sourceElement.GetCurrentPattern(TextPattern.Pattern); var originalRange = sourcePattern.GetSelection()[0].Clone();
+                var changedRange = originalRange.Clone(); changedRange.MoveEndpointByUnit(System.Windows.Automation.Text.TextPatternRangeEndpoint.End,
+                    System.Windows.Automation.Text.TextUnit.Character, -1); changedRange.Select();
+                await controller.ExecuteCustomAsync(url.Id);
+                Check(launched.Count == 2, "source range changed during search is rejected after focus restoration"); originalRange.Select();
                 await Capture(); controller.Automatic = false; await controller.ExecuteCustomAsync(url.Id);
-                Check(launched.Count == 1, "stale URL action never launches");
+                Check(launched.Count == 2, "stale URL action never launches");
+
+                await Capture(); popup = Popup();
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                popup.UpdateLayout(); search = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
+                point = search.PointToScreen(new Point(20, Math.Max(1, search.ActualHeight / 2)));
+                SetCursorPos((int)point.X, (int)point.Y); mouse_event(2, 0, 0, 0, 0); mouse_event(4, 0, 0, 0, 0); await Task.Delay(100);
+                var unrelated = new Window { Title = "SnapBar unrelated search fixture", Content = new TextBox(), Width = 260, Height = 150 };
+                unrelated.Show(); unrelated.Activate(); await Task.Delay(250);
+                var unrelatedHandle = new WindowInteropHelper(unrelated).Handle;
+                Check(controller.ActiveSelection == null && !popup.IsVisible, "leaving focused search invalidates session and closes popup");
+                await controller.ExecuteCustomAsync(url.Id);
+                Check(launched.Count == 2 && Native.GetForegroundWindow() == unrelatedHandle, "stale search action cannot pull focus away from unrelated window"); unrelated.Close();
 
                 fixture.CloseMainWindow(); await fixture.WaitForExitAsync(); fixture.Dispose();
                 var editableStart = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };

@@ -44,6 +44,7 @@ public sealed partial class SelectionController
         var action = actions.CustomActions.FirstOrDefault(a => a.Id == id);
         if (action == null || actions.Layout.Any(e => e.Id == id && e.Placement == ActionPlacement.Hidden)) { Report("invalid-action"); return; }
         if (CustomActionPolicy.Validate(action) != null) { Report("invalid-action"); return; }
+        if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
         executing = true; var current = selection; var ticket = generation.Next(); popup.Dismiss();
         using var cancellation = new CancellationTokenSource(); customAction = cancellation; var keepResult = false;
         try
