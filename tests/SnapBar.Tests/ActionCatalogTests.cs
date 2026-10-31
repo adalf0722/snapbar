@@ -137,22 +137,22 @@ internal static class ActionCatalogTests
         var path = Path.Combine(directory, "settings.json");
         try
         {
-            foreach (var version in new[] { 1, 2, 3, 4, 5 })
+            foreach (var version in new[] { 1, 2, 3, 4, 5, 6 })
                 check("action settings migration from v" + version, () =>
                 {
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 5 && loaded.Settings.Actions.Layout.Length == 6 && before.SequenceEqual(File.ReadAllBytes(path));
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 6 && loaded.Settings.Actions.Layout.Length == 6 && before.SequenceEqual(File.ReadAllBytes(path));
                 });
             check("legacy stored action without input flag defaults to true without rewriting", () =>
             {
                 var actionJson = System.Text.Json.JsonSerializer.Serialize(action, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
                 File.WriteAllText(path, "{\"schemaVersion\":4,\"actions\":{\"customActions\":[" + actionJson.Replace(",\"useSelection\":true", "") + "]}}", new UTF8Encoding(false));
                 var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
-                return loaded.Warning == null && loaded.Settings.SchemaVersion == 5 && loaded.Settings.Actions.CustomActions.Single().UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
+                return loaded.Warning == null && loaded.Settings.SchemaVersion == 6 && loaded.Settings.Actions.CustomActions.Single().UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
             });
-            check("schema five preserves explicit disabled selection on disk", () =>
+            check("current schema preserves explicit disabled selection on disk", () =>
             {
                 var store = new SettingsStore(path); var loaded = store.Load();
                 store.Save(loaded.Settings with { Actions = new() { CustomActions = [independent] } });

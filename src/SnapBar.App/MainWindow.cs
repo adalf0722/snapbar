@@ -12,7 +12,7 @@ namespace SnapBar.App;
 public sealed class MainWindow : Window
 {
     private readonly TextBlock status, mode, lifetimeHint, notice;
-    private readonly CheckBox toggle;
+    private readonly CheckBox toggle, compatibilityToggle, sublimeToggle;
     private readonly ListBox events;
     private readonly ExcludedAppsPanel excludedAppsPanel;
     private readonly SearchSettingsPanel searchSettingsPanel;
@@ -21,17 +21,27 @@ public sealed class MainWindow : Window
     private readonly SettingsStore settingsStore;
     private ApplicationSettings preferences;
     private bool exitRequested, hiddenNoticeShown;
+    private bool updatingCompatibility, updatingSublime;
+    private readonly Action configureSublime;
+    private readonly Func<bool> sublimeIsReady;
     private ActionSettingsWindow? actionSettingsWindow;
     internal bool AutomaticDetectionEnabled => controller?.Automatic == true;
+    internal bool ClipboardCompatibilityEnabled => controller?.ClipboardCompatibilityEnabled == true;
+    internal bool SublimeCompatibilityEnabled => controller?.SublimeClipboardEnabled == true;
     internal IReadOnlyList<ExcludedApplication> ExcludedApplications => preferences.ExcludedApplications;
 
-    public MainWindow(SettingsStore? settingsStore = null)
+    public MainWindow(SettingsStore? settingsStore = null, Action? configureSublime = null, Func<bool>? sublimeIsReady = null)
     {
+        this.configureSublime = configureSublime ?? SublimeCompatibility.InstallBinding;
+        this.sublimeIsReady = sublimeIsReady ?? SublimeCompatibility.Ready;
         this.settingsStore = settingsStore ?? new SettingsStore(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
         var loaded = this.settingsStore.Load();
         preferences = loaded.Settings;
-        ActionUi.Setup(this, "SnapBar · 設定", 740, 760); MinWidth = 580; MinHeight = 520;
+        if (loaded.Warning != null) preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
+        // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
+        preferences = preferences with { SublimeCompatibilityEnabled = preferences.SublimeCompatibilityEnabled ?? this.sublimeIsReady() };
+        ActionUi.Setup(this, "SnapBar · 設定", 740, 820); MinWidth = 580; MinHeight = 520;
         var panel = new StackPanel { Margin = new Thickness(28) };
         var heading = new DockPanel { Margin = new(0, 0, 0, 22) };
         mode = ActionUi.Text("正在啟動", 12, ActionUi.Muted);
@@ -75,22 +85,21 @@ public sealed class MainWindow : Window
         AddCard(searchSettingsPanel, compact: true);
 
         var compatibility = new StackPanel(); compatibility.Children.Add(ActionUi.Heading("相容性與排除 App"));
-        var sublime = new CheckBox { Content = "Sublime 剪貼簿相容模式", Margin = new(0, 12, 0, 0) };
-        sublime.Checked += (_, _) =>
-        {
-            try
-            {
-                SublimeCompatibility.InstallBinding();
-                if (controller != null) controller.SublimeClipboardEnabled = true;
-                AddStatus("已啟用 Sublime 相容模式；已設定有條件的複製／剪下／貼上，未安裝外掛。");
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
-            { sublime.IsChecked = false; ShowNotice("無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用相容模式。"); }
-        };
-        sublime.Unchecked += (_, _) => { if (controller != null) controller.SublimeClipboardEnabled = false; };
-        compatibility.Children.Add(sublime);
-        var compatibilityHelp = ActionUi.Text("暫借剪貼簿讀取選取，可編輯時提供剪下／貼上。每次啟動需自行啟用。", 12, ActionUi.Muted);
+        compatibilityToggle = new CheckBox { Content = "選字相容模式", IsChecked = preferences.ClipboardCompatibilityEnabled, Margin = new(0, 12, 0, 0) };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(compatibilityToggle, "ClipboardCompatibilityToggle");
+        compatibilityToggle.Checked += (_, _) => SetClipboardCompatibility(true);
+        compatibilityToggle.Unchecked += (_, _) => SetClipboardCompatibility(false);
+        compatibility.Children.Add(compatibilityToggle);
+        var compatibilityHelp = ActionUi.Text("原生讀取不足時，暫借剪貼簿取得文字。會記住此設定；相容讀取可能出現在剪貼簿歷程。", 12, ActionUi.Muted);
         compatibilityHelp.Margin = new(27, 3, 0, 10); compatibility.Children.Add(compatibilityHelp);
+        sublimeToggle = new CheckBox { Content = "Sublime 支援", IsChecked = preferences.SublimeCompatibilityEnabled,
+            IsEnabled = preferences.ClipboardCompatibilityEnabled, Margin = new(27, 0, 0, 0) };
+        System.Windows.Automation.AutomationProperties.SetAutomationId(sublimeToggle, "SublimeCompatibilityToggle");
+        sublimeToggle.Checked += (_, _) => SetSublimeCompatibility(true);
+        sublimeToggle.Unchecked += (_, _) => SetSublimeCompatibility(false);
+        compatibility.Children.Add(sublimeToggle);
+        var sublimeHelp = ActionUi.Text("首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。", 12, ActionUi.Muted);
+        sublimeHelp.Margin = new(54, 3, 0, 10); compatibility.Children.Add(sublimeHelp);
         excludedAppsPanel = new ExcludedAppsPanel();
         excludedAppsPanel.ShowApplications(preferences.ExcludedApplications);
         excludedAppsPanel.AddRequested += entry => AddExcludedApplication(entry.ExecutablePath, entry.DisplayName);
@@ -135,6 +144,7 @@ public sealed class MainWindow : Window
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
                 controller.ConfigureActions(preferences.Actions);
+                ApplyClipboardCompatibility();
                 controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
@@ -167,6 +177,48 @@ public sealed class MainWindow : Window
         preferences = preferences with { AutomaticDetectionEnabled = controller.Automatic };
         UpdateAutomaticControls();
         SavePreferences();
+    }
+
+    internal void SetClipboardCompatibility(bool enabled)
+    {
+        if (exitRequested || updatingCompatibility) return;
+        updatingCompatibility = true;
+        try
+        {
+            preferences = preferences with { ClipboardCompatibilityEnabled = enabled };
+            compatibilityToggle.IsChecked = enabled; sublimeToggle.IsEnabled = enabled;
+            ApplyClipboardCompatibility(); SavePreferences();
+        }
+        finally { updatingCompatibility = false; }
+    }
+
+    private void SetSublimeCompatibility(bool enabled)
+    {
+        if (exitRequested || updatingSublime) return;
+        updatingSublime = true;
+        try
+        {
+            if (enabled && !sublimeIsReady())
+            {
+                try { configureSublime(); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
+                { enabled = false; ShowNotice("無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用 Sublime 支援。"); }
+            }
+            preferences = preferences with { SublimeCompatibilityEnabled = enabled };
+            sublimeToggle.IsChecked = enabled;
+            ApplyClipboardCompatibility(); SavePreferences();
+        }
+        finally { updatingSublime = false; }
+    }
+
+    private void ApplyClipboardCompatibility()
+    {
+        if (controller == null) return;
+        controller.ClipboardCompatibilityEnabled = preferences.ClipboardCompatibilityEnabled;
+        var sublime = preferences.ClipboardCompatibilityEnabled && preferences.SublimeCompatibilityEnabled == true;
+        controller.SublimeClipboardEnabled = sublime && sublimeIsReady();
+        if (sublime && !controller.SublimeClipboardEnabled)
+            ShowNotice("Sublime 快捷鍵設定不存在或已變更；請關閉再啟用 Sublime 支援以重新設定。");
     }
 
     internal bool AddExcludedApplication(string path, string? displayName = null)

@@ -37,6 +37,9 @@ internal static class Program
                 {
                     "capture" => reader.Capture(request),
                     "validate" => reader.Validate(request.SessionId),
+                    "clipboard-validate" => reader.ValidateClipboard(request.SessionId),
+                    "clipboard-extend" => reader.ExtendClipboardLease(request.SessionId, request.LeaseSeconds),
+                    "clipboard-release" => reader.ReleaseClipboardLease(request.SessionId),
                     "ping" => new("ok"),
                     _ => new("invalid-request")
                 };

@@ -16,7 +16,6 @@ internal sealed class ActionSettingsWindow : Window
     private readonly Func<ActionSettings, bool> save;
     private readonly StackPanel groups = new(), preview = new() { Orientation = Orientation.Horizontal };
     private readonly TextBlock status = ActionUi.Text("", 11, ActionUi.Muted);
-    private string? dragging;
     private ActionSettings? undo;
     private readonly TextBlock previewHeading = ActionUi.Text("", 11, ActionUi.Muted);
     private readonly Border previewShell = new();
@@ -121,9 +120,7 @@ internal sealed class ActionSettingsWindow : Window
         {
             var list = settings.Layout.Where(e => e.Placement == placement).ToArray();
             if (placement == ActionPlacement.Hidden && list.Length == 0) continue;
-            var title = ActionUi.Heading((placement switch { ActionPlacement.Bar => "動作列", ActionPlacement.More => "更多", _ => "隱藏" }) + " · " + list.Length, 14);
-            AutomationProperties.SetAutomationId(title, "ActionPlacementGroup_" + placement);
-            title.Margin = new(2, 10, 0, 8); groups.Children.Add(title);
+            AutomationProperties.SetName(listScroll, placement switch { ActionPlacement.Bar => "動作列中的動作", ActionPlacement.More => "更多選單中的動作", _ => "隱藏的動作" });
             if (list.Length == 0)
             {
                 var empty = ActionUi.Text(placement == ActionPlacement.More ? "目前沒有更多動作。新增動作會出現在這裡。" : "目前沒有固定動作。請從「更多」選擇要放在動作列的項目。", 13, ActionUi.Muted);
@@ -132,9 +129,13 @@ internal sealed class ActionSettingsWindow : Window
             foreach (var entry in list)
             {
                 var item = all[entry.Id]; var row = new Grid { MinHeight = 56 };
+                AutomationProperties.SetAutomationId(row, "ActionRow_" + item.Id);
+                row.ColumnDefinitions.Add(new() { Width = placement == ActionPlacement.Bar ? new(24) : new(0) });
                 row.ColumnDefinitions.Add(new() { Width = new(36) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new() { Width = new(125) });
-                var image = ActionUi.Icon(item.Icon, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); row.Children.Add(image);
-                var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(item.Name, 14)); name.Children.Add(ActionUi.Text(item.Custom?.Kind.ToString() ?? "內建動作", 12, ActionUi.Muted)); Grid.SetColumn(name, 1); row.Children.Add(name);
+                var image = ActionUi.Icon(item.Icon, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
+                var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(item.Name, 14));
+                if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind.ToString(), 12, ActionUi.Muted));
+                Grid.SetColumn(name, 2); row.Children.Add(name);
                 var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 if (placement == ActionPlacement.Bar)
                 {
@@ -143,15 +144,16 @@ internal sealed class ActionSettingsWindow : Window
                     AutomationProperties.SetName(up, item.Name + "上移"); AutomationProperties.SetName(down, item.Name + "下移");
                     up.MinWidth = down.MinWidth = 34;
                     up.IsEnabled = entry != list.First(); down.IsEnabled = entry != list.Last();
-                    name.ToolTip = "拖曳此名稱可排序"; name.Cursor = Cursors.SizeNS;
-                    name.PreviewMouseLeftButtonDown += (_, _) => dragging = item.Id;
-                    name.MouseMove += (_, e) => { if (e.LeftButton == MouseButtonState.Pressed && dragging == item.Id) { DragDrop.DoDragDrop(name, item.Id, DragDropEffects.Move); dragging = null; } };
+                    var grip = new Border { Child = ActionUi.Icon("grip", ActionUi.Muted, 16), Background = Brushes.Transparent,
+                        Width = 24, Height = 36, VerticalAlignment = VerticalAlignment.Center };
+                    AutomationProperties.SetName(grip, item.Name + "拖曳排序"); AutomationProperties.SetAutomationId(grip, "ReorderAction_" + item.Id);
+                    EnableReordering(grip, item.Id); EnableReordering(name, item.Id); row.Children.Add(grip);
                     row.AllowDrop = true; row.Drop += (_, e) =>
                     {
                         if (e.Data.GetData(typeof(string)) is not string source) return;
                         var pinned = settings.Layout.Where(a => a.Placement == ActionPlacement.Bar).ToList();
                         var from = pinned.FindIndex(a => a.Id == source); var to = pinned.FindIndex(a => a.Id == item.Id);
-                        if (from >= 0 && to >= 0) Commit(ActionCatalog.Move(settings, source, to - from));
+                        if (from >= 0 && to >= 0 && from != to) { Commit(ActionCatalog.Move(settings, source, to - from)); e.Effects = DragDropEffects.Move; e.Handled = true; }
                     };
                 }
                 if (item.Custom is { } custom)
@@ -159,14 +161,33 @@ internal sealed class ActionSettingsWindow : Window
                     var edit = ActionUi.Button("編輯", () => Edit(custom)); edit.Padding = new(7); buttons.Children.Add(edit);
                     var extra = ActionUi.Button("⋯", () => { }); extra.Padding = new(8); extra.ContextMenu = ActionMenu(custom); extra.Click += (_, _) => { extra.ContextMenu.PlacementTarget = extra; extra.ContextMenu.IsOpen = true; }; buttons.Children.Add(extra);
                 }
-                Grid.SetColumn(buttons, 2); row.Children.Add(buttons);
+                Grid.SetColumn(buttons, 3); row.Children.Add(buttons);
                 var combo = new ComboBox { ItemsSource = new[] { "動作列", "更多選單", "隱藏" }, SelectedIndex = (int)placement, VerticalAlignment = VerticalAlignment.Center, Margin = new(6), Padding = new(5) };
                 AutomationProperties.SetName(combo, item.Name + "顯示位置"); combo.SelectionChanged += (_, _) => { try { Commit(ActionCatalog.SetPlacement(settings, item.Id, (ActionPlacement)combo.SelectedIndex)); } catch (ArgumentException) { status.Text = "動作列已滿六個，請先移出一個。"; Render(); } };
-                Grid.SetColumn(combo, 3); row.Children.Add(combo);
+                Grid.SetColumn(combo, 4); row.Children.Add(combo);
                 var rowCard = ActionUi.Card(row, new Thickness(8, 0, 6, 0)); rowCard.CornerRadius = new(8); rowCard.Margin = new(0, 0, 0, 3);
                 groups.Children.Add(rowCard);
             }
         }
+    }
+
+    private void EnableReordering(FrameworkElement handle, string actionId)
+    {
+        Point? start = null;
+        handle.Cursor = Cursors.Hand; handle.ToolTip = "拖曳排序；也可使用右側上下移按鈕。";
+        handle.PreviewMouseLeftButtonDown += (_, e) => { start = e.GetPosition(this); handle.CaptureMouse(); };
+        handle.PreviewMouseLeftButtonUp += (_, _) => { start = null; if (handle.IsMouseCaptured) handle.ReleaseMouseCapture(); };
+        handle.LostMouseCapture += (_, _) => start = null;
+        handle.MouseMove += (_, e) =>
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) { start = null; if (handle.IsMouseCaptured) handle.ReleaseMouseCapture(); return; }
+            if (start is not { } origin) return;
+            var delta = e.GetPosition(this) - origin;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            start = null;
+            if (handle.IsMouseCaptured) handle.ReleaseMouseCapture();
+            DragDrop.DoDragDrop(handle, actionId, DragDropEffects.Move);
+        };
     }
 
     private ContextMenu ActionMenu(CustomActionDefinition action)

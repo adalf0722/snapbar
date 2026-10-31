@@ -14,10 +14,13 @@ internal sealed class SelectionReader
     private TextPatternRange[]? savedRanges;
     private SelectionSnapshot? saved;
     private int[]? focusedId;
+    private ClipboardCaptureTarget? clipboardTarget;
+    private int[]? clipboardFocusId;
+    private long clipboardExpires;
 
     public ProbeResponse Capture(ProbeRequest request)
     {
-        saved = null; savedRanges = null; element = null; focusedId = null;
+        saved = null; savedRanges = null; element = null; focusedId = null; clipboardTarget = null; clipboardFocusId = null;
         var target = Native.GetIdentity((nint)request.Window);
         if (target == null || Native.GetForegroundWindow() != (nint)request.Window) return new("target-changed");
         var focused = AutomationElement.FocusedElement;
@@ -68,7 +71,7 @@ internal sealed class SelectionReader
         return supportsSelection ? new("no-selection") : MissingCapability(request, target);
     }
 
-    private static ProbeResponse MissingCapability(ProbeRequest request, TargetIdentity target)
+    private ProbeResponse MissingCapability(ProbeRequest request, TargetIdentity target)
     {
         if (request.PrepareProvider)
         {
@@ -79,7 +82,70 @@ internal sealed class SelectionReader
             if (IsPassword(root)) return new("password");
             _ = root.FindFirst(TreeScope.Children, System.Windows.Automation.Condition.TrueCondition);
         }
-        return new("unsupported");
+        var focused = AutomationElement.FocusedElement;
+        if (focused == null) return new("unsupported");
+        if (request.UsePointer && !focused.Current.BoundingRectangle.Contains(new Point(request.X, request.Y)))
+            return new("unsupported");
+        var status = CheckClipboardFocus(focused, target);
+        if (status != "ok") return new(status == "clipboard-unavailable" ? "unsupported" : status);
+        clipboardTarget = new(Guid.NewGuid().ToString("N"), target);
+        clipboardFocusId = focused.GetRuntimeId(); clipboardExpires = Environment.TickCount64 + 30000;
+        return new("unsupported", ClipboardTarget: clipboardTarget);
+    }
+
+    public ProbeResponse ValidateClipboard(string? sessionId)
+    {
+        if (clipboardTarget == null || clipboardFocusId == null || clipboardTarget.Id != sessionId
+            || Environment.TickCount64 > clipboardExpires) return new("expired");
+        var focused = AutomationElement.FocusedElement;
+        if (focused == null) return new("focus-changed");
+        var status = CheckClipboardFocus(focused, clipboardTarget.Target);
+        if (status != "ok") return new(status);
+        if (!focused.GetRuntimeId().SequenceEqual(clipboardFocusId)) return new("focus-changed");
+        // A provider may become ready after capture. An explicit empty selection still denies copying.
+        var candidates = new List<AutomationElement>(); AddAncestors(candidates, focused, clipboardTarget.Target.Window);
+        foreach (var candidate in candidates)
+        {
+            if (!candidate.TryGetCurrentPattern(TextPattern.Pattern, out var raw)) continue;
+            var pattern = (TextPattern)raw;
+            if (pattern.SupportedTextSelection != SupportedTextSelection.None
+                && !pattern.GetSelection().Any(r => r.GetText(1).Length != 0)) return new("no-selection");
+        }
+        return new("ok");
+    }
+
+    public ProbeResponse ExtendClipboardLease(string? sessionId, int seconds)
+    {
+        if (seconds is < 1 or > 310) return new("invalid-request");
+        var validation = ValidateClipboard(sessionId);
+        if (!validation.Success) return validation;
+        clipboardExpires = Math.Max(clipboardExpires, Environment.TickCount64 + seconds * 1000L);
+        return new("ok");
+    }
+
+    public ProbeResponse ReleaseClipboardLease(string? sessionId)
+    {
+        if (clipboardTarget == null || clipboardTarget.Id != sessionId) return new("expired");
+        // Cleanup may only shorten a lease; it cannot revive an expired or replaced candidate.
+        clipboardExpires = Math.Min(clipboardExpires, Environment.TickCount64 + 30000);
+        return new("ok");
+    }
+
+    private static string CheckClipboardFocus(AutomationElement focused, TargetIdentity target)
+    {
+        if (Native.GetIdentity(Native.GetForegroundWindow()) != target) return "target-changed";
+        var branch = new List<AutomationElement>(); AddAncestors(branch, focused, target.Window);
+        if (branch.Count == 0 || !focused.Current.IsEnabled || focused.Current.IsOffscreen || !focused.Current.HasKeyboardFocus)
+            return "clipboard-unavailable";
+        foreach (var candidate in branch)
+        {
+            var password = candidate.GetCurrentPropertyValue(AutomationElement.IsPasswordProperty, true);
+            if (password is true) return "password";
+            if (password is not bool) return "clipboard-unavailable";
+        }
+        var type = focused.Current.ControlType;
+        return type == ControlType.Edit || type == ControlType.Document || type == ControlType.Text || type == ControlType.Pane
+            ? "ok" : "clipboard-unavailable";
     }
 
     public ProbeResponse Validate(string? sessionId)

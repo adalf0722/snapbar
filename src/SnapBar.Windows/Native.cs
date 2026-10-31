@@ -20,6 +20,12 @@ public static class Native
     [StructLayout(LayoutKind.Sequential)] private struct Input { public uint Type; public InputUnion Union; }
 
     [DllImport("user32.dll")] public static extern nint GetForegroundWindow();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(nint window, System.Text.StringBuilder value, int length);
+    public static string GetWindowClass(nint window)
+    {
+        var value = new System.Text.StringBuilder(256);
+        return GetClassName(window, value, value.Capacity) > 0 ? value.ToString() : "";
+    }
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(nint window);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(nint window, out uint process);
     [DllImport("user32.dll")] public static extern bool IsWindow(nint window);

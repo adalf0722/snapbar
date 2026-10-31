@@ -1,5 +1,9 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using SnapBar.App;
 using SnapBar.Core;
@@ -7,6 +11,20 @@ using SnapBar.Windows;
 
 internal static class TrayLifecycleTest
 {
+    private static IEnumerable<T> Children<T>(DependencyObject item) where T : DependencyObject
+    {
+        if (item is T match) yield return match;
+        foreach (var child in LogicalTreeHelper.GetChildren(item).OfType<DependencyObject>())
+            foreach (var descendant in Children<T>(child)) yield return descendant;
+    }
+
+    private static void ToggleViaAutomation(MainWindow window, string id)
+    {
+        var control = Children<CheckBox>(window).Single(c => AutomationProperties.GetAutomationId(c) == id);
+        var peer = new CheckBoxAutomationPeer(control);
+        ((IToggleProvider)peer.GetPattern(PatternInterface.Toggle)).Toggle();
+    }
+
     public static int Run()
     {
         var directory = Path.Combine(Path.GetTempPath(), "SnapBar.Tray.Tests." + Guid.NewGuid().ToString("N"));
@@ -14,6 +32,13 @@ internal static class TrayLifecycleTest
         var path = Path.Combine(directory, "settings.json");
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         MainWindow? window = null;
+        bool sublimeReady = false, setupFails = false; int setupCalls = 0;
+        void SetupSublime()
+        {
+            setupCalls++;
+            if (setupFails) throw new InvalidOperationException("fixture setup failure");
+            sublimeReady = true;
+        }
         int passed = 0, failed = 0;
         void Check(string name, bool condition)
         {
@@ -24,10 +49,37 @@ internal static class TrayLifecycleTest
         {
             try
             {
-                window = new MainWindow(new SettingsStore(path));
+                window = new MainWindow(new SettingsStore(path), SetupSublime, () => sublimeReady);
                 window.Show();
                 await Task.Delay(100);
                 Check("first launch defaults to manual mode", !window.AutomaticDetectionEnabled);
+                Check("first launch enables automatic compatibility", window.ClipboardCompatibilityEnabled);
+                Check("loading settings never installs Sublime bindings", setupCalls == 0);
+                ToggleViaAutomation(window, "ClipboardCompatibilityToggle");
+                Check("compatibility can be disabled and saved", !window.ClipboardCompatibilityEnabled
+                    && !new SettingsStore(path).Load().Settings.ClipboardCompatibilityEnabled);
+                ToggleViaAutomation(window, "ClipboardCompatibilityToggle");
+                Check("UIA toggle reenables controller and saves actual state", window.ClipboardCompatibilityEnabled
+                    && new SettingsStore(path).Load().Settings.ClipboardCompatibilityEnabled);
+                ToggleViaAutomation(window, "SublimeCompatibilityToggle");
+                Check("UIA toggle explicitly configures and enables Sublime support", setupCalls == 1 && window.SublimeCompatibilityEnabled
+                    && new SettingsStore(path).Load().Settings.SublimeCompatibilityEnabled == true);
+                ToggleViaAutomation(window, "SublimeCompatibilityToggle");
+                Check("UIA toggle disables Sublime in controller and on disk", !window.SublimeCompatibilityEnabled
+                    && new SettingsStore(path).Load().Settings.SublimeCompatibilityEnabled == false);
+                ToggleViaAutomation(window, "SublimeCompatibilityToggle");
+                Check("reenabling valid Sublime support does not reinstall bindings", setupCalls == 1 && window.SublimeCompatibilityEnabled);
+                ToggleViaAutomation(window, "SublimeCompatibilityToggle");
+                sublimeReady = false; setupFails = true;
+                ToggleViaAutomation(window, "SublimeCompatibilityToggle");
+                Check("failed UIA setup rolls checkbox controller and saved preference back without recursive setup",
+                    setupCalls == 2 && !window.SublimeCompatibilityEnabled
+                    && Children<CheckBox>(window).Single(c => AutomationProperties.GetAutomationId(c) == "SublimeCompatibilityToggle").IsChecked == false
+                    && new SettingsStore(path).Load().Settings.SublimeCompatibilityEnabled == false);
+                setupFails = false; ToggleViaAutomation(window, "SublimeCompatibilityToggle");
+                Check("Sublime can be enabled after failed setup rollback", setupCalls == 3 && window.SublimeCompatibilityEnabled);
+                ToggleViaAutomation(window, "ClipboardCompatibilityToggle");
+                Check("UIA global disable also disables active Sublime support", !window.ClipboardCompatibilityEnabled && !window.SublimeCompatibilityEnabled);
                 window.ToggleAutomatic();
                 Check("window toggle updates controller and saved preference", window.AutomaticDetectionEnabled
                     && new SettingsStore(path).Load().Settings.AutomaticDetectionEnabled);
@@ -55,9 +107,15 @@ internal static class TrayLifecycleTest
                 window.PrepareSessionEnd(); window.Close();
                 var store = new SettingsStore(path);
                 var restored = store.Load().Settings;
-                store.Save(restored with { AutomaticDetectionEnabled = true });
-                window = new MainWindow(new SettingsStore(path)); window.Show();
+                store.Save(restored with { AutomaticDetectionEnabled = true, SublimeCompatibilityEnabled = false });
+                window = new MainWindow(new SettingsStore(path), SetupSublime, () => sublimeReady); window.Show();
                 Check("new window session loads the persisted automatic preference", window.AutomaticDetectionEnabled);
+                Check("new window session remembers disabled compatibility", !window.ClipboardCompatibilityEnabled);
+                Check("explicitly disabled Sublime support stays disabled even if legacy bindings exist",
+                    new SettingsStore(path).Load().Settings.SublimeCompatibilityEnabled == false);
+                window.SetClipboardCompatibility(true);
+                Check("reenabling compatibility saves the new choice", window.ClipboardCompatibilityEnabled
+                    && new SettingsStore(path).Load().Settings.ClipboardCompatibilityEnabled);
                 Check("excluded applications survive a new window session", window.ExcludedApplications.Count == 1);
                 Check("search template survives another settings change and new session",
                     new SettingsStore(path).Load().Settings.SearchUrlTemplate == searchTemplate);

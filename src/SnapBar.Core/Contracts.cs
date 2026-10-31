@@ -12,9 +12,10 @@ public record SelectionSnapshot(
     bool? Editable, int RangeCount, int CharacterCount, string Source = "uia");
 public record ProbeRequest(string Operation, long Window = 0, int X = 0, int Y = 0,
     string? SessionId = null, bool UsePointer = false, bool PrepareProvider = false,
-    string? Path = null, TargetIdentity? Target = null);
+    string? Path = null, TargetIdentity? Target = null, int LeaseSeconds = 0);
+public record ClipboardCaptureTarget(string Id, TargetIdentity Target);
 public record ProbeResponse(string Status, SelectionSnapshot? Selection = null, double ElapsedMs = 0,
-    uint? ClipboardSequence = null)
+    uint? ClipboardSequence = null, ClipboardCaptureTarget? ClipboardTarget = null)
 {
     public bool Success => Status == "ok";
 }

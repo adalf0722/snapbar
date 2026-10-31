@@ -3,8 +3,10 @@ using System.Text.Json;
 
 namespace SnapBar.Core;
 
-public sealed record ApplicationSettings(int SchemaVersion = 5, bool AutomaticDetectionEnabled = false)
+public sealed record ApplicationSettings(int SchemaVersion = 6, bool AutomaticDetectionEnabled = false)
 {
+    public bool ClipboardCompatibilityEnabled { get; init; } = true;
+    public bool? SublimeCompatibilityEnabled { get; init; }
     public ExcludedApplication[] ExcludedApplications { get; init; } = [];
     public ActionSettings Actions { get; init; } = new();
     public string SearchUrlTemplate { get; init; } = WebActionPolicy.DefaultSearchTemplate;
@@ -29,9 +31,9 @@ public sealed class SettingsStore(string path)
             using var reader = new StreamReader(stream, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: false);
             var settings = JsonSerializer.Deserialize<ApplicationSettings>(reader.ReadToEnd(), JsonOptions);
             if (settings == null) return new(new(), "settings-invalid");
-            if (settings.SchemaVersion is not (1 or 2 or 3 or 4 or 5)) return new(new(), "settings-version");
+            if (settings.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6)) return new(new(), "settings-version");
             if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate)) return new(new(), "settings-invalid");
-            settings = settings with { SchemaVersion = 5,
+            settings = settings with { SchemaVersion = 6,
                 ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
             writable = true;
             return new(settings);
@@ -46,7 +48,7 @@ public sealed class SettingsStore(string path)
 
     public void Save(ApplicationSettings settings)
     {
-        if (!writable || settings.SchemaVersion != 5)
+        if (!writable || settings.SchemaVersion != 6)
             throw new InvalidOperationException("Existing settings must be preserved");
         if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate))
             throw new InvalidOperationException("Invalid search template");

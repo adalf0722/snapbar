@@ -6,7 +6,8 @@ namespace SnapBar.Windows;
 
 public sealed record ClipboardReadAttempt(Func<bool> SendCopy, bool? Editable);
 public sealed record ClipboardReadPlan(string Source, Func<TargetIdentity, bool> IsTarget,
-    Func<bool> IsReady, IReadOnlyList<ClipboardReadAttempt> Attempts, string NoResponseStatus);
+    Func<bool> IsReady, IReadOnlyList<ClipboardReadAttempt> Attempts, string NoResponseStatus,
+    Func<string?>? RejectCopiedData = null, Func<Task<string>>? ValidateSource = null);
 
 // All calls run on the owning UI thread. Clipboard locks never span an await.
 public sealed class ClipboardSelectionReader(nint ownerWindow)
@@ -66,6 +67,11 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
 
             foreach (var step in plan.Attempts)
             {
+                if (plan.ValidateSource != null)
+                {
+                    var sourceStatus = await plan.ValidateSource();
+                    if (sourceStatus != "ok") return new(sourceStatus);
+                }
                 if (!isCurrent() || Native.GetIdentity(Native.GetForegroundWindow()) != target || !plan.IsTarget(target))
                     return new("target-changed");
                 if (!plan.IsReady()) return new("compatibility-setup-required");
@@ -97,9 +103,11 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
                         if (decision != "ok") return new(decision);
                         var bytes = ReadBytes(13, (32768 + 1) * 2);
                         var text = bytes == null ? null : Encoding.Unicode.GetString(bytes).Split('\0')[0];
+                        var rejected = plan.RejectCopiedData?.Invoke();
                         if (!backup.Restore()) return new("clipboard-restore-failed");
                         var restoredSequence = Native.GetClipboardSequenceNumber();
                         if (!isCurrent() || Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
+                        if (rejected != null) return new(rejected);
                         if (text == null || text.Length > 32768) return new("too-large");
                         if (text.Length == 0) return new("no-selection");
                         return new("ok", new(Guid.NewGuid().ToString("N"), target, text, null, step.Editable, 1,

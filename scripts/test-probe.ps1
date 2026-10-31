@@ -14,7 +14,11 @@ try {
         @{ Input = '{"Operation":"invalid"}'; Expected = 'invalid-request' },
         @{ Input = '{bad json'; Expected = 'invalid-request' },
         @{ Input = '{"Operation":"capture","Window":0}'; Expected = 'target-changed' },
-        @{ Input = '{"Operation":"validate","SessionId":"expired"}'; Expected = 'expired' }
+        @{ Input = '{"Operation":"validate","SessionId":"expired"}'; Expected = 'expired' },
+        @{ Input = '{"Operation":"clipboard-extend","SessionId":"expired","LeaseSeconds":60}'; Expected = 'expired' },
+        @{ Input = '{"Operation":"clipboard-extend","LeaseSeconds":0}'; Expected = 'invalid-request' },
+        @{ Input = '{"Operation":"clipboard-extend","LeaseSeconds":311}'; Expected = 'invalid-request' },
+        @{ Input = '{"Operation":"clipboard-release","SessionId":"expired"}'; Expected = 'expired' }
     )
     foreach ($case in $cases) {
         $probe.StandardInput.WriteLine($case.Input)

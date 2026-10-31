@@ -2,6 +2,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using SnapBar.App;
@@ -47,6 +49,8 @@ internal static class UiAppearanceTest
             {
                 main = new MainWindow(new SettingsStore(Path.Combine(directory, "settings.json"))); main.Show(); main.UpdateLayout();
                 Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
+                Check(main.ClipboardCompatibilityEnabled && Children<CheckBox>(main).Single(c => AutomationProperties.GetAutomationId(c) == "ClipboardCompatibilityToggle").IsChecked == true,
+                    "compatibility is enabled by default and separated from optional Sublime setup");
                 Check(!Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "LatestDiagnosticStatus").IsVisible,
                     "routine capture status stays inside collapsed diagnostics");
                 main.SetSearchUrlTemplate("file:///invalid"); main.UpdateLayout();
@@ -87,14 +91,17 @@ internal static class UiAppearanceTest
                 Check(saveCalls == 0 && Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == script.Name + "顯示位置")
                     && !Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == "複製顯示位置"), "More tab directly exposes custom actions without saving or showing pinned rows");
                 Snapshot(actions, "actions-more.png");
-                Check(!Children<TextBlock>(actions).Any(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementGroup_Hidden"),
-                    "empty hidden group is omitted");
+                Check(Children<RadioButton>(actions).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_Hidden").Visibility == Visibility.Collapsed,
+                    "empty hidden tab is omitted");
                 Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == script.Name + "顯示位置").SelectedIndex = (int)ActionPlacement.Hidden;
                 SelectPlacement(ActionPlacement.Hidden);
-                Check(Children<TextBlock>(actions).Any(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementGroup_Hidden" && t.Text.Contains("1")),
-                    "hidden group appears when an action is placed there");
+                Check(Children<RadioButton>(actions).Any(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_Hidden" && t.IsVisible && ((string)t.Content).Contains("1")),
+                    "hidden tab appears with an accurate count when an action is placed there");
                 Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == script.Name + "顯示位置").SelectedIndex = (int)ActionPlacement.More;
                 SelectPlacement(ActionPlacement.Bar);
+                Check(!Children<TextBlock>(actions).Any(t => t.Text == "內建動作" || t.Text == "動作列 · 6")
+                    && Children<Border>(actions).Count(b => AutomationProperties.GetAutomationId(b).StartsWith("ReorderAction_")) == 6,
+                    "pinned list exposes six drag grips without duplicate headings or builtin subtitles");
                 var theme = Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == "動作列主題");
                 theme.SelectedIndex = 1; actions.UpdateLayout(); Snapshot(actions, "actions-light.png");
                 actions.Width = actions.MinWidth; actions.Height = 620; actions.UpdateLayout(); Snapshot(actions, "actions-small.png");
@@ -111,14 +118,34 @@ internal static class UiAppearanceTest
                 for (var i = 0; i < descriptions.Length; i++)
                 { output.SelectedIndex = i; Check(outputHelp.Text.Contains(descriptions[i]), "output help follows mode " + i); }
                 output.SelectedIndex = (int)ActionOutput.Window;
+                var advanced = Children<Expander>(editor).Single(e => AutomationProperties.GetAutomationId(e) == "AdvancedActionSettings");
+                var runtime = Children<TextBox>(editor).Single(t => AutomationProperties.GetName(t) == "執行環境完整路徑");
+                var formScroll = Children<ScrollViewer>(editor).Single(s => s.Content is StackPanel panel && Children<TextBox>(panel).Contains(runtime));
+                editor.UpdateLayout();
+                var advancedBounds = advanced.TransformToAncestor(formScroll).TransformBounds(new Rect(advanced.RenderSize));
+                Check(formScroll.VerticalOffset == 0 && advancedBounds.Bottom <= formScroll.ViewportHeight + 1,
+                    "default editor exposes basic settings and advanced entry without scrolling");
                 Snapshot(editor, "editor.png");
+                var code = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionContent");
+                var resize = Children<Thumb>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "ResizeActionContent");
+                var originalCode = code.Text; code.Select(5, 3);
+                resize.RaiseEvent(new DragDeltaEventArgs(0, 1000) { RoutedEvent = Thumb.DragDeltaEvent }); editor.UpdateLayout();
+                Check(code.ActualHeight == 480 && code.Text == originalCode && code.SelectedText == originalCode.Substring(5, 3),
+                    "expanding editor clamps height while preserving script and selection");
+                resize.RaiseEvent(new DragDeltaEventArgs(0, -1000) { RoutedEvent = Thumb.DragDeltaEvent }); editor.UpdateLayout();
+                Check(code.ActualHeight == 96, "shrinking editor retains a usable minimum content area");
+                void ResizeKey(Key key) => resize.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(editor), 0, key) { RoutedEvent = Keyboard.KeyDownEvent });
+                ResizeKey(Key.Down); editor.UpdateLayout(); Check(code.ActualHeight == 112, "resize grip supports keyboard height adjustment");
+                ResizeKey(Key.Home); editor.UpdateLayout(); Check(code.ActualHeight == 120, "Home restores compact editor height");
+                formScroll.ScrollToTop();
+                editor.Width = 1024; editor.Height = 800; editor.UpdateLayout();
+                advancedBounds = advanced.TransformToAncestor(formScroll).TransformBounds(new Rect(advanced.RenderSize));
+                Check(advancedBounds.Bottom <= formScroll.ViewportHeight + 1, "basic editor settings remain visible at 1024 by 800");
+                Snapshot(editor, "editor-compact.png");
                 editor.Width = editor.MinWidth; editor.Height = editor.MinHeight; editor.UpdateLayout(); Snapshot(editor, "editor-small.png");
                 var save = Children<Button>(editor).Single(b => AutomationProperties.GetName(b) == "儲存動作");
                 var point = save.TransformToAncestor((FrameworkElement)editor.Content).Transform(new Point(0, 0));
                 Check(point.Y + save.ActualHeight <= ((FrameworkElement)editor.Content).ActualHeight + 1, "save remains visible at minimum editor size");
-                var advanced = Children<Expander>(editor).Single(e => AutomationProperties.GetAutomationId(e) == "AdvancedActionSettings");
-                var runtime = Children<TextBox>(editor).Single(t => AutomationProperties.GetName(t) == "執行環境完整路徑");
-                var formScroll = Children<ScrollViewer>(editor).Single(s => s.Content is StackPanel panel && Children<TextBox>(panel).Contains(runtime));
                 advanced.IsExpanded = true;
                 await editor.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
                 editor.UpdateLayout();
@@ -127,7 +154,6 @@ internal static class UiAppearanceTest
                     "expanding advanced settings scrolls first input fully into the minimum-size viewport");
                 Snapshot(editor, "editor-advanced-small.png"); advanced.IsExpanded = false; formScroll.ScrollToTop();
                 editor.Width = 1080; editor.Height = 850;
-                var code = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionContent");
                 code.Text = "Start-Sleep -Seconds 30"; test.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(!test.IsEnabled && stop.Visibility == Visibility.Visible, "running test exposes stop and disables duplicate execution");
                 stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -226,6 +252,13 @@ internal static class UiAppearanceTest
                 savedDialog.Loaded += (_, _) => Children<Button>(savedDialog).Single(b => AutomationProperties.GetName(b) == "儲存動作").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(savedDialog.ShowDialog() == true && savedDialog.SavedAction?.UseSelection == false,
                     "saving an existing action preserves explicit disabled selection");
+                var invalidSettingsPath = Path.Combine(directory, "invalid.json");
+                File.WriteAllText(invalidSettingsPath, "{bad", new System.Text.UTF8Encoding(false));
+                var invalidSettingsWindow = new MainWindow(new SettingsStore(invalidSettingsPath)); invalidSettingsWindow.Show();
+                Check(!invalidSettingsWindow.ClipboardCompatibilityEnabled
+                    && Children<CheckBox>(invalidSettingsWindow).Single(c => AutomationProperties.GetAutomationId(c) == "ClipboardCompatibilityToggle").IsChecked == false,
+                    "invalid settings disable compatibility instead of silently restoring an enabled default");
+                invalidSettingsWindow.PrepareSessionEnd(); invalidSettingsWindow.Close();
 
                 popup = new PopupWindow();
                 var selection = new SelectionSnapshot("appearance", new(0, 0, 0), "Disposable fixture text", new(100, 100, 100, 20), true, 1, 23);

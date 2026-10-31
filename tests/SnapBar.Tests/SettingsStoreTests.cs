@@ -34,8 +34,8 @@ internal static class SettingsStoreTests
                 var text = new UTF8Encoding(false, true).GetString(bytes);
                 using var json = System.Text.Json.JsonDocument.Parse(text);
                 return !bytes.Take(3).SequenceEqual(new byte[] { 239, 187, 191 })
-                    && json.RootElement.EnumerateObject().Count() == 5
-                    && json.RootElement.GetProperty("schemaVersion").GetInt32() == 5;
+                    && json.RootElement.EnumerateObject().Count() == 7
+                    && json.RootElement.GetProperty("schemaVersion").GetInt32() == 6;
             });
             check("pause preference replaces previous saved state", () =>
             {
@@ -51,7 +51,7 @@ internal static class SettingsStoreTests
                 });
             check("future settings version is preserved and cannot be downgraded", () =>
             {
-                Seed("{\"schemaVersion\":6,\"automaticDetectionEnabled\":true}");
+                Seed("{\"schemaVersion\":7,\"automaticDetectionEnabled\":true}");
                 var store = new SettingsStore(path); var result = store.Load();
                 return result.Warning == "settings-version" && !result.Settings.AutomaticDetectionEnabled && RejectsSave(store);
             });
@@ -87,11 +87,11 @@ internal static class SettingsStoreTests
                 Seed("{\"schemaVersion\":1,\"automaticDetectionEnabled\":true}");
                 var before = File.ReadAllBytes(path);
                 var store = new SettingsStore(path); var loaded = store.Load();
-                if (loaded.Warning != null || loaded.Settings.SchemaVersion != 5
+                if (loaded.Warning != null || loaded.Settings.SchemaVersion != 6
                     || !loaded.Settings.AutomaticDetectionEnabled || loaded.Settings.ExcludedApplications.Length != 0
                     || !before.SequenceEqual(File.ReadAllBytes(path))) return false;
                 store.Save(loaded.Settings);
-                return File.ReadAllText(path).Contains("\"schemaVersion\": 5");
+                return File.ReadAllText(path).Contains("\"schemaVersion\": 6");
             });
             check("excluded apps and Unicode names survive a new store instance", () =>
             {
@@ -123,7 +123,7 @@ internal static class SettingsStoreTests
             {
                 Seed("{\"schemaVersion\":2,\"automaticDetectionEnabled\":true,\"excludedApplications\":[{\"executablePath\":\"D:/Apps/Editor/editor.exe\",\"displayName\":\"Editor\"}]}");
                 var loaded = new SettingsStore(path).Load();
-                return loaded.Warning == null && loaded.Settings.SchemaVersion == 5
+                return loaded.Warning == null && loaded.Settings.SchemaVersion == 6
                     && loaded.Settings.AutomaticDetectionEnabled && loaded.Settings.ExcludedApplications.Length == 1
                     && loaded.Settings.SearchUrlTemplate == WebActionPolicy.DefaultSearchTemplate;
             });
@@ -143,6 +143,36 @@ internal static class SettingsStoreTests
                     var store = new SettingsStore(path);
                     return store.Load().Warning == "settings-invalid" && RejectsSave(store);
                 });
+            check("compatibility defaults enabled with a distinct unset legacy Sublime preference", () =>
+            {
+                Seed("{\"schemaVersion\":5,\"automaticDetectionEnabled\":true}");
+                var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
+                return loaded.Warning == null && loaded.Settings.ClipboardCompatibilityEnabled
+                    && loaded.Settings.SublimeCompatibilityEnabled == null && before.SequenceEqual(File.ReadAllBytes(path));
+            });
+            check("disabled compatibility and Sublime choices survive other preference changes and restart", () =>
+            {
+                var store = new SettingsStore(path); var settings = store.Load().Settings;
+                store.Save(settings with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false });
+                store = new SettingsStore(path); settings = store.Load().Settings;
+                store.Save(settings with { AutomaticDetectionEnabled = false });
+                var restored = new SettingsStore(path).Load().Settings;
+                return !restored.ClipboardCompatibilityEnabled && restored.SublimeCompatibilityEnabled == false;
+            });
+            check("enabled Sublime choice survives restart", () =>
+            {
+                var store = new SettingsStore(path); var settings = store.Load().Settings;
+                store.Save(settings with { ClipboardCompatibilityEnabled = true, SublimeCompatibilityEnabled = true });
+                var restored = new SettingsStore(path).Load().Settings;
+                return restored.ClipboardCompatibilityEnabled && restored.SublimeCompatibilityEnabled == true;
+            });
+            check("clipboard metadata distinguishes actual selections from empty-line copying", () =>
+                ClipboardSelectionPolicy.IsSelectionMetadata(null)
+                && ClipboardSelectionPolicy.IsSelectionMetadata("{\"isFromEmptySelection\":false}")
+                && !ClipboardSelectionPolicy.IsSelectionMetadata("{\"isFromEmptySelection\":true}")
+                && !ClipboardSelectionPolicy.IsSelectionMetadata("{\"isFromEmptySelection\":false,\"isFromEmptySelection\":true}")
+                && !ClipboardSelectionPolicy.IsSelectionMetadata("{}")
+                && !ClipboardSelectionPolicy.IsSelectionMetadata("invalid"));
         }
         finally
         {

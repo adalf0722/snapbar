@@ -2,6 +2,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using SnapBar.Core;
 using SnapBar.Windows;
@@ -57,7 +59,7 @@ internal sealed class ActionEditorWindow : Window
         footerText.Children.Add(ActionUi.Text("儲存不會執行動作。", 12, ActionUi.Muted)); footerText.Children.Add(error); footer.Children.Add(footerText);
         DockPanel.SetDock(footer, Dock.Bottom); outer.Children.Add(footer);
         var grid = new Grid(); grid.ColumnDefinitions.Add(new() { Width = new(1.1, GridUnitType.Star) }); grid.ColumnDefinitions.Add(new() { Width = new(20) }); grid.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        var form = new StackPanel(); var formHeading = ActionUi.Heading("動作設定"); formHeading.Margin = new(0, 0, 0, 20); form.Children.Add(formHeading);
+        var form = new StackPanel(); var formHeading = ActionUi.Heading("動作設定"); formHeading.Margin = new(0, 0, 0, 12); form.Children.Add(formHeading);
         kind.ItemsSource = new[] { "網址", "PowerShell", "JavaScript" }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
         AutomationProperties.SetName(kind, "動作類型"); Field(form, "動作類型", kind);
         var iconNames = new[] { "複製", "剪下", "貼上", "搜尋", "連結", "資料夾", "網頁", "翻譯", "程式碼", "終端機", "星芒", "文件", "清理文字" };
@@ -74,16 +76,28 @@ internal sealed class ActionEditorWindow : Window
         var nameField = new StackPanel(); Field(nameField, "名稱", name); identity.Children.Add(nameField);
         var iconField = new StackPanel(); Field(iconField, "圖示", icon); Grid.SetColumn(iconField, 2); identity.Children.Add(iconField); form.Children.Add(identity);
         AutomationProperties.SetName(name, "動作名稱"); AutomationProperties.SetName(icon, "動作圖示");
-        content.AcceptsReturn = true; content.AcceptsTab = true; content.Height = 184; content.TextWrapping = TextWrapping.Wrap;
+        content.AcceptsReturn = true; content.AcceptsTab = true; content.Height = 120; content.TextWrapping = TextWrapping.Wrap;
         content.VerticalContentAlignment = VerticalAlignment.Top;
         content.FontFamily = new("Consolas, Microsoft JhengHei UI"); content.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         var inputHeader = new DockPanel { Margin = new(0, 0, 0, 8) }; variable = ActionUi.Button("插入選取文字", InsertVariable, "plus");
         variable.Margin = new(0); DockPanel.SetDock(variable, Dock.Right); inputHeader.Children.Add(variable); inputHeader.Children.Add(contentHeading);
-        form.Children.Add(inputHeader); form.Children.Add(content); help.Margin = new(0, 6, 0, 18); form.Children.Add(help);
+        var resize = new Thumb { Style = (Style)FindResource("EditorResizeGrip"),
+            ToolTip = "拖曳調整高度；上下鍵調整，Home 還原。" };
+        AutomationProperties.SetName(resize, "調整內容編輯區高度"); AutomationProperties.SetAutomationId(resize, "ResizeActionContent");
+        resize.DragDelta += (_, e) => content.Height = Math.Clamp(content.Height + e.VerticalChange, 96, 480);
+        resize.KeyDown += (_, e) =>
+        {
+            if (e.Key is not (Key.Up or Key.Down or Key.Home)) return;
+            content.Height = e.Key == Key.Home ? 120 : Math.Clamp(content.Height + (e.Key == Key.Up ? -16 : 16), 96, 480);
+            e.Handled = true;
+        };
+        form.Children.Add(inputHeader); form.Children.Add(content); form.Children.Add(resize);
+        help.Margin = new(0, 0, 0, 10); form.Children.Add(help);
+        useSelection.Margin = new(0, 0, 0, 8);
         AutomationProperties.SetAutomationId(useSelection, "UseSelectionInput"); scriptOptions.Children.Add(useSelection);
         output.ItemsSource = OutputNames; output.SelectedIndex = (int)(existing?.Output ?? ActionOutput.Window); output.Padding = new(7); Field(scriptOptions, "完成後，如何處理結果？", output);
         AutomationProperties.SetName(output, "結果處理方式");
-        outputHelp.Margin = new(0, -8, 0, 15); AutomationProperties.SetAutomationId(outputHelp, "ActionOutputHelp"); scriptOptions.Children.Add(outputHelp);
+        outputHelp.Margin = new(0, -4, 0, 8); AutomationProperties.SetAutomationId(outputHelp, "ActionOutputHelp"); scriptOptions.Children.Add(outputHelp);
         var advanced = new StackPanel(); var runtimeField = new StackPanel();
         Field(runtimeField, "執行環境完整路徑（留空使用預設）", runtime); advanced.Children.Add(runtimeField);
         Field(advanced, "逾時秒數 · 1–300", timeout);
@@ -134,7 +148,7 @@ internal sealed class ActionEditorWindow : Window
     }
 
     private static void Field(Panel panel, string label, UIElement input)
-    { var text = ActionUi.Text(label, 12); text.Margin = new(0, 0, 0, 6); panel.Children.Add(text); if (input is FrameworkElement e) e.Margin = new(0, 0, 0, 16); panel.Children.Add(input); }
+    { var text = ActionUi.Text(label, 12); text.Margin = new(0, 0, 0, 6); panel.Children.Add(text); if (input is FrameworkElement e) e.Margin = new(0, 0, 0, 10); panel.Children.Add(input); }
 
     private void LoadKind(CustomActionKind type, CustomActionDefinition? existing = null)
     {

@@ -10,6 +10,7 @@ var target = new TargetIdentity(42, 123, 999);
 var selection = new SelectionSnapshot("s", target, "original", null, true, 1, 8);
 Check("valid editable selection allows write", () => SessionPolicy.CanWrite(selection, target));
 Check("unknown editability denies write", () => !SessionPolicy.CanWrite(selection with { Editable = null }, target));
+Check("generic clipboard source cannot authorize writes even with an accidental editable flag", () => !SessionPolicy.CanWrite(selection with { Source = "clipboard" }, target));
 Check("read-only denies write", () => !SessionPolicy.CanWrite(selection with { Editable = false }, target));
 Check("disjoint ranges deny write", () => !SessionPolicy.CanWrite(selection with { RangeCount = 2 }, target));
 Check("empty selection denies write", () => !SessionPolicy.CanWrite(selection with { Text = "" }, target));
@@ -249,6 +250,7 @@ Check("native success past total deadline is rejected", () =>
     return result.Response.Status == "timeout" && result.Response.Selection == null;
 });
 SettingsStoreTests.Run(Check);
+ClipboardSelectionPolicyTests.Run(Check);
 AppExclusionPolicyTests.Run(Check);
 WebActionPolicyTests.Run(Check);
 PathActionPolicyTests.Run(Check);

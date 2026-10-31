@@ -71,6 +71,8 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args.Contains("--clipboard-compatibility-fixture")) return ClipboardCompatibilityTest.RunFixture();
+        if (args.Contains("--clipboard-compatibility")) return ClipboardCompatibilityTest.Run();
         if (args.Contains("--ui-appearance")) return UiAppearanceTest.Run();
         if (args.Contains("--ui-preview")) return UiAppearanceTest.Run(preview: true);
         if (args.Contains("--action-layout")) return ActionLayoutTest.Run();

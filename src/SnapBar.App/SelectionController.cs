@@ -136,6 +136,9 @@ public sealed partial class SelectionController : IDisposable
                 result = await clipboardReader.CaptureAsync(target,
                     () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
                     SublimeSelectionAdapter.ReadPlan());
+            else if (SelectionRoutingPolicy.UseClipboardFallback(result, ClipboardCompatibilityEnabled,
+                result.ClipboardTarget?.Target == target && ClipboardSelectionAdapter.IsTarget(target)))
+                result = await CaptureClipboardAsync(result.ClipboardTarget!, ticket);
             if (!generation.IsCurrent(ticket) || disposed || Native.GetIdentity(Native.GetForegroundWindow()) != target) return;
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
@@ -143,7 +146,9 @@ public sealed partial class SelectionController : IDisposable
             popup.Present(selection, x, y, searchUrlTemplate, actions);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "不提供寫入")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
-                : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
+                : selection.Source == ClipboardSelectionAdapter.Source
+                    ? $"選字相容模式 · {selection.CharacterCount} 字 · 不提供寫入 · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
+                    : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
         }
         catch (OperationCanceledException) { }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
@@ -163,8 +168,10 @@ public sealed partial class SelectionController : IDisposable
         {
             if (!Enum.IsDefined(action)) { Report("invalid-action"); return; }
             var compatibility = current.Source == "sublime-clipboard";
+            var genericCompatibility = current.Source == ClipboardSelectionAdapter.Source;
             var writes = action is TextAction.Cut or TextAction.Paste;
             if (compatibility && !SublimeClipboardEnabled) { Report("sublime-disabled"); return; }
+            if (genericCompatibility && !ClipboardCompatibilityEnabled) { Report("compatibility-disabled"); return; }
             if (writes && !SessionPolicy.CanWrite(current, current.Target)) { Report("not-editable"); return; }
             var actionSequence = Native.GetClipboardSequenceNumber();
             Task<ProbeResponse> Validate() => compatibility
@@ -172,13 +179,14 @@ public sealed partial class SelectionController : IDisposable
                     () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
                     SublimeSelectionAdapter.ReadPlan(requireEditable: writes),
                     expectedSequence: action == TextAction.Paste ? actionSequence : null)
-                : probe.RequestAsync(new("validate", SessionId: current.Id));
+                : genericCompatibility ? CaptureClipboardAsync(new(current.Id, current.Target), ticket)
+                    : probe.RequestAsync(new("validate", SessionId: current.Id));
             var validation = await Validate();
             if (!generation.IsCurrent(ticket) || disposed) return;
             var identity = Native.GetIdentity(Native.GetForegroundWindow());
             if (!validation.Success || validation.Selection == null || identity != current.Target)
             { Report(validation.Success ? "target-changed" : validation.Status); return; }
-            if (compatibility && validation.Selection.Text != current.Text) { Report("selection-changed"); return; }
+            if ((compatibility || genericCompatibility) && validation.Selection.Text != current.Text) { Report("selection-changed"); return; }
             if (action == TextAction.Copy)
             {
                 Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
@@ -266,7 +274,9 @@ public sealed partial class SelectionController : IDisposable
         "input-blocked" => "輸入指令未完整送出，請確認目標權限。",
         "clipboard-no-text" => "P0 貼上目前只接受含文字的剪貼簿。",
         "clipboard-busy" => "剪貼簿正被其他程式使用，請稍後再試。",
-        "sublime-disabled" => "Sublime 不提供 UIA 選字；請勾選「Sublime 剪貼簿相容模式」。",
+        "sublime-disabled" => "Sublime 尚未啟用相容讀取；請至設定啟用「選字相容模式」與「Sublime 支援」。",
+        "compatibility-disabled" => "選字相容模式已關閉，請至設定啟用。",
+        "clipboard-unavailable" or "clipboard-selection-unverified" => "無法確認此控制項的選取，未執行動作。",
         "compatibility-setup-required" => "相容快捷鍵設定不存在或已變更；請重新勾選相容模式。",
         "sublime-no-selection" => "Sublime 未回傳單段選取；請選取文字，確認設定已載入且快捷鍵無衝突。",
         "clipboard-format-unsupported" => "剪貼簿含尚未支援備份的特殊格式，未觸發複製。",

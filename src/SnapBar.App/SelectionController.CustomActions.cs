@@ -26,11 +26,15 @@ public sealed partial class SelectionController
     {
         if (!Current(current, ticket)) return new("target-changed");
         var compatibility = current.Source == "sublime-clipboard";
+        var genericCompatibility = current.Source == ClipboardSelectionAdapter.Source;
         if (compatibility && !SublimeClipboardEnabled) return new("sublime-disabled");
+        if (genericCompatibility && !ClipboardCompatibilityEnabled) return new("compatibility-disabled");
+        if (genericCompatibility && writes) return new("not-editable");
         var validation = compatibility
             ? await clipboardReader.CaptureAsync(current.Target, () => Current(current, ticket) && SublimeClipboardEnabled,
                 SublimeSelectionAdapter.ReadPlan(requireEditable: writes))
-            : await probe.RequestAsync(new("validate", SessionId: current.Id));
+            : genericCompatibility ? await CaptureClipboardAsync(new(current.Id, current.Target), ticket)
+                : await probe.RequestAsync(new("validate", SessionId: current.Id));
         if (!Current(current, ticket)) return new("target-changed");
         if (!validation.Success) return validation;
         if (validation.Selection?.Text != current.Text) return new("selection-changed");
@@ -46,7 +50,7 @@ public sealed partial class SelectionController
         if (CustomActionPolicy.Validate(action) != null) { Report("invalid-action"); return; }
         if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
         executing = true; var current = selection; var ticket = generation.Next(); popup.Dismiss();
-        using var cancellation = new CancellationTokenSource(); customAction = cancellation; var keepResult = false;
+        using var cancellation = new CancellationTokenSource(); customAction = cancellation; var keepResult = false; var clipboardLease = false;
         try
         {
             var writes = action.Kind != CustomActionKind.Url && action.Output == ActionOutput.ReplaceSelection;
@@ -60,6 +64,13 @@ public sealed partial class SelectionController
                 try { launchWeb(destination.Uri!); RememberAction(id); Status?.Invoke("已交由預設瀏覽器開啟自訂網址。"); }
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException) { Report("browser-unavailable"); }
                 return;
+            }
+            if (current.Source == ClipboardSelectionAdapter.Source)
+            {
+                var lease = await probe.RequestAsync(new("clipboard-extend", SessionId: current.Id, LeaseSeconds: action.TimeoutSeconds + 10));
+                clipboardLease = lease.Success;
+                if (!Current(current, ticket)) return;
+                if (!lease.Success) { Report(lease.Status); return; }
             }
             Status?.Invoke("正在執行自訂動作…");
             var result = await runCustom(action, action.UseSelection ? current.Text : "", cancellation.Token);
@@ -94,7 +105,11 @@ public sealed partial class SelectionController
         catch (ExternalException) { Report("clipboard-busy"); }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or System.IO.IOException or ArgumentException)
         { Status?.Invoke("自訂動作未完成，請檢查設定或執行環境。"); }
-        finally { customAction = null; executing = false; if (!keepResult) Invalidate(); }
+        finally
+        {
+            if (clipboardLease) await probe.RequestAsync(new("clipboard-release", SessionId: current.Id));
+            customAction = null; executing = false; if (!keepResult) Invalidate();
+        }
     }
 
     private void ShowDiagnostic(CustomActionDefinition action, ScriptExecutionResult result)

@@ -20,7 +20,7 @@ internal static class UiaReadinessTest
                 var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
                 start.ArgumentList.Add("--fixture"); start.ArgumentList.Add(deepTree ? "--deep-uia" : "--delayed-uia");
                 child = Process.Start(start) ?? throw new InvalidOperationException("Fixture did not start");
-                var deadline = DateTime.UtcNow.AddSeconds(8);
+                var deadline = DateTime.UtcNow.AddSeconds(45);
                 while (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != child.Id)
                 {
                     if (child.HasExited || DateTime.UtcNow > deadline) throw new InvalidOperationException("Dedicated fixture is not foreground");

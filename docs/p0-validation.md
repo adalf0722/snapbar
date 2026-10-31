@@ -534,3 +534,48 @@ Sublime 修正版本：Release build 0 errors / 0 warnings，36 項核心測試�
 | Tray lifecycle | 15 |
 
 本輪共 460 項，另有 6 項 Probe smoke；最終 Release 與自含式發佈零警告、零錯誤。已重新啟動 `artifacts/p0/SnapBar.App.exe`，原有自動偵測載入正常，並用 computer-use 點擊更多分頁確認自訂動作可直接到達；沒有自動改寫既有動作的輸入選項。實體混合 DPI／第三方 App 全套重驗仍未執行。
+
+## 2026-10-31 編輯頁與動作清單收尾
+
+- 編輯區預設由 184 改為 120 DIP，提供可見的調整把手；滑鼠拖曳與上下鍵限制在 96–480 DIP，Home 還原預設。自動化確認調整不修改腳本與選取範圍，原生滑鼠亦確認高度確實改變。
+- 收斂表單間距，保留字級與按鈕大小。1080 × 850、1024 × 800 視窗的基本設定與進階入口完整可見；880 × 640 仍可捲動，儲存列固定，展開進階後第一個欄位可見。已檢視 `artifacts/ui-polish/editor.png`、`editor-compact.png`、`editor-small.png` 與 `editor-advanced-small.png`。
+- 清單移除重複群組標題與內建動作副標，自訂動作保留類型。每個釘選動作提供六點把手，名稱仍可拖曳，上下移按鈕保留。排序把手及名稱使用手形游標；上下雙箭頭僅用於編輯框的高度調整。滑鼠捕捉維持至系統拖曳門檻，避免快速跨列時遺失起點；放在原位置不保存。
+- 使用 computer-use 在可丟棄的 UI preview 實際把複製從第一列拖到第三列，清單及預覽同步成為剪下、貼上、複製。此操作只改暫存資料，未改使用者的動作順序。既有 layout runner 另確認箭頭排序、設定保存與重新開啟後順序、六項上限及情境篩選。
+
+Core 282、UI appearance 58、action layout 13、action diagnostics 25，共 378 項通過；發佈另通過 6 項 Probe smoke。Release 建置零警告、零錯誤。原生拖曳及調整高度已實測；實體混合 DPI 與第三方 App 全套重驗未在本輪執行。
+
+## 2026-10-31 自動選字相容讀取與偏好保存
+
+本節取代先前「Sublime 每次啟動需重新勾選」的產品規則。使用者已同意實作預設自動相容與偏好保存。
+
+- 新增預設啟用的「選字相容模式」，關閉亦保存；Sublime 支援改為持久偏好。舊版有效的受保護快捷鍵綁定用來恢復過去已啟用的選擇，明確 false 不會因綁定仍存在而重開。schema 6 支援舊版 1–5 的記憶體遷移，錯誤／未來版本保留原檔並停用相容讀取。
+- UIA 仍優先，延遲 provider 重試與 64 層祖先界線保留。只有 unsupported 且 Probe 可驗證非密碼的文字焦點、祖先歸屬與啟用狀態，才建立候選 token；明確空選取、逾時及其他失敗不回退。自動觸發還要求滑鼠位置位於焦點控制項內。候選 30 秒有效；Ctrl+C 前及讀取後確認原焦點 runtime ID、前景及程序身分。終端機／主控台排除一般 Ctrl+C 回退。
+- 通用讀取重用原生剪貼簿備份、格式保存、串行與擁有者／序號穩定檢查。讀取後還原原內容，再提供複製、搜尋／開啟或不寫入原文的腳本。通用快照的可編輯狀態未知，Core 另明確拒絕通用來源的寫入，即使將來錯誤帶有 editable 旗標亦不能授權。Sublime 仍走原有條件快捷鍵適配器。
+- 拒絕 MSDEVLineSelect、Visual Studio 整行標記、直接 VS Code metadata 的空選取旗標；亦解析 Chromium Web Custom MIME Data Format 的對齊 UTF-16 Pickle 封裝。截斷、過大、重複或不明編輯器資料拒絕。已知 VS Code 衍生程式需要明確中繼資料。
+- 獨立 WPF 子程序刻意不公開 TextPattern，經真正 Ctrl+C 驗證 Unicode、原剪貼簿還原、Copy／Search、腳本輸入、禁止 Apply／Replace／Cut、同視窗焦點變更、不同選取內容、空選取、三類整行標記、Chromium 封裝、密碼與非文字焦點。此為通用讀取協定驗證，不能等同全部 Electron App 實測。
+- 以 computer-use 實際關閉並再啟用模式，確認 schema 6 保存對應布林值；正常結束後重新啟動，模式與 Sublime 支援均自動恢復。Sublime keymap 的 SHA-256 在前後一致，確認啟動及恢復未改寫快捷鍵。現行發佈版已啟動，原有自動偵測維持開啟。
+
+| 驗證 | 通過數 |
+| --- | --- |
+| Core（遷移、偏好、寫入政策與中繼資料） | 292 |
+| UI appearance（含錯誤設定停用與新介面） | 60 |
+| Tray lifecycle（偏好保存／重啟／快捷鍵釋放） | 20 |
+| Action layout | 13 |
+| Clipboard roundtrip | 13 |
+| Clipboard races | 17 |
+| Generic clipboard compatibility | 20 |
+| Native UIA readiness／deep tree | 4 |
+| Custom action 整合與原生滑鼠 | 65 |
+
+共 504 項通過，另有 6 項 Probe smoke；最終 Release 建置與發佈零警告、零錯誤。第一次 lifecycle 回歸因既有 SnapBar 占用快捷鍵失敗，正常結束舊版後通過。測試 fixture 需前景，透過 computer-use 啟用；原生 readiness 的 45 秒等待僅供取得前景，未放寬實際選字讀取預算。截圖更新於 `artifacts/ui-polish/settings.png`。
+
+範圍限制：未逐一測試真實 Electron App、實體混合 DPI 或全套 Sublime 寫入。未知 App 可能自行改寫複製行為，沒有完整可移植的選取範圍證明；內容相同的不同範圍不能以重複複製區分。剪貼簿歷程可能觀察到暫存複製，已在設定頁說明；失效後晚到的複製仍依既有競態規則保留不確定的新內容，不宣稱還原具有原子性。
+
+## 2026-10-31 Review 修正：UIA 開關與長時間腳本
+
+- 相容與 Sublime 開關改由 Checked／Unchecked 同步，實際呼叫 IToggleProvider.Toggle() 可更新控制器及保存偏好。初始化先設定值再訂閱，程式化同步／安裝失敗回復有重入保護。Sublime 安裝與就緒檢查可注入；測試不修改使用者 keymap，並驗證初始載入與有效綁定重新啟用時不執行安裝。
+- 一般候選仍預設 30 秒，僅通用來源的腳本在初始來源及文字比對通過後，申請逾時秒數加 10 秒的期限（最多 310 秒）。延長請求先驗證尚未過期的 token、焦點、密碼與來源；腳本後仍重新複製比對。finally 釋放期限，清理僅縮短且不復活過期或替換的候選。通用來源仍無寫入權限。
+- 獨立不公開 TextPattern 的 WPF 來源，經完整 SelectionController／Probe 流程，以注入 runner 實際等待 35 秒（動作逾時設為 60 秒），確認原本 30 秒後仍顯示精確結果並還原剪貼簿。另確認腳本執行中程式化切換同視窗焦點，延長資格仍無法繞過最終來源驗證。
+- 擴充 Probe smoke：過期 token 無法延長、超出 1–310 秒範圍拒絕、未知候選無法釋放；原協定與 EOF 關閉案例保留。
+
+本輪 Core 292、tray lifecycle 28、generic compatibility 22、UI appearance 60、action diagnostics 25，共 427 項通過；另有 10 項 Probe smoke。最終 Release 建置與自含式發佈零警告、零錯誤。舊版已正常結束，修正版重新啟動。此次未重跑前節的全部跨 App、原生滑鼠或實體 DPI 驗證，不以測試合計取代這些尚存的覆蓋界線。
