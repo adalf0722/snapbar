@@ -12,7 +12,7 @@ namespace SnapBar.App;
 public sealed class PopupWindow : Window
 {
     private readonly StackPanel root = new(), row = new() { Orientation = Orientation.Horizontal }, menuRows = new();
-    private readonly Border shell, more;
+    private readonly Border shell, more, searchBox;
     private readonly TextBlock searchPlaceholder, count;
     private readonly TextBox searchInput;
     private readonly ScrollViewer menuScroll;
@@ -37,7 +37,8 @@ public sealed class PopupWindow : Window
     {
         Title = "SnapBar Actions"; WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false; ShowActivated = false; Topmost = true; AllowsTransparency = true; Background = Brushes.Transparent;
-        FontFamily = new("Segoe UI, Microsoft JhengHei UI"); UseLayoutRounding = true;
+        ActionUi.LoadStyles(this); FontFamily = ActionUi.Font; FontSize = 14; UseLayoutRounding = true;
+        TextOptions.SetTextFormattingMode(this, TextFormattingMode.Display);
         shell = new Border { CornerRadius = new(11), BorderThickness = new(1), Padding = new(6), Child = root };
         root.Children.Add(row);
         var menu = new StackPanel { Margin = new(3, 8, 3, 2) };
@@ -47,10 +48,10 @@ public sealed class PopupWindow : Window
         AutomationProperties.SetAutomationId(searchInput, "MoreActionSearch"); AutomationProperties.SetName(searchInput, "搜尋動作");
         searchPlaceholder = ActionUi.Text("搜尋動作…", 13, ActionUi.Muted); searchPlaceholder.IsHitTestVisible = false; searchPlaceholder.Margin = new(3, 0, 0, 0);
         var searchContent = new Grid(); searchContent.Children.Add(searchInput); searchContent.Children.Add(searchPlaceholder);
-        var searchBox = new Border { Background = Brushes.White, BorderBrush = ActionUi.Line, BorderThickness = new(1),
+        searchBox = new Border { Background = Brushes.White, BorderBrush = ActionUi.Line, BorderThickness = new(1),
             CornerRadius = new(6), Padding = new(9, 3, 9, 3), Child = searchContent, Cursor = Cursors.IBeam };
         searchInput.PreviewMouseLeftButtonDown += (_, _) => BeginSearchInput();
-        searchInput.IsKeyboardFocusWithinChanged += (_, _) => searchBox.BorderBrush = searchInput.IsKeyboardFocusWithin ? ActionUi.Accent : ActionUi.Line;
+        searchInput.IsKeyboardFocusWithinChanged += (_, _) => searchBox.BorderBrush = searchInput.IsKeyboardFocusWithin ? ActionUi.Accent : settings.Theme == "Dark" ? ActionUi.DarkLine : ActionUi.Line;
         TextCompositionManager.AddPreviewTextInputStartHandler(searchInput, (_, _) => composing = true);
         searchInput.PreviewTextInput += (_, _) => composing = false;
         searchInput.PreviewKeyUp += (_, e) => { var key = e.Key == Key.ImeProcessed ? e.ImeProcessedKey : e.Key; if (key is Key.Escape or Key.Enter) composing = false; };
@@ -103,7 +104,16 @@ public sealed class PopupWindow : Window
     {
         if (snapshot == null) return;
         var dark = settings.Theme == "Dark"; var fg = dark ? Brushes.White : ActionUi.Ink;
-        shell.Background = dark ? ActionUi.Brush("#252B2A") : Brushes.White; shell.BorderBrush = dark ? ActionUi.Brush("#47504B") : ActionUi.Line;
+        var surface = dark ? ActionUi.DarkSurface : Brushes.White;
+        shell.Background = surface; shell.BorderBrush = dark ? ActionUi.DarkLine : ActionUi.Line;
+        Resources["ControlHover"] = dark ? ActionUi.DarkHover : ActionUi.Brush("#EEF1F6");
+        Resources["ControlPressed"] = dark ? ActionUi.Brush("#465167") : ActionUi.Brush("#E2E7F0");
+        more.Background = surface; searchBox.Background = dark ? ActionUi.Brush("#1D2129") : ActionUi.Canvas;
+        searchBox.BorderBrush = dark ? ActionUi.DarkLine : ActionUi.Line;
+        searchInput.Foreground = searchInput.CaretBrush = fg;
+        searchPlaceholder.Foreground = count.Foreground = dark ? ActionUi.DarkMuted : ActionUi.Muted;
+        foreach (var manage in ((StackPanel)more.Child).Children.OfType<Button>())
+        { manage.Background = surface; manage.BorderBrush = dark ? ActionUi.DarkLine : ActionUi.Line; ActionUi.TintButton(manage, dark); }
         row.Children.Clear(); builtinButtons.Clear();
         var chosen = ActionCatalog.GetBar(settings, snapshot);
         var shown = chosen.Select(a => a.Id).ToHashSet();
@@ -125,7 +135,7 @@ public sealed class PopupWindow : Window
             else AutomationProperties.SetAutomationId(button, "CustomAction_" + item.Id);
             row.Children.Add(button);
         }
-        var dots = ActionUi.Button("", ToggleMore, "more"); dots.Height = 36; dots.Margin = new(2, 0, 0, 0);
+        var dots = ActionUi.Button("", ToggleMore, "more"); dots.Height = 36; dots.Margin = new(2, 1, 0, 1);
         dots.Padding = new(10, 6, 10, 6); dots.Background = Brushes.Transparent; dots.BorderThickness = new(0);
         dots.ToolTip = "更多動作 · 輸入名稱、上下選擇、Enter 執行、Esc 關閉"; dots.Focusable = false; dots.IsTabStop = false;
         ((System.Windows.Shapes.Path)((Viewbox)((StackPanel)dots.Content).Children[0]).Child).Stroke = fg;
@@ -175,6 +185,8 @@ public sealed class PopupWindow : Window
     private void RenderMenu()
     {
         if (snapshot == null) return;
+        var dark = settings.Theme == "Dark"; var surface = dark ? ActionUi.DarkSurface : Brushes.White;
+        var muted = dark ? ActionUi.DarkMuted : ActionUi.Muted;
         if (searchInput.Text != query)
         { syncingQuery = true; searchInput.Text = query; searchInput.CaretIndex = query.Length; syncingQuery = false; }
         searchPlaceholder.Visibility = query.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -193,16 +205,18 @@ public sealed class PopupWindow : Window
             var recent = query.Length == 0 && settings.RecentIds.Contains(item.Id);
             if (recent && !recentShown || !recent && !allShown)
             {
-                var heading = ActionUi.Text(recent ? "最近使用" : query.Length == 0 ? "所有動作" : "搜尋結果", 10, ActionUi.Muted);
+                var heading = ActionUi.Text(recent ? "最近使用" : query.Length == 0 ? "所有動作" : "搜尋結果", 12, muted);
                 heading.Margin = new(10, 8, 0, 4); menuRows.Children.Add(heading);
                 if (recent) recentShown = true; else allShown = true;
             }
             var line = new DockPanel(); var pin = ActionUi.Button("", () => Pin(item.Id), "pin");
             pin.Focusable = false; pin.IsTabStop = false; pin.ToolTip = "釘選到動作列"; pin.BorderThickness = new(0); pin.Margin = new(0);
+            pin.Background = surface; ActionUi.TintButton(pin, dark); AutomationProperties.SetName(pin, "釘選" + item.Name);
             pin.IsEnabled = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < 6;
             DockPanel.SetDock(pin, Dock.Right); line.Children.Add(pin);
             var button = ActionUi.Button(item.Name, () => { if (ActionCatalog.IsApplicable(item, snapshot)) Dispatch(item); }, item.Icon); button.Focusable = false; button.IsTabStop = false;
             button.BorderThickness = new(0); button.Margin = new(0); AutomationProperties.SetAutomationId(button, "MoreAction_" + item.Id);
+            button.Background = surface; button.HorizontalContentAlignment = HorizontalAlignment.Left; ActionUi.TintButton(button, dark);
             button.IsEnabled = ActionCatalog.IsApplicable(item, snapshot)
                 && (item.BuiltIn != TextAction.Search || WebActionPolicy.Search(snapshot.Text, searchTemplate).Success);
             var reason = item.BuiltIn switch
@@ -217,14 +231,14 @@ public sealed class PopupWindow : Window
             var actionContent = new StackPanel(); actionContent.Children.Add(button);
             if (!button.IsEnabled)
             {
-                var unavailable = ActionUi.Text(reason, 10, ActionUi.Muted); unavailable.Margin = new(10, 0, 6, 6);
+                var unavailable = ActionUi.Text(reason, 12, muted); unavailable.Margin = new(10, 0, 6, 6);
                 AutomationProperties.SetAutomationId(unavailable, "MoreActionReason_" + item.Id); actionContent.Children.Add(unavailable);
             }
             line.Children.Add(actionContent); menuRows.Children.Add(line);
         }
-        if (items.Count == 0) { var empty = ActionUi.Text(query.Length == 0 ? "沒有更多動作，請到「管理動作」設定顯示位置。" : "找不到符合名稱的動作，請試試其他搜尋。", 12, ActionUi.Muted); empty.Margin = new(10, 18, 10, 18); menuRows.Children.Add(empty); }
+        if (items.Count == 0) { var empty = ActionUi.Text(query.Length == 0 ? "沒有更多動作，請到「管理動作」設定顯示位置。" : "找不到符合名稱的動作，請試試其他搜尋。", 12, muted); empty.Margin = new(10, 18, 10, 18); menuRows.Children.Add(empty); }
         count.Text = $"{snapshot.CharacterCount} 字 · 來源選取仍保留";
-        for (var i = 0; i < menuButtons.Count; i++) menuButtons[i].Background = i == menuIndex ? ActionUi.Pale : Brushes.White;
+        for (var i = 0; i < menuButtons.Count; i++) menuButtons[i].Background = i == menuIndex ? dark ? ActionUi.DarkHover : ActionUi.Pale : surface;
         if (menuIndex >= 0 && menuIndex < menuButtons.Count)
         {
             var selected = menuButtons[menuIndex];

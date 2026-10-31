@@ -8,7 +8,9 @@ namespace SnapBar.App;
 
 internal static class ActionUi
 {
-    public static readonly Brush Ink = Brush("#252D29"), Muted = Brush("#74806F"), Canvas = Brush("#F5F5F0"), Line = Brush("#E0E6DA"), Accent = Brush("#3867D6"), Pale = Brush("#EDF2FF");
+    public static readonly Brush Ink = Brush("#20242C"), Muted = Brush("#626B78"), Canvas = Brush("#F6F7F9"), Line = Brush("#DDE2E9"), Accent = Brush("#3867D6"), Pale = Brush("#EDF2FF");
+    public static readonly Brush DarkSurface = Brush("#252932"), DarkLine = Brush("#444C5C"), DarkHover = Brush("#363E4D"), DarkMuted = Brush("#B2BBCB");
+    public static readonly FontFamily Font = new("Microsoft JhengHei UI, Segoe UI");
     public static Brush Brush(string value) => (Brush)new BrushConverter().ConvertFromString(value)!;
     public static readonly string[] Icons = ["copy", "cut", "paste", "search", "link", "folder", "globe", "translate", "code", "terminal", "spark", "document", "clean"];
     private static readonly Dictionary<string, string> Paths = new()
@@ -37,42 +39,53 @@ internal static class ActionUi
             Stroke = color ?? Ink, StrokeThickness = 1.6, StrokeStartLineCap = PenLineCap.Round,
             StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 24, Height = 24 }
     };
-    public static TextBlock Text(string value, double size = 13, Brush? color = null) => new()
-    { Text = value, FontSize = size, Foreground = color ?? Ink, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+    public static TextBlock Text(string value, double size = 14, Brush? color = null) => new()
+    { Text = value, FontSize = Math.Max(12, size), FontFamily = Font, Foreground = color ?? Ink, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     public static Button Button(string label, Action click, string? icon = null, bool primary = false)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         if (icon != null) { var image = Icon(icon, primary ? Brushes.White : Ink, 16); image.Margin = new(0, 0, label.Length == 0 ? 0 : 7, 0); content.Children.Add(image); }
-        if (label.Length > 0) content.Children.Add(Text(label, 12, primary ? Brushes.White : Ink));
+        if (label.Length > 0) content.Children.Add(Text(label, 13, primary ? Brushes.White : Ink));
         var button = new Button { Content = content, Padding = new(12, 8, 12, 8), Margin = new(0, 0, 7, 0),
             Background = primary ? Accent : Brushes.White, Foreground = primary ? Brushes.White : Ink,
             BorderBrush = primary ? Accent : Line, BorderThickness = new(1), Cursor = System.Windows.Input.Cursors.Hand,
-            VerticalContentAlignment = VerticalAlignment.Center, HorizontalContentAlignment = HorizontalAlignment.Center, Template = RoundedTemplate() };
+            MinHeight = 36, VerticalContentAlignment = VerticalAlignment.Center, HorizontalContentAlignment = HorizontalAlignment.Center };
+        if (primary)
+        {
+            button.Resources["ControlHover"] = Brush("#2E58BE");
+            button.Resources["ControlPressed"] = Brush("#24489F");
+        }
         AutomationProperties.SetName(button, label.Length == 0 ? icon ?? "動作" : label);
         button.Click += (_, _) => click(); return button;
     }
-    private static ControlTemplate RoundedTemplate()
+    public static TextBlock Heading(string value, double size = 16)
+    { var text = Text(value, size); text.FontWeight = FontWeights.SemiBold; return text; }
+
+    public static void TintButton(Button button, bool dark)
     {
-        var border = new FrameworkElementFactory(typeof(Border)); border.SetValue(Border.CornerRadiusProperty, new CornerRadius(7));
-        foreach (var name in new[] { "Background", "BorderBrush", "BorderThickness", "Padding" })
-            border.SetBinding(name switch { "Background" => Border.BackgroundProperty, "BorderBrush" => Border.BorderBrushProperty,
-                "BorderThickness" => Border.BorderThicknessProperty, _ => Border.PaddingProperty },
-                new System.Windows.Data.Binding(name) { RelativeSource = new(System.Windows.Data.RelativeSourceMode.TemplatedParent) });
-        var presenter = new FrameworkElementFactory(typeof(ContentPresenter)); presenter.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-        presenter.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center); border.AppendChild(presenter);
-        var template = new ControlTemplate(typeof(Button)) { VisualTree = border };
-        var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true }; hover.Setters.Add(new Setter(UIElement.OpacityProperty, .8));
-        var disabled = new Trigger { Property = UIElement.IsEnabledProperty, Value = false }; disabled.Setters.Add(new Setter(UIElement.OpacityProperty, .35));
-        template.Triggers.Add(hover); template.Triggers.Add(disabled); return template;
+        var foreground = dark ? Brushes.White : Ink;
+        button.Foreground = foreground;
+        if (button.Content is StackPanel content)
+            foreach (var child in content.Children)
+            {
+                if (child is TextBlock text) text.Foreground = foreground;
+                if (child is Viewbox { Child: Path path }) path.Stroke = foreground;
+            }
     }
+
+    public static void LoadStyles(FrameworkElement element) => element.Resources.MergedDictionaries.Add(new ResourceDictionary
+    { Source = new Uri("/SnapBar.App;component/Themes/Controls.xaml", UriKind.Relative) });
     public static Border Card(UIElement content, Thickness? padding = null) => new()
     { Background = Brushes.White, BorderBrush = Line, BorderThickness = new(1), CornerRadius = new(12), Padding = padding ?? new(20), Child = content };
     public static TextBox Input(string value = "", int max = 32768) => new()
-    { Text = value, MaxLength = max, Padding = new(10, 8, 10, 8), BorderBrush = Line, BorderThickness = new(1), FontSize = 13, Background = Brushes.White };
+    { Text = value, MaxLength = max, Padding = new(10, 8, 10, 8), BorderBrush = Line, BorderThickness = new(1), FontSize = 14, Background = Brushes.White };
     public static void Setup(Window window, string title, double width, double height)
     {
         window.Title = title; window.Width = width; window.Height = height; window.MinWidth = Math.Min(width, 570); window.MinHeight = 420;
-        window.Background = Canvas; window.Foreground = Ink; window.FontFamily = new("Segoe UI, Microsoft JhengHei UI");
-        window.UseLayoutRounding = true; window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        LoadStyles(window);
+        window.Background = Canvas; window.Foreground = Ink; window.FontFamily = Font; window.FontSize = 14;
+        window.UseLayoutRounding = true; window.SnapsToDevicePixels = true;
+        TextOptions.SetTextFormattingMode(window, TextFormattingMode.Display);
+        window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
     }
 }

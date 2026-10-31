@@ -7,7 +7,7 @@ public enum CustomActionKind { Url, PowerShell, JavaScript }
 public enum ActionOutput { None, Clipboard, ReplaceSelection, Hud, Window, Markdown }
 public enum ActionPlacement { Bar, More, Hidden }
 public sealed record CustomActionDefinition(string Id, string Name, CustomActionKind Kind, string Icon, string Content,
-    ActionOutput Output = ActionOutput.Window, int TimeoutSeconds = 10, string? InterpreterPath = null);
+    ActionOutput Output = ActionOutput.Window, int TimeoutSeconds = 10, string? InterpreterPath = null, bool UseSelection = true);
 public sealed record ActionLayoutEntry(string Id, ActionPlacement Placement);
 public sealed record ActionSettings
 {
@@ -36,6 +36,7 @@ public static class CustomActionPolicy
         if (action.TimeoutSeconds is < 1 or > 300) return "逾時須為 1 至 300 秒。";
         if (string.IsNullOrWhiteSpace(action.Content) || action.Content.Length > 32768) return "內容須為 1 至 32768 個字元。";
         if (action.InterpreterPath != null && (action.InterpreterPath.Length > 32768 || action.InterpreterPath.Any(char.IsControl))) return "解譯器路徑無效。";
+        if (action.Kind == CustomActionKind.Url && !action.UseSelection) return "網址動作必須使用選取文字。";
         if (action.Kind == CustomActionKind.Url && !ValidTemplate(action.Content)) return "網址須使用 HTTP 或 HTTPS，並在路徑、查詢或片段包含一次 ***。";
         return null;
     }
@@ -64,7 +65,7 @@ public static class CustomActionPolicy
     public static string Export(CustomActionDefinition action)
     {
         if (Validate(action) is { } error) throw new ArgumentException(error, nameof(action));
-        return JsonSerializer.Serialize(new Envelope(1, action with { Icon = Icons.Contains(action.Icon ?? "") ? action.Icon! : "spark" }), JsonOptions);
+        return JsonSerializer.Serialize(new Envelope(2, action with { Icon = Icons.Contains(action.Icon ?? "") ? action.Icon! : "spark" }), JsonOptions);
     }
 
     public static CustomActionDefinition Import(string json)
@@ -75,7 +76,8 @@ public static class CustomActionPolicy
             using var document = JsonDocument.Parse(json);
             RejectDuplicates(document.RootElement);
             var envelope = JsonSerializer.Deserialize<Envelope>(json, JsonOptions);
-            if (envelope?.Version != 1 || envelope.Action == null) throw new ArgumentException("不支援的動作檔案版本。", nameof(json));
+            if (envelope?.Version is not (1 or 2) || envelope.Action == null || (envelope.Version == 1 && !envelope.Action.UseSelection))
+                throw new ArgumentException("不支援的動作檔案版本。", nameof(json));
             if (Validate(envelope.Action) is { } error) throw new ArgumentException(error, nameof(json));
             return envelope.Action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Icon = Icons.Contains(envelope.Action.Icon ?? "") ? envelope.Action.Icon! : "spark" };
         }

@@ -11,8 +11,8 @@ namespace SnapBar.App;
 
 public sealed class MainWindow : Window
 {
-    private readonly TextBlock status, mode, lifetimeHint;
-    private readonly Button toggle;
+    private readonly TextBlock status, mode, lifetimeHint, notice;
+    private readonly CheckBox toggle;
     private readonly ListBox events;
     private readonly ExcludedAppsPanel excludedAppsPanel;
     private readonly SearchSettingsPanel searchSettingsPanel;
@@ -31,32 +31,51 @@ public sealed class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
         var loaded = this.settingsStore.Load();
         preferences = loaded.Settings;
-        Title = "SnapBar · 設定"; Width = 700; Height = 760; MinWidth = 560; MinHeight = 520;
-        Background = new SolidColorBrush(Color.FromRgb(245, 247, 251));
-        FontFamily = new FontFamily("Segoe UI, Microsoft JhengHei UI");
-        var panel = new StackPanel { Margin = new Thickness(32) };
-        panel.Children.Add(new TextBlock { Text = "SNAPBAR / WINDOWS", FontSize = 12, Foreground = Brushes.SlateGray });
-        panel.Children.Add(new TextBlock { Text = "選取文字，直接動作。", FontSize = 30, FontWeight = FontWeights.SemiBold, Margin = new(0, 10, 0, 12) });
-        panel.Children.Add(new TextBlock { Text = "在系統匣待命 · 複製／剪下／貼上／搜尋", FontSize = 15 });
-        panel.Children.Add(new TextBlock { Text = "到其他 App 選取文字，按 Ctrl+Alt+V 叫出動作列。\n也可以啟用自動偵測，於拖曳或雙擊選字後顯示。", FontSize = 15, LineHeight = 25, Margin = new(0, 22, 0, 14) });
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-        mode = new TextBlock { Text = "自動偵測已暫停 · 僅使用手動快捷鍵", Foreground = Brushes.SlateGray, Margin = new(0, 12, 0, 24) };
-        toggle = new Button { Content = "啟用自動偵測", Padding = new(18, 10, 18, 10), Margin = new(0, 0, 12, 0) };
-        toggle.Click += (_, _) => ToggleAutomatic();
-        buttons.Children.Add(toggle);
-        var fixture = new Button { Content = "開啟測試視窗", Padding = new(18, 10, 18, 10) };
-        fixture.Click += (_, _) =>
+        ActionUi.Setup(this, "SnapBar · 設定", 740, 760); MinWidth = 580; MinHeight = 520;
+        var panel = new StackPanel { Margin = new Thickness(28) };
+        var heading = new DockPanel { Margin = new(0, 0, 0, 22) };
+        mode = ActionUi.Text("正在啟動", 12, ActionUi.Muted);
+        var badge = new Border { Background = ActionUi.Pale, CornerRadius = new(12), Padding = new(12, 6, 12, 6),
+            VerticalAlignment = VerticalAlignment.Center, Child = mode };
+        DockPanel.SetDock(badge, Dock.Right); heading.Children.Add(badge);
+        var title = new StackPanel(); title.Children.Add(ActionUi.Heading("SnapBar", 26));
+        title.Children.Add(ActionUi.Text("選取文字，直接動作。", 13, ActionUi.Muted)); heading.Children.Add(title); panel.Children.Add(heading);
+
+        void AddCard(UIElement content, bool compact = false)
         {
-            var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
-            start.ArgumentList.Add("--fixture"); Process.Start(start);
-        };
-        buttons.Children.Add(fixture); panel.Children.Add(buttons);
-        var manageActions = ActionUi.Button("管理動作", ShowActionSettings, "settings", true);
-        manageActions.Margin = new(0, 14, 0, 0); manageActions.HorizontalAlignment = HorizontalAlignment.Left;
-        panel.Children.Add(manageActions);
-        panel.Children.Add(mode);
-        panel.Children.Add(new TextBlock { Text = "自動偵測偏好會自動保存；Sublime 相容模式每次需自行啟用。", Foreground = Brushes.SlateGray, TextWrapping = TextWrapping.Wrap, Margin = new(0, -12, 0, 16) });
-        var sublime = new CheckBox { Content = "Sublime 剪貼簿相容模式（可編輯時提供剪下／貼上）", Margin = new(0, 0, 0, 14) };
+            var card = ActionUi.Card(content, compact ? new Thickness(18, 6, 18, 6) : new Thickness(20));
+            card.Margin = new(0, 0, 0, 12); panel.Children.Add(card);
+        }
+        var detection = new StackPanel(); var detectionRow = new DockPanel();
+        toggle = new CheckBox { Style = (Style)FindResource("Switch"), IsChecked = preferences.AutomaticDetectionEnabled,
+            VerticalAlignment = VerticalAlignment.Center, ToolTip = "自動偵測選取文字" };
+        System.Windows.Automation.AutomationProperties.SetName(toggle, "自動偵測選取文字");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(toggle, "AutomaticDetectionToggle");
+        toggle.Click += (_, _) => ToggleAutomatic(); DockPanel.SetDock(toggle, Dock.Right); detectionRow.Children.Add(toggle);
+        var detectionText = new StackPanel(); detectionText.Children.Add(ActionUi.Heading("自動偵測"));
+        var detectionHelp = ActionUi.Text("拖曳或雙擊選字後，顯示動作列。", 13, ActionUi.Muted); detectionHelp.Margin = new(0, 5, 12, 0);
+        detectionText.Children.Add(detectionHelp); detectionRow.Children.Add(detectionText); detection.Children.Add(detectionRow);
+        var shortcut = new DockPanel { Margin = new(0, 18, 0, 0) };
+        var keys = new Border { Child = ActionUi.Text("Ctrl + Alt + V", 12), Background = ActionUi.Canvas, BorderBrush = ActionUi.Line,
+            BorderThickness = new(1), CornerRadius = new(6), Padding = new(10, 6, 10, 6) };
+        DockPanel.SetDock(keys, Dock.Right); shortcut.Children.Add(keys); shortcut.Children.Add(ActionUi.Text("隨時用快捷鍵叫出動作列", 13, ActionUi.Muted));
+        detection.Children.Add(shortcut); AddCard(detection);
+
+        var actions = new DockPanel(); var manageActions = ActionUi.Button("管理動作", ShowActionSettings, "settings", true);
+        manageActions.Margin = new(16, 0, 0, 0); manageActions.VerticalAlignment = VerticalAlignment.Center;
+        DockPanel.SetDock(manageActions, Dock.Right); actions.Children.Add(manageActions);
+        var actionText = new StackPanel(); actionText.Children.Add(ActionUi.Heading("動作列"));
+        var actionHelp = ActionUi.Text("安排常用動作、外觀與自訂腳本。", 13, ActionUi.Muted); actionHelp.Margin = new(0, 5, 0, 0);
+        actionText.Children.Add(actionHelp); actions.Children.Add(actionText); AddCard(actions);
+
+        searchSettingsPanel = new SearchSettingsPanel();
+        searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
+        searchSettingsPanel.SaveRequested += value => SetSearchUrlTemplate(value);
+        searchSettingsPanel.ResetRequested += () => SetSearchUrlTemplate(WebActionPolicy.DefaultSearchTemplate);
+        AddCard(searchSettingsPanel, compact: true);
+
+        var compatibility = new StackPanel(); compatibility.Children.Add(ActionUi.Heading("相容性與排除 App"));
+        var sublime = new CheckBox { Content = "Sublime 剪貼簿相容模式", Margin = new(0, 12, 0, 0) };
         sublime.Checked += (_, _) =>
         {
             try
@@ -66,31 +85,42 @@ public sealed class MainWindow : Window
                 AddStatus("已啟用 Sublime 相容模式；已設定有條件的複製／剪下／貼上，未安裝外掛。");
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
-            { sublime.IsChecked = false; AddStatus("無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用相容模式。"); }
+            { sublime.IsChecked = false; ShowNotice("無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用相容模式。"); }
         };
         sublime.Unchecked += (_, _) => { if (controller != null) controller.SublimeClipboardEnabled = false; };
-        panel.Children.Add(sublime);
+        compatibility.Children.Add(sublime);
+        var compatibilityHelp = ActionUi.Text("暫借剪貼簿讀取選取，可編輯時提供剪下／貼上。每次啟動需自行啟用。", 12, ActionUi.Muted);
+        compatibilityHelp.Margin = new(27, 3, 0, 10); compatibility.Children.Add(compatibilityHelp);
         excludedAppsPanel = new ExcludedAppsPanel();
         excludedAppsPanel.ShowApplications(preferences.ExcludedApplications);
         excludedAppsPanel.AddRequested += entry => AddExcludedApplication(entry.ExecutablePath, entry.DisplayName);
         excludedAppsPanel.RemoveRequested += entry => RemoveExcludedApplication(entry.ExecutablePath);
-        excludedAppsPanel.ValidationFailed += AddStatus;
-        panel.Children.Add(excludedAppsPanel);
-        searchSettingsPanel = new SearchSettingsPanel();
-        searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
-        searchSettingsPanel.SaveRequested += value => SetSearchUrlTemplate(value);
-        searchSettingsPanel.ResetRequested += () => SetSearchUrlTemplate(WebActionPolicy.DefaultSearchTemplate);
-        panel.Children.Add(searchSettingsPanel);
-        status = new TextBlock { Text = "正在初始化…", TextWrapping = TextWrapping.Wrap, FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new(0, 0, 0, 10) };
-        panel.Children.Add(status);
-        events = new ListBox { Height = 120, BorderThickness = new Thickness(0), Background = Brushes.White };
-        panel.Children.Add(events);
-        lifetimeHint = new TextBlock { Text = "關閉此視窗後，SnapBar 會繼續在系統匣待命。\n按系統匣圖示可返回；右鍵選單可完整結束。\n預設使用 UI Automation；Sublime 相容模式會暫借剪貼簿。", Foreground = Brushes.SlateGray, Margin = new(0, 16, 0, 0), LineHeight = 22, TextWrapping = TextWrapping.Wrap };
-        panel.Children.Add(lifetimeHint);
-        var exit = new Button { Content = "結束 SnapBar", HorizontalAlignment = HorizontalAlignment.Left, Padding = new(12, 6, 12, 6), Margin = new(0, 12, 0, 0) };
-        exit.Click += async (_, _) => await ExitAsync();
-        panel.Children.Add(exit);
-        Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        excludedAppsPanel.ValidationFailed += ShowNotice;
+        compatibility.Children.Add(excludedAppsPanel); AddCard(compatibility);
+
+        var diagnostics = new StackPanel();
+        status = ActionUi.Text("正在初始化…", 12, ActionUi.Muted); status.Margin = new(0, 8, 0, 0);
+        System.Windows.Automation.AutomationProperties.SetAutomationId(status, "LatestDiagnosticStatus");
+        diagnostics.Children.Add(status);
+        events = new ListBox { Height = 140, BorderThickness = new(0), Background = ActionUi.Canvas, FontSize = 12,
+            Foreground = ActionUi.Muted, Margin = new(0, 8, 0, 12) };
+        diagnostics.Children.Add(events);
+        var fixture = ActionUi.Button("開啟測試視窗", () =>
+        {
+            var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
+            start.ArgumentList.Add("--fixture"); Process.Start(start);
+        }, "document");
+        fixture.HorizontalAlignment = HorizontalAlignment.Left; diagnostics.Children.Add(fixture);
+        AddCard(new Expander { Header = "診斷與測試", Content = diagnostics }, compact: true);
+
+        notice = ActionUi.Text("", 12, ActionUi.Ink); notice.Margin = new(2, 0, 2, 10); notice.Visibility = Visibility.Collapsed;
+        System.Windows.Automation.AutomationProperties.SetAutomationId(notice, "SettingsNotice"); panel.Children.Add(notice);
+        var footer = new DockPanel { Margin = new(0, 8, 0, 0) };
+        var exit = ActionUi.Button("結束 SnapBar", () => _ = ExitAsync()); exit.Margin = new(12, 0, 0, 0);
+        DockPanel.SetDock(exit, Dock.Right); footer.Children.Add(exit);
+        lifetimeHint = ActionUi.Text("關閉視窗後會繼續待命。\n按系統匣圖示可返回設定。", 12, ActionUi.Muted);
+        footer.Children.Add(lifetimeHint); panel.Children.Add(footer);
+        Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         SourceInitialized += (_, _) =>
         {
             try { tray = new TrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); }
@@ -108,11 +138,15 @@ public sealed class MainWindow : Window
                 controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
-                AddStatus(controller.HotkeyRegistered ? "準備完成 · Ctrl+Alt+V" : "Ctrl+Alt+V 已被占用；仍可啟用自動偵測。P0 尚無改鍵設定。");
+                if (controller.HotkeyRegistered) AddStatus("準備完成 · Ctrl+Alt+V");
+                else ShowNotice("Ctrl+Alt+V 已被占用；仍可啟用自動偵測。");
             }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
-            { toggle.IsEnabled = false; tray?.Update(false, false); AddStatus("無法初始化輸入監聽，請結束後重新啟動。"); }
-            if (loaded.Warning != null) AddStatus("設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。");
+            {
+                toggle.IsEnabled = false; mode.Text = "● 啟動失敗"; mode.Foreground = Brushes.Firebrick;
+                tray?.Update(false, false); ShowNotice("無法初始化輸入監聽，請結束後重新啟動。");
+            }
+            if (loaded.Warning != null) ShowNotice("設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。");
         };
         Closing += (_, e) =>
         {
@@ -141,12 +175,12 @@ public sealed class MainWindow : Window
         var entry = AppExclusionPolicy.Create(path, displayName);
         if (preferences.ExcludedApplications.Any(app =>
             string.Equals(app.ExecutablePath, entry.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
-        { AddStatus("此 App 已在排除清單中。"); return false; }
+        { ShowNotice("此 App 已在排除清單中。"); return false; }
         if (preferences.ExcludedApplications.Length >= AppExclusionPolicy.MaximumApplications)
-        { AddStatus("排除清單已達 128 項，請先移除不需要的項目。"); return false; }
+        { ShowNotice("排除清單已達 128 項，請先移除不需要的項目。"); return false; }
         preferences = preferences with { ExcludedApplications = [.. preferences.ExcludedApplications, entry] };
         ApplyExcludedApplications();
-        AddStatus("已加入排除 App；手動快捷鍵仍可使用。");
+        ShowNotice("已加入排除 App；手動快捷鍵仍可使用。");
         SavePreferences();
         return true;
     }
@@ -160,7 +194,7 @@ public sealed class MainWindow : Window
         if (remaining.Length == preferences.ExcludedApplications.Length) return false;
         preferences = preferences with { ExcludedApplications = remaining };
         ApplyExcludedApplications();
-        AddStatus("已移除排除 App；啟用自動偵測時將恢復正常觸發。");
+        ShowNotice("已移除排除 App；啟用自動偵測時將恢復正常觸發。");
         SavePreferences();
         return true;
     }
@@ -175,7 +209,7 @@ public sealed class MainWindow : Window
     {
         try { settingsStore.Save(preferences); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-        { AddStatus("本次設定已生效，但無法保存；下次啟動將使用原設定。"); }
+        { ShowNotice("本次設定已生效，但無法保存；下次啟動將使用原設定。"); }
     }
 
     private void ShowActionSettings()
@@ -187,7 +221,7 @@ public sealed class MainWindow : Window
             preferences = preferences with { Actions = value }; controller?.ConfigureActions(value);
             try { settingsStore.Save(preferences); return true; }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-            { AddStatus("本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。"); return false; }
+            { ShowNotice("本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。"); return false; }
         });
         actionSettingsWindow = window; window.Closed += (_, _) => actionSettingsWindow = null; window.Show();
     }
@@ -196,11 +230,11 @@ public sealed class MainWindow : Window
     {
         if (exitRequested) return false;
         if (!WebActionPolicy.IsValidSearchTemplate(value))
-        { AddStatus("搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。"); return false; }
+        { ShowNotice("搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。"); return false; }
         preferences = preferences with { SearchUrlTemplate = value };
         if (controller != null) controller.SearchUrlTemplate = value;
         searchSettingsPanel.ShowTemplate(value);
-        AddStatus("已更新搜尋網址；點擊搜尋後交由預設瀏覽器處理。");
+        ShowNotice("已更新搜尋網址；點擊搜尋後交由預設瀏覽器處理。");
         SavePreferences();
         return true;
     }
@@ -208,8 +242,9 @@ public sealed class MainWindow : Window
     private void UpdateAutomaticControls()
     {
         var automatic = controller?.Automatic == true;
-        toggle.Content = automatic ? "暫停自動偵測" : "啟用自動偵測";
-        mode.Text = automatic ? "自動偵測已啟用 · 手動快捷鍵仍可使用" : "自動偵測已暫停 · 僅使用手動快捷鍵";
+        toggle.IsChecked = automatic;
+        mode.Text = automatic ? "● 自動偵測中" : controller?.HotkeyRegistered == true ? "● 快捷鍵待命" : "● 快捷鍵不可用";
+        mode.Foreground = automatic ? ActionUi.Accent : controller?.HotkeyRegistered == true ? ActionUi.Muted : Brushes.Firebrick;
         tray?.Update(automatic, controller != null);
     }
 
@@ -244,5 +279,11 @@ public sealed class MainWindow : Window
         status.Text = message;
         events.Items.Insert(0, $"{DateTime.Now:HH:mm:ss}  {message}");
         while (events.Items.Count > 100) events.Items.RemoveAt(events.Items.Count - 1);
+    }
+
+    private void ShowNotice(string message)
+    {
+        notice.Text = message; notice.Visibility = Visibility.Visible;
+        AddStatus(message);
     }
 }

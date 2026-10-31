@@ -23,6 +23,11 @@ internal static class CustomActionRunnerTest
             var result = await CustomActionRunner.RunAsync(Action("[Console]::Write($env:POPCLIP_TEXT)"), text, default);
             Require(result.Success && result.Output == text);
         });
+        await Check("explicit no-selection script receives an empty environment value", async () =>
+        {
+            var result = await CustomActionRunner.RunAsync(Action("[Console]::Write('[' + $env:POPCLIP_TEXT + ']')") with { UseSelection = false }, "must not reach script 中文", default);
+            Require(result.Success && result.Output == "[]");
+        });
         await Check("nonzero exit preserves UTF8 stderr", async () =>
         {
             var result = await CustomActionRunner.RunAsync(Action("[Console]::Error.Write('錯誤 😀'); exit 7"), "", default);

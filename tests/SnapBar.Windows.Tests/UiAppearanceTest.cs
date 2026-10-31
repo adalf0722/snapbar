@@ -1,0 +1,257 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using SnapBar.App;
+using SnapBar.Core;
+
+internal static class UiAppearanceTest
+{
+    private static IEnumerable<T> Children<T>(DependencyObject item) where T : DependencyObject
+    {
+        if (item is T match) yield return match;
+        foreach (var child in LogicalTreeHelper.GetChildren(item).OfType<DependencyObject>())
+            foreach (var descendant in Children<T>(child)) yield return descendant;
+    }
+
+    internal static void Snapshot(Window window, string file)
+    {
+        window.UpdateLayout();
+        var content = (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
+        var width = content.ActualWidth; var height = content.ActualHeight;
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width), (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
+        var visual = new DrawingVisual();
+        using (var drawing = visual.RenderOpen())
+        {
+            drawing.DrawRectangle(window.Background, null, new(0, 0, width, height));
+        }
+        bitmap.Render(visual); bitmap.Render(content);
+        var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        Directory.CreateDirectory("artifacts/ui-polish");
+        using var stream = File.Create(Path.Combine("artifacts/ui-polish", file)); encoder.Save(stream);
+    }
+
+    public static int Run(bool preview = false)
+    {
+        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; var passed = 0; var exit = 1;
+        void Check(bool ok, string name)
+        { if (!ok) throw new InvalidOperationException(name); passed++; Console.WriteLine("PASS " + name); }
+        app.Startup += async (_, _) =>
+        {
+            MainWindow? main = null; ActionSettingsWindow? actions = null; ActionEditorWindow? editor = null; PopupWindow? popup = null;
+            var directory = Path.Combine(Path.GetTempPath(), "SnapBar.Appearance." + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                main = new MainWindow(new SettingsStore(Path.Combine(directory, "settings.json"))); main.Show(); main.UpdateLayout();
+                Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
+                Check(!Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "LatestDiagnosticStatus").IsVisible,
+                    "routine capture status stays inside collapsed diagnostics");
+                main.SetSearchUrlTemplate("file:///invalid"); main.UpdateLayout();
+                var notice = Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "SettingsNotice");
+                Check(notice.IsVisible && notice.Text.Contains("無效"), "invalid settings remain visible without opening diagnostics");
+                notice.Visibility = Visibility.Collapsed;
+                Snapshot(main, "settings.png");
+                var searchPanel = Children<SearchSettingsPanel>(main).Single(); searchPanel.IsExpanded = true; main.UpdateLayout();
+                var provider = Children<ComboBox>(searchPanel).Single(c => AutomationProperties.GetAutomationId(c) == "SearchProvider");
+                var template = Children<TextBox>(searchPanel).Single(t => AutomationProperties.GetAutomationId(t) == "SearchUrlTemplate");
+                Check(provider.SelectedIndex == 0 && !template.IsVisible, "default search shows provider choice and hides custom URL details");
+                Snapshot(main, "search-provider.png"); provider.SelectedIndex = 1;
+                Check(!File.Exists(Path.Combine(directory, "settings.json")), "changing search provider waits for explicit save");
+                Children<Button>(searchPanel).Single(b => AutomationProperties.GetAutomationId(b) == "SaveSearchTemplate").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(new SettingsStore(Path.Combine(directory, "settings.json")).Load().Settings.SearchUrlTemplate == SearchSettingsPanel.BingTemplate,
+                    "Bing choice saves the corresponding valid query template");
+                provider.SelectedIndex = 2; template.Text = "https://example.com/search?q={query}"; provider.SelectedIndex = 0; provider.SelectedIndex = 2;
+                Check(template.Text == "https://example.com/search?q={query}", "switching provider preserves unsaved custom URL draft");
+                Snapshot(main, "search-custom.png");
+                Children<Button>(searchPanel).Single(b => AutomationProperties.GetAutomationId(b) == "SaveSearchTemplate").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(new SettingsStore(Path.Combine(directory, "settings.json")).Load().Settings.SearchUrlTemplate == template.Text, "custom query template saves without normalization or replacement");
+                Children<Button>(searchPanel).Single(b => AutomationProperties.GetAutomationId(b) == "ResetSearchTemplate").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(provider.SelectedIndex == 0 && !template.IsVisible, "reset returns to Google provider and hides custom fields");
+                searchPanel.IsExpanded = false; notice.Visibility = Visibility.Collapsed;
+                main.Width = main.MinWidth; main.Height = main.MinHeight; main.UpdateLayout(); Snapshot(main, "settings-small.png");
+                Check(((ScrollViewer)main.Content).ScrollableHeight > 0, "compact settings can scroll to all sections and exit");
+                main.Width = 740; main.Height = 760; main.UpdateLayout();
+
+                var script = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "清理多餘空白", CustomActionKind.PowerShell, "terminal", "($env:POPCLIP_TEXT -replace '\\s+', ' ').Trim()");
+                var counter = script with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "統計字數", Content = "$env:POPCLIP_TEXT.Length" };
+                var settings = ActionCatalog.Normalize(new() { CustomActions = [script, counter] });
+                settings = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(settings, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
+                var saveCalls = 0;
+                actions = new ActionSettingsWindow(settings, _ => { saveCalls++; return true; }); actions.Show(); actions.UpdateLayout(); Snapshot(actions, "actions.png");
+                void SelectPlacement(ActionPlacement placement)
+                { Children<RadioButton>(actions).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true; actions.UpdateLayout(); }
+                SelectPlacement(ActionPlacement.More);
+                Check(saveCalls == 0 && Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == script.Name + "顯示位置")
+                    && !Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == "複製顯示位置"), "More tab directly exposes custom actions without saving or showing pinned rows");
+                Snapshot(actions, "actions-more.png");
+                Check(!Children<TextBlock>(actions).Any(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementGroup_Hidden"),
+                    "empty hidden group is omitted");
+                Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == script.Name + "顯示位置").SelectedIndex = (int)ActionPlacement.Hidden;
+                SelectPlacement(ActionPlacement.Hidden);
+                Check(Children<TextBlock>(actions).Any(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementGroup_Hidden" && t.Text.Contains("1")),
+                    "hidden group appears when an action is placed there");
+                Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == script.Name + "顯示位置").SelectedIndex = (int)ActionPlacement.More;
+                SelectPlacement(ActionPlacement.Bar);
+                var theme = Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == "動作列主題");
+                theme.SelectedIndex = 1; actions.UpdateLayout(); Snapshot(actions, "actions-light.png");
+                actions.Width = actions.MinWidth; actions.Height = 620; actions.UpdateLayout(); Snapshot(actions, "actions-small.png");
+                Check(Children<ComboBox>(actions).Where(c => AutomationProperties.GetName(c).EndsWith("顯示位置")).All(c => c.ActualWidth >= 100), "compact action rows retain usable placement controls");
+                actions.Width = 900; actions.Height = 820; actions.UpdateLayout();
+
+                editor = new ActionEditorWindow(script); editor.Show(); editor.UpdateLayout();
+                var test = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "TestCustomAction");
+                var stop = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "StopCustomActionTest");
+                Check(AutomationProperties.GetName(test) == "執行測試" && stop.Visibility == Visibility.Collapsed, "script editor names real execution and hides idle stop control");
+                var output = Children<ComboBox>(editor).Single(c => AutomationProperties.GetName(c) == "結果處理方式");
+                var outputHelp = Children<TextBlock>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "ActionOutputHelp");
+                var descriptions = new[] { "不顯示", "複製到剪貼簿", "重新驗證原選取", "短暫顯示", "文字結果視窗", "Markdown" };
+                for (var i = 0; i < descriptions.Length; i++)
+                { output.SelectedIndex = i; Check(outputHelp.Text.Contains(descriptions[i]), "output help follows mode " + i); }
+                output.SelectedIndex = (int)ActionOutput.Window;
+                Snapshot(editor, "editor.png");
+                editor.Width = editor.MinWidth; editor.Height = editor.MinHeight; editor.UpdateLayout(); Snapshot(editor, "editor-small.png");
+                var save = Children<Button>(editor).Single(b => AutomationProperties.GetName(b) == "儲存動作");
+                var point = save.TransformToAncestor((FrameworkElement)editor.Content).Transform(new Point(0, 0));
+                Check(point.Y + save.ActualHeight <= ((FrameworkElement)editor.Content).ActualHeight + 1, "save remains visible at minimum editor size");
+                var advanced = Children<Expander>(editor).Single(e => AutomationProperties.GetAutomationId(e) == "AdvancedActionSettings");
+                var runtime = Children<TextBox>(editor).Single(t => AutomationProperties.GetName(t) == "執行環境完整路徑");
+                var formScroll = Children<ScrollViewer>(editor).Single(s => s.Content is StackPanel panel && Children<TextBox>(panel).Contains(runtime));
+                advanced.IsExpanded = true;
+                await editor.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+                editor.UpdateLayout();
+                var runtimeBounds = runtime.TransformToAncestor(formScroll).TransformBounds(new Rect(runtime.RenderSize));
+                Check(formScroll.VerticalOffset > 0 && runtimeBounds.Top >= -1 && runtimeBounds.Bottom <= formScroll.ActualHeight + 1,
+                    "expanding advanced settings scrolls first input fully into the minimum-size viewport");
+                Snapshot(editor, "editor-advanced-small.png"); advanced.IsExpanded = false; formScroll.ScrollToTop();
+                editor.Width = 1080; editor.Height = 850;
+                var code = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionContent");
+                code.Text = "Start-Sleep -Seconds 30"; test.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(!test.IsEnabled && stop.Visibility == Visibility.Visible, "running test exposes stop and disables duplicate execution");
+                stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!test.IsEnabled && DateTime.UtcNow < deadline) await Task.Delay(20);
+                Check(test.IsEnabled && stop.Visibility == Visibility.Collapsed, "cancelled test returns to idle controls");
+                var sample = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionSample");
+                var result = Children<TextBox>(editor).Single(t => AutomationProperties.GetName(t) == "執行結果或網址預覽");
+                var comparison = Children<ActionTestComparisonView>(editor).Single();
+                async Task RunTest()
+                {
+                    test.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    var limit = DateTime.UtcNow.AddSeconds(10);
+                    while (!test.IsEnabled && DateTime.UtcNow < limit) await Task.Delay(20);
+                    if (!test.IsEnabled) throw new InvalidOperationException("comparison test did not complete");
+                    editor.UpdateLayout();
+                }
+                sample.Text = "  中文\t😀\r\n字  "; code.Text = "[Console]::Write(($env:POPCLIP_TEXT -replace '\\s+', ' ').Trim())";
+                await RunTest();
+                Check(result.Text == "中文 😀 字" && sample.Text == "  中文\t😀\r\n字  ", "comparison preserves raw Unicode input and output");
+                Check(comparison.Visibility == Visibility.Visible && Children<TextBlock>(comparison).Any(t => t.Text.Contains("內容已變更")),
+                    "successful result reports an actual input/output change");
+                Check(Children<TextBox>(comparison).Single(t => AutomationProperties.GetAutomationId(t) == "TestInputWhitespace").Text == "··中文⇥😀␍↵\n字··",
+                    "whitespace representation distinguishes spaces tabs CRLF without altering source");
+                var symbols = Children<CheckBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "ShowResultWhitespace");
+                var compareExpander = Children<Expander>(comparison).Single();
+                Check(symbols.IsVisible && symbols.IsChecked != true && !compareExpander.IsExpanded
+                    && !Children<TextBlock>(comparison).Single(t => AutomationProperties.GetAutomationId(t) == "TestComparisonSummary").IsVisible,
+                    "result opens raw with compact whitespace toggle and comparison summary inside collapsed details");
+                symbols.IsChecked = true; editor.UpdateLayout();
+                Check(result.Text == "中文·😀·字" && sample.Text == "  中文\t😀\r\n字  " && test.IsEnabled
+                    && result.TextWrapping == TextWrapping.NoWrap && result.HorizontalScrollBarVisibility == ScrollBarVisibility.Auto,
+                    "whitespace switch changes only the result display without rerunning or changing input");
+                symbols.IsChecked = false;
+                Check(result.Text == "中文 😀 字", "disabling whitespace restores the exact original result");
+                Snapshot(editor, "editor-result-compact.png");
+                Children<Expander>(comparison).Single().IsExpanded = true; Snapshot(editor, "editor-comparison.png");
+                code.Text = "[Console]::Write($env:POPCLIP_TEXT)";
+                Check(comparison.Visibility == Visibility.Collapsed && Children<TextBox>(comparison).All(t => t.Text.Length == 0)
+                    && symbols.Visibility == Visibility.Collapsed && symbols.IsChecked != true, "editing clears comparison and resets result whitespace display");
+                await RunTest();
+                Check(result.Text == sample.Text && Children<TextBlock>(comparison).Any(t => t.Text.Contains("內容相同")), "unchanged result is labeled without invented changes");
+                symbols.IsChecked = true; editor.UpdateLayout();
+                Check(result.Text == "··中文⇥😀␍↵\n字··", "result whitespace view preserves visible CRLF and Unicode");
+                symbols.IsChecked = false;
+                Check(result.Text == sample.Text, "raw result restoration preserves exact CRLF and tabs");
+                Check(ActionTestComparisonView.VisibleWhitespace("a\rb\nc\r\nd") == "a␍\nb↵\nc␍↵\nd",
+                    "CR LF and CRLF remain distinct while preserving actual line boundaries");
+                sample.Text = new string('x', 160) + " wonderful"; await RunTest();
+                compareExpander.IsExpanded = true; symbols.IsChecked = true; editor.UpdateLayout();
+                Check(Children<TextBox>(comparison).All(t => t.TextWrapping == TextWrapping.NoWrap
+                    && t.HorizontalScrollBarVisibility == ScrollBarVisibility.Auto && t.LineCount == 1)
+                    && result.LineCount == 1, "long comparison and symbol-mode lines never introduce artificial wrapping");
+                Snapshot(editor, "editor-comparison-long-line.png");
+                editor.Width = editor.MinWidth; editor.Height = editor.MinHeight; editor.UpdateLayout();
+                Check(Children<TextBox>(comparison).All(t => t.LineCount == 1), "comparison retains original lines at minimum editor size");
+                comparison.BringIntoView();
+                await editor.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+                Snapshot(editor, "editor-comparison-small.png");
+                editor.Width = 1080; editor.Height = 850;
+                code.Text = "[Console]::Write('')"; await RunTest();
+                Check(result.Text == "" && Children<TextBlock>(comparison).Any(t => t.Text.Contains("沒有文字輸出")), "successful empty output is explicit and stays empty");
+                code.Text = "throw 'preview failure'"; await RunTest();
+                Check(symbols.Visibility == Visibility.Collapsed && comparison.Visibility == Visibility.Collapsed, "failed result hides whitespace controls and comparison");
+                code.Text = "Start-Sleep -Milliseconds 300; [Console]::Write('obsolete')";
+                test.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); sample.Text = "new sample";
+                deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!test.IsEnabled && DateTime.UtcNow < deadline) await Task.Delay(20);
+                Check(test.IsEnabled && comparison.Visibility == Visibility.Collapsed && result.Text != "obsolete"
+                    && Children<TextBlock>(editor).Any(t => t.Text.Contains("請重新測試")), "editing during execution never presents old result as a new comparison");
+                var inputOption = Children<CheckBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "UseSelectionInput");
+                inputOption.IsChecked = false; code.Text = "[Console]::Write('[' + $env:POPCLIP_TEXT + ']')"; output.SelectedIndex = (int)ActionOutput.Hud;
+                await RunTest();
+                Check(!sample.IsVisible && comparison.Visibility == Visibility.Collapsed && result.Text == "[]"
+                    && !Children<Button>(editor).Single(b => AutomationProperties.GetName(b) == "插入選取文字").IsEnabled,
+                    "disabled selection hides sample and comparison and executes with empty input");
+                symbols.IsChecked = true;
+                Check(symbols.IsVisible && result.Text == "[]" && comparison.Visibility == Visibility.Collapsed, "selection-independent output still supports whitespace inspection without input comparison");
+                Check(outputHelp.Text.Contains("短暫顯示") && !outputHelp.Text.Contains("取代"), "HUD description never implies replacement");
+                Snapshot(editor, "editor-no-selection.png"); inputOption.IsChecked = true; editor.UpdateLayout();
+                Check(sample.IsVisible && sample.Text == "new sample", "reenabling selection restores the sample draft");
+                editor.Close(); editor = new ActionEditorWindow(); editor.Show(); editor.UpdateLayout(); Snapshot(editor, "editor-url.png");
+                Check(Children<CheckBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "ShowResultWhitespace").Visibility == Visibility.Collapsed,
+                    "URL preview does not expose script-result whitespace control");
+                Check(Children<Button>(editor).Any(b => AutomationProperties.GetName(b) == "預覽網址"), "URL editor labels preview without suggesting execution");
+                var kind = Children<ComboBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "CustomActionKind");
+                var icon = Children<ComboBox>(editor).Single(c => AutomationProperties.GetName(c) == "動作圖示");
+                kind.SelectedIndex = 1;
+                Check((string)((ComboBoxItem)icon.SelectedItem).Tag == "terminal", "new script defaults to terminal icon");
+                icon.SelectedItem = icon.Items.Cast<ComboBoxItem>().Single(i => (string)i.Tag == "clean"); kind.SelectedIndex = 2;
+                Check((string)((ComboBoxItem)icon.SelectedItem).Tag == "clean", "explicit icon survives later type changes");
+                editor.Close(); editor = new ActionEditorWindow(script with { Icon = "globe" }); editor.Show(); editor.UpdateLayout();
+                Check((string)((ComboBoxItem)Children<ComboBox>(editor).Single(c => AutomationProperties.GetName(c) == "動作圖示").SelectedItem).Tag == "globe",
+                    "existing custom icon remains unchanged when editing");
+                var savedDialog = new ActionEditorWindow(script with { UseSelection = false }) { Owner = editor };
+                savedDialog.Loaded += (_, _) => Children<Button>(savedDialog).Single(b => AutomationProperties.GetName(b) == "儲存動作").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(savedDialog.ShowDialog() == true && savedDialog.SavedAction?.UseSelection == false,
+                    "saving an existing action preserves explicit disabled selection");
+
+                popup = new PopupWindow();
+                var selection = new SelectionSnapshot("appearance", new(0, 0, 0), "Disposable fixture text", new(100, 100, 100, 20), true, 1, 23);
+                foreach (var name in new[] { "Dark", "Light" })
+                {
+                    popup.Present(selection, 100, 100, actionSettings: settings with { Theme = name }); popup.UpdateLayout(); Snapshot(popup, "toolbar-" + name.ToLowerInvariant() + ".png");
+                    Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    popup.UpdateLayout(); Snapshot(popup, "more-" + name.ToLowerInvariant() + ".png");
+                }
+                popup.Close(); popup = null; exit = 0;
+                if (preview)
+                {
+                    Console.WriteLine("PREVIEW: disposable settings and actions; close editor to finish.");
+                    var closed = new TaskCompletionSource(); editor.Closed += (_, _) => closed.TrySetResult();
+                    await closed.Task;
+                }
+            }
+            catch (Exception error) { Console.WriteLine("FAIL " + error); }
+            finally
+            {
+                popup?.Close(); editor?.Close(); actions?.Close();
+                main?.PrepareSessionEnd(); main?.Close();
+                foreach (var file in Directory.GetFiles(directory)) File.Delete(file); Directory.Delete(directory, false);
+                Console.WriteLine($"{passed} passed, {(exit == 0 ? 0 : 1)} failed"); app.Shutdown();
+            }
+        };
+        app.Run(); return exit;
+    }
+}

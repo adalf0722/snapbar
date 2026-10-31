@@ -36,7 +36,11 @@ internal static class ActionLayoutTest
                     .Where(id => id.StartsWith("ActionBarPreview_", StringComparison.Ordinal)).Select(id => id[17..]).ToArray();
                 void Place(string name, ActionPlacement placement)
                 {
+                    var id = ActionCatalog.GetItems(current).Single(a => a.Name == name).Id;
+                    var currentPlacement = current.Layout.Single(e => e.Id == id).Placement;
+                    Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + currentPlacement).IsChecked = true;
                     Children<ComboBox>(window).Single(c => AutomationProperties.GetName(c) == name + "顯示位置").SelectedIndex = (int)placement;
+                    Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
                     window.UpdateLayout();
                 }
                 Check(Preview(window).SequenceEqual(new[] { "copy", "cut", "paste", "search" }), "settings preview defaults to four pinned actions");

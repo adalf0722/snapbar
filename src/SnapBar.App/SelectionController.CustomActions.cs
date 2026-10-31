@@ -62,7 +62,7 @@ public sealed partial class SelectionController
                 return;
             }
             Status?.Invoke("正在執行自訂動作…");
-            var result = await runCustom(action, current.Text, cancellation.Token);
+            var result = await runCustom(action, action.UseSelection ? current.Text : "", cancellation.Token);
             if (!Current(current, ticket) || cancellation.IsCancellationRequested) return;
             var diagnostic = ScriptDiagnostic.Create(action, result);
             if (diagnostic.IsFailure)

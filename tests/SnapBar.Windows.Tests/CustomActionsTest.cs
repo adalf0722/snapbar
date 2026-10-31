@@ -62,6 +62,35 @@ internal static class CustomActionsTest
                 await Capture();
                 var popup = Popup(); var oldOrder = Children<Button>(popup).Where(b => b.IsVisible).Select(AutomationProperties.GetName).ToArray();
                 Check(oldOrder.Take(2).SequenceEqual(new[] { "複製", "搜尋" }), "compact bar hides readonly writes without losing order");
+                var anchor = controller.ActiveSelection!.Bounds!;
+                var popupHandle = new WindowInteropHelper(popup).Handle;
+                var work = Native.WorkArea((int)anchor.X, (int)anchor.Y);
+                Check(Native.GetWindowRect(popupHandle, out var popupBounds)
+                    && popupBounds.Left >= work.X && popupBounds.Top >= work.Y
+                    && popupBounds.Right <= work.X + work.Width && popupBounds.Bottom <= work.Y + work.Height
+                    && (popupBounds.Bottom <= anchor.Y || popupBounds.Top >= anchor.Y + anchor.Height),
+                    "real selection toolbar stays in work area without covering the selected line");
+                UiAppearanceTest.Snapshot(popup, "toolbar-native.png");
+                var copyButton = popup.FindActionButton(TextAction.Copy);
+                var hoverPoint = copyButton.PointToScreen(new Point(copyButton.ActualWidth / 2, copyButton.ActualHeight / 2));
+                SetCursorPos((int)hoverPoint.X, (int)hoverPoint.Y); await Task.Delay(150);
+                Check(copyButton.IsMouseOver && popup.IsVisible && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
+                    "native mouse hover keeps toolbar open and original source foreground");
+                var chrome = (Border)copyButton.Template.FindName("Chrome", copyButton);
+                Check(chrome.Background is SolidColorBrush brush && brush.Color == ((SolidColorBrush)ActionUi.DarkHover).Color,
+                    "hover applies the visible dark toolbar highlight");
+                UiAppearanceTest.Snapshot(popup, "toolbar-native-hover.png");
+                Locked(() => { var captured = clipboardBackup.Capture(); if (captured != "ok") throw new InvalidOperationException("Clipboard backup failed"); clipboardCaptured = true; });
+                mouse_event(2, 0, 0, 0, 0); mouse_event(4, 0, 0, 0, 0);
+                deadline = DateTime.UtcNow.AddSeconds(4);
+                while ((popup.IsVisible || controller.ActiveSelection != null) && DateTime.UtcNow < deadline) await Task.Delay(30);
+                Check(!popup.IsVisible && Clipboard.GetText() == FixtureWindow.SearchFixtureText
+                    && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
+                    "native Copy click copies only fixture selection then dismisses without stealing focus");
+                await Capture(); popup = Popup();
+                SetCursorPos((int)anchor.X + 5, (int)anchor.Y + 5); mouse_event(0x0800, 0, 0, 120, 0); await Task.Delay(150);
+                Check(!popup.IsVisible && controller.ActiveSelection == null, "native scroll outside toolbar dismisses the old selection session");
+                await Capture(); popup = Popup();
                 Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(popup.MenuOpen && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id, "More opens without stealing foreground");
                 Check(popup.HandleMenuKey(0x4A) && Children<Button>(popup).Any(b => AutomationProperties.GetAutomationId(b) == "MoreAction_" + script.Id), "More keyboard filter searches custom action name");
@@ -75,6 +104,18 @@ internal static class CustomActionsTest
                 Check(!Children<Button>(resultWindow).Single(b => AutomationProperties.GetName(b) == "套用至原文").IsEnabled, "readonly result cannot apply");
                 resultWindow.Close(); await Capture(); await controller.ExecuteCustomAsync(replace.Id);
                 Check(calls == 1, "readonly replacement is rejected before executing script");
+                var originalRunner = runner;
+                var independent = script with { UseSelection = false, Output = ActionOutput.None };
+                controller.ConfigureActions(actions with { CustomActions = [url, independent, replace] });
+                string? suppliedInput = null;
+                runner = (_, text, _) => { suppliedInput = text; return Task.FromResult(new ScriptExecutionResult("ok", "fixture")); };
+                await Capture(); await controller.ExecuteCustomAsync(script.Id);
+                Check(suppliedInput == "", "controller omits selected text for explicitly independent script");
+                suppliedInput = null;
+                controller.ConfigureActions(actions with { CustomActions = [url, independent with { Output = ActionOutput.ReplaceSelection }, replace] });
+                await Capture(); await controller.ExecuteCustomAsync(script.Id);
+                Check(suppliedInput == null, "disabled selection input cannot bypass readonly replacement rejection");
+                controller.ConfigureActions(actions); runner = originalRunner;
                 foreach (var mode in new[] { ActionOutput.None, ActionOutput.Clipboard, ActionOutput.Hud, ActionOutput.Window, ActionOutput.Markdown })
                 {
                     controller.ConfigureActions(actions with { CustomActions = [url, script with { Output = mode }, replace] });
@@ -152,7 +193,8 @@ internal static class CustomActionsTest
                 while (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != fixture.Id)
                 { if (fixture.HasExited || DateTime.UtcNow > deadline) throw new InvalidOperationException("Editable fixture must be foreground"); await Task.Delay(25); }
                 await Task.Delay(120);
-                Locked(() => { var captured = clipboardBackup.Capture(); if (captured != "ok") throw new InvalidOperationException("Clipboard backup failed"); clipboardCaptured = true; });
+                if (!clipboardCaptured)
+                    Locked(() => { var captured = clipboardBackup.Capture(); if (captured != "ok") throw new InvalidOperationException("Clipboard backup failed"); clipboardCaptured = true; });
                 var editElement = AutomationElement.FromHandle(fixture.MainWindowHandle).FindFirst(TreeScope.Descendants,
                     new PropertyCondition(AutomationElement.AutomationIdProperty, "EditableSample"));
                 var value = (ValuePattern)editElement.GetCurrentPattern(ValuePattern.Pattern);

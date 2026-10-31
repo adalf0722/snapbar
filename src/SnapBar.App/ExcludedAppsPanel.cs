@@ -21,23 +21,24 @@ internal sealed class ExcludedAppsPanel : Expander
 
     public ExcludedAppsPanel()
     {
-        Header = "排除 App（0）"; Margin = new(0, 0, 0, 16);
+        SetResourceReference(StyleProperty, typeof(Expander));
+        Header = "排除 App（0）";
         AutomationProperties.SetAutomationId(this, "ExcludedAppsPanel");
         var panel = new StackPanel { Margin = new(0, 10, 0, 0) };
         panel.Children.Add(new TextBlock { Text = "在這些 App 不會自動彈出；Ctrl+Alt+V 仍可使用。",
-            TextWrapping = TextWrapping.Wrap, Foreground = Brushes.SlateGray, Margin = new(0, 0, 0, 8) });
-        applications = new ListBox { Height = 100, DisplayMemberPath = nameof(ExcludedApplication.DisplayName) };
+            TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = ActionUi.Muted, Margin = new(0, 0, 0, 8) });
+        applications = new ListBox { Height = 100, BorderBrush = ActionUi.Line, BorderThickness = new(1), DisplayMemberPath = nameof(ExcludedApplication.DisplayName) };
         var itemStyle = new Style(typeof(ListBoxItem));
         itemStyle.Setters.Add(new Setter(AutomationProperties.NameProperty, new Binding(nameof(ExcludedApplication.DisplayName))));
         itemStyle.Setters.Add(new Setter(ToolTipProperty, new Binding(nameof(ExcludedApplication.ExecutablePath))));
         applications.ItemContainerStyle = itemStyle;
         AutomationProperties.SetAutomationId(applications, "ExcludedAppsList");
         panel.Children.Add(applications);
-        selectedPath = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 11,
-            Foreground = Brushes.SlateGray, Margin = new(0, 6, 0, 8) };
+        selectedPath = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12,
+            Foreground = ActionUi.Muted, Margin = new(0, 6, 0, 8) };
         panel.Children.Add(selectedPath);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-        var add = new Button { Content = "加入 App…", Padding = new(12, 6, 12, 6), Margin = new(0, 0, 10, 0) };
+        var add = ActionUi.Button("加入 App…", () => { });
         AutomationProperties.SetAutomationId(add, "AddExcludedApp");
         add.Click += (_, _) =>
         {
@@ -56,7 +57,7 @@ internal sealed class ExcludedAppsPanel : Expander
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { }
             AddRequested?.Invoke(AppExclusionPolicy.Create(executablePath, name));
         };
-        remove = new Button { Content = "移除選取項目", Padding = new(12, 6, 12, 6), IsEnabled = false };
+        remove = ActionUi.Button("移除選取項目", () => { }); remove.IsEnabled = false;
         AutomationProperties.SetAutomationId(remove, "RemoveExcludedApp");
         remove.Click += (_, _) =>
         {

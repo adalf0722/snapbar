@@ -19,31 +19,67 @@ internal sealed class ActionSettingsWindow : Window
     private string? dragging;
     private ActionSettings? undo;
     private readonly TextBlock previewHeading = ActionUi.Text("", 11, ActionUi.Muted);
+    private readonly Border previewShell = new();
+    private readonly MenuItem undoItem = new() { Header = "復原刪除", IsEnabled = false };
+    private readonly Dictionary<ActionPlacement, RadioButton> tabs = new();
+    private readonly ScrollViewer listScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    private ActionPlacement selectedPlacement = ActionPlacement.Bar;
 
     public ActionSettingsWindow(ActionSettings initial, Func<ActionSettings, bool> save)
     {
         this.save = save; settings = ActionCatalog.Normalize(initial);
-        ActionUi.Setup(this, "我的動作 · SnapBar", 860, 800); MinWidth = 680;
-        var outer = new DockPanel { Margin = new(28) }; var heading = new StackPanel { Margin = new(0, 0, 0, 22) };
-        heading.Children.Add(ActionUi.Text("A PLACE FOR EVERY ACTION", 10, ActionUi.Muted)); heading.Children.Add(ActionUi.Text("你的動作列，你來決定。", 27));
-        heading.Children.Add(ActionUi.Text("留在手邊、收進更多，或暫時隱藏。", 12, ActionUi.Muted)); DockPanel.SetDock(heading, Dock.Top); outer.Children.Add(heading);
-        var top = new StackPanel(); var tools = new DockPanel { Margin = new(0, 0, 0, 18) };
-        var add = ActionUi.Button("新增動作", () => Edit(null), "plus", true); DockPanel.SetDock(add, Dock.Right); tools.Children.Add(add);
-        var import = ActionUi.Button("匯入…", Import); DockPanel.SetDock(import, Dock.Right); tools.Children.Add(import);
-        var undoButton = ActionUi.Button("復原刪除", () => { if (undo != null) { var previous = undo; undo = null; Commit(previous); } }); DockPanel.SetDock(undoButton, Dock.Right); tools.Children.Add(undoButton);
-        tools.Children.Add(ActionUi.Text("我的動作", 18)); top.Children.Add(tools);
-        var appearance = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 14) };
-        var theme = new ComboBox { ItemsSource = new[] { "深色", "淺色" }, SelectedIndex = settings.Theme == "Dark" ? 0 : 1, Padding = new(7), Width = 100, Margin = new(0, 0, 12, 0) };
-        theme.SelectionChanged += (_, _) => Commit(settings with { Theme = theme.SelectedIndex == 0 ? "Dark" : "Light" }); appearance.Children.Add(theme);
+        ActionUi.Setup(this, "我的動作 · SnapBar", 900, 820); MinWidth = 740;
+        var outer = new DockPanel { Margin = new(28) };
+        var top = new StackPanel(); var tools = new DockPanel { Margin = new(0, 0, 0, 20) };
+        var add = ActionUi.Button("新增動作", () => Edit(null), "plus", true); add.VerticalAlignment = VerticalAlignment.Center;
+        DockPanel.SetDock(add, Dock.Right); tools.Children.Add(add);
+        var extra = ActionUi.Button("", () => { }, "more"); extra.ToolTip = "動作選項"; extra.VerticalAlignment = VerticalAlignment.Center;
+        AutomationProperties.SetName(extra, "動作選項");
+        var menu = new ContextMenu(); var import = new MenuItem { Header = "匯入動作…" }; import.Click += (_, _) => Import(); menu.Items.Add(import);
+        undoItem.Click += (_, _) => { if (undo != null) { var previous = undo; undo = null; Commit(previous); } }; menu.Items.Add(undoItem);
+        extra.ContextMenu = menu; extra.Click += (_, _) => { menu.PlacementTarget = extra; menu.IsOpen = true; };
+        DockPanel.SetDock(extra, Dock.Right); tools.Children.Add(extra);
+        var heading = new StackPanel(); heading.Children.Add(ActionUi.Heading("我的動作", 24));
+        var subtitle = ActionUi.Text("把常用動作留在手邊。", 13, ActionUi.Muted); subtitle.Margin = new(0, 5, 0, 0); heading.Children.Add(subtitle);
+        tools.Children.Add(heading); top.Children.Add(tools);
+
+        var previewContent = new StackPanel();
+        var previewTitle = new DockPanel(); previewTitle.Children.Add(ActionUi.Heading("動作列預覽", 14));
+        previewHeading.HorizontalAlignment = HorizontalAlignment.Right; previewTitle.Children.Add(previewHeading); previewContent.Children.Add(previewTitle);
+        var previewBox = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Margin = new(0, 10, 0, 10) };
+        previewShell.Child = preview; previewShell.HorizontalAlignment = HorizontalAlignment.Center;
+        previewShell.CornerRadius = new(11); previewShell.Padding = new(6); previewShell.BorderThickness = new(1);
+        previewBox.Content = previewShell; previewContent.Children.Add(previewBox);
+        var appearance = new DockPanel();
+        previewHeading.VerticalAlignment = VerticalAlignment.Center;
+        var appearanceOptions = new StackPanel { Orientation = Orientation.Horizontal };
+        var theme = new ComboBox { ItemsSource = new[] { "深色", "淺色" }, SelectedIndex = settings.Theme == "Dark" ? 0 : 1, Width = 104, Margin = new(0, 0, 16, 0) };
+        AutomationProperties.SetName(theme, "動作列主題");
+        theme.SelectionChanged += (_, _) => Commit(settings with { Theme = theme.SelectedIndex == 0 ? "Dark" : "Light" }); appearanceOptions.Children.Add(theme);
         var labels = new CheckBox { Content = "圖示與文字", IsChecked = settings.ShowLabels, VerticalAlignment = VerticalAlignment.Center };
-        labels.Click += (_, _) => Commit(settings with { ShowLabels = labels.IsChecked == true }); appearance.Children.Add(labels); top.Children.Add(appearance);
-        top.Children.Add(previewHeading);
-        var previewBox = new ScrollViewer { Content = preview, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new(0, 8, 0, 18) };
-        top.Children.Add(previewBox); DockPanel.SetDock(top, Dock.Top); outer.Children.Add(top);
+        labels.Click += (_, _) => Commit(settings with { ShowLabels = labels.IsChecked == true }); appearanceOptions.Children.Add(labels);
+        appearance.Children.Add(appearanceOptions); previewContent.Children.Add(appearance);
+        var previewCard = ActionUi.Card(previewContent, new Thickness(16, 12, 16, 12)); previewCard.Margin = new(0, 0, 0, 10); top.Children.Add(previewCard);
         var previewHelp = ActionUi.Text("完整顯示釘選順序；實際動作列依選取情境顯示，寬度不足時將尾端收進「⋯」。", 11, ActionUi.Muted);
-        previewHelp.Margin = new(0, -8, 0, 14); top.Children.Add(previewHelp);
+        previewHelp.Margin = new(2, 0, 2, 14); top.Children.Add(previewHelp);
+        var navigation = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 8) };
+        foreach (var placement in Enum.GetValues<ActionPlacement>())
+        {
+            var tab = new RadioButton { GroupName = "ActionPlacement", Style = (Style)FindResource("ActionPlacementTab"),
+                IsChecked = placement == selectedPlacement, Margin = new(0, 0, 6, 0) };
+            AutomationProperties.SetAutomationId(tab, "ActionPlacementTab_" + placement);
+            tab.Checked += (_, _) =>
+            {
+                if (selectedPlacement == placement) return;
+                selectedPlacement = placement; Render(); listScroll.ScrollToTop();
+            };
+            tabs.Add(placement, tab); navigation.Children.Add(tab);
+        }
+        top.Children.Add(navigation);
+        DockPanel.SetDock(top, Dock.Top); outer.Children.Add(top);
         status.Margin = new(0, 10, 0, 0); DockPanel.SetDock(status, Dock.Bottom); outer.Children.Add(status);
-        outer.Children.Add(new ScrollViewer { Content = groups, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }); Content = outer; Render();
+        listScroll.Content = groups; outer.Children.Add(listScroll); Content = outer; Render();
     }
 
     private void Commit(ActionSettings value)
@@ -54,37 +90,59 @@ internal sealed class ActionSettingsWindow : Window
 
     private void Render()
     {
-        preview.Children.Clear(); var dark = settings.Theme == "Dark"; preview.Background = dark ? ActionUi.Brush("#252B2A") : Brushes.White;
+        undoItem.IsEnabled = undo != null;
+        if (selectedPlacement == ActionPlacement.Hidden && !settings.Layout.Any(e => e.Placement == ActionPlacement.Hidden))
+            selectedPlacement = ActionPlacement.More;
+        foreach (var (placement, tab) in tabs)
+        {
+            var count = settings.Layout.Count(e => e.Placement == placement);
+            tab.Content = (placement switch { ActionPlacement.Bar => "動作列", ActionPlacement.More => "更多", _ => "隱藏" }) + " · " + count;
+            tab.Visibility = placement == ActionPlacement.Hidden && count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            tab.IsChecked = selectedPlacement == placement;
+        }
+        preview.Children.Clear(); var dark = settings.Theme == "Dark";
+        previewShell.Background = dark ? ActionUi.DarkSurface : Brushes.White;
+        previewShell.BorderBrush = dark ? ActionUi.DarkLine : ActionUi.Line;
         var pinned = ActionCatalog.GetPinned(settings);
-        previewHeading.Text = $"動作列即時預覽 · 已釘選 {pinned.Count}/6";
+        previewHeading.Text = $"已釘選 {pinned.Count} / 6";
         foreach (var item in pinned)
         {
-            var element = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(12, 10, 3, 10) };
+            var element = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(10, 0, 10, 0), Height = 36 };
             element.Tag = item.Id; AutomationProperties.SetAutomationId(element, "ActionBarPreview_" + item.Id);
             element.ToolTip = item.BuiltIn switch
             { TextAction.OpenLink => "僅選取完整網址時顯示", TextAction.RevealPath => "僅選取完整路徑時顯示",
                 TextAction.Cut or TextAction.Paste => "僅可編輯來源時顯示", _ => item.Name };
             element.Children.Add(ActionUi.Icon(item.Icon, dark ? Brushes.White : ActionUi.Ink, 17));
-            if (settings.ShowLabels) { var label = ActionUi.Text(item.Name, 12, dark ? Brushes.White : ActionUi.Ink); label.Margin = new(6, 0, 0, 0); element.Children.Add(label); } preview.Children.Add(element);
+            if (settings.ShowLabels) { var label = ActionUi.Text(item.Name, 13, dark ? Brushes.White : ActionUi.Ink); label.Margin = new(7, 0, 0, 0); element.Children.Add(label); } preview.Children.Add(element);
         }
         var dots = ActionUi.Text("⋯", 18, dark ? Brushes.White : ActionUi.Ink); dots.Margin = new(12, 5, 12, 5); preview.Children.Add(dots);
         groups.Children.Clear(); var all = ActionCatalog.GetItems(settings).ToDictionary(a => a.Id);
-        foreach (var placement in Enum.GetValues<ActionPlacement>())
+        foreach (var placement in new[] { selectedPlacement })
         {
             var list = settings.Layout.Where(e => e.Placement == placement).ToArray();
-            var title = ActionUi.Text((placement switch { ActionPlacement.Bar => "在動作列", ActionPlacement.More => "在更多選單", _ => "已隱藏" }) + " · " + list.Length, 12, ActionUi.Muted);
-            title.Margin = new(0, 12, 0, 8); groups.Children.Add(title);
+            if (placement == ActionPlacement.Hidden && list.Length == 0) continue;
+            var title = ActionUi.Heading((placement switch { ActionPlacement.Bar => "動作列", ActionPlacement.More => "更多", _ => "隱藏" }) + " · " + list.Length, 14);
+            AutomationProperties.SetAutomationId(title, "ActionPlacementGroup_" + placement);
+            title.Margin = new(2, 10, 0, 8); groups.Children.Add(title);
+            if (list.Length == 0)
+            {
+                var empty = ActionUi.Text(placement == ActionPlacement.More ? "目前沒有更多動作。新增動作會出現在這裡。" : "目前沒有固定動作。請從「更多」選擇要放在動作列的項目。", 13, ActionUi.Muted);
+                empty.Margin = new(12, 18, 12, 18); groups.Children.Add(empty);
+            }
             foreach (var entry in list)
             {
-                var item = all[entry.Id]; var row = new Grid { Margin = new(0, 0, 0, 1), Background = Brushes.White, MinHeight = 58 };
+                var item = all[entry.Id]; var row = new Grid { MinHeight = 56 };
                 row.ColumnDefinitions.Add(new() { Width = new(36) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new() { Width = new(125) });
                 var image = ActionUi.Icon(item.Icon, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); row.Children.Add(image);
-                var name = new StackPanel { Margin = new(6, 9, 8, 9) }; name.Children.Add(ActionUi.Text(item.Name, 13)); name.Children.Add(ActionUi.Text(item.Custom?.Kind.ToString() ?? "內建動作", 10, ActionUi.Muted)); Grid.SetColumn(name, 1); row.Children.Add(name);
+                var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(item.Name, 14)); name.Children.Add(ActionUi.Text(item.Custom?.Kind.ToString() ?? "內建動作", 12, ActionUi.Muted)); Grid.SetColumn(name, 1); row.Children.Add(name);
                 var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 if (placement == ActionPlacement.Bar)
                 {
                     var up = ActionUi.Button("", () => Commit(ActionCatalog.Move(settings, item.Id, -1)), "up"); up.ToolTip = "上移"; up.Padding = new(6); buttons.Children.Add(up);
                     var down = ActionUi.Button("", () => Commit(ActionCatalog.Move(settings, item.Id, 1)), "down"); down.ToolTip = "下移"; down.Padding = new(6); buttons.Children.Add(down);
+                    AutomationProperties.SetName(up, item.Name + "上移"); AutomationProperties.SetName(down, item.Name + "下移");
+                    up.MinWidth = down.MinWidth = 34;
+                    up.IsEnabled = entry != list.First(); down.IsEnabled = entry != list.Last();
                     name.ToolTip = "拖曳此名稱可排序"; name.Cursor = Cursors.SizeNS;
                     name.PreviewMouseLeftButtonDown += (_, _) => dragging = item.Id;
                     name.MouseMove += (_, e) => { if (e.LeftButton == MouseButtonState.Pressed && dragging == item.Id) { DragDrop.DoDragDrop(name, item.Id, DragDropEffects.Move); dragging = null; } };
@@ -104,7 +162,9 @@ internal sealed class ActionSettingsWindow : Window
                 Grid.SetColumn(buttons, 2); row.Children.Add(buttons);
                 var combo = new ComboBox { ItemsSource = new[] { "動作列", "更多選單", "隱藏" }, SelectedIndex = (int)placement, VerticalAlignment = VerticalAlignment.Center, Margin = new(6), Padding = new(5) };
                 AutomationProperties.SetName(combo, item.Name + "顯示位置"); combo.SelectionChanged += (_, _) => { try { Commit(ActionCatalog.SetPlacement(settings, item.Id, (ActionPlacement)combo.SelectedIndex)); } catch (ArgumentException) { status.Text = "動作列已滿六個，請先移出一個。"; Render(); } };
-                Grid.SetColumn(combo, 3); row.Children.Add(combo); groups.Children.Add(row);
+                Grid.SetColumn(combo, 3); row.Children.Add(combo);
+                var rowCard = ActionUi.Card(row, new Thickness(8, 0, 6, 0)); rowCard.CornerRadius = new(8); rowCard.Margin = new(0, 0, 0, 3);
+                groups.Children.Add(rowCard);
             }
         }
     }
@@ -118,7 +178,7 @@ internal sealed class ActionSettingsWindow : Window
         {
             undo = settings;
             Commit(settings with { CustomActions = settings.CustomActions.Where(a => a.Id != action.Id).ToArray(), Layout = settings.Layout.Where(a => a.Id != action.Id).ToArray(), RecentIds = settings.RecentIds.Where(a => a != action.Id).ToArray() });
-            status.Text = "動作已刪除；可按「復原刪除」還原。";
+            status.Text = "動作已刪除；可從「動作選項」復原刪除。";
         }); return menu;
     }
 
@@ -129,6 +189,7 @@ internal sealed class ActionSettingsWindow : Window
         {
             var customs = settings.CustomActions.Where(a => a.Id != action.Id).Append(action).ToArray();
             if (customs.Length > 32) { status.Text = "最多 32 個自訂動作，請先移除不需要的項目。"; return; }
+            selectedPlacement = settings.Layout.FirstOrDefault(e => e.Id == action.Id)?.Placement ?? ActionPlacement.More;
             Commit(settings with { CustomActions = customs });
         }
     }

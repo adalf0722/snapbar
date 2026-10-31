@@ -96,7 +96,7 @@ internal static class ActionDiagnosticsTest
 
                 editor = new ActionEditorWindow(action with { Content = "throw 'fixture failure 中文'" });
                 editor.Show(); editor.UpdateLayout();
-                var test = Children<Button>(editor).Single(b => AutomationProperties.GetName(b) == "預覽／測試");
+                var test = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "TestCustomAction");
                 async Task RunEditorTest()
                 {
                     test.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

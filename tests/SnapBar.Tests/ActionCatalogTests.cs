@@ -122,23 +122,43 @@ internal static class ActionCatalogTests
             var imported = CustomActionPolicy.Import(CustomActionPolicy.Export(script));
             return imported.Id != script.Id && imported with { Id = script.Id } == script;
         });
-        check("import rejects duplicate case-insensitive envelope properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 1", "\"version\": 1, \"Version\": 1"))));
+        check("import rejects duplicate case-insensitive envelope properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 2", "\"version\": 2, \"Version\": 2"))));
         check("import rejects duplicate action properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"name\":", "\"name\": \"other\", \"name\":"))));
-        check("import rejects future version", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 1", "\"version\": 2"))));
+        check("import rejects future version", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 2", "\"version\": 3"))));
+        check("legacy action without input flag still uses selection", () =>
+            CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 2", "\"version\": 1").Replace(",\n    \"useSelection\": true", "")).UseSelection);
+        var independent = action with { Kind = CustomActionKind.PowerShell, Content = "Write-Output 'fixture'", UseSelection = false };
+        check("new action envelope preserves explicit no-selection input", () => !CustomActionPolicy.Import(CustomActionPolicy.Export(independent)).UseSelection);
+        check("legacy envelope cannot downgrade no-selection semantics", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(independent).Replace("\"version\": 2", "\"version\": 1"))));
+        check("URL actions cannot disable selection", () => CustomActionPolicy.Validate(action with { UseSelection = false }) != null);
         check("import rejects oversized UTF8 input", () => Reject(() => CustomActionPolicy.Import(new string('中', 90000))));
         var directory = Path.Combine(Path.GetTempPath(), "SnapBar.Actions.Tests." + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "settings.json");
         try
         {
-            foreach (var version in new[] { 1, 2, 3, 4 })
+            foreach (var version in new[] { 1, 2, 3, 4, 5 })
                 check("action settings migration from v" + version, () =>
                 {
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 4 && loaded.Settings.Actions.Layout.Length == 6 && before.SequenceEqual(File.ReadAllBytes(path));
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 5 && loaded.Settings.Actions.Layout.Length == 6 && before.SequenceEqual(File.ReadAllBytes(path));
                 });
+            check("legacy stored action without input flag defaults to true without rewriting", () =>
+            {
+                var actionJson = System.Text.Json.JsonSerializer.Serialize(action, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+                File.WriteAllText(path, "{\"schemaVersion\":4,\"actions\":{\"customActions\":[" + actionJson.Replace(",\"useSelection\":true", "") + "]}}", new UTF8Encoding(false));
+                var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
+                return loaded.Warning == null && loaded.Settings.SchemaVersion == 5 && loaded.Settings.Actions.CustomActions.Single().UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
+            });
+            check("schema five preserves explicit disabled selection on disk", () =>
+            {
+                var store = new SettingsStore(path); var loaded = store.Load();
+                store.Save(loaded.Settings with { Actions = new() { CustomActions = [independent] } });
+                var roundtrip = new SettingsStore(path).Load();
+                return roundtrip.Warning == null && !roundtrip.Settings.Actions.CustomActions.Single().UseSelection;
+            });
             check("action settings roundtrip preserves layout theme labels and recents", () =>
             {
                 var store = new SettingsStore(path); var loaded = store.Load();

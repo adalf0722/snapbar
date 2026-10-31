@@ -45,7 +45,7 @@ public static class CustomActionRunner
                 RedirectStandardOutput = true, RedirectStandardError = true,
                 StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
             };
-            start.Environment["POPCLIP_TEXT"] = text;
+            start.Environment["POPCLIP_TEXT"] = action.UseSelection ? text : "";
             start.Environment["SNAPBAR_SCRIPT_PATH"] = script;
             gate = Path.Combine(directory, "ready");
             start.Environment["SNAPBAR_READY_PATH"] = gate;

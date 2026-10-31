@@ -1,5 +1,17 @@
 # P0 驗證紀錄
 
+## 2026-10-31 調整：結果空白符號與輸入／輸出比較
+
+結果標題旁新增「顯示空白符號」，預設保留原始文字。勾選只切換同一份結果的顯示，不重新執行腳本，也不修改輸入、腳本設定或實際輸出。取消勾選會完整還原原始字串，包括 Tab、CR、LF、CRLF 及 Unicode。開始新測試、修改設定或顯示失敗時會清除舊的顯示狀態；網址預覽不提供此開關。
+
+「輸入／輸出比較」維持預設收合，字數與變更摘要移至展開內容，減少預設畫面的重複資訊。比較框及結果的符號模式關閉自動折行，長行以水平捲動查看，避免把版面折行誤認成實際換行。符號包含 `·` 空格、`⇥` Tab、`␍` CR、`↵` LF；單獨 CR 也保留實際行界。既有「使用選取文字」設定仍決定是否顯示範例與比較區；關閉後仍可檢視獨立結果的空白符號，不自動猜測或改寫使用者的動作設定。
+
+本輪 Core **282 項**、原生介面 `--ui-appearance` **51 項**、錯誤診斷 `--action-diagnostics` **25 項**、Probe smoke **6 項**通過，共 **364 項**。Release 建置無警告／錯誤，Windows x64 自含版發布成功。新增驗證涵蓋切換不重跑、原始結果還原、CR／LF／CRLF、長行在一般與最小視窗寬度均不折行、預設收合、失敗／網址／停用選字時的顯示狀態。測試使用暫存設定與可丟棄資料，不連線查詢 IP，也不修改使用者動作或剪貼簿。
+
+提交前補驗：`--custom-action-runner` **20 項通過**，`--action-layout` **13 項通過**。`--custom-actions` 首次因專用 fixture 未取得前景而未進入案例；重跑為 **63 項通過、1 項失敗**，失敗項目是「Apply replaces only the original selected range in disposable editor」。該次測試的退出與剪貼簿還原流程已執行；目前尚未確認失敗原因，不將這輪完整工具列整合測試列為通過。
+
+已檢視 `artifacts/ui-polish/editor-result-compact.png`、`editor-comparison.png` 及 `editor-comparison-small.png` 的實際 WPF 渲染。因正常發布目錄的程式仍在執行，本輪新版放在 `artifacts/whitespace-review/`；保留執行中的版本，退出舊版後可開啟該目錄中的 `SnapBar.App.exe`。混合 DPI／多螢幕仍待人工驗收。
+
 ## 2026-10-31 修正：自訂動作完整錯誤與處理建議
 
 自訂腳本失敗時，正式執行會顯示持續保留的診斷視窗；編輯器測試則留在原預覽區。先顯示簡短原因，展開「詳細資訊」後可查看與複製動作名稱、執行環境、原始錯誤、結束代碼及已產生的輸出。錯誤視窗不提供「套用至原文」，也不自動複製或寫入日誌。
@@ -448,3 +460,77 @@ Sublime 修正版本：Release build 0 errors / 0 warnings，36 項核心測試�
 - 補實際多螢幕／混合 DPI 驗證；目前不發布「所有 App 都支援」的說明。
 
 這份紀錄保留實際限制，沒有把 UI 工具的中止推定為 App 本身相容或不相容。
+
+## 2026-10-31 UI 精修驗證
+
+使用者已同意「安靜的 Windows 工具」方向。共用 WPF 樣式統一中性灰白、藍色主操作、中文字體、圓角與控制項狀態；設定改為分區卡片及自動偵測開關，紀錄收進診斷；動作管理改為緊湊預覽；編輯器保留雙欄並固定儲存頁尾。AI panel 不在此次實作範圍。
+
+| 驗證 | 結果 | 證據 |
+| --- | --- | --- |
+| Release 建置／自含式發佈 | 通過 | `scripts/build.ps1 -Publish`，0 warnings、0 errors；輸出 `artifacts/p0` |
+| Core runner | 275 通過 | 沿用選取、寫入、設定與動作政策檢查 |
+| `--action-layout` | 13 通過 | 六個釘選上限、排序、預覽與更多選單 |
+| `--action-diagnostics` | 25 通過 | 完整診斷、唯讀詳情、編輯器失敗及重試 |
+| `--tray-lifecycle` | 15 通過 | 自動偵測保存、關閉隱藏、重開、退出與快捷鍵釋放 |
+| `--menu-keyboard` | 21 通過 | 原生輸入游標、Unicode 貼上、鍵盤捲動、焦點返回與不搶其他 App 焦點；結束還原剪貼簿 |
+| `--custom-actions` | 54 通過 | 使用可丟棄 fixture 驗證執行、結果、失效取消及原選取替換；結束還原剪貼簿 |
+| `--ui-appearance` | 8 通過 | 最小視窗捲動、固定儲存頁尾、類型對應按鈕、執行中停止及取消後復原 |
+| Probe protocol smoke | 6 通過 | ok、invalid-request、target-changed、expired、EOF |
+| 原生下拉選單 | 通過 | computer-use 實際開啟類型選單並切換至 PowerShell，確認表單及測試按鈕更新 |
+| 實體混合 DPI／第三方 App 全套重驗 | 未執行 | 本輪不以 WPF 截圖或 fixture 推論實體多螢幕及所有 App 相容性 |
+
+測試計數共 411 項，另有 6 項 Probe smoke。`--ui-preview` 可開啟使用暫存設定的可丟棄預覽，關閉編輯器後結束。
+
+截圖位於忽略的 `artifacts/ui-polish/`：`settings.png`、`actions.png`、`actions-light.png`、`editor.png`、`editor-url.png`、`toolbar-dark.png`、`toolbar-light.png`、`more-dark.png`、`more-light.png`，以及三個小視窗版本。截圖由實際 WPF 視覺樹輸出，非設計示意圖。
+
+## 2026-10-31 第二輪：密度與測試結果
+
+依使用者對實際畫面的確認，縮短搜尋／診斷的收合列、動作列預覽及清單間距，清單列最小高度 56 DIP。移除可操作按鈕的淡化，保留真正停用狀態。主設定視窗高度由 850 改為 760 DIP；正常紀錄移進診斷，設定錯誤與初始化問題仍提供可見回饋。
+
+編輯器使用較小的待測試區、提高測試按鈕對比。成功後保留精確原始輸出，另顯示依 Unicode 文字元素計算的輸入／輸出字元數及內容是否相同。可展開並排空白比較，空格、Tab、CR、LF 僅在比較區轉成可見符號，沒有改寫實際範例或輸出。執行中修改任何相關欄位後，舊結果不會成為新內容的測試結果。新腳本預設終端機圖示，已保存及明確選擇的圖示保留。
+
+| 驗證 | 結果 |
+| --- | --- |
+| Core | 275 通過 |
+| UI appearance | 20 通過，含原始 Unicode／空白保留、相同內容、空輸出、編輯失效、圖示預設與使用者選擇保留 |
+| Action layout | 13 通過 |
+| Action diagnostics | 25 通過 |
+| Tray lifecycle | 15 通過 |
+| Release／自含式發佈 | 通過，最終建置 0 warnings、0 errors |
+| Probe protocol | 6 通過 |
+| 原生新版啟動 | computer-use 確認已保存的自動偵測恢復，頂部顯示自動偵測中，設定頁正常顯示 |
+
+本輪共 348 個相關檢查，另有 6 個 Probe smoke；未重複未變更的 keyboard-menu／custom-actions runner。預覽程序曾造成一次 DLL 複製鎖定，正常關閉後重建成功。已先確認舊版沒有開啟的動作編輯器，再透過「結束 SnapBar」正常退出並更新。
+
+`artifacts/ui-polish/` 的截圖已更新，新增 `editor-comparison.png`，並使用六個釘選及兩個自訂動作的可丟棄資料產生動作管理畫面。一般及最小視窗均已檢視；實體混合 DPI 與第三方 App 全套重驗仍屬未執行項目。重啟後 Sublime 相容模式依既有設計需使用者再次明確勾選。
+
+## 2026-10-31 收斂：展開可見性與工具列實測
+
+- 進階設定在 WPF layout 完成後，把第一個欄位連同標籤捲入視野；只做 BringIntoView，不呼叫 Focus。排程執行前確認仍展開且可見，避免收合或關閉後捲動。最小 880 × 640 視窗內已確認欄位完整可見，截圖 `artifacts/ui-polish/editor-advanced-small.png`。
+- 空的隱藏群組不顯示；移入動作後重新顯示並標示正確數量。
+- 透過獨立程序 WPF fixture 的真實 UIA 選取，確認工具列位於工作區內且沒有遮住選取行。
+- 真實滑鼠移入複製按鈕，確認 hover 高亮、浮窗仍開啟、前景仍屬於來源程序。截圖 `toolbar-native.png`／`toolbar-native-hover.png` 來自此實際工作階段。
+- 透過原生滑鼠按下／放開點擊 Copy，確認剪貼簿等於 fixture 原選取內容、浮窗關閉且來源前景保留。測試在第一次 Copy 前備份剪貼簿，於完成後還原。
+- 真實來源捲動會關閉浮窗並使工作階段失效。既有 keyboard／custom-action runner 另確認 Esc、Alt+F4、搜尋焦點返回及切換其他視窗後不搶回焦點。
+
+本輪 Core 275、UI appearance 23、action layout 13、action diagnostics 25、custom actions 61、menu keyboard 21，共 418 項通過；自含式發佈另通過 6 項 Probe smoke。最終 Release 建置零警告、零錯誤。原生 hover／Copy 驗證以可丟棄 WPF fixture 為範圍，不能推論所有第三方 App 或實體混合 DPI 均已驗證。
+
+## 2026-10-31 情境設定與動作查找
+
+- 結果說明依六種輸出模式更新；短暫提示不再顯示替換原文的說明。測試不套用結果的契約保留。
+- 管理動作新增動作列／更多分頁，隱藏分頁僅在有項目時出現，預覽不隨分頁切換。切換不保存設定；位置調整、六項上限與排序仍通過既有驗證。`actions-more.png` 顯示可直接到達自訂動作的檢視。
+- 搜尋提供 Google、Bing、自訂；只有自訂顯示範本欄位，切換後仍需明確儲存。測試確認未保存的自訂草稿保留，Bing／自訂網址能保存、讀回與重設。原生已開啟選單確認三個選項可用，未修改使用者的實際搜尋設定。
+- 腳本提供預設勾選的使用選取文字選項。關閉後隱藏範例與比較、停用插入變數，編輯器及正式控制器都傳空字串；執行器亦確保 POPCLIP_TEXT 為空。獨立 fixture 驗證關閉輸入仍不能繞過唯讀來源的替換拒絕。
+- 設定 schema 升為 5，動作檔 envelope 升為 2；讀取舊設定和舊動作時缺少旗標預設 true，保留既有行為。舊設定僅在記憶體遷移，正常明確保存時才寫入新版。版本 1 動作檔若含 false 旗標會拒絕，以避免降級語意。網址動作不能停用輸入。
+
+| 驗證 | 通過數 |
+| --- | --- |
+| Core（含遷移、預設值、版本與設定往返） | 282 |
+| UI appearance（含分頁、搜尋、六種說明、輸入關閉與儲存） | 40 |
+| Action layout | 13 |
+| Action diagnostics | 25 |
+| 原生 PowerShell／Node runner | 20 |
+| Custom action 整合（含原生滑鼠與 no-input 分派） | 65 |
+| Tray lifecycle | 15 |
+
+本輪共 460 項，另有 6 項 Probe smoke；最終 Release 與自含式發佈零警告、零錯誤。已重新啟動 `artifacts/p0/SnapBar.App.exe`，原有自動偵測載入正常，並用 computer-use 點擊更多分頁確認自訂動作可直接到達；沒有自動改寫既有動作的輸入選項。實體混合 DPI／第三方 App 全套重驗仍未執行。
