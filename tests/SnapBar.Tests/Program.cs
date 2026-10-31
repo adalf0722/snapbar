@@ -256,5 +256,6 @@ AppExclusionPolicyTests.Run(Check);
 WebActionPolicyTests.Run(Check);
 PathActionPolicyTests.Run(Check);
 ActionCatalogTests.Run(Check);
+AiRuntimeTests.Run(Check);
 Console.WriteLine($"{passed} passed, {failed} failed");
 return failed == 0 ? 0 : 1;

@@ -71,7 +71,7 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
-        string[] tests = ["--clipboard-compatibility", "--clipboard-compatibility-long", "--ui-appearance", "--ui-preview",
+        string[] tests = ["--ai-runtime", "--clipboard-compatibility", "--clipboard-compatibility-long", "--ui-appearance", "--ui-preview",
             "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics",
             "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--browser-launch-smoke",
             "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
@@ -84,6 +84,7 @@ internal static class Program
             Console.Error.WriteLine("Choose exactly one test. Use --list-tests or scripts/test-desktop.ps1 -List.");
             return 2;
         }
+        if (args.Contains("--ai-runtime")) return AiRuntimeTest.RunAsync().GetAwaiter().GetResult();
         if (args.Contains("--desktop-preflight")) return DesktopPreflight.Run();
         if (args.Contains("--clipboard-compatibility-long")) return ClipboardCompatibilityTest.Run(includeLong: true);
         if (args.Contains("--clipboard-compatibility-fixture")) return ClipboardCompatibilityTest.RunFixture();
