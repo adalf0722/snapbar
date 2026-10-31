@@ -593,3 +593,18 @@ Core 282、UI appearance 58、action layout 13、action diagnostics 25，共 378
 使用者隨後同意暫停鍵盤滑鼠；最終同一份原始碼的 Release 桌面回歸已全部通過：lifecycle 28、appearance 60、compatibility slow 22（含真實 35 秒等待），另有前置檢查 1 項。原始碼指紋在執行前後一致，完整報告為 `artifacts/checks/desktop/20261031T134518370Z-4ab6e2f624d94879afedaf1966241b4c/report.json`。此結果取代上段尚未取得最終報告的待驗證狀態。
 
 接續使用該份報告完成自含式 staging 發佈，Core 298 與 Probe smoke 10 再次通過，切換前重新確認原始碼指紋與程序狀態。成功更新 `artifacts/p0`；前一套件保留於 `artifacts/publish/f78cd4a213c848669498e47f53625ab9/previous`，確認新舊 Core DLL 雜湊不同且舊套件完整存在。發佈報告為 `artifacts/checks/build/20261031T134654585Z-5b0117aece944f3aabc508f69d61b1e2/report.json`。新版正常啟動，自動偵測、選字相容模式與 Sublime 支援維持既有開啟偏好，設定視窗已關閉並回到系統匣待命。本節最終狀態為已驗證並發佈；遠端 CI、真實跨 App／實體 DPI 的覆蓋限制仍維持上述說明。
+
+## 2026-11-01 AI 改寫面板
+
+- 新增「AI 改寫」內建動作，預設位於更多選單。面板開啟先顯示原文，原文與結果共用閱讀區；同一輸入框支援全指令搜尋與直接下指令，分類只限制空白時的瀏覽。支援釘選、最近使用、指令管理、接續版本與從原文重做。
+- 執行中編輯的新要求及手動切換的閱讀分頁不被完成事件覆蓋。停止、來源失效及關閉會取消請求；不合作的晚到結果亦不能回填。長指令以單行省略顯示，完整內容在面板所屬的可捲動視窗閱讀，避免擠掉結果區。
+- 真實 HTTP client 支援 OpenAI Responses 與自訂 Chat Completions 網址，具逾時、取消、回應大小限制及固定錯誤訊息。AI 設定獨立保存；API Key 依服務、協定及網址以 CurrentUser DPAPI 保護。原文、自由指令、結果與最多 20 版歷史只留於記憶體，不寫入設定或記錄。
+- 結果僅以本機安全 Markdown 排版，複製與替換使用原始結果文字。替換前返回原來源並重驗前景、程序、焦點、選取身分、範圍、文字與寫入權限；沿用既有剪貼簿序號與貼上防護。唯讀或來源失效保留結果及複製功能。
+
+`scripts/check.ps1` 通過 12 項工具契約、389 項 Core 測試，Release 建置零警告、零錯誤。同一份原始碼的完整桌面回歸通過 Lifecycle 28、Appearance 60、CompatibilitySlow 22（含實際 35 秒腳本）、AiRuntime 35、AiPanel 24、Layout 22、Keyboard 21、Actions 66 及 Preflight 1。報告：`artifacts/checks/desktop/20261031T235510121Z-105607034a174e93bcbedc4635200722/report.json`。既有原生滾輪案例曾間歇未收到輸入；最終完整重跑在移除診斷訂閱後通過，未改用直接呼叫取消來替代真實滾輪。
+
+AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；原生 panel/controller 使用受控 client 驗證成功、失敗、連續改寫、過期完成、唯讀、來源變更及實際原選取替換，測試後還原剪貼簿。已目視核對 `artifacts/ai-panel/original.png`、`editable-result.png`、`small.png`、`service-settings.png` 及 `long-instruction.png`；獨立規格與品質審查通過。
+
+本輪未填入真實服務金鑰、未呼叫付費模型；服務與模型相容性需使用實際設定確認。IME 測試涵蓋組字中 Enter 不提交的模擬事件，尚未等同實體繁中輸入法驗收；實體混合 DPI 與第三方 App 全套驗證仍未新增。
+
+使用同一份桌面報告完成自含式 staging 發佈，Core 389 與 Probe smoke 10 再次通過；`artifacts/p0` 已更新，舊套件保留於 `artifacts/publish/4f3220d17447405d8378f9f610b34dcd/previous`。發佈報告：`artifacts/checks/build/20261031T235652632Z-6ea95c9c0bb34334a15a5d51bf82633c/report.json`。以 computer-use 啟動新版，確認原有自動偵測、選字相容模式及 Sublime 支援恢復；點擊「設定 AI 服務」正常開啟服務、網址、模型及金鑰表單，未儲存測試值。AI 設定視窗保留開啟供使用者填入。
