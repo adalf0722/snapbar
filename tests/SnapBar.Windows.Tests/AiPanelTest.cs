@@ -28,7 +28,13 @@ internal static class AiPanelTest
     {
         window.UpdateLayout(); var content = (FrameworkElement)window.Content;
         var image = new RenderTargetBitmap(Math.Max(1, (int)content.ActualWidth), Math.Max(1, (int)content.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-        image.Render(content); var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(image));
+        var visual = new DrawingVisual();
+        using (var drawing = visual.RenderOpen())
+        {
+            var bounds = new Rect(0, 0, content.ActualWidth, content.ActualHeight);
+            drawing.DrawRectangle(window.Background, null, bounds); drawing.DrawRectangle(new VisualBrush(content), null, bounds);
+        }
+        image.Render(visual); var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(image));
         var directory = Path.Combine(TestPaths.Repository, "artifacts", "ai-panel"); Directory.CreateDirectory(directory);
         using var stream = File.Create(Path.Combine(directory, name)); png.Save(stream);
     }

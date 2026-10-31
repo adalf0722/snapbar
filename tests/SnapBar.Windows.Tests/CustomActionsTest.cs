@@ -88,7 +88,17 @@ internal static class CustomActionsTest
                     && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
                     "native Copy click copies only fixture selection then dismisses without stealing focus");
                 await Capture(); popup = Popup();
-                SetCursorPos((int)anchor.X + 5, (int)anchor.Y + 5); mouse_event(0x0800, 0, 0, 120, 0); await Task.Delay(150);
+                var scrollAnchor = controller.ActiveSelection!.Bounds!;
+                var scrollX = (int)scrollAnchor.X + 5; var scrollY = (int)scrollAnchor.Y + 5;
+                SetCursorPos(scrollX, scrollY);
+                // SetCursorPos posts native hover/leave work. Let WPF observe the move before injecting the wheel.
+                await Task.Delay(150);
+                deadline = DateTime.UtcNow.AddSeconds(2);
+                while (popup.IsMouseOver && DateTime.UtcNow < deadline) await Task.Delay(20);
+                Check(!popup.Contains(scrollX, scrollY) && !popup.IsMouseOver, "native scroll fixture first moves outside the current toolbar");
+                mouse_event(0x0800, 0, 0, 120, 0);
+                deadline = DateTime.UtcNow.AddSeconds(2);
+                while ((popup.IsVisible || controller.ActiveSelection != null) && DateTime.UtcNow < deadline) await Task.Delay(20);
                 Check(!popup.IsVisible && controller.ActiveSelection == null, "native scroll outside toolbar dismisses the old selection session");
                 await Capture(); popup = Popup();
                 Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
