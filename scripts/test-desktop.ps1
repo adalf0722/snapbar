@@ -1,6 +1,6 @@
 param(
     [switch]$List,
-    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Exclusions')]
+    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Exclusions', 'AiRuntime', 'AiPanel')]
     [string[]]$Suite = @('Release')
 )
 $ErrorActionPreference = 'Stop'
@@ -11,10 +11,10 @@ $catalog = [ordered]@{
     UiaReadiness = '--uia-readiness'; UiaDeepTree = '--uia-deep-tree'; Actions = '--custom-actions'
     ActionRunner = '--custom-action-runner'; Diagnostics = '--action-diagnostics'; Layout = '--action-layout'
     Keyboard = '--menu-keyboard'; PathWorker = '--path-worker-tests'; PathActions = '--path-actions'
-    WebActions = '--web-actions'; Exclusions = '--app-exclusions'
+    WebActions = '--web-actions'; Exclusions = '--app-exclusions'; AiRuntime = '--ai-runtime'; AiPanel = '--ai-panel'
 }
 if ($List) {
-    Write-Host 'Release = Lifecycle, Appearance, CompatibilitySlow (includes a real 35-second script).'
+    Write-Host 'Release = Lifecycle, Appearance, CompatibilitySlow, AiRuntime, AiPanel (includes a real 35-second script).'
     Write-Host 'All = every isolated suite below, except redundant fast Compatibility. Tests run serially.'
     $catalog.GetEnumerator() | Format-Table Key, Value -AutoSize
     Write-Host 'External Sublime/browser/Explorer smoke tests: test runner --list-tests; see docs/development.md.'
@@ -23,7 +23,7 @@ if ($List) {
 $selected = [Collections.Generic.List[string]]::new()
 foreach ($name in $Suite) {
     $expanded = switch ($name) {
-        'Release' { @('Lifecycle', 'Appearance', 'CompatibilitySlow') }
+        'Release' { @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel') }
         'All' { @($catalog.Keys | Where-Object { $_ -ne 'Compatibility' }) }
         default { @($name) }
     }

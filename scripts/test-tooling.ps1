@@ -45,7 +45,7 @@ Check-Tooling 'package process blocks publishing even without a visible window' 
     Assert-SnapBarPublishIdle $package -Processes @([pscustomobject]@{ Path = Join-Path $run 'other/SnapBar.App.exe'; ProcessName = 'SnapBar.App'; Id = 126 })
 }
 $evidence = Join-Path $run 'desktop.json'
-$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @('Lifecycle', 'Appearance', 'CompatibilitySlow') | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
+$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel') | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
 Check-Tooling 'publish accepts complete current desktop evidence' {
     Write-SnapBarJson $evidence $valid
     Assert-SnapBarDesktopReport $evidence 'current'

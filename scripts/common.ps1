@@ -103,7 +103,7 @@ function Assert-SnapBarDesktopReport([string]$Path, [string]$Fingerprint) {
     if ($report.schema -ne 1 -or $report.success -isnot [bool] -or -not $report.success -or $report.sourceFingerprint -ne $Fingerprint) {
         throw 'Desktop evidence failed or is stale. Run scripts/test-desktop.ps1 -Suite Release against the current source.'
     }
-    foreach ($suite in @('Lifecycle', 'Appearance', 'CompatibilitySlow')) {
+    foreach ($suite in @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel')) {
         $results = @($report.results | Where-Object { $_.name -eq $suite })
         if ($results.Count -ne 1 -or $results[0].success -isnot [bool] -or -not $results[0].success -or $results[0].exitCode -ne 0) { throw "Desktop evidence is missing a successful $suite suite." }
     }

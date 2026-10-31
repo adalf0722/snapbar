@@ -81,16 +81,17 @@ public sealed partial class SelectionController : IDisposable
         monitor.KeyFilter = key => selection != null && !popup.HasSearchForeground && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
         foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
         {
-            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground) Invalidate();
+            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasForeground != true) Invalidate();
         }, dispatcher);
     }
 
     private void OnInput(InputEvent input)
     {
         if (disposed || stopping) return;
-        if (input.Kind == "key" && popup.HasSearchForeground) return;
+        if (input.Kind == "key" && (popup.HasSearchForeground || aiWindow?.HasForeground == true)) return;
+        if (input.Kind == "hotkey" && aiWindow?.HasForeground == true) return;
         if ((input.Kind is "click" or "selection" or "scroll")
-            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true)) return;
+            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true || aiWindow?.Contains(input.X, input.Y) == true)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
         {
@@ -158,6 +159,7 @@ public sealed partial class SelectionController : IDisposable
 
     internal async Task ExecuteAsync(TextAction action)
     {
+        if (action == TextAction.Ai) { await OpenAiAsync(); return; }
         if (executing || selection == null || disposed || stopping) return;
         if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
         executing = true;
@@ -294,6 +296,7 @@ public sealed partial class SelectionController : IDisposable
 
     private void Invalidate()
     {
+        aiWindow?.InvalidateTarget();
         customAction?.Cancel();
         resultWindow?.InvalidateTarget();
         pathAction?.Cancel();
@@ -308,11 +311,12 @@ public sealed partial class SelectionController : IDisposable
         stopping = true;
         Invalidate();
         resultWindow?.Close();
+        aiWindow?.Close();
     }
 
     public void Dispose()
     {
         if (disposed) return;
-        disposed = true; Invalidate(); resultWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
+        disposed = true; Invalidate(); resultWindow?.Close(); aiWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
     }
 }

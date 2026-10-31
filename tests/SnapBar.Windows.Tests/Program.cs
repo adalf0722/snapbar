@@ -72,7 +72,7 @@ internal static class Program
     static int Main(string[] args)
     {
         string[] tests = ["--ai-runtime", "--clipboard-compatibility", "--clipboard-compatibility-long", "--ui-appearance", "--ui-preview",
-            "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics",
+            "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics", "--ai-panel", "--ai-preview",
             "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--browser-launch-smoke",
             "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
             "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight"];
@@ -91,6 +91,8 @@ internal static class Program
         if (args.Contains("--clipboard-compatibility")) return ClipboardCompatibilityTest.Run();
         if (args.Contains("--ui-appearance")) return UiAppearanceTest.Run();
         if (args.Contains("--ui-preview")) return UiAppearanceTest.Run(preview: true);
+        if (args.Contains("--ai-panel")) return AiPanelTest.Run();
+        if (args.Contains("--ai-preview")) return AiPanelTest.Run(preview: true);
         if (args.Contains("--action-layout")) return ActionLayoutTest.Run();
         if (args.Contains("--menu-keyboard")) return MenuKeyboardTest.Run();
         if (args.Contains("--custom-actions")) return CustomActionsTest.Run();

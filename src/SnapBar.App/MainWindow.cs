@@ -19,6 +19,8 @@ public sealed class MainWindow : Window
     private SelectionController? controller;
     private TrayIcon? tray;
     private readonly SettingsStore settingsStore;
+    private readonly AiPreferences aiPreferences;
+    private AiSettingsWindow? aiSettingsWindow;
     private ApplicationSettings preferences;
     private bool exitRequested, hiddenNoticeShown;
     private bool updatingCompatibility, updatingSublime;
@@ -37,6 +39,7 @@ public sealed class MainWindow : Window
         this.settingsStore = settingsStore ?? new SettingsStore(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
         var loaded = this.settingsStore.Load();
+        aiPreferences = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
         preferences = loaded.Settings;
         if (loaded.Warning != null) preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
@@ -77,6 +80,11 @@ public sealed class MainWindow : Window
         var actionText = new StackPanel(); actionText.Children.Add(ActionUi.Heading("動作列"));
         var actionHelp = ActionUi.Text("安排常用動作、外觀與自訂腳本。", 13, ActionUi.Muted); actionHelp.Margin = new(0, 5, 0, 0);
         actionText.Children.Add(actionHelp); actions.Children.Add(actionText); AddCard(actions);
+
+        var ai = new DockPanel(); var aiSettings = ActionUi.Button("設定 AI 服務", ShowAiSettings, "spark");
+        DockPanel.SetDock(aiSettings, Dock.Right); ai.Children.Add(aiSettings);
+        var aiText = new StackPanel(); aiText.Children.Add(ActionUi.Heading("AI 改寫"));
+        aiText.Children.Add(ActionUi.Text("選取文字後，在更多動作中開啟 AI 面板。", 13, ActionUi.Muted)); ai.Children.Add(aiText); AddCard(ai);
 
         searchSettingsPanel = new SearchSettingsPanel();
         searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
@@ -144,6 +152,7 @@ public sealed class MainWindow : Window
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
                 controller.ConfigureActions(preferences.Actions);
+                controller.ConfigureAi(aiPreferences);
                 ApplyClipboardCompatibility();
                 controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
@@ -278,6 +287,13 @@ public sealed class MainWindow : Window
         actionSettingsWindow = window; window.Closed += (_, _) => actionSettingsWindow = null; window.Show();
     }
 
+    private void ShowAiSettings()
+    {
+        if (exitRequested) return;
+        if (aiSettingsWindow != null) { aiSettingsWindow.Activate(); return; }
+        aiSettingsWindow = new(aiPreferences); aiSettingsWindow.Closed += (_, _) => aiSettingsWindow = null; aiSettingsWindow.Show();
+    }
+
     internal bool SetSearchUrlTemplate(string value)
     {
         if (exitRequested) return false;
@@ -315,6 +331,7 @@ public sealed class MainWindow : Window
         IsEnabled = false;
         controller?.BeginShutdown();
         actionSettingsWindow?.Close();
+        aiSettingsWindow?.Close();
         while (controller?.ClipboardReadPending == true) await Task.Delay(25);
         Close();
         Application.Current.Shutdown();

@@ -143,7 +143,9 @@ internal static class ActionCatalogTests
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 6 && loaded.Settings.Actions.Layout.Length == 6 && before.SequenceEqual(File.ReadAllBytes(path));
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 6 && loaded.Settings.Actions.Layout.Length == 7
+                        && loaded.Settings.Actions.Layout.Single(e => e.Id == "ai").Placement == ActionPlacement.More
+                        && before.SequenceEqual(File.ReadAllBytes(path));
                 });
             check("legacy stored action without input flag defaults to true without rewriting", () =>
             {
