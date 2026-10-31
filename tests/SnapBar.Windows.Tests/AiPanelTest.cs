@@ -84,10 +84,28 @@ internal static class AiPanelTest
                 Snapshot(panel, "readonly-result.png"); panel.Width = 680; panel.Height = 500; panel.UpdateLayout(); Snapshot(panel, "small.png");
                 Check(panel.CommandInput.ActualWidth > 200 && Button(panel, "AiCopy").ActualWidth > 0, "AI minimum window preserves command and footer controls");
                 panel.Width = 800; panel.Height = 650;
+                var longInstruction = string.Join("\n", Enumerable.Repeat("保留原意並改善語氣，不添加未提供的資訊。", 250));
+                client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, "third result"));
+                await panel.SubmitAsync(longInstruction); panel.UpdateLayout();
+                ContentControl Reader() => Children<ContentControl>(panel).Single(c => AutomationProperties.GetAutomationId(c) == "AiResultContent");
+                Check(Reader().ActualHeight >= 100, "AI long instruction leaves normal result reader usable");
+                panel.Width = 680; panel.Height = 500; panel.UpdateLayout();
+                Check(Reader().ActualHeight >= 100, "AI long instruction leaves minimum-size result reader usable"); Snapshot(panel, "long-instruction.png");
+                Button(panel, "AiInstructionDetails").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                var details = panel.OwnedWindows.Cast<Window>().Single(); details.UpdateLayout();
+                Check(Children<TextBox>(details).Single(t => AutomationProperties.GetAutomationId(t) == "AiFullInstruction") is { IsReadOnly: true } full
+                    && full.Text == longInstruction && full.VerticalScrollBarVisibility == ScrollBarVisibility.Auto,
+                    "AI full instruction remains readable in owned scrollable plain-text window"); details.Close();
+                panel.Width = 800; panel.Height = 650;
                 delayed = new(TaskCreationOptions.RunContinuationsAsynchronously); client.Handler = (_, _, _) => delayed.Task;
                 pending = panel.SubmitAsync("late"); panel.InvalidateTarget(); delayed.SetResult(new(true, "late ignored")); await pending;
                 Check(panel.Session.Current?.Text == "third result" && !panel.TargetValid, "AI invalidated target rejects a client completion that ignored cancellation");
-                var settingsDialog = new AiSettingsWindow(preferences) { Owner = panel }; settingsDialog.Show(); settingsDialog.Activate(); await Task.Delay(100);
+                var settingsDialog = new AiSettingsWindow(preferences) { Owner = panel }; settingsDialog.Show(); settingsDialog.Activate();
+                var settingsHandle = new WindowInteropHelper(settingsDialog).Handle; Native.SetForegroundWindow(settingsHandle);
+                Console.WriteLine("WAITING: activate SnapBar · AI 設定 if necessary (up to 60 seconds)");
+                var settingsDeadline = DateTime.UtcNow.AddSeconds(60);
+                while (Native.GetForegroundWindow() != settingsHandle)
+                { if (DateTime.UtcNow > settingsDeadline) throw new InvalidOperationException("AI settings fixture must be foreground"); await Task.Delay(50); }
                 Check(panel.HasForeground, "AI owned service settings remain part of panel foreground"); Snapshot(settingsDialog, "service-settings.png"); settingsDialog.Close();
                 var savedPrompt = new AiPrompt("fixture-prompt", "測試指令", "Return concise text.", "自訂", "fixture");
                 Check(preferences.TrySave(preferences.Settings with { Prompts = preferences.Settings.Prompts.Append(savedPrompt).ToArray(), PinnedIds = preferences.Settings.PinnedIds.Append(savedPrompt.Id).ToArray() }, out _)

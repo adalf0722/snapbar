@@ -99,8 +99,14 @@ internal sealed class AiPanelWindow : Window
         version = ActionUi.Text("", 12, ActionUi.Muted); history.Children.Add(previous); history.Children.Add(version); history.Children.Add(next);
         DockPanel.SetDock(history, Dock.Right); resultHeader.Children.Add(history); resultHeading = ActionUi.Text("結果", 12, ActionUi.Muted); resultHeader.Children.Add(resultHeading);
         DockPanel.SetDock(resultHeader, Dock.Top); resultBody.Children.Add(resultHeader);
-        execution = ActionUi.Text("", 12, ActionUi.Muted); execution.Margin = new(12, 0, 12, 5); DockPanel.SetDock(execution, Dock.Top); resultBody.Children.Add(execution);
+        var instructionRow = new DockPanel { Margin = new(12, 0, 8, 5) };
+        var details = SmallButton("查看指令", ShowInstruction); AutomationProperties.SetAutomationId(details, "AiInstructionDetails");
+        DockPanel.SetDock(details, Dock.Right); instructionRow.Children.Add(details);
+        execution = ActionUi.Text("", 12, ActionUi.Muted); execution.TextWrapping = TextWrapping.NoWrap;
+        execution.TextTrimming = TextTrimming.CharacterEllipsis; execution.MaxHeight = 24; instructionRow.Children.Add(execution);
+        DockPanel.SetDock(instructionRow, Dock.Top); resultBody.Children.Add(instructionRow);
         resultContent = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
+        AutomationProperties.SetAutomationId(resultContent, "AiResultContent");
         resultBody.Children.Add(resultContent); resultCard = ActionUi.Card(resultBody, new(0));
         var content = new Grid(); content.Children.Add(ActionUi.Card(original, new(0))); content.Children.Add(resultCard); body.Children.Add(content);
         right.Children.Add(body); root.Children.Add(main); Content = root;
@@ -144,6 +150,18 @@ internal sealed class AiPanelWindow : Window
             (int)Math.Clamp(y + 8, work.Y, Math.Max(work.Y, work.Bottom - height)), (int)width, (int)height, 0x0014);
     }
     private void ShowSettings() { var window = new AiSettingsWindow(preferences) { Owner = this }; window.ShowDialog(); Refresh(); }
+    private void ShowInstruction()
+    {
+        if (Session.Current is not { } current) return;
+        var window = new Window { Owner = this };
+        ActionUi.Setup(window, $"SnapBar · 第 {current.Id} 版指令", 570, 420);
+        var body = new DockPanel { Margin = new(16) };
+        var close = ActionUi.Button("關閉", window.Close); close.HorizontalAlignment = HorizontalAlignment.Right;
+        close.Margin = new(0, 10, 0, 0); DockPanel.SetDock(close, Dock.Bottom); body.Children.Add(close);
+        var text = AiMarkdownView.Plain(current.Instruction); AutomationProperties.SetAutomationId(text, "AiFullInstruction"); body.Children.Add(text);
+        window.Content = body; window.PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; window.Close(); } };
+        window.Show(); window.Activate();
+    }
     private void OnPreferencesChanged()
     {
         if (lastProfile != preferences.SelectedProfile) { Stop(); lastProfile = preferences.SelectedProfile; }

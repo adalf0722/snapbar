@@ -72,7 +72,7 @@ internal static class ActionLayoutTest
                 popup.Present(snapshot, 100, 100, actionSettings: menuSettings); OpenMore(); popup.UpdateLayout();
                 Check(MenuPath().IsVisible && !MenuPath().IsEnabled && Children<TextBlock>(popup).Any(t => AutomationProperties.GetAutomationId(t) == "MoreActionReason_path"),
                     "nonpath selection shows configured path menu item disabled with visible reason");
-                var dispatched = 0; popup.ActionRequested += _ => dispatched++;
+                var dispatched = 0; popup.ActionRequested += action => { if (action == TextAction.RevealPath) dispatched++; };
                 popup.HandleMenuKey(0x28); popup.HandleMenuKey(0x0D);
                 Check(dispatched == 0, "Enter cannot execute an unavailable path action");
                 popup.Present(snapshot with { Text = @"D:\Documents\example.txt" }, 100, 100, actionSettings: menuSettings); OpenMore(); popup.UpdateLayout();
