@@ -64,7 +64,12 @@ public sealed partial class SelectionController
             Status?.Invoke("正在執行自訂動作…");
             var result = await runCustom(action, current.Text, cancellation.Token);
             if (!Current(current, ticket) || cancellation.IsCancellationRequested) return;
-            if (!result.Success) { Status?.Invoke(ActionEditorWindow.ScriptStatus(result.Status)); return; }
+            var diagnostic = ScriptDiagnostic.Create(action, result);
+            if (diagnostic.IsFailure)
+            {
+                keepResult = true; ShowDiagnostic(action, result);
+                return;
+            }
             var final = await ValidateCustomAsync(current, ticket, writes);
             if (!final.Success) { if (generation.IsCurrent(ticket)) Report(final.Status); return; }
             RememberAction(id);
@@ -78,9 +83,12 @@ public sealed partial class SelectionController
                     if (!TryPasteResult(current, ticket, result.Output)) ShowResult(action, result.Output, current, ticket, false);
                     break;
                 default:
-                    keepResult = action.Output != ActionOutput.Hud;
-                    ShowResult(action, result.Output, current, ticket, SessionPolicy.CanWrite(final.Selection, current.Target)); break;
+                    keepResult = action.Output != ActionOutput.Hud || !string.IsNullOrWhiteSpace(result.Error);
+                    ShowResult(action, result.Output, current, ticket, SessionPolicy.CanWrite(final.Selection, current.Target),
+                        string.IsNullOrWhiteSpace(result.Error) ? null : diagnostic); break;
             }
+            if (!string.IsNullOrWhiteSpace(result.Error) && action.Output is ActionOutput.None or ActionOutput.Clipboard or ActionOutput.ReplaceSelection)
+            { keepResult = true; ShowDiagnostic(action, result); }
         }
         catch (OperationCanceledException) { }
         catch (ExternalException) { Report("clipboard-busy"); }
@@ -89,11 +97,20 @@ public sealed partial class SelectionController
         finally { customAction = null; executing = false; if (!keepResult) Invalidate(); }
     }
 
-    private void ShowResult(CustomActionDefinition action, string text, SelectionSnapshot current, long ticket, bool editable)
+    private void ShowDiagnostic(CustomActionDefinition action, ScriptExecutionResult result)
+    {
+        var diagnostic = ScriptDiagnostic.Create(action, result);
+        resultWindow?.Close();
+        resultWindow = new ActionResultWindow(action.Name, "", false, false, diagnostic: diagnostic, diagnosticOnly: true);
+        resultWindow.Show(); Status?.Invoke(diagnostic.Summary);
+    }
+
+    private void ShowResult(CustomActionDefinition action, string text, SelectionSnapshot current, long ticket, bool editable,
+        ScriptDiagnostic? diagnostic = null)
     {
         resultWindow?.Close();
         var window = new ActionResultWindow(action.Name, text, action.Output == ActionOutput.Markdown, editable,
-            () => _ = ApplyResultAsync(current, ticket, text), action.Output == ActionOutput.Hud);
+            () => _ = ApplyResultAsync(current, ticket, text), action.Output == ActionOutput.Hud, diagnostic);
         resultWindow = window; window.Closed += (_, _) => { if (resultWindow == window) resultWindow = null; };
         window.Show(); Status?.Invoke("結果已顯示；只有原選取仍有效時才能套用。");
     }

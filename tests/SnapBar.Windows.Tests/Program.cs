@@ -75,6 +75,7 @@ internal static class Program
         if (args.Contains("--menu-keyboard")) return MenuKeyboardTest.Run();
         if (args.Contains("--custom-actions")) return CustomActionsTest.Run();
         if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--action-diagnostics")) return ActionDiagnosticsTest.Run();
         if (args.Contains("--path-worker")) return PathWorkerTest.RunFake();
         if (args.Contains("--path-worker-tests")) return PathWorkerTest.RunAsync().GetAwaiter().GetResult();
         if (args.Contains("--path-actions")) return PathActionsTest.Run();

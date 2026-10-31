@@ -10,26 +10,46 @@ namespace SnapBar.App;
 
 internal sealed class ActionResultWindow : Window
 {
-    private readonly Button applyButton;
-    private readonly TextBlock hint;
+    private readonly Button? applyButton;
+    private readonly TextBlock? hint;
+    private readonly bool diagnosticOnly;
     private nint handle;
     private readonly DispatcherTimer? timer;
-    public ActionResultWindow(string name, string text, bool markdown, bool canApply, Action? apply = null, bool hud = false)
+    public ActionResultWindow(string name, string text, bool markdown, bool canApply, Action? apply = null, bool hud = false,
+        ScriptDiagnostic? diagnostic = null, bool diagnosticOnly = false)
     {
-        ActionUi.Setup(this, name + " · SnapBar 結果", hud ? 420 : 650, hud ? 180 : 520);
+        this.diagnosticOnly = diagnosticOnly;
+        if (diagnostic != null) hud = false;
+        ActionUi.Setup(this, name + (diagnosticOnly ? " · SnapBar 執行診斷" : " · SnapBar 結果"), hud ? 420 : 650, hud ? 180 : 520);
         MinHeight = hud ? 120 : 280; MinWidth = 320; ShowActivated = false; ShowInTaskbar = !hud; Topmost = true;
         var body = new DockPanel { Margin = new(20) }; var heading = ActionUi.Text(name, 18); heading.Margin = new(0, 0, 0, 15); DockPanel.SetDock(heading, Dock.Top); body.Children.Add(heading);
-        var footer = new StackPanel { Margin = new(0, 12, 0, 0) }; var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-        hint = ActionUi.Text(canApply ? "套用前會重新驗證原視窗、焦點及選取；結果也會放入剪貼簿。" : "來源不可寫入或已變更；可以複製結果。", 11, ActionUi.Muted);
-        buttons.Children.Add(ActionUi.Button("複製結果", () =>
-        { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = "已複製結果。"; } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = "剪貼簿忙碌，請稍後再試。"; } }, "copy"));
-        applyButton = ActionUi.Button("套用至原文", () => { applyButton!.IsEnabled = false; apply?.Invoke(); }); applyButton.IsEnabled = canApply; buttons.Children.Add(applyButton);
-        buttons.Children.Add(ActionUi.Button("關閉", Close)); footer.Children.Add(buttons); footer.Children.Add(hint); DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
-        if (markdown) body.Children.Add(new FlowDocumentScrollViewer { Document = RenderMarkdown(text), IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, IsSelectionEnabled = true });
-        else body.Children.Add(new TextBox { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, BorderThickness = new(0), Padding = new(10), FontSize = 14,
-            Background = Brushes.White, FontFamily = new("Consolas, Microsoft JhengHei UI") });
-        if (hud) { footer.Visibility = Visibility.Collapsed; timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) }; timer.Tick += (_, _) => Close(); Loaded += (_, _) => timer.Start(); }
+        if (diagnostic != null)
+        {
+            var view = new ActionDiagnosticView(); view.Show(diagnostic);
+            if (diagnosticOnly)
+            {
+                var close = ActionUi.Button("關閉", Close); close.HorizontalAlignment = HorizontalAlignment.Right;
+                DockPanel.SetDock(close, Dock.Bottom); body.Children.Add(close);
+            }
+            var scroll = new ScrollViewer { Content = view, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = diagnosticOnly ? double.PositiveInfinity : 200 };
+            if (!diagnosticOnly) DockPanel.SetDock(scroll, Dock.Top);
+            body.Children.Add(scroll);
+        }
+        if (!diagnosticOnly)
+        {
+            var footer = new StackPanel { Margin = new(0, 12, 0, 0) }; var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+            hint = ActionUi.Text(canApply ? "套用前會重新驗證原視窗、焦點及選取；結果也會放入剪貼簿。" : "來源不可寫入或已變更；可以複製結果。", 11, ActionUi.Muted);
+            buttons.Children.Add(ActionUi.Button("複製結果", () =>
+            { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = "已複製結果。"; } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = "剪貼簿忙碌，請稍後再試。"; } }, "copy"));
+            applyButton = ActionUi.Button("套用至原文", () => { applyButton!.IsEnabled = false; apply?.Invoke(); }); applyButton.IsEnabled = canApply; buttons.Children.Add(applyButton);
+            buttons.Children.Add(ActionUi.Button("關閉", Close)); footer.Children.Add(buttons); footer.Children.Add(hint); DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
+            if (markdown) body.Children.Add(new FlowDocumentScrollViewer { Document = RenderMarkdown(text), IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, IsSelectionEnabled = true });
+            else body.Children.Add(new TextBox { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto, BorderThickness = new(0), Padding = new(10), FontSize = 14,
+                Background = Brushes.White, FontFamily = new("Consolas, Microsoft JhengHei UI") });
+            if (hud) { footer.Visibility = Visibility.Collapsed; timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) }; timer.Tick += (_, _) => Close(); Loaded += (_, _) => timer.Start(); }
+        }
         Content = body;
         SourceInitialized += (_, _) =>
         {
@@ -40,7 +60,12 @@ internal sealed class ActionResultWindow : Window
         };
         Closed += (_, _) => timer?.Stop();
     }
-    public void InvalidateTarget() { applyButton.IsEnabled = false; hint.Text = "原選取已失效；請複製結果後自行貼上。"; }
+    public void InvalidateTarget()
+    {
+        if (diagnosticOnly) return;
+        if (applyButton != null) applyButton.IsEnabled = false;
+        if (hint != null) hint.Text = "原選取已失效；請複製結果後自行貼上。";
+    }
     public bool Contains(int x, int y) => IsVisible && Native.GetWindowRect(handle, out var r) && x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom;
     private static FlowDocument RenderMarkdown(string text)
     {

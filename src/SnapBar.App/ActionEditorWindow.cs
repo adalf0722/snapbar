@@ -15,6 +15,7 @@ internal sealed class ActionEditorWindow : Window
         runtime = ActionUi.Input(), timeout = ActionUi.Input("10", 3), preview = ActionUi.Input();
     private readonly ComboBox kind = new(), output = new(), icon = new();
     private readonly StackPanel scriptOptions = new();
+    private readonly ActionDiagnosticView diagnostics = new() { Visibility = Visibility.Collapsed };
     private readonly TextBlock error = ActionUi.Text("", 12, Brushes.Firebrick), destination = ActionUi.Text("", 12, ActionUi.Muted),
         help = ActionUi.Text("", 11, ActionUi.Muted), testStatus = ActionUi.Text("", 11, ActionUi.Muted);
     private readonly Button test;
@@ -65,6 +66,7 @@ internal sealed class ActionEditorWindow : Window
         sample.AcceptsReturn = true; sample.TextWrapping = TextWrapping.Wrap; sample.Height = 90; sample.VerticalScrollBarVisibility = ScrollBarVisibility.Auto; right.Children.Add(sample);
         destination.Margin = new(0, 18, 0, 10); right.Children.Add(destination);
         preview.IsReadOnly = true; preview.AcceptsReturn = true; preview.TextWrapping = TextWrapping.Wrap; preview.Height = 220; preview.VerticalScrollBarVisibility = ScrollBarVisibility.Auto; preview.FontFamily = new("Consolas, Microsoft JhengHei UI"); right.Children.Add(preview);
+        right.Children.Add(diagnostics);
         test = ActionUi.Button("預覽／測試", () => _ = TestAsync(), "terminal"); test.Margin = new(0, 15, 0, 8); right.Children.Add(test);
         right.Children.Add(ActionUi.Button("取消測試", () => testing?.Cancel())); right.Children.Add(testStatus);
         var note = ActionUi.Text("儲存不會執行動作。網址只預覽；腳本在點擊測試後會以你的使用者權限實際執行。", 11, ActionUi.Muted); note.Margin = new(0, 24, 0, 0); right.Children.Add(note);
@@ -106,6 +108,7 @@ internal sealed class ActionEditorWindow : Window
     }
     private void UpdatePreview()
     {
+        diagnostics.Clear(); preview.Visibility = Visibility.Visible;
         if (currentKind == CustomActionKind.Url)
         { var url = CustomActionPolicy.ResolveUrl(sample.Text, content.Text); destination.Text = url.Success ? "目的地 · " + url.Uri!.Host : "等待有效的 HTTP／HTTPS 網址"; preview.Text = url.Success ? url.Uri!.AbsoluteUri : "請在路徑、參數值或片段中放入一個 ***。"; }
         else { destination.Text = $"{(currentKind == CustomActionKind.JavaScript ? "Node.js" : "PowerShell")} · {sample.Text.Length} 字輸入"; preview.Text = "按「預覽／測試」以範例文字實際執行腳本。"; }
@@ -123,16 +126,21 @@ internal sealed class ActionEditorWindow : Window
         if (testing != null) return; var action = ReadAction(); if (action == null) return;
         if (currentKind == CustomActionKind.Url) { UpdatePreview(); testStatus.Text = "網址已預覽；未開啟瀏覽器。"; return; }
         using var cancellation = new CancellationTokenSource(); testing = cancellation; test.IsEnabled = false; kind.IsEnabled = false;
+        diagnostics.Clear(); preview.Text = ""; preview.Visibility = Visibility.Visible;
         testStatus.Text = "正在執行範例…";
         try
         {
             var result = await CustomActionRunner.RunAsync(action, sample.Text, cancellation.Token);
             if (!IsVisible) return;
-            preview.Text = result.Success ? result.Output : result.Error.Length > 0 ? result.Error : ScriptStatus(result.Status);
-            testStatus.Text = result.Success ? "範例已完成；未複製或套用至其他 App。" : ScriptStatus(result.Status);
+            var diagnostic = ScriptDiagnostic.Create(action, result);
+            preview.Text = diagnostic.IsFailure ? "" : result.Output;
+            preview.Visibility = diagnostic.IsFailure ? Visibility.Collapsed : Visibility.Visible;
+            if (diagnostic.IsFailure || !string.IsNullOrWhiteSpace(result.Error)) diagnostics.Show(diagnostic);
+            testStatus.Text = !diagnostic.IsFailure
+                ? string.IsNullOrWhiteSpace(result.Error) ? "範例已完成；未複製或套用至其他 App。" : "程序已結束；請查看診斷訊息。未複製或套用至其他 App。"
+                : "範例未完成；請查看上方原因與詳細資訊。";
         }
         finally { testing = null; test.IsEnabled = true; kind.IsEnabled = true; }
     }
-    internal static string ScriptStatus(string status) => status switch
-    { "cancelled" => "已取消執行。", "script-timeout" => "執行逾時，已終止程序。", "runtime-unavailable" => "找不到執行環境，請安裝或指定完整的 .exe 路徑。", "script-output-too-large" => "輸出超過大小限制，已停止。", "invalid-action" => "動作設定無效。", _ => "腳本執行失敗，請檢查內容與執行環境。" };
+    internal static string ScriptStatus(string status) => ScriptDiagnostic.StatusText(status);
 }

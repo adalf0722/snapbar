@@ -6,7 +6,8 @@ Approved in chat on 2026-10-31: explain a failure briefly, retain the original d
 - Both surfaces share one formatter and view. Known noninteractive PowerShell failures explain that input cannot be requested; a verified `curl` command also suggests `curl.exe`. Unknown failures receive an honest generic summary with the raw cause available in Details.
 - Details include action name, runtime kind, status, exit code when available, stderr, and stdout. No diagnostic data is written to logs or copied automatically.
 - Keep each captured stream bounded to 262,144 characters. Preserve captured text on timeout and overflow, identify the truncated stream, and label incomplete capture when a pipe cannot be drained after termination. Cancellation and stale requests remain suppressed in the toolbar.
-- Preserve password rejection, foreground and selection validation, cancellation, job-based descendant cleanup, and existing successful output routing. Stderr alone does not turn a successful process into a failure; the editor still makes those diagnostics available.
+- Preserve password rejection, foreground and selection validation, cancellation, job-based descendant cleanup, and existing successful output routing. Stderr alone does not turn a successful process into a failure; both surfaces make those diagnostics available. A positively identified unavailable PowerShell prompt is treated as a failure even if PowerShell exits zero, preventing an empty replacement result.
+- Decode complete PowerShell CLIXML error strings for readability, retaining the exact original stderr as well. Truncated or malformed XML falls back to the original text. XML external entities and DTDs are disabled.
 
 Alternatives considered: a transient status alone is insufficient for long errors; automatically writing log files adds storage and privacy costs without helping the immediate workflow.
 

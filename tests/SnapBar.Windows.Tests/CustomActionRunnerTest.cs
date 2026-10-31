@@ -28,6 +28,21 @@ internal static class CustomActionRunnerTest
             var result = await CustomActionRunner.RunAsync(Action("[Console]::Error.Write('錯誤 😀'); exit 7"), "", default);
             Require(result.Status == "script-failed" && result.ExitCode == 7 && result.Error == "錯誤 😀");
         });
+        await Check("failure retains both output streams", async () =>
+        {
+            var result = await CustomActionRunner.RunAsync(Action("[Console]::Write('before'); [Console]::Error.Write('failure'); exit 7"), "", default);
+            Require(result.Status == "script-failed" && result.ExitCode == 7 && result.Output == "before" && result.Error == "failure");
+        });
+        await Check("noninteractive input retains original PowerShell error", async () =>
+        {
+            var result = await CustomActionRunner.RunAsync(Action("Read-Host 'input'"), "", default);
+            Require(result.Error.Contains("NonInteractive", StringComparison.OrdinalIgnoreCase) || result.Error.Contains("非互動"));
+        });
+        await Check("timeout retains flushed output and diagnostics", async () =>
+        {
+            var result = await CustomActionRunner.RunAsync(Action("[Console]::Write('before timeout'); [Console]::Out.Flush(); [Console]::Error.Write('diagnostic'); [Console]::Error.Flush(); Start-Sleep 30", 2), "", default);
+            Require(result.Status == "script-timeout" && result.Output == "before timeout" && result.Error == "diagnostic");
+        });
         await Check("timeout terminates script", async () => Require((await CustomActionRunner.RunAsync(Action("Start-Sleep 30", 1), "", default)).Status == "script-timeout"));
         await Check("pre-cancellation", async () => Require((await CustomActionRunner.RunAsync(Action("throw 'must not run'"), "", new CancellationToken(true))).Status == "cancelled"));
         await Check("mid-execution cancellation", async () =>
@@ -37,6 +52,14 @@ internal static class CustomActionRunnerTest
         });
         await Check("stdout overflow bounded", async () => Require((await CustomActionRunner.RunAsync(Action("[Console]::Write(('x' * 300000)); Start-Sleep 30"), "", default)).Status == "script-output-too-large"));
         await Check("stderr overflow bounded", async () => Require((await CustomActionRunner.RunAsync(Action("[Console]::Error.Write(('x' * 300000)); Start-Sleep 30"), "", default)).Status == "script-output-too-large"));
+        foreach (var errorStream in new[] { false, true })
+        await Check((errorStream ? "stderr" : "stdout") + " overflow retains bounded original text", async () =>
+        {
+            var result = await CustomActionRunner.RunAsync(Action($"[Console]::{(errorStream ? "Error" : "Out")}.Write(('x' * 300000)); Start-Sleep 30"), "", default);
+            Require(result.Status == "script-output-too-large");
+            Require((errorStream ? result.Error : result.Output) == new string('x', 256 * 1024));
+            Require(errorStream ? result.ErrorTruncated && !result.OutputTruncated : result.OutputTruncated && !result.ErrorTruncated);
+        });
         await Check("simultaneous environments are isolated", async () =>
         {
             var action = Action("Start-Sleep -Milliseconds 100; [Console]::Write($env:POPCLIP_TEXT)");

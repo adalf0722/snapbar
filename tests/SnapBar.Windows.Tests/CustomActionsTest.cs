@@ -75,10 +75,29 @@ internal static class CustomActionsTest
                 Check(!Children<Button>(resultWindow).Single(b => AutomationProperties.GetName(b) == "套用至原文").IsEnabled, "readonly result cannot apply");
                 resultWindow.Close(); await Capture(); await controller.ExecuteCustomAsync(replace.Id);
                 Check(calls == 1, "readonly replacement is rejected before executing script");
+                foreach (var mode in new[] { ActionOutput.None, ActionOutput.Clipboard, ActionOutput.Hud, ActionOutput.Window, ActionOutput.Markdown })
+                {
+                    controller.ConfigureActions(actions with { CustomActions = [url, script with { Output = mode }, replace] });
+                    runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("script-failed", "partial stdout", "original failure\nsecond line", 7));
+                    await Capture(); var sequence = Native.GetClipboardSequenceNumber();
+                    await controller.ExecuteCustomAsync(script.Id);
+                    var errorWindow = app.Windows.OfType<ActionResultWindow>().Single(w => w.IsVisible);
+                    Check(!Children<Button>(errorWindow).Any(b => AutomationProperties.GetName(b) == "套用至原文"), mode + " failure routes to diagnostic without Apply");
+                    Children<Expander>(errorWindow).Single().IsExpanded = true; errorWindow.UpdateLayout();
+                    Check(Children<TextBox>(errorWindow).Any(t => t.Text.Contains("original failure\nsecond line") && t.Text.Contains("partial stdout") && t.Text.Contains("結束代碼：7")), mode + " failure retains complete diagnostics");
+                    Check(Native.GetClipboardSequenceNumber() == sequence && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
+                        mode + " failure does not alter clipboard or original foreground");
+                    errorWindow.Close();
+                }
+                controller.ConfigureActions(actions);
                 await Capture();
                 runner = async (_, _, token) => { controller.Automatic = false; try { await Task.Delay(5000, token); } catch (OperationCanceledException) { cancelled = true; } return new("ok", "late result"); };
                 await controller.ExecuteCustomAsync(script.Id);
                 Check(cancelled && !app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "invalidated script cancels token and never presents late result");
+                await Capture();
+                runner = (_, _, _) => { controller.Automatic = false; return Task.FromResult(new ScriptExecutionResult("script-failed", Error: "late failure")); };
+                await controller.ExecuteCustomAsync(script.Id);
+                Check(!app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "invalidated script never presents late failure diagnostics");
                 await Capture();
                 popup = Popup(); Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 popup.UpdateLayout(); var search = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
@@ -134,6 +153,33 @@ internal static class CustomActionsTest
                 { if (fixture.HasExited || DateTime.UtcNow > deadline) throw new InvalidOperationException("Editable fixture must be foreground"); await Task.Delay(25); }
                 await Task.Delay(120);
                 Locked(() => { var captured = clipboardBackup.Capture(); if (captured != "ok") throw new InvalidOperationException("Clipboard backup failed"); clipboardCaptured = true; });
+                var editElement = AutomationElement.FromHandle(fixture.MainWindowHandle).FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.AutomationIdProperty, "EditableSample"));
+                var value = (ValuePattern)editElement.GetCurrentPattern(ValuePattern.Pattern);
+                var originalValue = value.Current.Value;
+                runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("script-failed", "partial", "replacement failure 中文", 9));
+                await controller.CaptureAsync(false, 0, 0);
+                var beforeFailure = Native.GetClipboardSequenceNumber();
+                await controller.ExecuteCustomAsync(replace.Id);
+                var replacementError = app.Windows.OfType<ActionResultWindow>().Single(w => w.IsVisible);
+                Check(value.Current.Value == originalValue && Native.GetClipboardSequenceNumber() == beforeFailure
+                    && !Children<Button>(replacementError).Any(b => AutomationProperties.GetName(b) == "套用至原文"),
+                    "editable replacement failure preserves source and clipboard and omits Apply");
+                Children<Button>(replacementError).Single(b => AutomationProperties.GetName(b) == "複製詳細資訊").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(Clipboard.GetText().Contains("replacement failure 中文") && Clipboard.GetText().Contains("結束代碼：9"),
+                    "explicit copy includes full original error and exit code");
+                replacementError.Close();
+
+                var prompt = script with { Kind = CustomActionKind.PowerShell, Content = "curl ifconfig.me", Output = ActionOutput.ReplaceSelection };
+                controller.ConfigureActions(actions with { CustomActions = [url, prompt, replace] });
+                runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("ok", Error: "curl : Windows PowerShell is in NonInteractive mode. Read and Prompt functionality is not available.", ExitCode: 0));
+                await controller.CaptureAsync(false, 0, 0); beforeFailure = Native.GetClipboardSequenceNumber();
+                await controller.ExecuteCustomAsync(prompt.Id);
+                var promptError = app.Windows.OfType<ActionResultWindow>().Single(w => w.IsVisible);
+                Check(value.Current.Value == originalValue && Native.GetClipboardSequenceNumber() == beforeFailure
+                    && !Children<Button>(promptError).Any(b => AutomationProperties.GetName(b) == "套用至原文"),
+                    "unavailable PowerShell prompt with exit zero cannot paste an empty error result");
+                promptError.Close(); controller.ConfigureActions(actions);
                 runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("ok", "Changed"));
                 await controller.CaptureAsync(false, 0, 0);
                 Check(controller.ActiveSelection is { Editable: true }, "editable fixture authorizes result application");
@@ -142,9 +188,6 @@ internal static class CustomActionsTest
                 var apply = Children<Button>(editableResult).Single(b => AutomationProperties.GetName(b) == "套用至原文");
                 Check(apply.IsEnabled, "editable original selection enables Apply");
                 apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                var editElement = AutomationElement.FromHandle(fixture.MainWindowHandle).FindFirst(TreeScope.Descendants,
-                    new PropertyCondition(AutomationElement.AutomationIdProperty, "EditableSample"));
-                var value = (ValuePattern)editElement.GetCurrentPattern(ValuePattern.Pattern);
                 deadline = DateTime.UtcNow.AddSeconds(4);
                 while (!value.Current.Value.StartsWith("Changed Windows", StringComparison.Ordinal) && DateTime.UtcNow < deadline) await Task.Delay(30);
                 Check(value.Current.Value.StartsWith("Changed Windows", StringComparison.Ordinal), "Apply replaces only the original selected range in disposable editor");

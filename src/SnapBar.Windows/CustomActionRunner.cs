@@ -8,7 +8,8 @@ using SnapBar.Core;
 
 namespace SnapBar.Windows;
 
-public sealed record ScriptExecutionResult(string Status, string Output = "", string Error = "", int? ExitCode = null)
+public sealed record ScriptExecutionResult(string Status, string Output = "", string Error = "", int? ExitCode = null,
+    bool OutputTruncated = false, bool ErrorTruncated = false, bool CaptureIncomplete = false)
 {
     public bool Success => Status == "ok";
 }
@@ -31,7 +32,9 @@ public static class CustomActionRunner
         try
         {
             var interpreter = ResolveInterpreter(action);
-            if (interpreter == null) return new("runtime-unavailable");
+            if (interpreter == null) return new("runtime-unavailable", Error: action.InterpreterPath == null
+                ? $"找不到預設的 {action.Kind} 執行環境。"
+                : $"執行環境必須是存在的 .exe 完整路徑：{action.InterpreterPath}");
             directory = Path.Combine(Path.GetTempPath(), "SnapBar.Actions", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             script = Path.Combine(directory, action.Kind == CustomActionKind.PowerShell ? "action.ps1" : "action.js");
@@ -68,8 +71,10 @@ public static class CustomActionRunner
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(action.TimeoutSeconds));
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
             var overflow = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var stdout = ReadBoundedAsync(process.StandardOutput, overflow);
-            var stderr = ReadBoundedAsync(process.StandardError, overflow);
+            var outputCapture = new BoundedCapture();
+            var errorCapture = new BoundedCapture();
+            var stdout = outputCapture.ReadAsync(process.StandardOutput, overflow);
+            var stderr = errorCapture.ReadAsync(process.StandardError, overflow);
             var exited = process.WaitForExitAsync();
             var stopped = Task.Delay(Timeout.Infinite, stop.Token);
             var completed = Task.WhenAll(exited, stdout, stderr);
@@ -80,12 +85,16 @@ public static class CustomActionRunner
             try { await completed.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false); }
             catch (TimeoutException) { Kill(process); status ??= "script-timeout"; }
             if (overflow.Task.IsCompleted) status = "script-output-too-large";
-            if (status != null) return new(status);
-            return new(process.ExitCode == 0 ? "ok" : "script-failed", await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false), process.ExitCode);
+            var output = outputCapture.Snapshot();
+            var error = errorCapture.Snapshot();
+            var incomplete = !output.Complete || !error.Complete;
+            int? exitCode = process.HasExited ? process.ExitCode : null;
+            return new(status ?? (exitCode == 0 && !incomplete ? "ok" : "script-failed"), output.Text, error.Text, exitCode,
+                output.Truncated, error.Truncated, incomplete);
         }
         catch (OperationCanceledException) { return new("cancelled"); }
         catch (Exception error) when (error is Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
-        { return new(process == null || !HasStarted(process) ? "runtime-unavailable" : "script-failed"); }
+        { return new(process == null || !HasStarted(process) ? "runtime-unavailable" : "script-failed", Error: error.Message); }
         finally
         {
             job?.Dispose();
@@ -148,17 +157,35 @@ public static class CustomActionRunner
         catch (Exception error) when (error is Win32Exception or InvalidOperationException or NotSupportedException) { }
     }
 
-    private static async Task<string> ReadBoundedAsync(StreamReader reader, TaskCompletionSource overflow)
+    private sealed class BoundedCapture
     {
-        var result = new StringBuilder();
-        var buffer = new char[4096];
-        while (true)
+        private readonly StringBuilder text = new();
+        private readonly object sync = new();
+        private bool truncated, complete;
+
+        public (string Text, bool Truncated, bool Complete) Snapshot()
+        { lock (sync) return (text.ToString(), truncated, complete); }
+
+        public async Task ReadAsync(StreamReader reader, TaskCompletionSource overflow)
         {
-            var count = await reader.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
-            if (count == 0) return result.ToString();
-            var remaining = OutputLimit - result.Length;
-            result.Append(buffer, 0, Math.Min(count, remaining));
-            if (count > remaining) { overflow.TrySetResult(); return result.ToString(); }
+            var buffer = new char[4096];
+            try
+            {
+                while (true)
+                {
+                    var count = await reader.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
+                    lock (sync)
+                    {
+                        if (count == 0) { complete = true; return; }
+                        var remaining = OutputLimit - text.Length;
+                        text.Append(buffer, 0, Math.Min(count, remaining));
+                        if (count > remaining)
+                        { truncated = true; complete = true; overflow.TrySetResult(); return; }
+                    }
+                }
+            }
+            catch (Exception error) when (error is IOException or ObjectDisposedException)
+            { /* Retain the bounded snapshot and mark capture incomplete. */ }
         }
     }
 

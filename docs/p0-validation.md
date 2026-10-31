@@ -1,5 +1,32 @@
 # P0 驗證紀錄
 
+## 2026-10-31 修正：自訂動作完整錯誤與處理建議
+
+自訂腳本失敗時，正式執行會顯示持續保留的診斷視窗；編輯器測試則留在原預覽區。先顯示簡短原因，展開「詳細資訊」後可查看與複製動作名稱、執行環境、原始錯誤、結束代碼及已產生的輸出。錯誤視窗不提供「套用至原文」，也不自動複製或寫入日誌。
+
+PowerShell 的 CLIXML 錯誤會轉成可閱讀文字，原始內容也保留在詳細資訊。只有辨識到實際的非互動提示錯誤才顯示對應建議；對 `curl` 的建議同時核對腳本指令及錯誤來源，避免把其他指令的問題誤歸因給別名。PowerShell 有時會以結束代碼 0 回報無法互動的錯誤，現在也會呈現失敗診斷並阻止空結果替換原文。其他成功程序的 stderr 則保留為診斷訊息，不單憑 stderr 判定失敗。
+
+逾時與輸出過大時保留已擷取內容；每個串流仍限制為 262,144 字元，並明示截斷或未完整讀取。保持原有取消、過期結果抑制、前景／選取重驗證及 Windows Job 子程序清理。
+
+| 項目 | 通過 | 證據 |
+| --- | ---: | --- |
+| Core 政策與設定 | 275 | 完整既有 runner |
+| 自訂腳本實際執行 | 19 | Unicode、非零結束與雙流、非互動提示、逾時前內容、雙流截斷、取消、隔離及子程序清理 |
+| 診斷格式與原生介面 | 25 | 原始多行文字、中文 CLIXML、保守提示、截斷／未完成標記、預設收合、無套用、編輯器真實腳本失敗／重試 |
+| 自訂動作原生整合 | 54 | 各輸出模式失敗、前景與剪貼簿未變、過期錯誤抑制、明確複製完整內容、可編輯原文未被失敗或代碼 0 的互動錯誤改寫、成功套用回歸 |
+| Probe 協定與結束 | 6 | 發布腳本 smoke |
+
+共 **379 項通過**，Release 建置與 Windows x64 自含發布均為 0 errors／0 warnings。整合測試使用專用 fixture，明確複製與成功套用測試後已還原原剪貼簿。以 WPF 實際渲染檢查收合／展開的錯誤視窗及編輯器內嵌錯誤，畫面保存在忽略目錄 `artifacts/diagnostics/`。
+
+```powershell
+pwsh -NoProfile -File ./scripts/build.ps1 -Publish
+./.tools/dotnet/dotnet.exe run --project tests/SnapBar.Windows.Tests -c Release --no-build -- --custom-action-runner
+./.tools/dotnet/dotnet.exe run --project tests/SnapBar.Windows.Tests -c Release --no-build -- --action-diagnostics
+./.tools/dotnet/dotnet.exe run --project tests/SnapBar.Windows.Tests -c Release --no-build -- --custom-actions
+```
+
+本輪沒有新增混合 DPI／多螢幕或第三方應用程式矩陣驗收。已辨識提示涵蓋實測英文及繁體中文訊息；其他錯誤與語系仍顯示完整原始內容，不推測修復方法。錯誤內容超過串流上限時只能提供有標記的保留部分。
+
 ## 2026-10-30 修復：搜尋欄可點入並顯示原生游標
 
 使用者指出更多動作的搜尋欄不像可輸入，也沒有可點入的游標。原介面其實是 TextBlock，僅靠全域按鍵攔截組合字串。現改為真正的 TextBox，包含白底邊框、提示字、I 型滑鼠游標、焦點框線與文字游標；可正常選字、移動、刪除、全選、貼上與使用 Windows 輸入法。展開更多仍不取得焦點，明確點入欄位才啟用搜尋視窗。
