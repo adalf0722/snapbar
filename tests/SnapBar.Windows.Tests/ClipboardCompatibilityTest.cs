@@ -114,7 +114,7 @@ internal static class ClipboardCompatibilityTest
             foreach (var descendant in Children<T>(child)) yield return descendant;
     }
 
-    public static int Run()
+    public static int Run(bool includeLong = false)
     {
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown }; var passed = 0; var result = 1;
         void Check(bool value, string name) { if (!value) throw new InvalidOperationException(name); passed++; Console.WriteLine("PASS " + name); }
@@ -145,10 +145,19 @@ internal static class ClipboardCompatibilityTest
                 await Command("select");
                 var launched = new List<Uri>(); var calls = 0; string? scriptInput = null;
                 Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>> runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("ok", "fixture result"));
-                using var controller = new SelectionController(owner, Path.GetFullPath("src/SnapBar.Probe/bin/Release/net10.0-windows/SnapBar.Probe.exe"), launched.Add,
+                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable, launched.Add,
                     runCustom: (action, text, token) => { calls++; scriptInput = text; return runner(action, text, token); });
                 controller.Status += message => Console.WriteLine("STATUS " + message);
-                async Task Capture() { await controller.CaptureAsync(false, 0, 0); }
+                // Record only event kinds, never keys or clipboard data, to diagnose desktop interference.
+                using var inputOwner = new HwndSource(new HwndSourceParameters("SnapBar test input observer") { Width = 1, Height = 1, WindowStyle = 0 });
+                using var inputObserver = new InputMonitor(inputOwner);
+                inputObserver.Input += input => Console.WriteLine("INPUT " + input.Kind);
+                async Task Capture()
+                {
+                    if (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != fixture.Id)
+                        throw new InvalidOperationException("Fixture lost foreground; pause other desktop input and rerun. No capture was requested from another app.");
+                    await controller.CaptureAsync(false, 0, 0);
+                }
                 Clipboard.SetText("original clipboard");
                 await Capture();
                 Check(controller.ActiveSelection == null && await Command("stats") == 0 && Clipboard.GetText() == "original clipboard", "disabled fallback never sends Ctrl+C");
@@ -192,17 +201,26 @@ internal static class ClipboardCompatibilityTest
                 await Command("select");
                 var longScript = script with { TimeoutSeconds = 60 };
                 controller.ConfigureActions(ActionCatalog.Normalize(new() { CustomActions = [longScript] }));
-                runner = async (_, _, token) =>
+                if (includeLong)
                 {
-                    Console.WriteLine("RUNNING: 35-second script exceeds the normal clipboard candidate lifetime");
-                    await Task.Delay(TimeSpan.FromSeconds(35), token);
-                    return new("ok", "long script completed");
-                };
-                await Capture(); await controller.ExecuteCustomAsync(longScript.Id);
-                resultWindow = app.Windows.OfType<ActionResultWindow>().SingleOrDefault(w => w.IsVisible);
-                Check(resultWindow != null && Children<TextBox>(resultWindow).Any(t => t.Text == "long script completed")
-                    && Clipboard.GetText() == "original clipboard", "35-second script retains result after original candidate deadline and preserves clipboard");
-                resultWindow!.Close();
+                    runner = async (_, _, token) =>
+                    {
+                        var watch = Stopwatch.StartNew();
+                        Console.WriteLine("RUNNING: 35-second script exceeds the normal clipboard candidate lifetime; keep the fixture foreground");
+                        try { await Task.Delay(TimeSpan.FromSeconds(35), token); }
+                        catch (OperationCanceledException)
+                        {
+                            Console.WriteLine($"FAIL long script cancelled after {watch.Elapsed.TotalSeconds:F1}s; fixture foreground={Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id}; selected session present={controller.ActiveSelection != null}");
+                            throw;
+                        }
+                        return new("ok", "long script completed");
+                    };
+                    await Capture(); await controller.ExecuteCustomAsync(longScript.Id);
+                    resultWindow = app.Windows.OfType<ActionResultWindow>().SingleOrDefault(w => w.IsVisible);
+                    Check(resultWindow != null && Children<TextBox>(resultWindow).Any(t => t.Text == "long script completed")
+                        && Clipboard.GetText() == "original clipboard", "35-second script retains result after original candidate deadline and preserves clipboard");
+                    resultWindow!.Close();
+                }
                 runner = async (_, _, _) => { await Command("other"); return new("ok", "must not display"); };
                 await Capture(); await controller.ExecuteCustomAsync(longScript.Id);
                 Check(!app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "extended lease still rejects focus changes during script execution");

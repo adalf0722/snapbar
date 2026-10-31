@@ -71,6 +71,21 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        string[] tests = ["--clipboard-compatibility", "--clipboard-compatibility-long", "--ui-appearance", "--ui-preview",
+            "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics",
+            "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--browser-launch-smoke",
+            "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
+            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight"];
+        if (args.SequenceEqual(["--list-tests"])) { foreach (var test in tests) Console.WriteLine(test); return 0; }
+        var worker = args.Any(a => a is "--clipboard-compatibility-fixture" or "--path-worker" or "--clipboard-race-writer");
+        if (!worker && (args.Count(a => tests.Contains(a)) != 1
+            || (!args.Contains("--sublime-action") && args.Length != 1)))
+        {
+            Console.Error.WriteLine("Choose exactly one test. Use --list-tests or scripts/test-desktop.ps1 -List.");
+            return 2;
+        }
+        if (args.Contains("--desktop-preflight")) return DesktopPreflight.Run();
+        if (args.Contains("--clipboard-compatibility-long")) return ClipboardCompatibilityTest.Run(includeLong: true);
         if (args.Contains("--clipboard-compatibility-fixture")) return ClipboardCompatibilityTest.RunFixture();
         if (args.Contains("--clipboard-compatibility")) return ClipboardCompatibilityTest.Run();
         if (args.Contains("--ui-appearance")) return UiAppearanceTest.Run();

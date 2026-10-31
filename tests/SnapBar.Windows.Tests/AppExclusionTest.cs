@@ -24,7 +24,7 @@ internal static class AppExclusionTest
             {
                 using var owner = new HwndSource(new HwndSourceParameters("SnapBar exclusion test")
                     { Width = 1, Height = 1, WindowStyle = 0 });
-                var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
                 start.ArgumentList.Add("--fixture");
                 child = Process.Start(start) ?? throw new InvalidOperationException("Fixture did not start");
                 var deadline = DateTime.UtcNow.AddSeconds(60);
@@ -40,7 +40,7 @@ internal static class AppExclusionTest
                 var entry = AppExclusionPolicy.Create(path, "Dedicated fixture");
                 Require(Native.GetExecutablePath(target with { ProcessStarted = target.ProcessStarted + 1 }) == null,
                     "reused process identity cannot supply a trusted executable path");
-                using var controller = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"));
+                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable);
                 controller.Automatic = true;
                 controller.SetExcludedApplications([entry]);
                 var messages = new List<string>();

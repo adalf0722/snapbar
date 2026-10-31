@@ -30,7 +30,7 @@ internal static class WebActionsTest
                 async Task StartFixture(string mode)
                 {
                     if (child != null) { if (!child.HasExited) child.CloseMainWindow(); child.Dispose(); }
-                    var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                    var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
                     start.ArgumentList.Add("--fixture"); start.ArgumentList.Add("--web-" + mode);
                     child = Process.Start(start) ?? throw new InvalidOperationException("Fixture did not start");
                     Console.WriteLine("WAITING: activate the dedicated " + mode + " fixture (up to 60 seconds)");
@@ -44,7 +44,7 @@ internal static class WebActionsTest
                 }
                 var launched = new List<Uri>();
                 var statuses = new List<string>();
-                var probe = Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe");
+                var probe = TestPaths.ProbeExecutable;
                 using var controller = new SelectionController(owner, probe, launched.Add);
                 controller.ConfigureActions(ActionCatalog.SetPlacement(new(), "link", ActionPlacement.Bar));
                 controller.Status += statuses.Add;

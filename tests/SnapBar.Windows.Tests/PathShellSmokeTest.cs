@@ -23,7 +23,7 @@ internal static class PathShellSmokeTest
             foreach (var path in new[] { file, folder, script })
             {
                 var target = Native.GetIdentity(Native.GetForegroundWindow()) ?? throw new Exception("No foreground window");
-                using (var session = new PathRevealSession(Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe")))
+                using (var session = new PathRevealSession(TestPaths.ProbeExecutable))
                 {
                     var prepared = session.PrepareAsync(path, default).GetAwaiter().GetResult();
                     if (prepared != "ok") throw new Exception("Native preparation failed: " + prepared);
@@ -42,7 +42,7 @@ internal static class PathShellSmokeTest
             foreach (var folderPath in new[] { Path.GetPathRoot(root)!, Path.GetDirectoryName(Environment.CurrentDirectory)! })
             {
                 var target = Native.GetIdentity(Native.GetForegroundWindow()) ?? throw new Exception("No foreground window");
-                using var session = new PathRevealSession(Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"));
+                using var session = new PathRevealSession(TestPaths.ProbeExecutable);
                 if (session.PrepareAsync(folderPath, default).GetAwaiter().GetResult() != "ok"
                     || session.RevealAsync(target, default).GetAwaiter().GetResult() != "ok")
                     throw new Exception("Folder reveal failed");

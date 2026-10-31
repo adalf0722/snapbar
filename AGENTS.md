@@ -12,18 +12,19 @@ SnapBar is a Windows text-selection toolbar prototype built with .NET 10 and WPF
 
 Designs and validation records live in `docs/`; distribution instructions live in `packaging/`. Generated packages go to ignored `artifacts/p0/`.
 
-## Build, Test, and Development Commands
+## Development Entry Points
 
-Use Windows, PowerShell, and SDK `10.0.402` or a compatible patch permitted by `global.json`. Build scripts prefer `.tools/dotnet/dotnet.exe`, then use `dotnet` from PATH.
+Use Windows, PowerShell 7 and the SDK selected by `global.json`. Scripts prefer `.tools/dotnet/dotnet.exe`, then PATH. See [docs/development.md](docs/development.md) for test suites, reports, release prerequisites and review guidance.
 
 ```powershell
-pwsh -NoProfile -File .\scripts\build.ps1
+pwsh -NoProfile -File .\scripts\check.ps1
+pwsh -NoProfile -File .\scripts\install-hooks.ps1
+pwsh -NoProfile -File .\scripts\test-desktop.ps1 -List
+pwsh -NoProfile -File .\scripts\test-desktop.ps1 -Suite Release
 pwsh -NoProfile -File .\scripts\build.ps1 -Publish
-dotnet run --project tests/SnapBar.Tests -c Release
-dotnet run --project tests/SnapBar.Windows.Tests -c Release -- --clipboard-roundtrip
 ```
 
-The first command builds Release, runs core tests, and copies the probe beside the app. `-Publish` also creates self-contained Windows x64 packages and runs probe protocol smoke checks. Substitute the bundled executable for `dotnet` if necessary. After publishing, run `artifacts/p0/SnapBar.App.exe`; add `--fixture` for the test window.
+Publishing requires successful desktop Release evidence for the current source and no App/Probe processes using the package, including tray-only processes. It stages and smoke-tests a fresh package before replacing `artifacts/p0`; failures retain the previous package. Exit SnapBar normally before desktop tests or publishing.
 
 ## Coding Style & Naming Conventions
 
@@ -39,8 +40,8 @@ Clipboard tests temporarily replace clipboard contents; avoid concurrent copying
 
 ## Commit & Pull Request Guidelines
 
-The current history contains one commit: `feat: add Windows SnapBar selection toolbar`. Follow its concise, imperative, type-prefixed style. PRs should explain behavior changes, link relevant issues or design notes, list validation performed and remaining limitations, and include screenshots for UI changes.
+Use concise, imperative, type-prefixed Conventional Commits. PRs should explain behavior changes, link relevant issues or design notes, list validation performed and remaining limitations, and include screenshots for UI changes.
 
 ## Selection Safety
 
-Preserve password-field rejection, foreground/focus revalidation, stale-result cancellation, and explicit opt-in clipboard compatibility. Keep selected text and clipboard contents out of logs.
+Preserve password-field rejection, foreground/focus revalidation, candidate identity and stale-result cancellation. Generic clipboard compatibility defaults on and must respect persisted preferences; Sublime key bindings require explicit first-time setup and persisted choices must be preserved. Keep selected text and clipboard contents out of logs. Review timeout/lease and action permission changes across Core, Windows, Probe and App together.

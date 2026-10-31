@@ -251,6 +251,7 @@ Check("native success past total deadline is rejected", () =>
 });
 SettingsStoreTests.Run(Check);
 ClipboardSelectionPolicyTests.Run(Check);
+ClipboardCandidateLeaseTests.Run(Check);
 AppExclusionPolicyTests.Run(Check);
 WebActionPolicyTests.Run(Check);
 PathActionPolicyTests.Run(Check);

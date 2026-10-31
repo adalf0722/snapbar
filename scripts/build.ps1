@@ -1,30 +1,58 @@
-param([switch]$Publish)
+param([switch]$Publish, [string]$DesktopReport)
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path $PSScriptRoot -Parent
-$sdk = Join-Path $repo '.tools\dotnet\dotnet.exe'
-if (-not (Test-Path -LiteralPath $sdk)) { $sdk = (Get-Command dotnet -ErrorAction Stop).Source }
+. (Join-Path $PSScriptRoot 'common.ps1')
+$repo = $script:SnapBarRepo
+$sdk = Get-SnapBarSdk
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
+$package = Join-Path $repo 'artifacts/p0'
+if (-not $DesktopReport) { $DesktopReport = Join-Path $repo 'artifacts/checks/desktop/latest.json' }
+$fingerprint = Get-SnapBarFingerprint
+if ($Publish) {
+    Assert-SnapBarPublishIdle $package
+    Assert-SnapBarDesktopReport $DesktopReport $fingerprint
+}
+$run = New-SnapBarRun 'build'
+$results = [Collections.Generic.List[object]]::new()
+$report = [ordered]@{ schema = 1; sourceFingerprint = $fingerprint; publish = [bool]$Publish; success = $false; results = @(); error = $null }
 Push-Location $repo
 try {
-    & $sdk build SnapBar.slnx -c Release --nologo
-    if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
-    & $sdk run --project tests/SnapBar.Tests -c Release --no-build
-    if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
-    $appOutput = Join-Path $repo 'src\SnapBar.App\bin\Release\net10.0-windows'
-    $probeOutput = Join-Path $repo 'src\SnapBar.Probe\bin\Release\net10.0-windows'
+    $result = Invoke-SnapBarCommand 'Build' $sdk @('build', 'SnapBar.slnx', '-c', 'Release', '--nologo') $run
+    $results.Add($result); Assert-SnapBarCommand $result
+    $result = Invoke-SnapBarCommand 'Core' $sdk @('run', '--project', 'tests/SnapBar.Tests', '-c', 'Release', '--no-build') $run
+    $results.Add($result); Assert-SnapBarCommand $result
+    $appOutput = Join-Path $repo 'src/SnapBar.App/bin/Release/net10.0-windows'
+    $probeOutput = Join-Path $repo 'src/SnapBar.Probe/bin/Release/net10.0-windows'
     $probeDestination = Join-Path $appOutput 'Probe'
-    New-Item -ItemType Directory -Force -Path $probeDestination | Out-Null
+    [IO.Directory]::CreateDirectory($probeDestination) | Out-Null
     Copy-Item -Path (Join-Path $probeOutput '*') -Destination $probeDestination -Recurse -Force
+    Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $appOutput 'README.md') -Force
     if ($Publish) {
-        & $sdk publish src/SnapBar.App -c Release -r win-x64 --self-contained true -o artifacts/p0 --nologo
-        if ($LASTEXITCODE -ne 0) { throw 'App publish failed' }
-        & $sdk publish src/SnapBar.Probe -c Release -r win-x64 --self-contained true -o artifacts/p0/Probe --nologo
-        if ($LASTEXITCODE -ne 0) { throw 'Probe publish failed' }
-        & (Join-Path $PSScriptRoot 'test-probe.ps1') -Executable (Join-Path $repo 'artifacts\p0\Probe\SnapBar.Probe.exe')
-        Copy-Item -LiteralPath (Join-Path $repo 'packaging\README.md') -Destination (Join-Path $repo 'artifacts\p0\README.md') -Force
-        Copy-Item -LiteralPath (Join-Path $repo 'docs\p0-validation.md') -Destination (Join-Path $repo 'artifacts\p0\VALIDATION.md') -Force
-        Copy-Item -LiteralPath (Join-Path $repo 'docs\2026-10-26-clipboard-backup-recovery.md') -Destination (Join-Path $repo 'artifacts\p0\CLIPBOARD-RECOVERY.md') -Force
+        $stagingRoot = Join-Path $repo ('artifacts/publish/' + [guid]::NewGuid().ToString('N'))
+        $stage = Assert-SnapBarArtifactPath (Join-Path $stagingRoot 'package')
+        [IO.Directory]::CreateDirectory($stage) | Out-Null
+        $result = Invoke-SnapBarCommand 'PublishApp' $sdk @('publish', 'src/SnapBar.App', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $stage, '--nologo') $run
+        $results.Add($result); Assert-SnapBarCommand $result
+        $probe = Join-Path $stage 'Probe'
+        $result = Invoke-SnapBarCommand 'PublishProbe' $sdk @('publish', 'src/SnapBar.Probe', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $probe, '--nologo') $run
+        $results.Add($result); Assert-SnapBarCommand $result
+        $result = Invoke-SnapBarCommand 'ProbeSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-probe.ps1'), '-Executable', (Join-Path $probe 'SnapBar.Probe.exe')) $run
+        $results.Add($result); Assert-SnapBarCommand $result
+        Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $stage 'README.md')
+        Copy-Item -LiteralPath (Join-Path $repo 'docs/p0-validation.md') -Destination (Join-Path $stage 'VALIDATION.md')
+        Copy-Item -LiteralPath (Join-Path $repo 'docs/2026-10-26-clipboard-backup-recovery.md') -Destination (Join-Path $stage 'CLIPBOARD-RECOVERY.md')
+        if ($fingerprint -ne (Get-SnapBarFingerprint)) { throw 'Source changed during publishing; previous package preserved.' }
+        Assert-SnapBarDesktopReport $DesktopReport $fingerprint
+        Assert-SnapBarPublishIdle $package
+        $backup = Join-Path $stagingRoot 'previous'
+        Move-SnapBarPackage $stage $package $backup
+        Write-Host "Published: $package (previous package retained at $backup if present)"
     }
+    $report.success = $true
 }
-finally { Pop-Location }
+catch { $report.error = $_.Exception.Message; throw }
+finally {
+    $report.results = @($results.ToArray())
+    Write-SnapBarJson (Join-Path $run 'report.json') $report
+    Pop-Location
+}

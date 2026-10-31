@@ -58,7 +58,7 @@ internal static class SublimeActionTest
                     ? new ClipboardRaceTest.DelayedBackupFixture(RegisterClipboardFormat("SnapBar.Test.Sublime.Rich"),
                         eventuallyReady: true, originalText: "replacement") : null;
                 using var controller = new SelectionController(owner,
-                    System.IO.Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"));
+                    TestPaths.ProbeExecutable);
                 controller.SublimeClipboardEnabled = true;
                 bool actionReported = false;
                 controller.Status += status =>

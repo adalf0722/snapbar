@@ -579,3 +579,17 @@ Core 282、UI appearance 58、action layout 13、action diagnostics 25，共 378
 - 擴充 Probe smoke：過期 token 無法延長、超出 1–310 秒範圍拒絕、未知候選無法釋放；原協定與 EOF 關閉案例保留。
 
 本輪 Core 292、tray lifecycle 28、generic compatibility 22、UI appearance 60、action diagnostics 25，共 427 項通過；另有 10 項 Probe smoke。最終 Release 建置與自含式發佈零警告、零錯誤。舊版已正常結束，修正版重新啟動。此次未重跑前節的全部跨 App、原生滑鼠或實體 DPI 驗證，不以測試合計取代這些尚存的覆蓋界線。
+
+## 2026-10-31 開發檢查與發佈護欄
+
+- 新增共同 check、CI workflow 與本 checkout 的 pre-commit hook。完整檢查已通過 UTF-8 無 BOM、PowerShell 語法、差異空白、12 項工具契約與 298 項 Core 測試；最後建置零警告、零錯誤。另通過 17 項 PathWorker 與 10 項 Probe 協定 smoke。
+- Core 使用注入的 TimeProvider 測試 30 秒精確邊界、延長上限、不縮短延長期限、清理縮短、不復活及候選替換。一般相容性 suite 略過真正 35 秒等待；慢速 suite 保留完整流程。
+- 實測系統匣無視窗的舊 App／Probe 會在發佈建置前被攔截，套件 DLL 雜湊不變；缺少桌面報告亦被攔截。工具契約涵蓋報告過期、失敗、缺必要 suite、非法成功值、路徑越界、切換失敗回復舊目錄，以及成功切換保留備份。另一個桌面 runner 持有互斥鎖時，新執行在建置及剪貼簿操作前失敗。
+- 使用獨立 Git index 驗證 staged BOM／語法錯誤即使工作目錄已修好仍被拒絕，正確 staged 內容可通過；沒有改變使用者實際 index。安裝後另以 `git hook run pre-commit` 確認 hook 可執行。
+- 本輪曾分別通過 lifecycle 28、appearance 60，以及含真實 35 秒等待的 compatibility 22。後續整合重跑多次觀察到外部 click 或焦點變動，按既有安全規則取消。測試另加 fixture 前景檢查，拒絕對其他 App 發起新 capture；診斷只記錄輸入種類與布林狀態。最終原始碼尚無完整且一致的 Release 桌面報告，因此本輪未更新 `artifacts/p0`，未以較早版本的成功報告繞過新門檻。
+
+最後快速檢查日誌：`artifacts/checks/final-check.log`；獨立 PathWorker：`artifacts/checks/independent/20261031T134035013Z-c4a7f9a125db4a49adfe906e23d04137/PathWorker.log`；Probe：`artifacts/checks/independent/20261031T134231078Z-cb1cffd5274f4b40941ec1aa22e68bf1/ProbeSmoke.log`。測試入口與重跑方式見 `docs/development.md`。GitHub Actions 尚未在遠端執行；真實跨 App／實體 DPI 沒有新增覆蓋。
+
+使用者隨後同意暫停鍵盤滑鼠；最終同一份原始碼的 Release 桌面回歸已全部通過：lifecycle 28、appearance 60、compatibility slow 22（含真實 35 秒等待），另有前置檢查 1 項。原始碼指紋在執行前後一致，完整報告為 `artifacts/checks/desktop/20261031T134518370Z-4ab6e2f624d94879afedaf1966241b4c/report.json`。此結果取代上段尚未取得最終報告的待驗證狀態。
+
+接續使用該份報告完成自含式 staging 發佈，Core 298 與 Probe smoke 10 再次通過，切換前重新確認原始碼指紋與程序狀態。成功更新 `artifacts/p0`；前一套件保留於 `artifacts/publish/f78cd4a213c848669498e47f53625ab9/previous`，確認新舊 Core DLL 雜湊不同且舊套件完整存在。發佈報告為 `artifacts/checks/build/20261031T134654585Z-5b0117aece944f3aabc508f69d61b1e2/report.json`。新版正常啟動，自動偵測、選字相容模式與 Sublime 支援維持既有開啟偏好，設定視窗已關閉並回到系統匣待命。本節最終狀態為已驗證並發佈；遠端 CI、真實跨 App／實體 DPI 的覆蓋限制仍維持上述說明。

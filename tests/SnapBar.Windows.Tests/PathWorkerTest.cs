@@ -24,7 +24,7 @@ internal static class PathWorkerTest
         int passed = 0;
         void Check(bool condition, string name)
         { if (!condition) throw new Exception(name); Console.WriteLine("PASS " + name); passed++; }
-        var probe = Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe");
+        var probe = TestPaths.ProbeExecutable;
         var directory = Path.Combine(Path.GetTempPath(), "SnapBar-Path-Test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         var file = Path.Combine(directory, "中文 space, & 😀.txt");
@@ -57,7 +57,7 @@ internal static class PathWorkerTest
             Check((await worker.RequestAsync(new("reveal-path", Target: Native.GetIdentity(Native.GetForegroundWindow())))).Status == "path-unavailable",
                 "folder replaced by a file cannot invoke its handler");
 
-            using var fake = new ProbeClient(Environment.ProcessPath!, pathWorker: true);
+            using var fake = new ProbeClient(TestPaths.RunnerExecutable, pathWorker: true);
             int first = (int)(await fake.RequestAsync(new("ping"))).ElapsedMs;
             using var cancel = new CancellationTokenSource(100);
             var watch = Stopwatch.StartNew();

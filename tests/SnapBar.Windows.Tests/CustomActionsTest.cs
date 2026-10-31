@@ -42,7 +42,7 @@ internal static class CustomActionsTest
             {
                 owner = new HwndSource(new HwndSourceParameters("SnapBar custom action checks") { Width = 1, Height = 1, WindowStyle = 0 });
                 ownerHandle = owner.Handle;
-                var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
                 start.ArgumentList.Add("--fixture"); start.ArgumentList.Add("--web-search"); fixture = Process.Start(start)!;
                 var deadline = DateTime.UtcNow.AddSeconds(60);
                 Console.WriteLine("WAITING: activate the dedicated SnapBar custom fixture (up to 60 seconds)");
@@ -51,7 +51,7 @@ internal static class CustomActionsTest
                 await Task.Delay(120);
                 var launched = new List<Uri>(); var calls = 0; var cancelled = false;
                 Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>> runner = (_, _, _) => { calls++; return Task.FromResult(new ScriptExecutionResult("ok", "# Result\n\n- Example")); };
-                using var controller = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"), launched.Add,
+                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable, launched.Add,
                     runCustom: (action, text, token) => runner(action, text, token));
                 var url = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "搜尋測試", CustomActionKind.Url, "globe", "https://example.com/search?q=***");
                 var script = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "JSON 測試", CustomActionKind.JavaScript, "code", "console.log(process.env.POPCLIP_TEXT)", ActionOutput.Markdown);
@@ -186,7 +186,7 @@ internal static class CustomActionsTest
                 Check(launched.Count == 2 && Native.GetForegroundWindow() == unrelatedHandle, "stale search action cannot pull focus away from unrelated window"); unrelated.Close();
 
                 fixture.CloseMainWindow(); await fixture.WaitForExitAsync(); fixture.Dispose();
-                var editableStart = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                var editableStart = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
                 editableStart.ArgumentList.Add("--fixture"); fixture = Process.Start(editableStart)!;
                 Console.WriteLine("WAITING: activate the dedicated editable SnapBar fixture (up to 60 seconds)");
                 deadline = DateTime.UtcNow.AddSeconds(60);

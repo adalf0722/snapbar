@@ -34,7 +34,7 @@ internal static class PathActionsTest
             try
             {
                 using var owner = new HwndSource(new HwndSourceParameters("SnapBar path actions test") { Width = 1, Height = 1, WindowStyle = 0 });
-                var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
                 start.ArgumentList.Add("--fixture"); start.ArgumentList.Add("--path-fixture");
                 child = Process.Start(start)!;
                 Console.WriteLine("WAITING: activate the dedicated SnapBar path fixture (up to 60 seconds)");
@@ -44,11 +44,11 @@ internal static class PathActionsTest
                 await Task.Delay(100);
                 var sessions = new List<RecordingSession>();
                 RecordingSession? next = null;
-                using var controller = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"),
+                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable,
                     createPathSession: () => { var session = next ?? new(); next = null; sessions.Add(session); return session; });
                 controller.ConfigureActions(ActionCatalog.SetPlacement(new(), "path", ActionPlacement.Bar));
                 var statuses = new List<string>(); controller.Status += statuses.Add;
-                var expected = Path.GetFullPath("artifacts/p0/README.md");
+                var expected = TestPaths.FixtureReadme;
                 async Task Capture()
                 {
                     await controller.CaptureAsync(false, 0, 0);
@@ -121,7 +121,7 @@ internal static class PathActionsTest
                 Check(Native.GetClipboardSequenceNumber() == sequence, "native path actions preserve desktop clipboard");
 
                 controller.Dispose();
-                using var actual = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"));
+                using var actual = new SelectionController(owner, TestPaths.ProbeExecutable);
                 var actualStatuses = new List<string>(); actual.Status += actualStatuses.Add;
                 await actual.CaptureAsync(false, 0, 0);
                 await actual.ExecuteAsync(TextAction.RevealPath);

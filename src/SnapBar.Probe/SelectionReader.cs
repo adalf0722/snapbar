@@ -16,11 +16,12 @@ internal sealed class SelectionReader
     private int[]? focusedId;
     private ClipboardCaptureTarget? clipboardTarget;
     private int[]? clipboardFocusId;
-    private long clipboardExpires;
+    private readonly ClipboardCandidateLease clipboardLease = new();
 
     public ProbeResponse Capture(ProbeRequest request)
     {
         saved = null; savedRanges = null; element = null; focusedId = null; clipboardTarget = null; clipboardFocusId = null;
+        clipboardLease.Clear();
         var target = Native.GetIdentity((nint)request.Window);
         if (target == null || Native.GetForegroundWindow() != (nint)request.Window) return new("target-changed");
         var focused = AutomationElement.FocusedElement;
@@ -89,14 +90,14 @@ internal sealed class SelectionReader
         var status = CheckClipboardFocus(focused, target);
         if (status != "ok") return new(status == "clipboard-unavailable" ? "unsupported" : status);
         clipboardTarget = new(Guid.NewGuid().ToString("N"), target);
-        clipboardFocusId = focused.GetRuntimeId(); clipboardExpires = Environment.TickCount64 + 30000;
+        clipboardFocusId = focused.GetRuntimeId(); clipboardLease.Start(clipboardTarget.Id);
         return new("unsupported", ClipboardTarget: clipboardTarget);
     }
 
     public ProbeResponse ValidateClipboard(string? sessionId)
     {
         if (clipboardTarget == null || clipboardFocusId == null || clipboardTarget.Id != sessionId
-            || Environment.TickCount64 > clipboardExpires) return new("expired");
+            || !clipboardLease.IsValid(sessionId)) return new("expired");
         var focused = AutomationElement.FocusedElement;
         if (focused == null) return new("focus-changed");
         var status = CheckClipboardFocus(focused, clipboardTarget.Target);
@@ -119,16 +120,14 @@ internal sealed class SelectionReader
         if (seconds is < 1 or > 310) return new("invalid-request");
         var validation = ValidateClipboard(sessionId);
         if (!validation.Success) return validation;
-        clipboardExpires = Math.Max(clipboardExpires, Environment.TickCount64 + seconds * 1000L);
-        return new("ok");
+        return new(clipboardLease.TryExtend(sessionId, seconds) ? "ok" : "expired");
     }
 
     public ProbeResponse ReleaseClipboardLease(string? sessionId)
     {
         if (clipboardTarget == null || clipboardTarget.Id != sessionId) return new("expired");
         // Cleanup may only shorten a lease; it cannot revive an expired or replaced candidate.
-        clipboardExpires = Math.Min(clipboardExpires, Environment.TickCount64 + 30000);
-        return new("ok");
+        return new(clipboardLease.TryRelease(sessionId) ? "ok" : "expired");
     }
 
     private static string CheckClipboardFocus(AutomationElement focused, TargetIdentity target)

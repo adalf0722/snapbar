@@ -17,9 +17,10 @@ internal static class UiaReadinessTest
             try
             {
                 using var owner = new HwndSource(new HwndSourceParameters("SnapBar UIA readiness test") { Width = 1, Height = 1 });
-                var start = new ProcessStartInfo(Path.GetFullPath("artifacts/p0/SnapBar.App.exe")) { UseShellExecute = false };
+                var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
                 start.ArgumentList.Add("--fixture"); start.ArgumentList.Add(deepTree ? "--deep-uia" : "--delayed-uia");
                 child = Process.Start(start) ?? throw new InvalidOperationException("Fixture did not start");
+                Console.WriteLine("WAITING: activate the dedicated " + (deepTree ? "Deep UIA" : "Delayed UIA") + " fixture (up to 45 seconds; do not inspect its UIA tree)");
                 var deadline = DateTime.UtcNow.AddSeconds(45);
                 while (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != child.Id)
                 {
@@ -29,7 +30,7 @@ internal static class UiaReadinessTest
                 // Focus/selection are set by the fixture's Loaded handler. Do not inspect its
                 // automation tree before capture: that would warm the provider under test.
                 await Task.Delay(100);
-                using var controller = new SelectionController(owner, Path.GetFullPath("artifacts/p0/Probe/SnapBar.Probe.exe"));
+                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable);
                 var messages = new List<string>();
                 controller.Status += status => { messages.Add(status); Console.WriteLine("STATUS " + status); };
                 var sequence = Native.GetClipboardSequenceNumber();
