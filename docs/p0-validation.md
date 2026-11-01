@@ -1,5 +1,38 @@
 # P0 驗證紀錄
 
+## 2026-11-02 搜尋動作編輯與顯示位置
+
+依使用者指出的語意混淆，移除動作頁上方「動作／搜尋」分頁。搜尋引擎與網址改從「搜尋」動作旁的「編輯」進入，標題為「編輯搜尋動作」，保留明確返回入口。返回不提交、不丟棄草稿；搜尋項目顯示「尚未儲存」，重新開啟延續相同內容，真正退出仍由既有協調器處理保存、捨棄、取消與失敗定位。
+
+側欄維持分類選取底色；動作列／更多／隱藏加上「顯示位置」標籤，以底線表示目前篩選。點擊後不再出現像第二種選取的藍框，鍵盤焦點改用標準虛線視覺，保留原有分組、排序與位置政策。已目視核對 `artifacts/ui-polish/settings-actions.png`、`settings-search-action-editor.png` 與 `settings-constrained-search-editor.png`，標準尺寸六列動作可見，480 DIP 工作區內保存與返回完整可達；實體混合 DPI 限制沿用前節。
+
+同一原始碼的 `Actions, Release, Exclusions, Layout` 全部通過：Actions 66、Lifecycle 28、Appearance 131、CompatibilitySlow 22、AiRuntime 35、AiPanel 119、Exclusions 7、Layout 22，另 Preflight 1，合計 431 項。報告：`artifacts/checks/desktop/20261101T230158810Z-856a7b66a53d482da3bef73d7e67423c/report.json`。新增檢查涵蓋搜尋從動作列／更多／隱藏均可編輯、返回焦點、草稿標記與重開保留、小視窗保存與返回範圍；既有保存、捨棄與退出失敗定位持續通過。Core 400 項通過，使用隔離設定與受控 AI client。
+
+日常檢查通過工具契約 12 項、Core 400 項及編碼／差異檢查。使用上述成功桌面證據更新 `artifacts/p0`，Probe smoke 10 項通過；發佈報告 `artifacts/checks/build/20261101T230422024Z-bde5f0e88850444fa751edacbddbf5ed/report.json`，前版保留於 `artifacts/publish/e168332aed534b3eae76e81f5dd1fc06/previous`。已正常開啟新版並切至動作頁，確認上方分頁移除、搜尋編輯入口及顯示位置底線；使用者 `settings.json` 與 `ai.json` 的 SHA-256 與啟動前一致。
+
+## 2026-11-02 六頁設定視覺層級
+
+- 一般頁移除動作列預覽、管理入口及重複待命說明，只保留自動顯示與三個快捷鍵鍵帽。正常狀態不在一般頁重複顯示，其餘頁以低調文字呈現；熱鍵不可用與啟動錯誤仍明確可見。
+- 次要操作加強邊界與表面，主要操作維持藍色實心；展開入口與釘選有明確控制邊界，主要按鈕補上獨立鍵盤焦點外框。UIA 切換釘選後保存選取狀態並保留同一命令的鍵盤焦點。
+- 動作頁明確標示預覽，保留六列可見範圍。搜尋子頁移除重複的展開層，直接呈現表單。AI 服務欄位標籤與輔助說明分層；相容性用兩個設定列呈現開關、保留剪貼簿與首次設定說明，排除清單增加空狀態。關於頁顯示易讀版本，完整版本在診斷區保留。
+- 已目視核對六頁、搜尋表單、鍵盤焦點外框及 480 DIP 受限工作區截圖，包括展開後的診斷版本、事件與測試視窗入口。截圖位於 `artifacts/ui-polish/settings-*.png`、`search-custom.png` 及 `settings-command-keyboard-focus.png`。實體 125%／150% 縮放與混合 DPI 螢幕拖曳仍未驗證。
+
+同一最終原始碼的 `Actions, Release, Exclusions, Layout` 回歸全部通過：Actions 66、Lifecycle 28、Appearance 123、CompatibilitySlow 22、AiRuntime 35、AiPanel 119、Exclusions 7、Layout 22，另 Preflight 1，合計 423 項。報告：`artifacts/checks/desktop/20261101T224718135Z-5730c5e144ac410084970ea6281ac51e/report.json`。Core 400 項通過；測試使用隔離設定與受控 AI 回應，沒有呼叫真實服務。既有編譯提示沿用前節紀錄。
+
+日常檢查通過工具契約 12 項、Core 400 項及 UTF-8／差異檢查。使用上述桌面報告完成本機套件更新，Probe smoke 10 項通過；報告 `artifacts/checks/build/20261101T224952564Z-fd04020d45cf49d380f557210ac1d09a/report.json`。套件位於 `artifacts/p0`，前版保留於 `artifacts/publish/c46e7b7bbaf94e8e8ef3a9248ea346b6/previous`。已正常啟動並確認一般頁只保留自動顯示與快捷鍵，原有自動偵測仍啟用；`settings.json` 與 `ai.json` 啟動前後 SHA-256 一致。
+
+## 2026-11-02 設定頁資訊層級精簡
+
+- 動作頁移除「我的動作」與口號，保留單行實際排列預覽，外觀預設收起。980 × 720 DIP 下六個既有動作及排序控制完整可見，無清單垂直溢出；拖曳、上下移動與位置選單維持原操作。受限高度保留預覽展開入口，外觀與預覽互斥展開，維持至少一個完整動作列的可操作高度。
+- AI 命令頁精簡服務提醒與計數，釘選改為有選取狀態、命令名稱提示與 UIA Toggle 支援的圖示開關。五個初始命令連同服務設定提醒可在標準尺寸完整顯示。全域頁尾只保留背景待命說明，原有儲存、草稿與錯誤語意維持。
+- 已目視核對 `artifacts/ui-polish/settings-general.png`、`settings-actions.png`、`settings-aicommands.png`、`settings-actions-appearance.png`、`settings-constrained-actions.png` 與 `settings-constrained-actions-appearance.png`。受限工作區仍以 480 DIP 模擬，未宣稱完成實體 125%／150% 或混合 DPI 螢幕拖曳驗證；測試使用隔離設定與受控 AI 回應，沒有呼叫真實服務。
+
+首輪完整回歸的 Layout 案例仍直接查詢預設收起的外觀欄位而失敗；已更新成先展開外觀再操作，原有「刪除復原不回滾後續主題與標籤變更」斷言維持。修正後聚焦 Layout 22 項通過。
+
+最終相同原始碼的 `Actions, Release, Layout` 桌面回歸全部成功：Actions 66、Lifecycle 28、Appearance 117、CompatibilitySlow 22、AiRuntime 35、AiPanel 119、Layout 22，另 Preflight 1，合計 410 項。報告：`artifacts/checks/desktop/20261101T222339870Z-10e9a673f77d4ee29f0c40be54bea8ab/report.json`。Core 400 項通過。前一次完整回歸在既有原生複製點擊的剪貼簿／前景聯合斷言失敗，未改動該測試或來源保護；同原始碼最終執行通過，原因未確認，失敗報告沒有用於發佈。既有 CS8602／CS4014 建置提示不在本次範圍內。
+
+日常檢查通過工具契約 12 項、Core 400 項與 UTF-8／差異檢查。使用上述成功桌面證據完成本機自含式套件更新，Probe smoke 10 項通過；報告 `artifacts/checks/build/20261101T222533915Z-bd95e77b70914f0ba3216b400ef0cecd/report.json`。套件位於 `artifacts/p0`，前版保留於 `artifacts/publish/e25d5f2a1a8a4726915f40b4e09c2d80/previous`。已正常啟動新版並切至動作頁，實際確認六個已釘選動作完整可見；使用者既有 `settings.json` 與 `ai.json` 的啟動前後 SHA-256 一致。
+
 ## 2026-11-01 左側設定導覽與 AI 命令管理
 
 - 設定改為固定左側導覽的六個分類，一般頁在標準配置不需要垂直捲動；動作、命令及排除 App 使用有界清單，服務保存與排除 App 操作固定可達。動作與服務使用共享內容元件，保留既有獨立宿主及編輯器。一般頁預覽反映實際排列、主題及標籤，預覽本身不執行動作。

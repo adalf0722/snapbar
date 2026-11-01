@@ -58,7 +58,7 @@ internal static class UiAppearanceTest
                 Check(notice.IsVisible && notice.Text.Contains("無效"), "invalid settings remain visible without opening diagnostics");
                 notice.Visibility = Visibility.Collapsed;
                 Snapshot(main, "settings.png");
-                var searchPanel = Children<SearchSettingsPanel>(main).Single(); searchPanel.Reveal(); searchPanel.IsExpanded = true; main.UpdateLayout();
+                var searchPanel = Children<SearchSettingsPanel>(main).Single(); searchPanel.Reveal(); main.UpdateLayout();
                 var provider = Children<ComboBox>(searchPanel).Single(c => AutomationProperties.GetAutomationId(c) == "SearchProvider");
                 var template = Children<TextBox>(searchPanel).Single(t => AutomationProperties.GetAutomationId(t) == "SearchUrlTemplate");
                 Check(provider.SelectedIndex == 0 && !template.IsVisible, "default search shows provider choice and hides custom URL details");
@@ -74,7 +74,7 @@ internal static class UiAppearanceTest
                 Check(new SettingsStore(Path.Combine(directory, "settings.json")).Load().Settings.SearchUrlTemplate == template.Text, "custom query template saves without normalization or replacement");
                 Children<Button>(searchPanel).Single(b => AutomationProperties.GetAutomationId(b) == "ResetSearchTemplate").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(provider.SelectedIndex == 0 && !template.IsVisible, "reset returns to Google provider and hides custom fields");
-                searchPanel.IsExpanded = false; notice.Visibility = Visibility.Collapsed;
+                notice.Visibility = Visibility.Collapsed;
                 await SettingsNavigationTest.RunAsync(main, directory, Check);
                 main.NavigateTo(SettingsCategory.General);
                 main.Width = main.MinWidth; main.Height = main.MinHeight; main.UpdateLayout(); Snapshot(main, "settings-small.png");

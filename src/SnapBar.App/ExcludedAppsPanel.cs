@@ -16,6 +16,7 @@ internal sealed class ExcludedAppsPanel : ContentControl
     private readonly TextBlock selectedPath;
     private readonly Button remove;
     private readonly TextBlock heading;
+    private readonly FrameworkElement emptyState;
     public event Action<ExcludedApplication>? AddRequested;
     public event Action<ExcludedApplication>? RemoveRequested;
     public event Action<string>? ValidationFailed;
@@ -25,7 +26,7 @@ internal sealed class ExcludedAppsPanel : ContentControl
         HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetAutomationId(this, "ExcludedAppsPanel");
         var panel = new DockPanel(); var introduction = new StackPanel();
-        heading = ActionUi.Heading("排除 App（0）", 14); introduction.Children.Add(heading);
+        heading = ActionUi.Heading("排除 App（0）", 16); introduction.Children.Add(heading);
         introduction.Children.Add(new TextBlock { Text = "在這些 App 不會自動彈出；Ctrl+Alt+V 仍可使用。",
             TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = ActionUi.Muted, Margin = new(0, 4, 0, 8) });
         DockPanel.SetDock(introduction, Dock.Top); panel.Children.Add(introduction);
@@ -73,14 +74,21 @@ internal sealed class ExcludedAppsPanel : ContentControl
         };
         buttons.Children.Add(add); buttons.Children.Add(remove);
         footer.Children.Add(buttons); DockPanel.SetDock(footer, Dock.Bottom); panel.Children.Add(footer);
-        panel.Children.Add(applications); Content = panel;
+        var listHost = new Grid(); listHost.Children.Add(applications);
+        var emptyText = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new(16) };
+        emptyText.Children.Add(ActionUi.Heading("尚未排除任何 App", 14));
+        var emptyHelp = ActionUi.Text("按「加入 App…」選擇不需要自動顯示動作列的程式。", 12, ActionUi.Muted); emptyHelp.Margin = new(0, 6, 0, 0); emptyText.Children.Add(emptyHelp);
+        emptyState = emptyText; emptyText.IsHitTestVisible = false; AutomationProperties.SetAutomationId(emptyText, "ExcludedAppsEmptyState");
+        listHost.Children.Add(emptyText); panel.Children.Add(listHost); Content = panel;
     }
 
     public void ShowApplications(IReadOnlyList<ExcludedApplication> entries)
     {
         heading.Text = $"排除 App（{entries.Count}）";
         applications.ItemsSource = entries;
+        emptyState.Visibility = entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         applications.SelectedIndex = entries.Count > 0 ? 0 : -1;
-        if (entries.Count == 0) selectedPath.Text = "尚未排除任何 App。";
+        selectedPath.Visibility = entries.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        if (entries.Count == 0) selectedPath.Text = "";
     }
 }

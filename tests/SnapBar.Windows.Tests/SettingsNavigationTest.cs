@@ -1,7 +1,10 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
 using SnapBar.App;
@@ -29,20 +32,79 @@ internal static class SettingsNavigationTest
     public static async Task RunAsync(MainWindow main, string directory, Action<bool, string> check)
     {
         check(main.Content is not ScrollViewer, "settings navigation uses a fixed root rather than a scrolling settings document");
+        main.NavigateTo(SettingsCategory.General); await Layout(main);
+        check(!Children<FrameworkElement>(main).Any(element => AutomationProperties.GetAutomationId(element) is "GeneralActionPreview" or "ManageActions")
+            && Find<StackPanel>(main, "GeneralShortcutKeys").Children.OfType<Border>().Count() == 3,
+            "settings general page contains actual settings and distinct shortcut keycaps without an inert toolbar");
+        check(!Find<TextBlock>(main, "SettingsMode").IsVisible,
+            "settings general page avoids repeating normal detection status beside the switch");
+        var sixActions = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(ActionCatalog.Normalize(new()), "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
+        main.ActionPanel.ShowSettings(sixActions);
+        main.NavigateTo(SettingsCategory.Actions); await Layout(main);
+        check(!Children<RadioButton>(main).Any(button => button.GroupName == "ActionsSubpage"),
+            "settings action manager has no second action/search navigation layer");
+        var actionList = Children<ScrollViewer>(main.ActionPanel).Single(s => AutomationProperties.GetName(s) == "動作列中的動作");
+        var actionRows = Children<Grid>(main.ActionPanel).Where(row => AutomationProperties.GetAutomationId(row).StartsWith("ActionRow_")).ToArray();
+        check(actionRows.Length == 6 && actionList.ScrollableHeight < 1 && actionRows.All(row =>
+        {
+            var bounds = row.TransformToAncestor(actionList).TransformBounds(new Rect(row.RenderSize));
+            return bounds.Top >= -1 && bounds.Bottom <= actionList.ViewportHeight + 1;
+        }), "settings standard window displays all six action rows and sorting controls without scrolling");
+        var appearance = Find<Expander>(main.ActionPanel, "ActionSettingsAppearance");
+        var theme = Children<ComboBox>(main.ActionPanel).Single(c => AutomationProperties.GetName(c) == "動作列主題");
+        check(!appearance.IsExpanded && !theme.IsVisible, "settings appearance options start collapsed to prioritize the action list");
+        appearance.IsExpanded = true; await Layout(main);
+        check(theme.IsVisible && theme.ActualWidth >= 100, "settings appearance options remain available through the explicit expander");
+        UiAppearanceTest.Snapshot(main, "settings-actions-appearance.png");
+        appearance.IsExpanded = false;
+        Children<Button>(main.ActionPanel).Single(b => AutomationProperties.GetName(b) == "複製下移").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Layout(main);
+        var moved = Children<StackPanel>(main.ActionPanel).Where(p => AutomationProperties.GetAutomationId(p).StartsWith("ActionBarPreview_")).Select(p => (string)p.Tag).ToArray();
+        check(moved.SequenceEqual(new[] { "cut", "copy", "paste", "search", "link", "path" }),
+            "settings compact action rows retain working move buttons and synchronized preview order");
+        Children<Button>(main.ActionPanel).Single(b => AutomationProperties.GetName(b) == "複製上移").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Layout(main);
         foreach (var category in Enum.GetValues<SettingsCategory>())
         {
             main.NavigateTo(category); await Layout(main);
-            if (category == SettingsCategory.Actions)
-            { Find<RadioButton>(main, "ActionsSubpageActions").IsChecked = true; await Layout(main); }
             check(main.CurrentCategory == category, "settings navigation reaches category " + category);
+            if (category == SettingsCategory.AiCommands)
+            {
+                var list = Find<ScrollViewer>(main.AiCommandsPanel, "AiCommandsSettingsList");
+                check(list.ScrollableHeight < 1 && main.AiCommandsPanel.VisiblePromptIds.Count == 5,
+                    "settings standard window displays all five initial AI commands alongside the service setup hint");
+                Find<Button>(main.AiCommandsPanel, "AddAiCommand").Focus(); await Layout(main);
+                UiAppearanceTest.Snapshot(main, "settings-command-keyboard-focus.png");
+            }
+            if (category == SettingsCategory.Compatibility)
+                check(Find<StackPanel>(main, "ExcludedAppsEmptyState").IsVisible,
+                    "settings empty exclusions explain the list instead of presenting an unexplained blank surface");
+            if (category == SettingsCategory.About)
+                check(!Find<TextBlock>(main, "SettingsBuildVersion").IsVisible
+                    && Children<TextBlock>(main).Any(text => text.Text.StartsWith("版本 ") && !text.Text.Contains('+')),
+                    "settings about page presents a readable version while keeping full build details in diagnostics");
             UiAppearanceTest.Snapshot(main, "settings-" + category.ToString().ToLowerInvariant() + ".png");
         }
 
-        main.SearchPanel.Reveal(); await Layout(main);
+        main.NavigateTo(SettingsCategory.Actions); await Layout(main);
+        Find<Button>(main.ActionPanel, "EditSearchAction").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        check(main.SearchPanel.IsVisible && !main.ActionPanel.IsVisible && Find<Button>(main, "BackToActions").IsVisible
+            && ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement, Find<ComboBox>(main.SearchPanel, "SearchProvider"))
+            && Children<TextBlock>(main).Any(text => text.Text == "編輯搜尋動作"),
+            "settings search action edit opens its settings with an explicit return path");
+        check(!Children<Expander>(main.SearchPanel).Any(), "settings search action presents the form directly without a duplicate disclosure level");
         var searchProvider = Find<ComboBox>(main.SearchPanel, "SearchProvider");
         var searchUrl = Find<TextBox>(main.SearchPanel, "SearchUrlTemplate");
         searchProvider.SelectedIndex = 2; searchUrl.Text = "https://example.com/draft?q={query}";
         check(main.SearchPanel.IsDirty, "settings search records an explicit unsaved custom template");
+        Find<Button>(main, "BackToActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        check(main.ActionPanel.IsVisible && !main.SearchPanel.IsVisible && main.SearchPanel.IsDirty
+            && Find<TextBlock>(main.ActionPanel, "SearchActionDraftStatus").IsVisible
+            && ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement, Find<Button>(main.ActionPanel, "EditSearchAction")),
+            "settings returning from search editing preserves and marks the draft and restores focus to its action");
+        Find<Button>(main.ActionPanel, "EditSearchAction").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        check(searchUrl.Text == "https://example.com/draft?q={query}", "settings reopening the search action resumes the same unsaved draft");
+        UiAppearanceTest.Snapshot(main, "settings-search-action-editor.png");
         main.NavigateTo(SettingsCategory.General); main.Close(); main.ShowSettings();
         main.SearchPanel.Reveal(); await Layout(main);
         check(main.SearchPanel.IsDirty && searchUrl.Text == "https://example.com/draft?q={query}",
@@ -50,6 +112,15 @@ internal static class SettingsNavigationTest
         main.SearchPanel.Discard();
         check(!main.SearchPanel.IsDirty && searchProvider.SelectedIndex == 0,
             "settings discarding search changes restores the latest saved provider");
+        Find<Button>(main, "BackToActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        foreach (var placement in new[] { ActionPlacement.More, ActionPlacement.Hidden, ActionPlacement.Bar })
+        {
+            Children<ComboBox>(main.ActionPanel).Single(combo => AutomationProperties.GetName(combo) == "搜尋顯示位置").SelectedIndex = (int)placement;
+            Find<RadioButton>(main.ActionPanel, "ActionPlacementTab_" + placement).IsChecked = true; await Layout(main);
+            Find<Button>(main.ActionPanel, "EditSearchAction").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+            check(main.SearchPanel.IsVisible, "settings search remains editable when placed in " + placement);
+            Find<Button>(main, "BackToActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        }
 
         main.NavigateTo(SettingsCategory.AiCommands); await Layout(main);
         var configureService = Find<Button>(main.AiCommandsPanel, "ConfigureAiServiceFromCommands");
@@ -101,6 +172,19 @@ internal static class SettingsNavigationTest
         main.NavigateTo(SettingsCategory.AiCommands); await Layout(main);
         var commands = main.AiCommandsPanel;
         var preferences = main.AiPreferences;
+        check(Find<TextBlock>(commands, "AiCommandsCount").Text == $"{preferences.Settings.Prompts.Length} 個命令",
+            "settings unfiltered command count omits a redundant fraction");
+        var grammarWasPinned = preferences.Settings.PinnedIds.Contains("grammar");
+        var pin = Find<ToggleButton>(commands, "AiCommandPin_grammar");
+        check(pin.IsChecked == grammarWasPinned && pin.ToolTip is string && AutomationProperties.GetName(pin).Contains("修正文法拼字"),
+            "settings icon pin exposes its selected state and command-specific accessible label");
+        pin.Focus();
+        ((IToggleProvider)new ToggleButtonAutomationPeer(pin).GetPattern(PatternInterface.Toggle)).Toggle(); await Layout(main);
+        check(preferences.Settings.PinnedIds.Contains("grammar") != grammarWasPinned
+            && Find<ToggleButton>(commands, "AiCommandPin_grammar").IsChecked == !grammarWasPinned
+            && ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement, Find<ToggleButton>(commands, "AiCommandPin_grammar")),
+            "settings accessible pin toggle persists and refreshes the selected state without losing keyboard focus");
+        ((IToggleProvider)new ToggleButtonAutomationPeer(Find<ToggleButton>(commands, "AiCommandPin_grammar")).GetPattern(PatternInterface.Toggle)).Toggle();
         check(!configureService.IsVisible, "settings a configured local service needs no key and clears the setup notice");
         var initialIds = preferences.Settings.Prompts.Select(prompt => prompt.Id).ToArray();
         check(commands.VisiblePromptIds.SequenceEqual(initialIds), "settings command manager uses stored order rather than runtime ranking");
@@ -111,6 +195,8 @@ internal static class SettingsNavigationTest
         check(commands.VisiblePromptIds.Count == 0, "settings command search and category restrictions both apply");
         commands.SetFilter("translate", "翻譯");
         check(commands.VisiblePromptIds.SequenceEqual(new[] { "translate-en" }), "settings command filtering finds the matching category and query");
+        check(Find<TextBlock>(commands, "AiCommandsCount").Text == $"找到 1 個，共 {preferences.Settings.Prompts.Length} 個",
+            "settings filtered command count explains matches and total");
         commands.SetFilter(""); commands.DeletePrompt("improve");
         check(preferences.LastDeletion?.Prompt.Id == "improve" && !commands.VisiblePromptIds.Contains("improve"),
             "settings command deletion exposes a shared recoverable state");
@@ -189,13 +275,32 @@ internal static class SettingsNavigationTest
         foreach (var category in Enum.GetValues<SettingsCategory>())
         {
             main.NavigateTo(category); await Layout(main);
-            if (category == SettingsCategory.Actions)
-            { Find<RadioButton>(main, "ActionsSubpageActions").IsChecked = true; await Layout(main); }
             UiAppearanceTest.Snapshot(main, "settings-constrained-" + category.ToString().ToLowerInvariant() + ".png");
         }
         main.NavigateTo(SettingsCategory.Actions); await Layout(main);
         check(Children<ScrollViewer>(main.ActionPanel).Any(scroll => AutomationProperties.GetName(scroll) == "動作列中的動作" && scroll.ViewportHeight >= 56),
             "settings constrained actions retain at least one full row in the scrolling list");
+        var compactPreview = Find<Expander>(main.ActionPanel, "ActionSettingsCompactPreview");
+        check(compactPreview.IsVisible && !compactPreview.IsExpanded,
+            "settings constrained actions keep an explicit collapsed preview entry");
+        compactPreview.IsExpanded = true; await Layout(main);
+        check(Find<ScrollViewer>(main.ActionPanel, "ActionSettingsPreview").IsVisible && actionList.ViewportHeight >= 56,
+            "settings constrained preview can expand while retaining a full action row");
+        appearance.IsExpanded = true; await Layout(main);
+        check(!compactPreview.IsExpanded && theme.IsVisible && actionList.ViewportHeight >= 56,
+            "settings constrained appearance and preview share space without hiding the action list");
+        UiAppearanceTest.Snapshot(main, "settings-constrained-actions-appearance.png");
+        appearance.IsExpanded = false;
+        Find<Button>(main.ActionPanel, "EditSearchAction").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        var searchSave = Find<Button>(main.SearchPanel, "SaveSearchTemplate");
+        var searchBack = Find<Button>(main, "BackToActions");
+        check(new[] { searchSave, searchBack }.All(button =>
+        {
+            var bounds = button.TransformToAncestor((FrameworkElement)main.Content).TransformBounds(new Rect(button.RenderSize));
+            return button.IsVisible && bounds.Top >= -1 && bounds.Bottom <= ((FrameworkElement)main.Content).ActualHeight + 1;
+        }), "settings constrained search editor keeps both save and return actions inside the frame");
+        UiAppearanceTest.Snapshot(main, "settings-constrained-search-editor.png");
+        searchBack.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
         main.NavigateTo(SettingsCategory.Compatibility); await Layout(main);
         var compatibilityRoot = (FrameworkElement)VisualTreeHelper.GetChild(main, 0);
         var addApp = Find<Button>(main, "AddExcludedApp");
@@ -211,6 +316,16 @@ internal static class SettingsNavigationTest
         main.NavigateTo(SettingsCategory.AiCommands); await Layout(main);
         check(Find<ScrollViewer>(commands, "AiCommandsSettingsList").ViewportHeight >= 60,
             "settings constrained command page retains a usable local scrolling list");
+        main.NavigateTo(SettingsCategory.About); await Layout(main);
+        var diagnostics = Children<Expander>(main).Single(e => (string?)e.Header == "診斷與測試");
+        diagnostics.IsExpanded = true; await Layout(main);
+        var fixtureButton = Children<Button>(main).Single(b => AutomationProperties.GetName(b) == "開啟測試視窗");
+        var fixtureBounds = fixtureButton.TransformToAncestor(content).TransformBounds(new Rect(fixtureButton.RenderSize));
+        check(Find<TextBlock>(main, "SettingsBuildVersion").IsVisible && fixtureButton.IsVisible
+            && fixtureBounds.Top >= 0 && fixtureBounds.Bottom <= content.ActualHeight + 1,
+            "settings constrained diagnostics retain full build information and a reachable fixture button");
+        UiAppearanceTest.Snapshot(main, "settings-constrained-about-diagnostics.png");
+        diagnostics.IsExpanded = false;
         main.ClearWorkAreaConstraint(); main.Width = 980; main.Height = 720;
         main.NavigateTo(SettingsCategory.General); await Layout(main);
     }

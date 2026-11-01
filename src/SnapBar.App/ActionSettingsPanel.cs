@@ -14,69 +14,86 @@ internal sealed class ActionSettingsPanel : ContentControl
 {
     private ActionSettings settings;
     private readonly Func<ActionSettings, bool> save;
+    private readonly Action? editSearch;
+    private bool searchHasDraft;
+    private Button? searchEdit;
+    private TextBlock? searchDraftStatus;
     private readonly StackPanel groups = new(), preview = new() { Orientation = Orientation.Horizontal };
     private readonly TextBlock status = ActionUi.Text("", 11, ActionUi.Muted);
     private DeletedCustomAction? undo;
     private readonly Border deletionNotice = new() { Visibility = Visibility.Collapsed };
     private readonly TextBlock deletionText = ActionUi.Text("", 13);
-    private readonly TextBlock previewHeading = ActionUi.Text("", 11, ActionUi.Muted);
     private readonly Border previewShell = new();
     private readonly Dictionary<ActionPlacement, RadioButton> tabs = new();
     private readonly ScrollViewer listScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private ActionPlacement selectedPlacement = ActionPlacement.Bar;
 
-    public ActionSettingsPanel(ActionSettings initial, Func<ActionSettings, bool> save)
+    public ActionSettingsPanel(ActionSettings initial, Func<ActionSettings, bool> save, Action? editSearch = null)
     {
-        this.save = save; settings = ActionCatalog.Normalize(initial);
+        this.save = save; this.editSearch = editSearch; settings = ActionCatalog.Normalize(initial);
         HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         ActionUi.LoadStyles(this);
         System.Windows.Automation.AutomationProperties.SetAutomationId(this, "ActionSettingsPanel");
         var outer = new DockPanel { Margin = new(0) };
-        var top = new StackPanel(); var tools = new DockPanel { Margin = new(0, 0, 0, 20) };
+        var top = new StackPanel(); var tools = new DockPanel { Margin = new(0, 0, 0, 10) };
         var add = ActionUi.Button("新增動作", () => Edit(null), "plus", true); add.VerticalAlignment = VerticalAlignment.Center;
+        AutomationProperties.SetAutomationId(add, "AddAction");
         DockPanel.SetDock(add, Dock.Right); tools.Children.Add(add);
         var import = ActionUi.Button("匯入…", Import); import.VerticalAlignment = VerticalAlignment.Center;
         AutomationProperties.SetAutomationId(import, "ImportActions");
         DockPanel.SetDock(import, Dock.Right); tools.Children.Add(import);
-        var heading = new StackPanel(); heading.Children.Add(ActionUi.Heading("我的動作", 24));
-        var subtitle = ActionUi.Text("把常用動作留在手邊。", 13, ActionUi.Muted); subtitle.Margin = new(0, 5, 0, 0); heading.Children.Add(subtitle);
-        tools.Children.Add(heading); top.Children.Add(tools);
-
-        var previewContent = new StackPanel();
-        var previewTitle = new DockPanel(); previewTitle.Children.Add(ActionUi.Heading("動作列預覽", 14));
-        previewHeading.HorizontalAlignment = HorizontalAlignment.Right; previewTitle.Children.Add(previewHeading); previewContent.Children.Add(previewTitle);
         var previewBox = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Margin = new(0, 10, 0, 10) };
+            Margin = new(0) };
+        AutomationProperties.SetAutomationId(previewBox, "ActionSettingsPreview");
+        AutomationProperties.SetName(previewBox, "動作列預覽");
+        const string previewHelp = "完整顯示釘選順序；實際動作列依選取情境顯示，寬度不足時將尾端收進「⋯」。此預覽不執行動作。";
+        previewBox.ToolTip = previewHelp; AutomationProperties.SetHelpText(previewBox, previewHelp);
         previewShell.Child = preview; previewShell.HorizontalAlignment = HorizontalAlignment.Center;
         previewShell.CornerRadius = new(11); previewShell.Padding = new(6); previewShell.BorderThickness = new(1);
-        previewBox.Content = previewShell; previewContent.Children.Add(previewBox);
-        var appearance = new DockPanel();
-        previewHeading.VerticalAlignment = VerticalAlignment.Center;
-        var appearanceOptions = new StackPanel { Orientation = Orientation.Horizontal };
+        previewBox.Content = previewShell;
+        var appearanceOptions = new WrapPanel { Margin = new(0, 8, 0, 4) };
         var theme = new ComboBox { ItemsSource = new[] { "深色", "淺色" }, SelectedIndex = settings.Theme == "Dark" ? 0 : 1, Width = 104, Margin = new(0, 0, 16, 0) };
         AutomationProperties.SetName(theme, "動作列主題");
         theme.SelectionChanged += (_, _) => Commit(settings with { Theme = theme.SelectedIndex == 0 ? "Dark" : "Light" }); appearanceOptions.Children.Add(theme);
         var labels = new CheckBox { Content = "圖示與文字", IsChecked = settings.ShowLabels, VerticalAlignment = VerticalAlignment.Center };
         labels.Click += (_, _) => Commit(settings with { ShowLabels = labels.IsChecked == true }); appearanceOptions.Children.Add(labels);
-        appearance.Children.Add(appearanceOptions); previewContent.Children.Add(appearance);
-        var previewCard = ActionUi.Card(previewContent, new Thickness(16, 12, 16, 12)); previewCard.Margin = new(0, 0, 0, 10);
-        var previewHelp = ActionUi.Text("完整顯示釘選順序；實際動作列依選取情境顯示，寬度不足時將尾端收進「⋯」。", 11, ActionUi.Muted);
-        previewHelp.Margin = new(2, 0, 2, 8);
-        var previewBundle = new StackPanel(); previewBundle.Children.Add(previewCard); previewBundle.Children.Add(previewHelp);
-        var previewDetails = new ScrollViewer { Content = previewBundle, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        var previewExpander = new Expander { Header = "動作列預覽與外觀", IsExpanded = true, Content = previewDetails, Margin = new(0, 0, 0, 8) };
+        var appearance = new Expander { Header = "外觀", IsExpanded = false, Content = appearanceOptions, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left };
+        AutomationProperties.SetAutomationId(appearance, "ActionSettingsAppearance");
+        tools.Children.Add(appearance); top.Children.Add(tools);
+        var previewLine = new DockPanel(); var previewLabel = ActionUi.Text("預覽", 12, ActionUi.Muted);
+        previewLabel.Margin = new(0, 0, 12, 0); DockPanel.SetDock(previewLabel, Dock.Left); previewLine.Children.Add(previewLabel); previewLine.Children.Add(previewBox);
+        var previewExpander = new Expander { Header = "預覽", IsExpanded = false };
+        AutomationProperties.SetAutomationId(previewExpander, "ActionSettingsCompactPreview");
+        var previewHost = new ContentControl { Content = previewLine, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        var previewDetails = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        previewExpander.Content = previewDetails;
+        previewExpander.Visibility = Visibility.Collapsed;
+        previewHost.Margin = previewExpander.Margin = new(0, 0, 0, 10);
+        top.Children.Add(previewHost);
         top.Children.Add(previewExpander);
         bool? wasCompact = null;
+        appearance.Expanded += (_, _) => { if (wasCompact == true) previewExpander.IsExpanded = false; };
+        previewExpander.Expanded += (_, _) => { if (wasCompact == true) appearance.IsExpanded = false; };
         SizeChanged += (_, _) =>
         {
             var compact = ActualHeight < 420;
-            previewDetails.MaxHeight = compact ? Math.Max(60, ActualHeight - 260) : double.PositiveInfinity;
-            if (compact != wasCompact) { previewExpander.IsExpanded = !compact; wasCompact = compact; }
+            previewDetails.MaxHeight = Math.Max(60, ActualHeight - 260);
+            if (compact != wasCompact)
+            {
+                previewHost.Content = null; previewDetails.Content = null;
+                if (compact) { previewDetails.Content = previewLine; previewExpander.IsExpanded = false; appearance.IsExpanded = false; }
+                else previewHost.Content = previewLine;
+                previewHost.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+                previewExpander.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+                previewLabel.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+                wasCompact = compact;
+            }
         };
         var navigation = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 8) };
+        var placementLabel = ActionUi.Text("顯示位置", 12, ActionUi.Muted); placementLabel.Margin = new(0, 0, 12, 0); navigation.Children.Add(placementLabel);
         foreach (var placement in Enum.GetValues<ActionPlacement>())
         {
-            var tab = new RadioButton { GroupName = "ActionPlacement", Style = (Style)FindResource("ActionPlacementTab"),
+            var tab = new RadioButton { GroupName = "ActionPlacement", Style = (Style)FindResource("ActionPlacementFilter"),
                 IsChecked = placement == selectedPlacement, Margin = new(0, 0, 6, 0) };
             AutomationProperties.SetAutomationId(tab, "ActionPlacementTab_" + placement);
             tab.Checked += (_, _) =>
@@ -103,6 +120,12 @@ internal sealed class ActionSettingsPanel : ContentControl
     }
 
     internal void ShowSettings(ActionSettings value) { settings = ActionCatalog.Normalize(value); Render(); }
+    internal bool FocusSearchEditor() => searchEdit?.Focus() == true;
+    internal void ShowSearchDraft(bool dirty)
+    {
+        searchHasDraft = dirty;
+        if (searchDraftStatus != null) searchDraftStatus.Visibility = dirty ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     private bool Commit(ActionSettings value, string successMessage = "已保存；新增動作預設放在更多選單。")
     {
@@ -112,6 +135,7 @@ internal sealed class ActionSettingsPanel : ContentControl
 
     private void Render()
     {
+        searchEdit = null; searchDraftStatus = null;
         deletionNotice.Visibility = undo == null ? Visibility.Collapsed : Visibility.Visible;
         deletionText.Text = undo == null ? "" : $"已刪除「{undo.Action.Name}」";
         if (selectedPlacement == ActionPlacement.Hidden && !settings.Layout.Any(e => e.Placement == ActionPlacement.Hidden))
@@ -127,7 +151,6 @@ internal sealed class ActionSettingsPanel : ContentControl
         previewShell.Background = dark ? ActionUi.DarkSurface : Brushes.White;
         previewShell.BorderBrush = dark ? ActionUi.DarkLine : ActionUi.Line;
         var pinned = ActionCatalog.GetPinned(settings);
-        previewHeading.Text = $"已釘選 {pinned.Count} / 6";
         foreach (var item in pinned)
         {
             var element = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(10, 0, 10, 0), Height = 36 };
@@ -152,13 +175,19 @@ internal sealed class ActionSettingsPanel : ContentControl
             }
             foreach (var entry in list)
             {
-                var item = all[entry.Id]; var row = new Grid { MinHeight = 56 };
+                var item = all[entry.Id]; var row = new Grid { MinHeight = 48 };
                 AutomationProperties.SetAutomationId(row, "ActionRow_" + item.Id);
                 row.ColumnDefinitions.Add(new() { Width = placement == ActionPlacement.Bar ? new(24) : new(0) });
                 row.ColumnDefinitions.Add(new() { Width = new(36) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new() { Width = new(125) });
                 var image = ActionUi.Icon(item.Icon, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
                 var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(item.Name, 14));
                 if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind.ToString(), 12, ActionUi.Muted));
+                if (item.BuiltIn == TextAction.Search && editSearch != null)
+                {
+                    searchDraftStatus = ActionUi.Text("尚未儲存", 12, ActionUi.Muted);
+                    AutomationProperties.SetAutomationId(searchDraftStatus, "SearchActionDraftStatus");
+                    searchDraftStatus.Visibility = searchHasDraft ? Visibility.Visible : Visibility.Collapsed; name.Children.Add(searchDraftStatus);
+                }
                 Grid.SetColumn(name, 2); row.Children.Add(name);
                 var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 if (placement == ActionPlacement.Bar)
@@ -179,6 +208,11 @@ internal sealed class ActionSettingsPanel : ContentControl
                         var from = pinned.FindIndex(a => a.Id == source); var to = pinned.FindIndex(a => a.Id == item.Id);
                         if (from >= 0 && to >= 0 && from != to) { Commit(ActionCatalog.Move(settings, source, to - from)); e.Effects = DragDropEffects.Move; e.Handled = true; }
                     };
+                }
+                if (item.BuiltIn == TextAction.Search && editSearch != null)
+                {
+                    searchEdit = ActionUi.Button("編輯", editSearch); searchEdit.Padding = new(7); searchEdit.ToolTip = "設定搜尋引擎與網址";
+                    AutomationProperties.SetName(searchEdit, "編輯搜尋動作"); AutomationProperties.SetAutomationId(searchEdit, "EditSearchAction"); buttons.Children.Add(searchEdit);
                 }
                 if (item.Custom is { } custom)
                 {

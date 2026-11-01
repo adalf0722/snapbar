@@ -44,7 +44,7 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
         var discard = ActionUi.Button("捨棄變更", Discard); AutomationProperties.SetAutomationId(discard, "DiscardAiSettings"); buttons.Children.Add(discard);
         footer.Children.Add(buttons); DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
         var fields = new StackPanel(); fields.Children.Add(ActionUi.Text("選字只在執行指令後傳送至你設定的服務。", 13, ActionUi.Muted));
-        void Label(string text) { var label = ActionUi.Text(text, 12, ActionUi.Muted); label.Margin = new(0, 12, 0, 5); fields.Children.Add(label); }
+        void Label(string text) { var label = ActionUi.Heading(text, 14); label.Margin = new(0, 12, 0, 5); fields.Children.Add(label); }
         Label("服務"); profiles = new ComboBox { ItemsSource = drafts.Select(p => p.Name).ToArray(), MinHeight = 36 };
         AutomationProperties.SetAutomationId(profiles, "AiProvider"); AutomationProperties.SetName(profiles, "AI 服務"); fields.Children.Add(profiles);
         Label("完整 API 網址"); endpoint = ActionUi.Input("", 2048); AutomationProperties.SetAutomationId(endpoint, "AiEndpoint"); fields.Children.Add(endpoint);

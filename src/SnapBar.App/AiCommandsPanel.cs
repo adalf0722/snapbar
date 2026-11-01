@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using SnapBar.Core;
 
@@ -28,11 +29,12 @@ internal sealed class AiCommandsPanel : ContentControl
         var tools = new DockPanel { Margin = new(0, 0, 0, 12) };
         add = ActionUi.Button("新增命令", () => preferences.OpenEditor(Window.GetWindow(this), null), "plus", true);
         AutomationProperties.SetAutomationId(add, "AddAiCommand"); DockPanel.SetDock(add, Dock.Right); tools.Children.Add(add);
-        count = ActionUi.Text("", 13, ActionUi.Muted); tools.Children.Add(count); top.Children.Add(tools);
-        serviceStatus = ActionUi.Text("尚未完成 AI 服務設定", 12, ActionUi.Muted);
-        var serviceLine = new DockPanel(); var configure = ActionUi.Button("設定 AI 服務", () => preferences.RequestSettings(SettingsCategory.AiServices), "settings");
+        count = ActionUi.Text("", 13, ActionUi.Muted); AutomationProperties.SetAutomationId(count, "AiCommandsCount"); tools.Children.Add(count); top.Children.Add(tools);
+        serviceStatus = ActionUi.Text("設定 AI 服務後即可使用", 12, ActionUi.Muted);
+        var serviceLine = new DockPanel(); var configure = ActionUi.Button("設定服務…", () => preferences.RequestSettings(SettingsCategory.AiServices));
+        AutomationProperties.SetName(configure, "設定 AI 服務");
         AutomationProperties.SetAutomationId(configure, "ConfigureAiServiceFromCommands"); DockPanel.SetDock(configure, Dock.Right); serviceLine.Children.Add(configure); serviceLine.Children.Add(serviceStatus);
-        serviceNotice = ActionUi.Card(serviceLine, new Thickness(12)); serviceNotice.Margin = new(0, 0, 0, 12); top.Children.Add(serviceNotice);
+        serviceNotice = new Border { Child = serviceLine, Margin = new(0, 0, 0, 8) }; top.Children.Add(serviceNotice);
         top.Children.Add(ActionUi.Text("搜尋名稱、指示與關鍵字", 12, ActionUi.Muted));
         var filters = new Grid { Margin = new(0, 0, 0, 12) }; filters.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); filters.ColumnDefinitions.Add(new() { Width = new(170) });
         search = ActionUi.Input("", 256); search.Margin = new(0, 0, 10, 0); search.ToolTip = "搜尋名稱、指示與關鍵字";
@@ -77,7 +79,9 @@ internal sealed class AiCommandsPanel : ContentControl
         var filtered = AiPromptCatalog.Search(settings, search.Text, (category.SelectedItem as CategoryItem)?.Value);
         VisiblePromptIds = filtered.Select(p => p.Id).ToArray(); rows.Children.Clear();
         add.IsEnabled = settings.Prompts.Length < 128;
-        count.Text = $"{filtered.Count} / {settings.Prompts.Length} 個命令" + (settings.Prompts.Length >= 128 ? " · 已達 128 筆上限" : "");
+        var hasFilter = !string.IsNullOrWhiteSpace(search.Text) || (category.SelectedItem as CategoryItem)?.Value != null;
+        count.Text = (hasFilter ? $"找到 {filtered.Count} 個，共 {settings.Prompts.Length} 個" : $"{settings.Prompts.Length} 個命令")
+            + (settings.Prompts.Length >= 128 ? " · 已達 128 筆上限" : "");
         var profile = preferences.SelectedProfile;
         serviceNotice.Visibility = AiPolicy.ValidateProfile(profile) != null || (profile.Protocol == AiProtocol.Responses && preferences.Secrets.Get(profile) == null)
             ? Visibility.Visible : Visibility.Collapsed;
@@ -85,16 +89,28 @@ internal sealed class AiCommandsPanel : ContentControl
         deletion.Text = preferences.LastDeletion is { } removed ? $"已刪除「{removed.Prompt.Name}」" : "";
         foreach (var prompt in filtered)
         {
-            var row = new Grid { MinHeight = 68 }; row.ColumnDefinitions.Add(new() { Width = new(42) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            var row = new Grid { MinHeight = 56 }; row.ColumnDefinitions.Add(new() { Width = new(42) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
             AutomationProperties.SetAutomationId(row, "AiCommandRow_" + prompt.Id);
             var icon = ActionUi.Button("", () => ChooseIcon(prompt.Id)); icon.Content = new AiIconPresenter { IconId = AiIconCatalog.ForPrompt(prompt), Width = 22, Height = 22 };
             icon.Padding = new(6); icon.MinWidth = 34; icon.Margin = new(0, 0, 6, 0); icon.VerticalAlignment = VerticalAlignment.Center;
             AutomationProperties.SetName(icon, "選擇圖示 " + prompt.Name); AutomationProperties.SetAutomationId(icon, "AiCommandIcon_" + prompt.Id); row.Children.Add(icon);
             var text = new StackPanel { Margin = new(8), VerticalAlignment = VerticalAlignment.Center }; text.Children.Add(ActionUi.Text(prompt.Name, 14));
-            text.Children.Add(ActionUi.Text((prompt.Category.Length == 0 ? "未分類" : prompt.Category) + (settings.PinnedIds.Contains(prompt.Id) ? " · 已釘選" : ""), 12, ActionUi.Muted)); Grid.SetColumn(text, 1); row.Children.Add(text);
+            text.Children.Add(ActionUi.Text(prompt.Category.Length == 0 ? "未分類" : prompt.Category, 12, ActionUi.Muted)); Grid.SetColumn(text, 1); row.Children.Add(text);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var pin = ActionUi.Button(settings.PinnedIds.Contains(prompt.Id) ? "取消釘選" : "釘選", () =>
-            { if (!preferences.TogglePin(prompt.Id, out var error)) status.Text = error; }, "pin"); AutomationProperties.SetAutomationId(pin, "AiCommandPin_" + prompt.Id); buttons.Children.Add(pin);
+            var pinned = settings.PinnedIds.Contains(prompt.Id);
+            var pinLabel = (pinned ? "取消釘選 " : "釘選 ") + prompt.Name;
+            var pin = new ToggleButton { Content = ActionUi.Icon("pin", pinned ? ActionUi.Accent : ActionUi.Muted, 16),
+                IsChecked = pinned, Style = (Style)FindResource("AiCommandPin"), ToolTip = pinLabel };
+            AutomationProperties.SetName(pin, pinLabel); AutomationProperties.SetAutomationId(pin, "AiCommandPin_" + prompt.Id);
+            var resettingPin = false;
+            RoutedEventHandler changePin = (_, _) =>
+            {
+                if (resettingPin) return;
+                if (!preferences.TogglePin(prompt.Id, out var error))
+                { resettingPin = true; pin.IsChecked = pinned; resettingPin = false; status.Text = error; }
+            };
+            pin.Checked += changePin; pin.Unchecked += changePin;
+            buttons.Children.Add(pin);
             var edit = ActionUi.Button("編輯", () => preferences.OpenEditor(Window.GetWindow(this), preferences.Settings.Prompts.FirstOrDefault(p => p.Id == prompt.Id)));
             AutomationProperties.SetAutomationId(edit, "AiCommandEdit_" + prompt.Id); buttons.Children.Add(edit);
             var more = ActionUi.Button("⋯", () => { }); AutomationProperties.SetName(more, "命令選項 " + prompt.Name); AutomationProperties.SetAutomationId(more, "AiCommandOptions_" + prompt.Id);

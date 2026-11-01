@@ -10,6 +10,7 @@ internal static class ActionUi
 {
     public static readonly Brush Ink = Brush("#20242C"), Muted = Brush("#626B78"), Canvas = Brush("#F6F7F9"), Line = Brush("#DDE2E9"), Accent = Brush("#3867D6"), Pale = Brush("#EDF2FF");
     public static readonly Brush DarkSurface = Brush("#252932"), DarkLine = Brush("#444C5C"), DarkHover = Brush("#363E4D"), DarkMuted = Brush("#B2BBCB");
+    public static readonly Brush ButtonLine = Brush("#9AA7B8");
     public static readonly FontFamily Font = new("Microsoft JhengHei UI, Segoe UI");
     public static Brush Brush(string value) => (Brush)new BrushConverter().ConvertFromString(value)!;
     public static readonly string[] Icons = ["copy", "cut", "paste", "search", "link", "folder", "globe", "translate", "code", "terminal", "spark", "document", "clean"];
@@ -49,7 +50,7 @@ internal static class ActionUi
         if (label.Length > 0) content.Children.Add(Text(label, 13, primary ? Brushes.White : Ink));
         var button = new Button { Content = content, Padding = new(12, 8, 12, 8), Margin = new(0, 0, 7, 0),
             Background = primary ? Accent : Brushes.White, Foreground = primary ? Brushes.White : Ink,
-            BorderBrush = primary ? Accent : Line, BorderThickness = new(1), Cursor = System.Windows.Input.Cursors.Hand,
+            BorderBrush = primary ? Accent : ButtonLine, BorderThickness = new(1), Cursor = System.Windows.Input.Cursors.Hand,
             MinHeight = 36, VerticalContentAlignment = VerticalAlignment.Center, HorizontalContentAlignment = HorizontalAlignment.Center };
         if (primary)
         {

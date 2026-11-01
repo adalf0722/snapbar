@@ -5,7 +5,7 @@ using SnapBar.Core;
 
 namespace SnapBar.App;
 
-internal sealed class SearchSettingsPanel : Expander, ISettingsDraft
+internal sealed class SearchSettingsPanel : ContentControl, ISettingsDraft
 {
     internal const string BingTemplate = "https://www.bing.com/search?q={query}";
     private readonly TextBox template;
@@ -19,6 +19,7 @@ internal sealed class SearchSettingsPanel : Expander, ISettingsDraft
     internal Action? RevealRequested { get; set; }
     public event Action<string>? SaveRequested;
     public event Action? ResetRequested;
+    internal event Action? Changed;
     public string DraftName => "搜尋設定";
     public bool IsDirty => DraftTemplate != baseline || (provider.SelectedIndex != 2 && customDraft != BaselineCustom);
     private string BaselineCustom => baseline == WebActionPolicy.DefaultSearchTemplate || baseline == BingTemplate ? WebActionPolicy.DefaultSearchTemplate : baseline;
@@ -26,9 +27,9 @@ internal sealed class SearchSettingsPanel : Expander, ISettingsDraft
 
     public SearchSettingsPanel()
     {
-        SetResourceReference(StyleProperty, typeof(Expander)); Header = "搜尋"; IsExpanded = true;
+        HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetAutomationId(this, "SearchSettingsPanel");
-        var panel = new DockPanel { Margin = new(0, 10, 0, 0) };
+        var panel = new DockPanel();
         var footer = new StackPanel { Margin = new(0, 16, 0, 0) };
         state = ActionUi.Text("", 12, ActionUi.Muted); footer.Children.Add(state);
         AutomationProperties.SetAutomationId(state, "SearchDirtyStatus");
@@ -45,11 +46,12 @@ internal sealed class SearchSettingsPanel : Expander, ISettingsDraft
         });
         AutomationProperties.SetAutomationId(reset, "ResetSearchTemplate"); buttons.Children.Add(reset);
         footer.Children.Add(buttons); DockPanel.SetDock(footer, Dock.Bottom); panel.Children.Add(footer);
-        var fields = new StackPanel(); fields.Children.Add(ActionUi.Text("搜尋引擎", 13, ActionUi.Muted));
+        var fields = new StackPanel(); fields.Children.Add(ActionUi.Heading("搜尋引擎", 14));
         provider = new ComboBox { ItemsSource = new[] { "Google", "Bing", "自訂" }, SelectedIndex = 0, Margin = new(0, 6, 0, 12) };
         AutomationProperties.SetAutomationId(provider, "SearchProvider"); AutomationProperties.SetName(provider, "搜尋引擎"); fields.Children.Add(provider);
         customFields = new StackPanel { Visibility = Visibility.Collapsed };
-        var note = ActionUi.Text("將 {query} 放在網址參數值中，選取文字會自動編碼。", 12, ActionUi.Muted); note.Margin = new(0, 0, 0, 8); customFields.Children.Add(note);
+        customFields.Children.Add(ActionUi.Heading("搜尋網址", 14));
+        var note = ActionUi.Text("將 {query} 放在網址參數值中，選取文字會自動編碼。", 12, ActionUi.Muted); note.Margin = new(0, 5, 0, 8); customFields.Children.Add(note);
         template = ActionUi.Input(max: 2048); template.Margin = new(0, 0, 0, 12);
         AutomationProperties.SetAutomationId(template, "SearchUrlTemplate"); AutomationProperties.SetName(template, "搜尋網址範本");
         customFields.Children.Add(template); fields.Children.Add(customFields);
@@ -78,7 +80,8 @@ internal sealed class SearchSettingsPanel : Expander, ISettingsDraft
         finally { syncing = false; }
         UpdateState();
     }
-    private void UpdateState() => state.Text = IsDirty ? "尚未儲存" : "";
+    private void UpdateState() { state.Text = IsDirty ? "尚未儲存" : ""; Changed?.Invoke(); }
+    internal void FocusEditor() => provider.Focus();
     public bool TrySave()
     {
         if (!WebActionPolicy.IsValidSearchTemplate(DraftTemplate)) { error.Text = "搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。"; return false; }

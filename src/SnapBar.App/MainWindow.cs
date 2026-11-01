@@ -59,7 +59,7 @@ public sealed partial class MainWindow : Window
                 controller.ConfigureActions(preferences.Actions);
                 controller.ConfigureAi(aiPreferences);
                 ApplyClipboardCompatibility();
-                controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; actionSettingsPanel.ShowSettings(value); generalPage.ShowPreview(value); SavePreferences(); };
+                controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; actionSettingsPanel.ShowSettings(value); SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
                 if (controller.HotkeyRegistered) AddStatus("準備完成 · Ctrl+Alt+V");
@@ -178,7 +178,7 @@ public sealed partial class MainWindow : Window
         { ShowNotice("本次設定已生效，但無法保存；下次啟動將使用原設定。"); }
     }
 
-    private void ShowActionSettings() { ShowCategory(SettingsCategory.Actions); actionTab.IsChecked = true; }
+    private void ShowActionSettings() => ShowCategory(SettingsCategory.Actions);
 
     private void ShowAiSettings() => ShowCategory(SettingsCategory.AiServices);
 
@@ -201,10 +201,14 @@ public sealed partial class MainWindow : Window
     {
         var automatic = controller?.Automatic == true;
         toggle.IsChecked = automatic;
-        mode.Text = automatic ? "● 自動偵測中" : controller?.HotkeyRegistered == true ? "● 快捷鍵待命" : "● 快捷鍵不可用";
-        mode.Foreground = automatic ? ActionUi.Accent : controller?.HotkeyRegistered == true ? ActionUi.Muted : Brushes.Firebrick;
+        mode.Text = controller?.HotkeyRegistered != true ? "● 快捷鍵不可用" : automatic ? "● 自動偵測中" : "● 快捷鍵待命";
+        mode.Foreground = controller?.HotkeyRegistered == true ? ActionUi.Muted : Brushes.Firebrick;
+        UpdateModeVisibility();
         tray?.Update(automatic, controller != null);
     }
+
+    private void UpdateModeVisibility() => mode.Visibility = CurrentCategory == SettingsCategory.General && controller?.HotkeyRegistered == true
+        ? Visibility.Collapsed : Visibility.Visible;
 
     public void ShowSettings()
     {

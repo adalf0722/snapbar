@@ -101,6 +101,8 @@ internal static class ActionLayoutTest
                 Check(RestoreButton().IsVisible && Children<TextBlock>(window).Any(t => t.Text == $"已刪除「{fifth.Name}」")
                     && !current.CustomActions.Any(a => a.Id == fifth.Id), "deletion exposes named inline restore next to the removed action notice");
                 UiAppearanceTest.Snapshot(window, "actions-deleted.png");
+                Children<Expander>(window).Single(e => AutomationProperties.GetAutomationId(e) == "ActionSettingsAppearance").IsExpanded = true;
+                window.UpdateLayout();
                 Children<ComboBox>(window).Single(c => AutomationProperties.GetName(c) == "動作列主題").SelectedIndex = 1;
                 Children<CheckBox>(window).Single(c => (string)c.Content == "圖示與文字").IsChecked = false;
                 Children<CheckBox>(window).Single(c => (string)c.Content == "圖示與文字").RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));

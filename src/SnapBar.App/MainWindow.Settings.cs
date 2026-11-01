@@ -17,7 +17,7 @@ public sealed partial class MainWindow
     private AiCommandsPanel aiCommandsPanel = null!;
     private GeneralSettingsPage generalPage = null!;
     private TextBlock pageHeading = null!;
-    private RadioButton actionTab = null!, searchTab = null!;
+    private FrameworkElement searchEditor = null!;
     private Grid pageHost = null!;
     internal SettingsCategory CurrentCategory { get; private set; } = SettingsCategory.General;
     internal ActionSettingsPanel ActionPanel => actionSettingsPanel;
@@ -73,23 +73,24 @@ public sealed partial class MainWindow
         Grid.SetColumn(workspace, 1); shell.Children.Add(workspace);
         var heading = new DockPanel { Margin = new(0, 0, 0, 18) };
         mode = ActionUi.Text("正在啟動", 12, ActionUi.Muted);
-        var badge = new Border { Background = ActionUi.Pale, CornerRadius = new(12), Padding = new(10, 6, 10, 6), Child = mode, VerticalAlignment = VerticalAlignment.Center };
-        DockPanel.SetDock(badge, Dock.Right); heading.Children.Add(badge); pageHeading = ActionUi.Heading("一般", 24); heading.Children.Add(pageHeading); workspace.Children.Add(heading);
+        AutomationProperties.SetAutomationId(mode, "SettingsMode");
+        DockPanel.SetDock(mode, Dock.Right); heading.Children.Add(mode); pageHeading = ActionUi.Heading("一般", 24); heading.Children.Add(pageHeading); workspace.Children.Add(heading);
         notice = ActionUi.Text("", 12, Brushes.Firebrick); notice.Margin = new(0, 0, 0, 12); notice.Visibility = Visibility.Collapsed;
         AutomationProperties.SetAutomationId(notice, "SettingsNotice"); Grid.SetRow(notice, 1); workspace.Children.Add(notice);
         pageHost = new Grid(); Grid.SetRow(pageHost, 2); workspace.Children.Add(pageHost);
-        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic, ShowActionSettings); toggle = generalPage.AutomaticToggle;
-        generalPage.ShowPreview(preferences.Actions); AddPage(SettingsCategory.General, generalPage);
-        actionSettingsPanel = new(preferences.Actions, SaveActionSettings);
+        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic); toggle = generalPage.AutomaticToggle;
+        AddPage(SettingsCategory.General, generalPage);
+        actionSettingsPanel = new(preferences.Actions, SaveActionSettings, ShowSearchSettings);
         searchSettingsPanel = new(); searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
         searchSettingsPanel.SaveTemplate = SetSearchUrlTemplate;
-        searchSettingsPanel.RevealRequested = () => { ShowCategory(SettingsCategory.Actions); ShowSearchSettings(); };
+        searchSettingsPanel.RevealRequested = () => { ShowSettings(); ShowSearchSettings(); };
+        searchSettingsPanel.Changed += () => actionSettingsPanel.ShowSearchDraft(searchSettingsPanel.IsDirty);
         AddPage(SettingsCategory.Actions, BuildActionsPage());
         aiCommandsPanel = new(aiPreferences); AddPage(SettingsCategory.AiCommands, aiCommandsPanel);
         aiSettingsPanel = new(aiPreferences); aiSettingsPanel.RevealRequested = () => ShowCategory(SettingsCategory.AiServices); AddPage(SettingsCategory.AiServices, aiSettingsPanel);
         AddPage(SettingsCategory.Compatibility, BuildCompatibilityPage());
         var support = new SettingsSupportPage(() => _ = ExitAsync()); status = support.Status; events = support.Events; AddPage(SettingsCategory.About, support);
-        lifetimeHint = ActionUi.Text("關閉視窗後繼續待命 · 搜尋與 AI 服務請按儲存", 12, ActionUi.Muted); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
+        lifetimeHint = ActionUi.Text("關閉視窗後繼續待命", 12, ActionUi.Muted); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
         Content = shell;
         aiPreferences.SettingsHost = this;
         aiPreferences.SettingsRequested += ShowCategory;
@@ -108,17 +109,27 @@ public sealed partial class MainWindow
 
     private FrameworkElement BuildActionsPage()
     {
-        var page = new DockPanel(); var tabs = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 12) };
-        var host = new Grid(); host.Children.Add(actionSettingsPanel); host.Children.Add(searchSettingsPanel); searchSettingsPanel.Visibility = Visibility.Collapsed;
-        actionTab = new RadioButton { Content = "動作", GroupName = "ActionsSubpage", Style = (Style)FindResource("ActionPlacementTab"), IsChecked = true, Margin = new(0, 0, 6, 0) };
-        searchTab = new RadioButton { Content = "搜尋", GroupName = "ActionsSubpage", Style = (Style)FindResource("ActionPlacementTab") };
-        AutomationProperties.SetAutomationId(actionTab, "ActionsSubpageActions"); AutomationProperties.SetAutomationId(searchTab, "ActionsSubpageSearch");
-        actionTab.Checked += (_, _) => { actionSettingsPanel.Visibility = Visibility.Visible; searchSettingsPanel.Visibility = Visibility.Collapsed; };
-        searchTab.Checked += (_, _) => { actionSettingsPanel.Visibility = Visibility.Collapsed; searchSettingsPanel.Visibility = Visibility.Visible; searchSettingsPanel.IsExpanded = true; };
-        tabs.Children.Add(actionTab); tabs.Children.Add(searchTab); DockPanel.SetDock(tabs, Dock.Top); page.Children.Add(tabs); page.Children.Add(host); return page;
+        var host = new Grid(); host.Children.Add(actionSettingsPanel);
+        var editor = new DockPanel();
+        var back = ActionUi.Button("← 返回動作列", () => ShowActionList(returnFocus: true));
+        AutomationProperties.SetAutomationId(back, "BackToActions");
+        back.HorizontalAlignment = HorizontalAlignment.Left; back.Margin = new(0, 0, 0, 16);
+        DockPanel.SetDock(back, Dock.Top); editor.Children.Add(back); editor.Children.Add(searchSettingsPanel);
+        searchEditor = editor; searchEditor.Visibility = Visibility.Collapsed; host.Children.Add(editor); return host;
     }
 
-    internal void ShowSearchSettings() { NavigateTo(SettingsCategory.Actions); searchTab.IsChecked = true; searchSettingsPanel.IsExpanded = true; }
+    private void ShowActionList(bool returnFocus = false)
+    {
+        searchEditor.Visibility = Visibility.Collapsed; actionSettingsPanel.Visibility = Visibility.Visible;
+        pageHeading.Text = CategoryName(SettingsCategory.Actions);
+        if (returnFocus && !actionSettingsPanel.FocusSearchEditor()) navigation[SettingsCategory.Actions].Focus();
+    }
+    internal void ShowSearchSettings()
+    {
+        NavigateTo(SettingsCategory.Actions);
+        actionSettingsPanel.Visibility = Visibility.Collapsed; searchEditor.Visibility = Visibility.Visible;
+        pageHeading.Text = "編輯搜尋動作"; searchSettingsPanel.FocusEditor();
+    }
     internal void NavigateTo(SettingsCategory category)
     {
         if (!settingsPages.ContainsKey(category)) return;
@@ -127,13 +138,15 @@ public sealed partial class MainWindow
         foreach (var (key, page) in settingsPages) page.Visibility = key == category ? Visibility.Visible : Visibility.Collapsed;
         foreach (var (key, button) in navigation) if (button.IsChecked != (key == category)) button.IsChecked = key == category;
         pageHeading.Text = CategoryName(category);
+        if (category == SettingsCategory.Actions) ShowActionList();
+        UpdateModeVisibility();
         if (moveFocus) navigation[category].Focus();
     }
     private void ShowCategory(SettingsCategory category) { if (exitRequested) return; ShowSettings(); NavigateTo(category); }
 
     private bool SaveActionSettings(ActionSettings value)
     {
-        preferences = preferences with { Actions = value }; controller?.ConfigureActions(value); generalPage.ShowPreview(value);
+        preferences = preferences with { Actions = value }; controller?.ConfigureActions(value);
         try { settingsStore.Save(preferences); return true; }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
         { ShowNotice("本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。"); return false; }
@@ -141,14 +154,27 @@ public sealed partial class MainWindow
 
     private FrameworkElement BuildCompatibilityPage()
     {
-        var page = new DockPanel(); var content = new StackPanel();
+        var page = new DockPanel(); var content = new StackPanel { Margin = new(0, 0, 0, 16) };
         compatibilityToggle = new CheckBox { Content = "選字相容模式", IsChecked = preferences.ClipboardCompatibilityEnabled, Margin = new(0, 0, 0, 0) };
+        compatibilityToggle.Style = (Style)FindResource("Switch");
         AutomationProperties.SetAutomationId(compatibilityToggle, "ClipboardCompatibilityToggle");
-        compatibilityToggle.Checked += (_, _) => SetClipboardCompatibility(true); compatibilityToggle.Unchecked += (_, _) => SetClipboardCompatibility(false); content.Children.Add(compatibilityToggle);
-        var compatibilityHelp = ActionUi.Text("原生讀取不足時，暫借剪貼簿取得文字。會記住此設定；相容讀取可能出現在剪貼簿歷程。", 12, ActionUi.Muted); compatibilityHelp.Margin = new(27, 4, 0, 10); content.Children.Add(compatibilityHelp);
-        sublimeToggle = new CheckBox { Content = "Sublime 支援", IsChecked = preferences.SublimeCompatibilityEnabled, IsEnabled = preferences.ClipboardCompatibilityEnabled, Margin = new(27, 0, 0, 0) };
-        AutomationProperties.SetAutomationId(sublimeToggle, "SublimeCompatibilityToggle"); sublimeToggle.Checked += (_, _) => SetSublimeCompatibility(true); sublimeToggle.Unchecked += (_, _) => SetSublimeCompatibility(false); content.Children.Add(sublimeToggle);
-        var sublimeHelp = ActionUi.Text("首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。", 12, ActionUi.Muted); sublimeHelp.Margin = new(54, 4, 0, 10); content.Children.Add(sublimeHelp);
+        AutomationProperties.SetName(compatibilityToggle, "選字相容模式");
+        compatibilityToggle.Checked += (_, _) => SetClipboardCompatibility(true); compatibilityToggle.Unchecked += (_, _) => SetClipboardCompatibility(false);
+        Border SettingRow(string title, string help, CheckBox control)
+        {
+            var row = new DockPanel(); control.VerticalAlignment = VerticalAlignment.Center; control.Margin = new(16, 0, 0, 0);
+            DockPanel.SetDock(control, Dock.Right); row.Children.Add(control);
+            var text = new StackPanel(); text.Children.Add(ActionUi.Heading(title, 15));
+            var description = ActionUi.Text(help, 12, ActionUi.Muted); description.Margin = new(0, 5, 0, 0); text.Children.Add(description); row.Children.Add(text);
+            return ActionUi.Card(row, new Thickness(16, 12, 16, 12));
+        }
+        var compatibilityRow = SettingRow("選字相容模式", "原生讀取不足時，暫借剪貼簿取得文字。相容讀取可能出現在剪貼簿歷程。", compatibilityToggle);
+        compatibilityRow.Margin = new(0, 0, 0, 8); content.Children.Add(compatibilityRow);
+        sublimeToggle = new CheckBox { Content = "Sublime 支援", IsChecked = preferences.SublimeCompatibilityEnabled, IsEnabled = preferences.ClipboardCompatibilityEnabled,
+            Style = (Style)FindResource("Switch") };
+        AutomationProperties.SetAutomationId(sublimeToggle, "SublimeCompatibilityToggle"); sublimeToggle.Checked += (_, _) => SetSublimeCompatibility(true); sublimeToggle.Unchecked += (_, _) => SetSublimeCompatibility(false);
+        AutomationProperties.SetName(sublimeToggle, "Sublime 支援");
+        content.Children.Add(SettingRow("Sublime 支援", "需先啟用選字相容模式。首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。", sublimeToggle));
         DockPanel.SetDock(content, Dock.Top); page.Children.Add(content);
         excludedAppsPanel = new(); excludedAppsPanel.ShowApplications(preferences.ExcludedApplications);
         excludedAppsPanel.AddRequested += entry => AddExcludedApplication(entry.ExecutablePath, entry.DisplayName);
