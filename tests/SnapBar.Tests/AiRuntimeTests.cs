@@ -49,6 +49,70 @@ internal static class AiRuntimeTests
 
         StoreChecks(check);
         SessionChecks(check);
+        ManagementChecks(check);
+    }
+
+    private static void ManagementChecks(Action<string, Func<bool>> check)
+    {
+        var initial = new AiSettings { RecentIds = ["summary", "grammar"] };
+        check("AI management keeps stored order despite pins and recents", () =>
+            AiPromptCatalog.Search(initial, "").Select(p => p.Id).SequenceEqual(initial.Prompts.Select(p => p.Id)));
+        check("AI management combines category and every query word", () =>
+            AiPromptCatalog.Search(initial, "TRANSLATE english", "寫作").Count == 0
+            && AiPromptCatalog.Search(initial, "TRANSLATE english", "翻譯").Single().Id == "translate-en");
+        check("AI management distinguishes uncategorized from all categories", () =>
+        {
+            var settings = initial with { Prompts = [.. initial.Prompts, new("other", "自訂", "custom instruction", "")] };
+            return AiPromptCatalog.Search(settings, "", "").Single().Id == "other"
+                && AiPromptCatalog.Search(settings, "").Count == 6;
+        });
+        check("AI management filtering preserves original order", () =>
+            AiPromptCatalog.Search(initial, "", "寫作").Select(p => p.Id).SequenceEqual(new[] { "grammar", "improve", "shorten" }));
+        check("AI deletion removes only target and its stale references", () =>
+        {
+            var result = AiPromptCatalog.Delete(initial with { RecentIds = ["improve", "summary"] }, "improve", out var deleted);
+            return deleted.Prompt == initial.Prompts[1] && deleted.Index == 1 && deleted.PinnedIndex == 0
+                && result.Prompts.Length == 4 && !result.PinnedIds.Contains("improve")
+                && result.RecentIds.SequenceEqual(new[] { "summary" });
+        });
+        check("AI restore merges latest prompts provider and pin changes", () =>
+        {
+            var removed = AiPromptCatalog.Delete(initial, "improve", out var deleted);
+            var edited = removed.Prompts.Select(p => p.Id == "shorten" ? p with { Name = "Updated" } : p).ToArray();
+            var current = removed with { Prompts = [.. edited, new("new", "New", "instruction", "")],
+                SelectedProfileId = "compatible", PinnedIds = ["summary", .. removed.PinnedIds], RecentIds = ["new", "summary"] };
+            var restored = AiPromptCatalog.Restore(current, deleted);
+            return restored.Prompts[1] == deleted.Prompt && restored.Prompts.Single(p => p.Id == "shorten").Name == "Updated"
+                && restored.Prompts.Last().Id == "new" && restored.SelectedProfileId == "compatible"
+                && restored.PinnedIds.SequenceEqual(new[] { "improve", "summary", "shorten", "translate-en" })
+                && restored.RecentIds.SequenceEqual(current.RecentIds);
+        });
+        check("AI restore clamps indexes after other prompts disappear", () =>
+        {
+            var removed = AiPromptCatalog.Delete(initial, "translate-en", out var deleted);
+            var restored = AiPromptCatalog.Restore(removed with { Prompts = [], PinnedIds = [] }, deleted);
+            return restored.Prompts.Single() == deleted.Prompt && restored.PinnedIds.Single() == deleted.Prompt.Id;
+        });
+        check("AI restore preserves unpinned state and does not resurrect recents", () =>
+        {
+            var removed = AiPromptCatalog.Delete(initial, "summary", out var deleted);
+            var restored = AiPromptCatalog.Restore(removed, deleted);
+            return deleted.PinnedIndex == -1 && !restored.PinnedIds.Contains("summary") && !restored.RecentIds.Contains("summary");
+        });
+        bool Reject(Action action) { try { action(); return false; } catch (ArgumentException) { return true; } }
+        check("AI deletion rejects unknown identity without mutation", () =>
+            Reject(() => AiPromptCatalog.Delete(initial, "missing", out _)) && initial.Prompts.Length == 5);
+        check("AI restore rejects duplicate identity", () =>
+        {
+            AiPromptCatalog.Delete(initial, "improve", out var deleted);
+            return Reject(() => AiPromptCatalog.Restore(initial, deleted));
+        });
+        check("AI restore rejects full latest collection without dropping commands", () =>
+        {
+            var removed = AiPromptCatalog.Delete(initial, "improve", out var deleted);
+            var full = removed with { Prompts = Enumerable.Range(0, 128).Select(i => new AiPrompt("p" + i, "Name", "instruction", "")).ToArray() };
+            return Reject(() => AiPromptCatalog.Restore(full, deleted)) && full.Prompts.Length == 128;
+        });
     }
 
     private static void StoreChecks(Action<string, Func<bool>> check)
