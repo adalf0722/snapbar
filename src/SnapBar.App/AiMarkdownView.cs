@@ -13,7 +13,8 @@ internal static class AiMarkdownView
     {
         // Large output remains fully available without creating thousands of document blocks.
         if (text.Length > 64000 || text.Count(c => c == '\n') > 1000) return Plain(text);
-        var document = new FlowDocument { FontFamily = ActionUi.Font, FontSize = 15, LineHeight = 24, PagePadding = new(20), Foreground = ActionUi.Ink, Background = Brushes.Transparent };
+        var document = new FlowDocument { FontFamily = ActionUi.Font, FontSize = 15, LineHeight = 24, TextAlignment = TextAlignment.Left,
+            PagePadding = new(20), Foreground = ActionUi.Ink, Background = Brushes.Transparent };
         var code = new List<string>(); bool inCode = false;
         foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
         {

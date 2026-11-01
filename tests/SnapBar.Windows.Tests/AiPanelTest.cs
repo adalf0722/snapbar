@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Text;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -151,6 +152,39 @@ internal static class AiPanelTest
                 Check(preferences.TrySave(preferences.Settings with { Prompts = preferences.Settings.Prompts.Append(savedPrompt).ToArray(), PinnedIds = preferences.Settings.PinnedIds.Append(savedPrompt.Id).ToArray() }, out _)
                     && new AiPreferences(directory).Settings.Prompts.Any(p => p.Id == savedPrompt.Id), "AI prompt and pin persist independently of session text");
                 var stored = File.ReadAllText(Path.Combine(directory, "ai.json")); Check(!stored.Contains("third result") && !stored.Contains("new draft") && !stored.Contains(snapshot.Text), "AI persisted settings omit source drafts and results");
+                panel.Close(); panel = null;
+
+                panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate();
+                var english = string.Join(" ", Enumerable.Repeat("A reading panel should keep natural spacing between words as a paragraph wraps across several lines. The document can become longer without stretching each line to meet the right edge. Readers should be able to follow the text and reach its final sentence.", 4)) + " Final English sentence.";
+                var chinese = string.Concat(Enumerable.Repeat("閱讀長文時，文字應自然換行，保留原有內容及標點。較長的結果可以捲動閱讀，最後一行也應完整顯示。", 12)) + "中文最後一句。";
+                var markdown = "# Reading example\n\n" + english + "\n\n## 中文段落\n\n" + chinese + "\n\n- Keep **bold** text and `inline code`.\n- Preserve the second list item.\n\n> A quoted sentence remains readable.\n\nFinal Markdown sentence.";
+                foreach (var sample in new[] { (Name: "english", Text: english), (Name: "chinese", Text: chinese), (Name: "markdown", Text: markdown) })
+                {
+                    client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, sample.Text));
+                    await panel.SubmitAsync("Long reading fixture"); panel.UpdateLayout();
+                    await panel.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    var viewer = Children<FlowDocumentScrollViewer>(panel).Single(); viewer.ApplyTemplate(); panel.UpdateLayout();
+                    Check(viewer.Document.TextAlignment == TextAlignment.Left && viewer.Document.Blocks.OfType<Paragraph>().All(p => p.TextAlignment == TextAlignment.Left),
+                        "AI long " + sample.Name + " stays left aligned after viewer template initialization");
+                    Snapshot(panel, "long-" + sample.Name + ".png");
+                    var scroll = Children<ScrollViewer>(viewer).Single(); scroll.ScrollToBottom(); panel.UpdateLayout();
+                    await panel.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    var end = viewer.Document.ContentEnd.GetNextInsertionPosition(LogicalDirection.Backward)!.GetCharacterRect(LogicalDirection.Backward);
+                    var bottom = ((FrameworkElement)scroll.Content).TransformToAncestor(scroll).TransformBounds(end);
+                    Check(scroll.ScrollableHeight > 0 && Math.Abs(scroll.VerticalOffset - scroll.ScrollableHeight) < 1
+                        && !bottom.IsEmpty && bottom.Top >= 0 && bottom.Bottom <= scroll.ActualHeight + 1,
+                        "AI long " + sample.Name + " exposes the complete last line at scroll end"); Snapshot(panel, "long-" + sample.Name + "-bottom.png");
+                }
+                Button(panel, "AiCopy").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(Clipboard.GetText() == markdown, "AI long Markdown copying preserves the exact raw response");
+                panel.Width = 680; panel.Height = 500; panel.UpdateLayout();
+                var smallViewer = Children<FlowDocumentScrollViewer>(panel).Single(); var smallScroll = Children<ScrollViewer>(smallViewer).Single();
+                smallScroll.ScrollToBottom(); panel.UpdateLayout();
+                await panel.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                var last = smallViewer.Document.ContentEnd.GetNextInsertionPosition(LogicalDirection.Backward)!.GetCharacterRect(LogicalDirection.Backward);
+                var smallBottom = ((FrameworkElement)smallScroll.Content).TransformToAncestor(smallScroll).TransformBounds(last);
+                Check(smallViewer.Document.TextAlignment == TextAlignment.Left && !smallBottom.IsEmpty && smallBottom.Top >= 0 && smallBottom.Bottom <= smallScroll.ActualHeight + 1,
+                    "AI minimum-size Markdown reader keeps alignment and its final line visible"); Snapshot(panel, "long-markdown-small-bottom.png");
                 panel.Close(); panel = null;
 
                 var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false }; start.ArgumentList.Add("--fixture"); fixture = Process.Start(start)!;
