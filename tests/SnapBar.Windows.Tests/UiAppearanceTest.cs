@@ -112,6 +112,10 @@ internal static class UiAppearanceTest
                 actions.Width = 900; actions.Height = 820; actions.UpdateLayout();
 
                 editor = new ActionEditorWindow(script); editor.Show(); editor.UpdateLayout();
+                var chooseIcon = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionChooseIcon");
+                Check(chooseIcon.Focusable && chooseIcon.Focus() && chooseIcon.IsKeyboardFocused
+                    && Children<AiIconPresenter>(editor).Any(p => AutomationProperties.GetAutomationId(p) == "CustomActionIconPreview"),
+                    "custom icon button exposes a keyboard focusable preview entry");
                 var test = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "TestCustomAction");
                 var stop = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "StopCustomActionTest");
                 Check(AutomationProperties.GetName(test) == "執行測試" && stop.Visibility == Visibility.Collapsed, "script editor names real execution and hides idle stop control");
@@ -243,14 +247,69 @@ internal static class UiAppearanceTest
                     "URL preview does not expose script-result whitespace control");
                 Check(Children<Button>(editor).Any(b => AutomationProperties.GetName(b) == "預覽網址"), "URL editor labels preview without suggesting execution");
                 var kind = Children<ComboBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "CustomActionKind");
-                var icon = Children<ComboBox>(editor).Single(c => AutomationProperties.GetName(c) == "動作圖示");
+                AiIconPresenter IconPreview(Window window) => Children<AiIconPresenter>(window).Single(p => AutomationProperties.GetAutomationId(p) == "CustomActionIconPreview");
+                void OpenPicker(Action<AiIconPickerWindow> operate)
+                {
+                    editor.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+                    {
+                        var picker = editor.OwnedWindows.Cast<Window>().OfType<AiIconPickerWindow>().Single();
+                        Check(picker.Owner == editor && System.Windows.Interop.ComponentDispatcher.IsThreadModal, "custom icon picker is owned and modal");
+                        operate(picker);
+                        Check(!picker.IsVisible, "custom icon picker closes after selection or dismissal");
+                    });
+                    Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionChooseIcon").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Check(Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionChooseIcon").IsKeyboardFocused,
+                        "custom icon picker restores keyboard focus to its entry button");
+                }
+                Check(IconPreview(editor).IconId == "globe", "new URL action defaults to globe icon");
                 kind.SelectedIndex = 1;
-                Check((string)((ComboBoxItem)icon.SelectedItem).Tag == "terminal", "new script defaults to terminal icon");
-                icon.SelectedItem = icon.Items.Cast<ComboBoxItem>().Single(i => (string)i.Tag == "clean"); kind.SelectedIndex = 2;
-                Check((string)((ComboBoxItem)icon.SelectedItem).Tag == "clean", "explicit icon survives later type changes");
-                editor.Close(); editor = new ActionEditorWindow(script with { Icon = "globe" }); editor.Show(); editor.UpdateLayout();
-                Check((string)((ComboBoxItem)Children<ComboBox>(editor).Single(c => AutomationProperties.GetName(c) == "動作圖示").SelectedItem).Tag == "globe",
-                    "existing custom icon remains unchanged when editing");
+                Check(IconPreview(editor).IconId == "terminal", "new script defaults to terminal icon");
+                kind.SelectedIndex = 2; Check(IconPreview(editor).IconId == "terminal", "new JavaScript action defaults to terminal icon");
+                kind.SelectedIndex = 0; Check(IconPreview(editor).IconId == "globe", "unselected icon follows URL default again");
+                var draftName = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionName");
+                var draftContent = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionContent");
+                var draftSample = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionSample");
+                draftName.Text = "Icon fixture"; draftContent.Text = "https://example.com/***"; draftSample.Text = "Disposable sample"; editor.UpdateLayout();
+                var beforePosition = draftContent.TranslatePoint(new Point(), editor); var beforeSize = new Size(editor.ActualWidth, editor.ActualHeight);
+                OpenPicker(p => p.ChooseIcon.Execute("translate_20_regular")); editor.UpdateLayout();
+                Check(IconPreview(editor).IconId == "translate_20_regular" && editor.SavedAction == null,
+                    "custom picker updates the preview without saving");
+                Check(draftName.Text == "Icon fixture" && draftContent.Text == "https://example.com/***" && draftSample.Text == "Disposable sample"
+                    && draftContent.TranslatePoint(new Point(), editor) == beforePosition && new Size(editor.ActualWidth, editor.ActualHeight) == beforeSize,
+                    "custom picker preserves drafts editor size and content position");
+                Snapshot(editor, "editor-custom-icon.png");
+                foreach (var dismiss in new[] { "close", "cancel", "escape" })
+                {
+                    OpenPicker(p =>
+                    {
+                        if (dismiss == "close") p.Close();
+                        else if (dismiss == "cancel") Children<Button>(p).Single(b => AutomationProperties.GetAutomationId(b) == "AiIconCancel").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        else p.SearchInput.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(p), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+                        Check(p.SelectedId == null, "custom picker " + dismiss + " returns no selection");
+                    });
+                    Check(IconPreview(editor).IconId == "translate_20_regular" && editor.SavedAction == null, "custom picker " + dismiss + " preserves unsaved icon");
+                }
+                foreach (var index in new[] { 1, 2, 0 }) { kind.SelectedIndex = index; Check(IconPreview(editor).IconId == "translate_20_regular", "chosen icon survives action type " + index); }
+                Check(draftName.Text == "Icon fixture" && draftContent.Text == "https://example.com/***" && draftSample.Text == "Disposable sample", "type switching preserves URL drafts after icon selection");
+                editor.Close(); Check(editor.SavedAction == null, "closing editor discards selected icon without saving");
+                foreach (var storedIcon in new[] { "globe", "unknown-valid-icon" })
+                {
+                    editor = new ActionEditorWindow(script with { Icon = storedIcon }); editor.Show(); editor.UpdateLayout();
+                    var storedKind = Children<ComboBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "CustomActionKind");
+                    storedKind.SelectedIndex = 2; storedKind.SelectedIndex = 0;
+                    Check(IconPreview(editor).IconId == storedIcon, "editing preserves stored icon " + storedIcon);
+                    editor.Close();
+                }
+                editor = new ActionEditorWindow(script); editor.Show(); editor.UpdateLayout();
+                var selectedDialog = new ActionEditorWindow(script) { Owner = editor };
+                selectedDialog.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+                {
+                    selectedDialog.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+                        selectedDialog.OwnedWindows.Cast<Window>().OfType<AiIconPickerWindow>().Single().ChooseIcon.Execute("translate_20_regular"));
+                    Children<Button>(selectedDialog).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionChooseIcon").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Children<Button>(selectedDialog).Single(b => AutomationProperties.GetName(b) == "儲存動作").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                });
+                Check(selectedDialog.ShowDialog() == true && selectedDialog.SavedAction?.Icon == "translate_20_regular", "explicit Save returns the selected custom icon");
                 var savedDialog = new ActionEditorWindow(script with { UseSelection = false }) { Owner = editor };
                 savedDialog.Loaded += (_, _) => Children<Button>(savedDialog).Single(b => AutomationProperties.GetName(b) == "儲存動作").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(savedDialog.ShowDialog() == true && savedDialog.SavedAction?.UseSelection == false,

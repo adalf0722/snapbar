@@ -15,7 +15,10 @@ internal sealed class ActionEditorWindow : Window
     private readonly string id;
     private readonly TextBox name = ActionUi.Input(max: 32), content = ActionUi.Input(), sample = ActionUi.Input(),
         runtime = ActionUi.Input(), timeout = ActionUi.Input("10", 3), preview = ActionUi.Input();
-    private readonly ComboBox kind = new(), output = new(), icon = new();
+    private readonly ComboBox kind = new(), output = new();
+    private string selectedIcon = "globe";
+    private readonly AiIconPresenter iconPreview = new() { Width = 22, Height = 22 };
+    private Button iconButton = null!;
     private readonly StackPanel scriptOptions = new(), sampleSection = new();
     private readonly CheckBox useSelection = new() { Content = "使用選取文字", IsChecked = true, Margin = new(0, 0, 0, 14),
         ToolTip = "關閉時以空字串執行腳本；仍從選字工具列啟動並驗證來源。" };
@@ -46,6 +49,7 @@ internal sealed class ActionEditorWindow : Window
         ActionUi.Setup(this, existing == null ? "新增自訂動作 · SnapBar" : "編輯自訂動作 · SnapBar", 1080, 850);
         MinWidth = 880; MinHeight = 640; WindowWorkArea.Attach(this); id = existing?.Id ?? "custom-" + Guid.NewGuid().ToString("N");
         iconChosen = existing != null;
+        selectedIcon = existing?.Icon ?? "globe"; iconPreview.IconId = selectedIcon;
         var outer = new DockPanel { Margin = new(28) };
         var heading = new StackPanel { Margin = new(0, 0, 0, 22) };
         heading.Children.Add(ActionUi.Heading(existing == null ? "新增動作" : "編輯動作", 24));
@@ -62,20 +66,19 @@ internal sealed class ActionEditorWindow : Window
         var form = new StackPanel(); var formHeading = ActionUi.Heading("動作設定"); formHeading.Margin = new(0, 0, 0, 12); form.Children.Add(formHeading);
         kind.ItemsSource = new[] { "網址", "PowerShell", "JavaScript" }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
         AutomationProperties.SetName(kind, "動作類型"); Field(form, "動作類型", kind);
-        var iconNames = new[] { "複製", "剪下", "貼上", "搜尋", "連結", "資料夾", "網頁", "翻譯", "程式碼", "終端機", "星芒", "文件", "清理文字" };
-        for (var i = 0; i < ActionUi.Icons.Length; i++)
-        {
-            var option = new StackPanel { Orientation = Orientation.Horizontal };
-            option.Children.Add(ActionUi.Icon(ActionUi.Icons[i], ActionUi.Muted, 16));
-            var label = ActionUi.Text(iconNames[i], 12); label.Margin = new(9, 0, 0, 0); option.Children.Add(label);
-            var item = new ComboBoxItem { Tag = ActionUi.Icons[i], Content = option }; icon.Items.Add(item);
-            if (ActionUi.Icons[i] == (existing?.Icon ?? "globe")) icon.SelectedItem = item;
-        }
-        var identity = new Grid(); identity.ColumnDefinitions.Add(new() { Width = new(1.3, GridUnitType.Star) });
-        identity.ColumnDefinitions.Add(new() { Width = new(16) }); identity.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        var nameField = new StackPanel(); Field(nameField, "名稱", name); identity.Children.Add(nameField);
-        var iconField = new StackPanel(); Field(iconField, "圖示", icon); Grid.SetColumn(iconField, 2); identity.Children.Add(iconField); form.Children.Add(identity);
-        AutomationProperties.SetName(name, "動作名稱"); AutomationProperties.SetName(icon, "動作圖示");
+        var identity = new Grid(); identity.ColumnDefinitions.Add(new() { Width = new(44) });
+        identity.ColumnDefinitions.Add(new() { Width = new(12) }); identity.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        iconButton = ActionUi.Button("", ChooseIcon); iconButton.Content = iconPreview;
+        iconButton.Width = iconButton.Height = 44; iconButton.Padding = new(0);
+        iconButton.ToolTip = "更換圖示";
+        AutomationProperties.SetName(iconButton, "更換圖示");
+        AutomationProperties.SetAutomationId(iconButton, "CustomActionChooseIcon");
+        AutomationProperties.SetAutomationId(iconPreview, "CustomActionIconPreview");
+        name.Height = 44;
+        var iconField = new StackPanel(); Field(iconField, "圖示", iconButton); identity.Children.Add(iconField);
+        var nameField = new StackPanel(); Field(nameField, "名稱", name); Grid.SetColumn(nameField, 2); identity.Children.Add(nameField); form.Children.Add(identity);
+        iconButton.Margin = name.Margin = new(0, 0, 0, 3);
+        AutomationProperties.SetName(name, "動作名稱");
         content.AcceptsReturn = true; content.AcceptsTab = true; content.Height = 120; content.TextWrapping = TextWrapping.Wrap;
         content.VerticalContentAlignment = VerticalAlignment.Top;
         content.FontFamily = new("Consolas, Microsoft JhengHei UI"); content.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
@@ -141,10 +144,20 @@ internal sealed class ActionEditorWindow : Window
         output.SelectionChanged += (_, _) => { if (ready) UpdatePreview(); };
         useSelection.Checked += (_, _) => { if (ready) UpdatePreview(); };
         useSelection.Unchecked += (_, _) => { if (ready) UpdatePreview(); };
-        icon.SelectionChanged += (_, _) => { if (ready) { iconChosen = true; UpdatePreview(); } };
         Closed += (_, _) => testing?.Cancel();
         AutomationProperties.SetAutomationId(name, "CustomActionName"); AutomationProperties.SetAutomationId(content, "CustomActionContent");
         AutomationProperties.SetAutomationId(sample, "CustomActionSample"); AutomationProperties.SetAutomationId(kind, "CustomActionKind");
+    }
+
+    private void ChooseIcon()
+    {
+        var picker = new AiIconPickerWindow(selectedIcon) { Owner = this };
+        picker.ShowDialog();
+        if (picker.SelectedId is { } chosen)
+        {
+            selectedIcon = chosen; iconChosen = true; iconPreview.IconId = chosen;
+        }
+        iconButton.Focus();
     }
 
     private static void Field(Panel panel, string label, UIElement input)
@@ -162,10 +175,8 @@ internal sealed class ActionEditorWindow : Window
         useSelection.IsChecked = existing?.UseSelection ?? draft.Item4;
         if (!iconChosen)
         {
-            var defaultIcon = type == CustomActionKind.Url ? "globe" : "terminal";
-            icon.SelectedItem = icon.Items.Cast<ComboBoxItem>().Single(item => (string)item.Tag == defaultIcon);
-            // This selection is a default, not an explicit user choice.
-            iconChosen = false;
+            selectedIcon = type == CustomActionKind.Url ? "globe" : "terminal";
+            iconPreview.IconId = selectedIcon;
         }
         if (existing != null) { runtime.Text = existing.InterpreterPath ?? ""; timeout.Text = existing.TimeoutSeconds.ToString(); }
         scriptOptions.Visibility = type == CustomActionKind.Url ? Visibility.Collapsed : Visibility.Visible;
@@ -175,7 +186,7 @@ internal sealed class ActionEditorWindow : Window
     private CustomActionDefinition? ReadAction()
     {
         if (currentKind != CustomActionKind.Url && (!int.TryParse(timeout.Text, out var n) || n is < 1 or > 300)) { error.Text = "逾時秒數須為 1–300 的整數。"; return null; }
-        var action = new CustomActionDefinition(id, name.Text.Trim(), currentKind, (icon.SelectedItem as ComboBoxItem)?.Tag as string ?? "spark", content.Text,
+        var action = new CustomActionDefinition(id, name.Text.Trim(), currentKind, selectedIcon, content.Text,
             (ActionOutput)Math.Max(0, output.SelectedIndex), currentKind == CustomActionKind.Url ? 10 : int.Parse(timeout.Text), string.IsNullOrWhiteSpace(runtime.Text) ? null : runtime.Text.Trim(),
             UseSelection: currentKind == CustomActionKind.Url || useSelection.IsChecked == true);
         error.Text = CustomActionPolicy.Validate(action) ?? ""; return error.Text.Length == 0 ? action : null;
