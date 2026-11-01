@@ -10,3 +10,10 @@
 - [x] Run `scripts/check.ps1` and desktop `Release` plus `Layout` after normal App exit. Commit only owned changes, append validation, verify UTF-8 and publish using the successful current-fingerprint report. Launch the new package and preserve user configuration.
 
 Desktop evidence: `artifacts/checks/desktop/20261101T010246578Z-1bd685290c6a406891bcf68d03d61288/report.json` (all pass, AI panel 35). Publication: `artifacts/checks/build/20261101T010418548Z-31b119044c86459281a74c7dc17f4c36/report.json` (Core 389, Probe smoke 10). Updated package launched and returned to tray; no user AI configuration changed.
+
+## Copy clarity follow-up
+
+- [x] Apply the user-approved “下次改寫”, version-specific source switch, text details action and plain readonly status. Keep single-line basis layout and original/result behavior.
+- [x] Reuse existing check and Release/Layout regressions, inspect normal/minimum snapshots, record evidence and publish/launch through the current-source gate.
+
+Follow-up desktop report: `artifacts/checks/desktop/20261101T011146025Z-bd7406a6d29c4ad498c725224e3bf671/report.json`; publication: `artifacts/checks/build/20261101T011323176Z-42196545ee6540a68da67182f477c68d/report.json`. Normal and minimum-size metadata/source controls inspected. Updated App launched and returned to tray, retaining user settings.

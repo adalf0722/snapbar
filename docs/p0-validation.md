@@ -634,3 +634,11 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 已目視核對 `artifacts/ai-panel/original.png`、`saved-command-result.png`、`multiline-input.png`、`long-instruction.png` 與可替換結果。測試使用隔離設定及受控 client，未呼叫真實模型或改動使用者 AI 設定；實體 IME、混合 DPI 與第三方 App 全套驗證限制仍沿用前節。
 
 同一份成功桌面報告已用於自含式 staging 發佈；Core 389、Probe smoke 10 再次通過，`artifacts/p0` 已更新。發佈報告：`artifacts/checks/build/20261101T010418548Z-31b119044c86459281a74c7dc17f4c36/report.json`；舊套件保留於 `artifacts/publish/2693486129b84493ac23b16abcde38e3/previous`。以 computer-use 確認新版正常啟動與既有偏好載入，關閉設定頁後回到系統匣待命。
+
+## 2026-11-01 AI panel copy 操作辨識
+
+依使用者同意的收尾方向，將「基於」明確標示為「下次改寫」，切換來源改為「改用第 n 版」及「改用原文」。基準文字保持單行並保留完整提示，避免兩個來源切換按鈕同時顯示時換行。右上改成「指令詳情」文字入口，唯讀結果提示改為「此處無法直接替換，請複製結果。」；原文分頁保留對應文案。未修改 session、來源失效或安全政策。
+
+快速檢查通過工具契約 12、Core 389，建置零警告／零錯誤；相同最終原始碼的 Release + Layout 通過 Lifecycle 28、Appearance 60、CompatibilitySlow 22、AiRuntime 35、AiPanel 35、Layout 22 及 Preflight 1。報告：`artifacts/checks/desktop/20261101T011146025Z-bd7406a6d29c4ad498c725224e3bf671/report.json`。已目視核對一般結果與最小尺寸長指令截圖，並沿用既有幾何、完整指令、原文／結果文案與實際原選取替換案例。沒有呼叫真實模型或改動使用者 AI 設定；實體 IME、混合 DPI 及第三方 App 覆蓋限制維持。
+
+同一份成功報告已完成自含式發佈，Core 389、Probe smoke 10 通過；新版 `artifacts/p0` 已正常啟動並回到系統匣。發佈報告：`artifacts/checks/build/20261101T011323176Z-42196545ee6540a68da67182f477c68d/report.json`；舊套件：`artifacts/publish/46674e352623415daa3093934b54e96b/previous`。原有偏好及 AI 設定保留。
