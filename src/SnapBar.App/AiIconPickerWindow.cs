@@ -29,6 +29,7 @@ internal sealed class AiIconPickerWindow : Window
     internal AiIconPickerWindow(string current)
     {
         ActionUi.Setup(this, "選擇指令圖示", 710, 600); MinWidth = 580; MinHeight = 440;
+        WindowWorkArea.Attach(this);
         ChooseIcon = new SelectCommand(id => { SelectedId = id; Close(); });
         var root = new DockPanel { Margin = new(20) };
         var header = new StackPanel(); var title = new DockPanel();

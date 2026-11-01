@@ -81,17 +81,17 @@ public sealed partial class SelectionController : IDisposable
         monitor.KeyFilter = key => selection != null && !popup.HasSearchForeground && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
         foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
         {
-            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasForeground != true) Invalidate();
+            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasCaptureForeground != true) Invalidate();
         }, dispatcher);
     }
 
     private void OnInput(InputEvent input)
     {
         if (disposed || stopping) return;
-        if (input.Kind == "key" && (popup.HasSearchForeground || aiWindow?.HasForeground == true)) return;
-        if (input.Kind == "hotkey" && aiWindow?.HasForeground == true) return;
+        if (input.Kind == "key" && (popup.HasSearchForeground || aiWindow?.HasCaptureForeground == true)) return;
+        if (input.Kind == "hotkey" && aiWindow?.HasCaptureForeground == true) return;
         if ((input.Kind is "click" or "selection" or "scroll")
-            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true || aiWindow?.Contains(input.X, input.Y) == true)) return;
+            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true || aiWindow?.ContainsCaptureSurface(input.X, input.Y) == true)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
         {

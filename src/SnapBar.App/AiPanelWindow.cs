@@ -30,11 +30,14 @@ internal sealed partial class AiPanelWindow : Window
     private readonly ProgressBar progress;
     private readonly Grid main;
     private readonly Expander filter;
+    private readonly TextBlock deletionText;
+    private readonly Border deletionNotice;
     private CancellationTokenSource? request;
     private AiProviderProfile lastProfile;
     private string? renderedText;
     private bool syncing, composing, closed, targetValid = true, applying;
     private long interactionRevision;
+    private Window? managementWindow;
     internal AiSession Session { get; }
     internal TextBox CommandInput => input;
     internal bool TargetValid => targetValid;
@@ -60,6 +63,9 @@ internal sealed partial class AiPanelWindow : Window
         var add = QuietButton("新增", () => EditPrompt(null), "plus"); add.Padding = new(6); add.MinHeight = 28;
         stop = ActionUi.Button("停止", Stop); stop.Padding = new(5); stop.MinHeight = 28; stop.Margin = new(0);
         DockPanel.SetDock(add, Dock.Right); heading.Children.Add(add); DockPanel.SetDock(stop, Dock.Right); heading.Children.Add(stop);
+        var manageCommands = QuietButton("", () => RequestManagement(SettingsCategory.AiCommands), "settings");
+        manageCommands.ToolTip = "管理 AI 命令"; AutomationProperties.SetName(manageCommands, "管理 AI 命令");
+        AutomationProperties.SetAutomationId(manageCommands, "ManageAiCommands"); DockPanel.SetDock(manageCommands, Dock.Right); heading.Children.Add(manageCommands);
         heading.Children.Add(ActionUi.Heading("AI 指令", 14)); railHeader.Children.Add(heading);
         var basisRow = new DockPanel { MinHeight = 28, Margin = new(0, 8, 0, 6) };
         var basisButtons = new StackPanel { Orientation = Orientation.Horizontal };
@@ -85,7 +91,12 @@ internal sealed partial class AiPanelWindow : Window
         category = new ComboBox { MinHeight = 30, Margin = new(0, 6, 0, 0) };
         filter = new Expander { Header = "分類篩選", Content = category, Margin = new(0, 6, 0, 4), IsExpanded = false };
         railHeader.Children.Add(filter); DockPanel.SetDock(railHeader, Dock.Top); rail.Children.Add(railHeader);
-        count = ActionUi.Text("", 12, ActionUi.Muted); count.Margin = new(4, 6, 0, 0); DockPanel.SetDock(count, Dock.Bottom); rail.Children.Add(count);
+        var commandFooter = new StackPanel();
+        var deletionLine = new DockPanel(); var restoreCommand = QuietButton("復原", () => { if (!preferences.TryRestoreDeleted(out var error)) hint.Text = error; });
+        AutomationProperties.SetAutomationId(restoreCommand, "AiRestoreDeletedPrompt"); DockPanel.SetDock(restoreCommand, Dock.Right); deletionLine.Children.Add(restoreCommand);
+        deletionText = ActionUi.Text("", 12, ActionUi.Muted); AutomationProperties.SetAutomationId(deletionText, "AiDeletedPromptNotice"); deletionLine.Children.Add(deletionText);
+        deletionNotice = new Border { Child = deletionLine, Margin = new(0, 8, 0, 0) }; commandFooter.Children.Add(deletionNotice);
+        count = ActionUi.Text("", 12, ActionUi.Muted); count.Margin = new(4, 6, 0, 0); commandFooter.Children.Add(count); DockPanel.SetDock(commandFooter, Dock.Bottom); rail.Children.Add(commandFooter);
         commandRows = new Grid { VerticalAlignment = VerticalAlignment.Top };
         commandRows.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         commandRows.ColumnDefinitions.Add(new() { Width = new(8) });
@@ -136,6 +147,7 @@ internal sealed partial class AiPanelWindow : Window
         var content = new Grid(); content.Children.Add(originalCard); content.Children.Add(resultCard); body.Children.Add(content);
         right.Children.Add(body); root.Children.Add(main); Content = root;
         preferences.Changed += OnPreferencesChanged;
+        preferences.UndoChanged += RenderCommands;
         input.TextChanged += (_, _) => { if (!syncing) Session.Draft = input.Text; RenderCommands(); };
         category.SelectionChanged += (_, _) => { if (!syncing) RenderCommands(); };
         TextCompositionManager.AddPreviewTextInputStartHandler(input, (_, _) => composing = true);
@@ -147,7 +159,8 @@ internal sealed partial class AiPanelWindow : Window
         GotKeyboardFocus += (_, _) => interactionRevision++;
         SourceInitialized += (_, _) => PlaceNearSelection();
         Loaded += (_, _) => input.Focus();
-        Closed += (_, _) => { closed = true; Stop(); preferences.Changed -= OnPreferencesChanged; if (ownsClient && client is IDisposable disposable) disposable.Dispose(); };
+        Activated += (_, _) => Topmost = true;
+        Closed += (_, _) => { closed = true; Stop(); preferences.Changed -= OnPreferencesChanged; preferences.UndoChanged -= RenderCommands; if (ownsClient && client is IDisposable disposable) disposable.Dispose(); };
         RefreshCategories(); Refresh();
         if (preferences.Warning != null) hint.Text = "AI 設定無法讀取，本次使用預設值並保留原檔。";
     }
@@ -158,6 +171,17 @@ internal sealed partial class AiPanelWindow : Window
         button.BorderBrush = Brushes.Transparent; button.Padding = new(6, 4, 6, 4); button.MinHeight = 28; button.Margin = new(0); return button;
     }
     internal bool HasForeground => IsOwnedForeground(this);
+    // Settings are a trusted capture-monitoring surface, never an Apply authorization surface.
+    internal bool HasCaptureForeground => HasForeground || managementWindow != null && IsOwnedForeground(managementWindow);
+    internal bool ContainsCaptureSurface(int x, int y) => Contains(x, y)
+        || managementWindow != null && ContainsWindow(managementWindow, x, y);
+    internal bool RequestManagement(SettingsCategory category)
+    {
+        if (preferences.SettingsHost == null) return false;
+        managementWindow = preferences.SettingsHost; Topmost = false;
+        if (preferences.RequestSettings(category)) return true;
+        managementWindow = null; Topmost = true; return false;
+    }
     private static bool IsOwnedForeground(Window window) => window.IsVisible && Native.GetForegroundWindow() == new WindowInteropHelper(window).Handle
         || window.OwnedWindows.Cast<Window>().Any(IsOwnedForeground);
     internal bool Contains(int x, int y) => ContainsWindow(this, x, y);
@@ -177,7 +201,11 @@ internal sealed partial class AiPanelWindow : Window
         Native.SetWindowPos(handle, 0, (int)Math.Clamp(x, work.X, Math.Max(work.X, work.Right - width)),
             (int)Math.Clamp(y + 8, work.Y, Math.Max(work.Y, work.Bottom - height)), (int)width, (int)height, 0x0014);
     }
-    private void ShowSettings() { var window = new AiSettingsWindow(preferences) { Owner = this }; window.ShowDialog(); Refresh(); }
+    private void ShowSettings()
+    {
+        if (RequestManagement(SettingsCategory.AiServices)) return;
+        var window = new AiSettingsWindow(preferences) { Owner = this }; window.ShowDialog(); Refresh();
+    }
     private void ShowInstruction()
     {
         if (Session.Current is not { } current) return;
@@ -301,20 +329,14 @@ internal sealed partial class AiPanelWindow : Window
     { try { Clipboard.SetText(Session.ViewingOriginal ? Session.Original : Session.Current?.Text ?? ""); hint.Text = "已複製。"; } catch (ExternalException) { hint.Text = "剪貼簿忙碌，請稍後再試。"; } }
     private void TogglePin(AiPrompt prompt)
     {
-        var settings = preferences.Settings; var pins = settings.PinnedIds.Contains(prompt.Id) ? settings.PinnedIds.Where(id => id != prompt.Id).ToArray() : settings.PinnedIds.Append(prompt.Id).ToArray();
-        if (!preferences.TrySave(settings with { PinnedIds = pins }, out var error)) hint.Text = error;
+        if (!preferences.TogglePin(prompt.Id, out var error)) hint.Text = error;
     }
     private void EditPrompt(AiPrompt? prompt)
     {
-        var window = new AiPromptEditorWindow(prompt, changed =>
-        {
-            var settings = preferences.Settings;
-            var prompts = prompt == null ? settings.Prompts.Append(changed).ToArray() : settings.Prompts.Select(p => p.Id == changed.Id ? changed : p).ToArray();
-            return preferences.TrySave(settings with { Prompts = prompts }, out var error) ? null : error;
-        }) { Owner = this }; window.ShowDialog();
+        preferences.OpenEditor(this, prompt);
     }
     private void DeletePrompt(AiPrompt prompt)
-    { var settings = preferences.Settings; if (!preferences.TrySave(settings with { Prompts = settings.Prompts.Where(p => p.Id != prompt.Id).ToArray() }, out var error)) hint.Text = error; }
+    { if (!preferences.DeletePrompt(prompt.Id, out var error)) hint.Text = error; }
     private void InputKey(object sender, KeyEventArgs e)
     {
         if (composing || e.Key == Key.ImeProcessed) return;

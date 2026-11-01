@@ -9,24 +9,22 @@ using SnapBar.Windows;
 
 namespace SnapBar.App;
 
-public sealed class MainWindow : Window
+public sealed partial class MainWindow : Window
 {
-    private readonly TextBlock status, mode, lifetimeHint, notice;
-    private readonly CheckBox toggle, compatibilityToggle, sublimeToggle;
-    private readonly ListBox events;
-    private readonly ExcludedAppsPanel excludedAppsPanel;
-    private readonly SearchSettingsPanel searchSettingsPanel;
+    private TextBlock status = null!, mode = null!, lifetimeHint = null!, notice = null!;
+    private CheckBox toggle = null!, compatibilityToggle = null!, sublimeToggle = null!;
+    private ListBox events = null!;
+    private ExcludedAppsPanel excludedAppsPanel = null!;
+    private SearchSettingsPanel searchSettingsPanel = null!;
     private SelectionController? controller;
     private TrayIcon? tray;
     private readonly SettingsStore settingsStore;
     private readonly AiPreferences aiPreferences;
-    private AiSettingsWindow? aiSettingsWindow;
     private ApplicationSettings preferences;
     private bool exitRequested, hiddenNoticeShown;
     private bool updatingCompatibility, updatingSublime;
     private readonly Action configureSublime;
     private readonly Func<bool> sublimeIsReady;
-    private ActionSettingsWindow? actionSettingsWindow;
     internal bool AutomaticDetectionEnabled => controller?.Automatic == true;
     internal bool ClipboardCompatibilityEnabled => controller?.ClipboardCompatibilityEnabled == true;
     internal bool SublimeCompatibilityEnabled => controller?.SublimeClipboardEnabled == true;
@@ -44,100 +42,7 @@ public sealed class MainWindow : Window
         if (loaded.Warning != null) preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
         preferences = preferences with { SublimeCompatibilityEnabled = preferences.SublimeCompatibilityEnabled ?? this.sublimeIsReady() };
-        ActionUi.Setup(this, "SnapBar · 設定", 740, 820); MinWidth = 580; MinHeight = 520;
-        var panel = new StackPanel { Margin = new Thickness(28) };
-        var heading = new DockPanel { Margin = new(0, 0, 0, 22) };
-        mode = ActionUi.Text("正在啟動", 12, ActionUi.Muted);
-        var badge = new Border { Background = ActionUi.Pale, CornerRadius = new(12), Padding = new(12, 6, 12, 6),
-            VerticalAlignment = VerticalAlignment.Center, Child = mode };
-        DockPanel.SetDock(badge, Dock.Right); heading.Children.Add(badge);
-        var title = new StackPanel(); title.Children.Add(ActionUi.Heading("SnapBar", 26));
-        title.Children.Add(ActionUi.Text("選取文字，直接動作。", 13, ActionUi.Muted)); heading.Children.Add(title); panel.Children.Add(heading);
-
-        void AddCard(UIElement content, bool compact = false)
-        {
-            var card = ActionUi.Card(content, compact ? new Thickness(18, 6, 18, 6) : new Thickness(20));
-            card.Margin = new(0, 0, 0, 12); panel.Children.Add(card);
-        }
-        var detection = new StackPanel(); var detectionRow = new DockPanel();
-        toggle = new CheckBox { Style = (Style)FindResource("Switch"), IsChecked = preferences.AutomaticDetectionEnabled,
-            VerticalAlignment = VerticalAlignment.Center, ToolTip = "自動偵測選取文字" };
-        System.Windows.Automation.AutomationProperties.SetName(toggle, "自動偵測選取文字");
-        System.Windows.Automation.AutomationProperties.SetAutomationId(toggle, "AutomaticDetectionToggle");
-        toggle.Click += (_, _) => ToggleAutomatic(); DockPanel.SetDock(toggle, Dock.Right); detectionRow.Children.Add(toggle);
-        var detectionText = new StackPanel(); detectionText.Children.Add(ActionUi.Heading("自動偵測"));
-        var detectionHelp = ActionUi.Text("拖曳或雙擊選字後，顯示動作列。", 13, ActionUi.Muted); detectionHelp.Margin = new(0, 5, 12, 0);
-        detectionText.Children.Add(detectionHelp); detectionRow.Children.Add(detectionText); detection.Children.Add(detectionRow);
-        var shortcut = new DockPanel { Margin = new(0, 18, 0, 0) };
-        var keys = new Border { Child = ActionUi.Text("Ctrl + Alt + V", 12), Background = ActionUi.Canvas, BorderBrush = ActionUi.Line,
-            BorderThickness = new(1), CornerRadius = new(6), Padding = new(10, 6, 10, 6) };
-        DockPanel.SetDock(keys, Dock.Right); shortcut.Children.Add(keys); shortcut.Children.Add(ActionUi.Text("隨時用快捷鍵叫出動作列", 13, ActionUi.Muted));
-        detection.Children.Add(shortcut); AddCard(detection);
-
-        var actions = new DockPanel(); var manageActions = ActionUi.Button("管理動作", ShowActionSettings, "settings", true);
-        manageActions.Margin = new(16, 0, 0, 0); manageActions.VerticalAlignment = VerticalAlignment.Center;
-        DockPanel.SetDock(manageActions, Dock.Right); actions.Children.Add(manageActions);
-        var actionText = new StackPanel(); actionText.Children.Add(ActionUi.Heading("動作列"));
-        var actionHelp = ActionUi.Text("安排常用動作、外觀與自訂腳本。", 13, ActionUi.Muted); actionHelp.Margin = new(0, 5, 0, 0);
-        actionText.Children.Add(actionHelp); actions.Children.Add(actionText); AddCard(actions);
-
-        var ai = new DockPanel(); var aiSettings = ActionUi.Button("設定 AI 服務", ShowAiSettings, "spark");
-        DockPanel.SetDock(aiSettings, Dock.Right); ai.Children.Add(aiSettings);
-        var aiText = new StackPanel(); aiText.Children.Add(ActionUi.Heading("AI 改寫"));
-        aiText.Children.Add(ActionUi.Text("選取文字後，在更多動作中開啟 AI 面板。", 13, ActionUi.Muted)); ai.Children.Add(aiText); AddCard(ai);
-
-        searchSettingsPanel = new SearchSettingsPanel();
-        searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
-        searchSettingsPanel.SaveRequested += value => SetSearchUrlTemplate(value);
-        searchSettingsPanel.ResetRequested += () => SetSearchUrlTemplate(WebActionPolicy.DefaultSearchTemplate);
-        AddCard(searchSettingsPanel, compact: true);
-
-        var compatibility = new StackPanel(); compatibility.Children.Add(ActionUi.Heading("相容性與排除 App"));
-        compatibilityToggle = new CheckBox { Content = "選字相容模式", IsChecked = preferences.ClipboardCompatibilityEnabled, Margin = new(0, 12, 0, 0) };
-        System.Windows.Automation.AutomationProperties.SetAutomationId(compatibilityToggle, "ClipboardCompatibilityToggle");
-        compatibilityToggle.Checked += (_, _) => SetClipboardCompatibility(true);
-        compatibilityToggle.Unchecked += (_, _) => SetClipboardCompatibility(false);
-        compatibility.Children.Add(compatibilityToggle);
-        var compatibilityHelp = ActionUi.Text("原生讀取不足時，暫借剪貼簿取得文字。會記住此設定；相容讀取可能出現在剪貼簿歷程。", 12, ActionUi.Muted);
-        compatibilityHelp.Margin = new(27, 3, 0, 10); compatibility.Children.Add(compatibilityHelp);
-        sublimeToggle = new CheckBox { Content = "Sublime 支援", IsChecked = preferences.SublimeCompatibilityEnabled,
-            IsEnabled = preferences.ClipboardCompatibilityEnabled, Margin = new(27, 0, 0, 0) };
-        System.Windows.Automation.AutomationProperties.SetAutomationId(sublimeToggle, "SublimeCompatibilityToggle");
-        sublimeToggle.Checked += (_, _) => SetSublimeCompatibility(true);
-        sublimeToggle.Unchecked += (_, _) => SetSublimeCompatibility(false);
-        compatibility.Children.Add(sublimeToggle);
-        var sublimeHelp = ActionUi.Text("首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。", 12, ActionUi.Muted);
-        sublimeHelp.Margin = new(54, 3, 0, 10); compatibility.Children.Add(sublimeHelp);
-        excludedAppsPanel = new ExcludedAppsPanel();
-        excludedAppsPanel.ShowApplications(preferences.ExcludedApplications);
-        excludedAppsPanel.AddRequested += entry => AddExcludedApplication(entry.ExecutablePath, entry.DisplayName);
-        excludedAppsPanel.RemoveRequested += entry => RemoveExcludedApplication(entry.ExecutablePath);
-        excludedAppsPanel.ValidationFailed += ShowNotice;
-        compatibility.Children.Add(excludedAppsPanel); AddCard(compatibility);
-
-        var diagnostics = new StackPanel();
-        status = ActionUi.Text("正在初始化…", 12, ActionUi.Muted); status.Margin = new(0, 8, 0, 0);
-        System.Windows.Automation.AutomationProperties.SetAutomationId(status, "LatestDiagnosticStatus");
-        diagnostics.Children.Add(status);
-        events = new ListBox { Height = 140, BorderThickness = new(0), Background = ActionUi.Canvas, FontSize = 12,
-            Foreground = ActionUi.Muted, Margin = new(0, 8, 0, 12) };
-        diagnostics.Children.Add(events);
-        var fixture = ActionUi.Button("開啟測試視窗", () =>
-        {
-            var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
-            start.ArgumentList.Add("--fixture"); Process.Start(start);
-        }, "document");
-        fixture.HorizontalAlignment = HorizontalAlignment.Left; diagnostics.Children.Add(fixture);
-        AddCard(new Expander { Header = "診斷與測試", Content = diagnostics }, compact: true);
-
-        notice = ActionUi.Text("", 12, ActionUi.Ink); notice.Margin = new(2, 0, 2, 10); notice.Visibility = Visibility.Collapsed;
-        System.Windows.Automation.AutomationProperties.SetAutomationId(notice, "SettingsNotice"); panel.Children.Add(notice);
-        var footer = new DockPanel { Margin = new(0, 8, 0, 0) };
-        var exit = ActionUi.Button("結束 SnapBar", () => _ = ExitAsync()); exit.Margin = new(12, 0, 0, 0);
-        DockPanel.SetDock(exit, Dock.Right); footer.Children.Add(exit);
-        lifetimeHint = ActionUi.Text("關閉視窗後會繼續待命。\n按系統匣圖示可返回設定。", 12, ActionUi.Muted);
-        footer.Children.Add(lifetimeHint); panel.Children.Add(footer);
-        Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        BuildSettingsPages();
         SourceInitialized += (_, _) =>
         {
             try { tray = new TrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); }
@@ -154,7 +59,7 @@ public sealed class MainWindow : Window
                 controller.ConfigureActions(preferences.Actions);
                 controller.ConfigureAi(aiPreferences);
                 ApplyClipboardCompatibility();
-                controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; SavePreferences(); };
+                controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; actionSettingsPanel.ShowSettings(value); generalPage.ShowPreview(value); SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
                 if (controller.HotkeyRegistered) AddStatus("準備完成 · Ctrl+Alt+V");
@@ -176,7 +81,7 @@ public sealed class MainWindow : Window
             Hide();
             if (!hiddenNoticeShown) { hiddenNoticeShown = true; tray.NotifyHidden(); }
         };
-        Closed += (_, _) => { controller?.Dispose(); tray?.Dispose(); };
+        Closed += (_, _) => { aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
     }
 
     internal void ToggleAutomatic()
@@ -273,37 +178,22 @@ public sealed class MainWindow : Window
         { ShowNotice("本次設定已生效，但無法保存；下次啟動將使用原設定。"); }
     }
 
-    private void ShowActionSettings()
-    {
-        if (exitRequested) return;
-        if (actionSettingsWindow != null) { actionSettingsWindow.Activate(); return; }
-        var window = new ActionSettingsWindow(preferences.Actions, value =>
-        {
-            preferences = preferences with { Actions = value }; controller?.ConfigureActions(value);
-            try { settingsStore.Save(preferences); return true; }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-            { ShowNotice("本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。"); return false; }
-        });
-        actionSettingsWindow = window; window.Closed += (_, _) => actionSettingsWindow = null; window.Show();
-    }
+    private void ShowActionSettings() { ShowCategory(SettingsCategory.Actions); actionTab.IsChecked = true; }
 
-    private void ShowAiSettings()
-    {
-        if (exitRequested) return;
-        if (aiSettingsWindow != null) { aiSettingsWindow.Activate(); return; }
-        aiSettingsWindow = new(aiPreferences); aiSettingsWindow.Closed += (_, _) => aiSettingsWindow = null; aiSettingsWindow.Show();
-    }
+    private void ShowAiSettings() => ShowCategory(SettingsCategory.AiServices);
 
     internal bool SetSearchUrlTemplate(string value)
     {
         if (exitRequested) return false;
         if (!WebActionPolicy.IsValidSearchTemplate(value))
         { ShowNotice("搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。"); return false; }
-        preferences = preferences with { SearchUrlTemplate = value };
+        var updated = preferences with { SearchUrlTemplate = value };
+        try { settingsStore.Save(updated); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
+        { ShowNotice("搜尋設定無法保存；草稿仍保留，請檢查檔案權限或設定大小。"); return false; }
+        preferences = updated;
         if (controller != null) controller.SearchUrlTemplate = value;
         searchSettingsPanel.ShowTemplate(value);
-        ShowNotice("已更新搜尋網址；點擊搜尋後交由預設瀏覽器處理。");
-        SavePreferences();
         return true;
     }
 
@@ -327,11 +217,11 @@ public sealed class MainWindow : Window
     internal async Task ExitAsync()
     {
         if (exitRequested) return;
+        if (!TryResolveDraftsForExit()) return;
         exitRequested = true;
         IsEnabled = false;
         controller?.BeginShutdown();
-        actionSettingsWindow?.Close();
-        aiSettingsWindow?.Close();
+        foreach (var draft in aiPreferences.Drafts.ToArray()) draft.Discard();
         while (controller?.ClipboardReadPending == true) await Task.Delay(25);
         Close();
         Application.Current.Shutdown();

@@ -22,6 +22,8 @@ internal sealed partial class AiPanelWindow
         direct.ToolTip = input.Text;
         commandRows.Children.Clear(); commandRows.RowDefinitions.Clear(); commandButtons.Clear();
         var settings = preferences.Settings; var chosen = (string?)category.SelectedItem;
+        deletionNotice.Visibility = preferences.LastDeletion == null ? Visibility.Collapsed : Visibility.Visible;
+        deletionText.Text = preferences.LastDeletion is { } deleted ? $"已刪除「{deleted.Prompt.Name}」" : "";
         var items = AiPolicy.Search(settings, input.Text, chosen == "全部分類" ? "" : chosen ?? "");
         for (var index = 0; index < items.Count; index++)
         {

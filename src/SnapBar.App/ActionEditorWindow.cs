@@ -44,7 +44,7 @@ internal sealed class ActionEditorWindow : Window
     public ActionEditorWindow(CustomActionDefinition? existing = null)
     {
         ActionUi.Setup(this, existing == null ? "新增自訂動作 · SnapBar" : "編輯自訂動作 · SnapBar", 1080, 850);
-        MinWidth = 880; MinHeight = 640; id = existing?.Id ?? "custom-" + Guid.NewGuid().ToString("N");
+        MinWidth = 880; MinHeight = 640; WindowWorkArea.Attach(this); id = existing?.Id ?? "custom-" + Guid.NewGuid().ToString("N");
         iconChosen = existing != null;
         var outer = new DockPanel { Margin = new(28) };
         var heading = new StackPanel { Margin = new(0, 0, 0, 22) };

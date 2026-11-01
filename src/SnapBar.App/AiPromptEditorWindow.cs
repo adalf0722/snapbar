@@ -7,8 +7,15 @@ using SnapBar.Core;
 
 namespace SnapBar.App;
 
-internal sealed class AiPromptEditorWindow : Window
+internal sealed class AiPromptEditorWindow : Window, ISettingsDraft
 {
+    private Func<bool> saveDraft = () => false;
+    private Func<bool> dirty = () => false;
+    public string DraftName => "AI 命令編輯";
+    public bool IsDirty => dirty();
+    public bool TrySave() => saveDraft();
+    public void Discard() => Close();
+    public void Reveal() { Show(); Activate(); }
     public AiPromptEditorWindow(AiPrompt? existing, Func<AiPrompt, string?> save)
     {
         ActionUi.Setup(this, existing == null ? "新增 AI 指令" : "編輯 AI 指令", 570, 610); MinWidth = 460;
@@ -16,6 +23,8 @@ internal sealed class AiPromptEditorWindow : Window
         var title = ActionUi.Heading(existing == null ? "新增指令" : "編輯指令", 22); title.Margin = new(0, 0, 0, 18);
         DockPanel.SetDock(title, Dock.Top); body.Children.Add(title);
         var footer = new StackPanel { Margin = new(0, 16, 0, 0) };
+        var draftStatus = ActionUi.Text("", 12, ActionUi.Muted); footer.Children.Add(draftStatus);
+        AutomationProperties.SetAutomationId(draftStatus, "AiPromptDirtyStatus");
         var hint = ActionUi.Text("", 12, Brushes.Firebrick); footer.Children.Add(hint);
         AutomationProperties.SetAutomationId(hint, "AiPromptError");
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new(0, 10, 0, 0) };
@@ -54,20 +63,27 @@ internal sealed class AiPromptEditorWindow : Window
         }
         icon.TextChanged += (_, _) => PreviewIcon(); PreviewIcon();
         var cancel = ActionUi.Button("取消", Close); AutomationProperties.SetAutomationId(cancel, "AiPromptCancel"); buttons.Children.Add(cancel);
-        var saveButton = ActionUi.Button("儲存指令", () =>
+        bool SaveDraft()
         {
-            if (string.IsNullOrWhiteSpace(name.Text)) { hint.Text = "請填寫指令名稱。"; name.Focus(); return; }
-            if (string.IsNullOrWhiteSpace(instruction.Text)) { hint.Text = "請填寫指令內容。"; instruction.Focus(); return; }
+            if (string.IsNullOrWhiteSpace(name.Text)) { hint.Text = "請填寫指令名稱。"; name.Focus(); return false; }
+            if (string.IsNullOrWhiteSpace(instruction.Text)) { hint.Text = "請填寫指令內容。"; instruction.Focus(); return false; }
             var iconId = initialIcon;
             if (icon.Text != initialIcon)
             {
-                if (!AiIconCatalog.TryResolve(icon.Text, out var selected)) { iconValidationError = true; hint.Text = "找不到這個圖示，請檢查名稱或選擇圖示。"; icon.Focus(); return; }
+                if (!AiIconCatalog.TryResolve(icon.Text, out var selected)) { iconValidationError = true; hint.Text = "找不到這個圖示，請檢查名稱或選擇圖示。"; icon.Focus(); return false; }
                 iconId = selected.Id;
             }
             var prompt = new AiPrompt(existing?.Id ?? Guid.NewGuid().ToString("N"), name.Text.Trim(), instruction.Text,
                 category.Text.Trim(), keywords.Text.Trim(), iconId);
-            if (save(prompt) is { } error) { hint.Text = error; return; } Close();
-        }, primary: true);
+            if (save(prompt) is { } error) { hint.Text = error; return false; }
+            dirty = () => false; Close(); return true;
+        }
+        saveDraft = SaveDraft;
+        dirty = () => name.Text != (existing?.Name ?? "") || instruction.Text != (existing?.Instruction ?? "")
+            || category.Text != (existing?.Category ?? "自訂") || keywords.Text != (existing?.Keywords ?? "") || icon.Text != initialIcon;
+        foreach (var field in new[] { name, instruction, category, keywords, icon })
+            field.TextChanged += (_, _) => draftStatus.Text = IsDirty ? "尚未儲存" : "";
+        var saveButton = ActionUi.Button("儲存指令", () => TrySave(), primary: true);
         AutomationProperties.SetAutomationId(saveButton, "AiPromptSave"); buttons.Children.Add(saveButton);
         footer.Children.Add(buttons); DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
         static void Field(Panel fields, string label, FrameworkElement input)
@@ -92,5 +108,7 @@ internal sealed class AiPromptEditorWindow : Window
         primary.SizeChanged += (_, _) => UpdateMinimum(); advanced.SizeChanged += (_, _) => UpdateMinimum();
         advanced.Expanded += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => category.BringIntoView());
         body.Children.Add(scroll); Content = body; Loaded += (_, _) => name.Focus();
+        Closed += (_, _) => dirty = () => false;
+        WindowWorkArea.Attach(this);
     }
 }

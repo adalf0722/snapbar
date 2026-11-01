@@ -10,33 +10,34 @@ using SnapBar.Core;
 
 namespace SnapBar.App;
 
-internal sealed class ExcludedAppsPanel : Expander
+internal sealed class ExcludedAppsPanel : ContentControl
 {
     private readonly ListBox applications;
     private readonly TextBlock selectedPath;
     private readonly Button remove;
+    private readonly TextBlock heading;
     public event Action<ExcludedApplication>? AddRequested;
     public event Action<ExcludedApplication>? RemoveRequested;
     public event Action<string>? ValidationFailed;
 
     public ExcludedAppsPanel()
     {
-        SetResourceReference(StyleProperty, typeof(Expander));
-        Header = "排除 App（0）";
+        HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetAutomationId(this, "ExcludedAppsPanel");
-        var panel = new StackPanel { Margin = new(0, 10, 0, 0) };
-        panel.Children.Add(new TextBlock { Text = "在這些 App 不會自動彈出；Ctrl+Alt+V 仍可使用。",
-            TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = ActionUi.Muted, Margin = new(0, 0, 0, 8) });
-        applications = new ListBox { Height = 100, BorderBrush = ActionUi.Line, BorderThickness = new(1), DisplayMemberPath = nameof(ExcludedApplication.DisplayName) };
+        var panel = new DockPanel(); var introduction = new StackPanel();
+        heading = ActionUi.Heading("排除 App（0）", 14); introduction.Children.Add(heading);
+        introduction.Children.Add(new TextBlock { Text = "在這些 App 不會自動彈出；Ctrl+Alt+V 仍可使用。",
+            TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = ActionUi.Muted, Margin = new(0, 4, 0, 8) });
+        DockPanel.SetDock(introduction, Dock.Top); panel.Children.Add(introduction);
+        applications = new ListBox { BorderBrush = ActionUi.Line, BorderThickness = new(1), DisplayMemberPath = nameof(ExcludedApplication.DisplayName) };
         var itemStyle = new Style(typeof(ListBoxItem));
         itemStyle.Setters.Add(new Setter(AutomationProperties.NameProperty, new Binding(nameof(ExcludedApplication.DisplayName))));
         itemStyle.Setters.Add(new Setter(ToolTipProperty, new Binding(nameof(ExcludedApplication.ExecutablePath))));
         applications.ItemContainerStyle = itemStyle;
         AutomationProperties.SetAutomationId(applications, "ExcludedAppsList");
-        panel.Children.Add(applications);
-        selectedPath = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12,
-            Foreground = ActionUi.Muted, Margin = new(0, 6, 0, 8) };
-        panel.Children.Add(selectedPath);
+        var footer = new StackPanel();
+        selectedPath = new TextBlock { TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, FontSize = 12,
+            Foreground = ActionUi.Muted, Margin = new(0, 6, 0, 8) }; footer.Children.Add(selectedPath);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
         var add = ActionUi.Button("加入 App…", () => { });
         AutomationProperties.SetAutomationId(add, "AddExcludedApp");
@@ -67,15 +68,17 @@ internal sealed class ExcludedAppsPanel : Expander
         {
             var selected = applications.SelectedItem as ExcludedApplication;
             selectedPath.Text = selected?.ExecutablePath ?? "尚未排除任何 App。";
+            selectedPath.ToolTip = selectedPath.Text;
             remove.IsEnabled = selected != null;
         };
         buttons.Children.Add(add); buttons.Children.Add(remove);
-        panel.Children.Add(buttons); Content = panel;
+        footer.Children.Add(buttons); DockPanel.SetDock(footer, Dock.Bottom); panel.Children.Add(footer);
+        panel.Children.Add(applications); Content = panel;
     }
 
     public void ShowApplications(IReadOnlyList<ExcludedApplication> entries)
     {
-        Header = $"排除 App（{entries.Count}）";
+        heading.Text = $"排除 App（{entries.Count}）";
         applications.ItemsSource = entries;
         applications.SelectedIndex = entries.Count > 0 ? 0 : -1;
         if (entries.Count == 0) selectedPath.Text = "尚未排除任何 App。";
