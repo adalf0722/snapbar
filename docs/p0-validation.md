@@ -621,3 +621,16 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 本輪未呼叫真實模型、未修改使用者服務／模型／金鑰設定；實體 IME、混合 DPI 與第三方 App 完整回歸的覆蓋限制沿用前節。
 
 使用上述相同原始碼報告完成 staging 發佈，Core 389、Probe smoke 10 再次通過，`artifacts/p0` 已更新。舊套件保留於 `artifacts/publish/7a47359908864a80bfa691b417ac3b42/previous`；發佈報告：`artifacts/checks/build/20261101T004531328Z-01681e5d77ee47d3a7dd9b2138abcf6b/report.json`。以 computer-use 正常啟動新套件，確認自動偵測、選字相容及 Sublime 偏好恢復，再關閉設定視窗回到系統匣待命。
+
+## 2026-11-01 AI panel layout 精修
+
+- 輸入框由固定 84 DIP 改為兩行起始、最小 60 DIP，多行及自動換行可增高至 120 DIP 後捲動。收斂分類及列間距，保留 40 DIP 指令按鈕；標準 800 × 650 視窗完整顯示五個預設指令，不需要捲動。
+- 基準列保留 28 DIP，進度列保留 2 DIP；顯示「從原文重做」、停止與進度時不再推動輸入框。原文／結果分頁、搜尋與直接輸入的流程維持。
+- 結果摘要顯示已執行的指令名稱或「自訂指令」，不再露出截斷的英文 prompt。名稱在送出時取快照，只在記憶體與版本一起保留，分支或淘汰舊版本時清理；最多對應 20 個版本。基準與完整指令保留於所屬詳情視窗，只有一版時隱藏歷史箭頭。
+- 唯讀及來源失效狀態的文案，依目前原文／結果分頁對應複製內容。未放寬前景、焦點或選取失效規則；既有面板持有焦點與外部焦點取消的原生案例仍通過。
+
+快速檢查通過工具契約 12、Core 389，Release 建置零警告／零錯誤。相同最終原始碼的 Release + Layout 報告通過 Lifecycle 28、Appearance 60、CompatibilitySlow 22（含真實 35 秒腳本）、AiRuntime 35、AiPanel 35、Layout 22 與 Preflight 1：`artifacts/checks/desktop/20261101T010246578Z-1bd685290c6a406891bcf68d03d61288/report.json`。AI 幾何檢查確認五個按鈕完全位於 viewport、沒有可捲動高度，以及送出前／執行中／完成後輸入框 Y 座標一致。另確認多行增高有界、指令名稱、歷史箭頭及原文／結果文案。
+
+已目視核對 `artifacts/ai-panel/original.png`、`saved-command-result.png`、`multiline-input.png`、`long-instruction.png` 與可替換結果。測試使用隔離設定及受控 client，未呼叫真實模型或改動使用者 AI 設定；實體 IME、混合 DPI 與第三方 App 全套驗證限制仍沿用前節。
+
+同一份成功桌面報告已用於自含式 staging 發佈；Core 389、Probe smoke 10 再次通過，`artifacts/p0` 已更新。發佈報告：`artifacts/checks/build/20261101T010418548Z-31b119044c86459281a74c7dc17f4c36/report.json`；舊套件保留於 `artifacts/publish/2693486129b84493ac23b16abcde38e3/previous`。以 computer-use 確認新版正常啟動與既有偏好載入，關閉設定頁後回到系統匣待命。
