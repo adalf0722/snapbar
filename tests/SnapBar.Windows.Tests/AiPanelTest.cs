@@ -155,6 +155,7 @@ internal static class AiPanelTest
                 panel.Close(); panel = null;
 
                 await AiPromptEditorTest.RunAsync(preferences, directory, Check, Snapshot);
+                await AiToolboxTest.RunAsync(directory, Check, Snapshot);
 
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate();
                 var english = string.Join(" ", Enumerable.Repeat("A reading panel should keep natural spacing between words as a paragraph wraps across several lines. The document can become longer without stretching each line to meet the right edge. Readers should be able to follow the text and reach its final sentence.", 4)) + " Final English sentence.";

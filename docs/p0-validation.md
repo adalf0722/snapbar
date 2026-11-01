@@ -666,3 +666,15 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 服務狀態另以唯讀方式檢查實際 ai.json：透過正式 AiSettingsStore 成功載入、所選服務具有模型 ID，本輪前後檔案雜湊一致。沒有重設或改寫使用者服務設定，亦未輸出網址、模型值、指令內容或金鑰。不能用目前狀態回推先前截圖顯示「設定 AI 服務」時的原因。所有新增保存測試都使用隔離目錄，沒有呼叫真實模型；既有實體 IME、混合 DPI 及第三方 App 覆蓋限制維持。
 
 已使用上述成功桌面報告完成自含式發佈，Core 389、Probe smoke 10 通過；新版 `artifacts/p0` 正常啟動後回到系統匣。啟動後再次確認 ai.json 載入成功、模型存在及檔案雜湊不變。發佈報告：`artifacts/checks/build/20261101T090622366Z-6b0da336a4394582825c5b03856a206f/report.json`；舊套件保留於 `artifacts/publish/b5b33983b43e4f4ca70b48b1dcdc79ef/previous`。
+
+## 2026-11-01 AI toolbox 雙區工具箱與鍵盤操作
+
+依使用者選定的雙區工具箱方案，左右改為等高白底細框區域，保留 18 DIP 間距；右側閱讀區移除重複內框。左側標示「AI 指令」，改為雙欄中性按鈕格，常態即有底色與外框，滑入及鍵盤焦點提供回饋。沿用釘選／最近使用排序及分類／搜尋，移除打斷格線的群組標題。長名稱最多顯示兩行，完整名稱保留於提示與輔助資訊。釘選、編輯、刪除仍可使用；五個預設指令在正常尺寸完整顯示。
+
+指令框結尾按 Down 進入第一個指令，Up／Down 依欄移動、Left／Right 依列移動，列邊界不環繞，末列缺格時 Down 可到最後一個指令。Up 從首列回輸入框，Enter 執行，Esc 從指令或管理按鈕回到輸入框且保留草稿。鍵盤焦點自動捲入可視區，釘選改變排序後以指令識別碼恢復焦點；處理中的指令顯示「處理中…」並暫停重複執行。原有 IME、Ctrl+Enter、原文／結果切換及來源安全規則維持。
+
+新增 24 項工具箱檢查，涵蓋分區幾何、雙欄排列、方向鍵及缺格邊界、Esc 草稿保留、釘選焦點、單一／空搜尋、分類、Enter 單次執行、忙碌狀態、長名稱、32 個指令捲動到末項與最小視窗控制項。相同最終原始碼的 Release + Layout 全部通過：Lifecycle 28、Appearance 60、CompatibilitySlow 22（含真實 35 秒腳本）、AiRuntime 35、AiPanel 80、Layout 22、Preflight 1。報告：`artifacts/checks/desktop/20261101T093324360Z-d9e82a3240434b87b48144809bbe5e80/report.json`。快速檢查另通過工具契約 12、Core 389，建置零警告／零錯誤。
+
+已目視核對 `artifacts/ai-panel/original.png`、`readonly-result.png`、`toolbox-long-name.png`、`toolbox-many-small.png` 及長文閱讀截圖。測試使用隔離設定與模擬回應，沒有呼叫真實模型；實體 IME、混合 DPI 與第三方 App 覆蓋限制仍沿用前節。發佈前使用者 ai.json 雜湊與前輪記錄一致，未改寫服務或指令設定。
+
+已使用上述成功桌面報告完成自含式 staging 發佈，Core 389、Probe smoke 10 通過。新版 `artifacts/p0` 正常啟動，確認既有偏好後回到系統匣，ai.json 雜湊保持不變。發佈報告：`artifacts/checks/build/20261101T093502525Z-dcf12795ad3c4a3f90605e842dad04a4/report.json`；舊套件保留於 `artifacts/publish/a97826e1fb644b90852a6dfa52f90468/previous`。

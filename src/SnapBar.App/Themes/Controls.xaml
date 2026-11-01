@@ -108,11 +108,13 @@
     </Style>
 
     <Style x:Key="AiPromptRow" TargetType="Border">
-        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Background" Value="#F6F7F9" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlLine}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource ControlHover}" /></Trigger>
-            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="Background" Value="{DynamicResource ControlHover}" /></Trigger>
+            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#EDF2FF" /><Setter Property="BorderBrush" Value="#A8BDEA" /></Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="Background" Value="#EDF2FF" /><Setter Property="BorderBrush" Value="{DynamicResource ControlAccent}" /></Trigger>
         </Style.Triggers>
     </Style>
 
@@ -121,6 +123,7 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Style.Triggers>
+            <Trigger Property="Tag" Value="Pinned"><Setter Property="Opacity" Value="1" /></Trigger>
             <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger>
             <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=Border}}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger>
             <DataTrigger Binding="{Binding ContextMenu.IsOpen, RelativeSource={RelativeSource Self}}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger>
