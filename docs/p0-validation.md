@@ -759,3 +759,14 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 已目視核對 `artifacts/ai-panel/original.png`、`icon-picker-common.png`、`icon-picker-all.png`、`icon-picker-search.png`、`icon-picker-small.png`、`prompt-editor-fluent.png` 與小視窗截圖。實體 IME、混合 DPI 與第三方 App 覆蓋限制仍沿用前節。所有新測試使用隔離設定，沒有呼叫付費服務；真實 ai.json 發佈前的雜湊與前輪一致，未自動改寫使用者設定。
 
 已用成功的完整桌面報告完成自含式發佈，Core 389、Probe smoke 10 通過；新版正常啟動後回到系統匣，ai.json 雜湊仍保持不變。發佈報告：`artifacts/checks/build/20261101T100303622Z-85ed9b180420424cbe957933161d0393/report.json`；舊套件保留於 `artifacts/publish/74a2023432d744aab6fdfa48318b80ea/previous`。更新後套件於附加本段前為 330,039,963 bytes，比基準 326,747,611 bytes 增加 3,292,352 bytes，約 1.01%；包含程式、圖庫、符號與驗證文件的整體差異，非壓縮下載大小。
+## 2026-11-02 自訂動作圖示選擇驗證
+
+自訂動作使用名稱旁的圖示按鈕開啟共用模態圖庫。已驗證選擇更新草稿、關閉／取消／Escape 不改原選擇、返回焦點、類型切換保留選擇，以及表單尺寸與內容位置不被圖庫推移。僅儲存動作才產生正式變更；內建動作及 AI 指令沿用原有行為。
+
+最終程式與測試原始碼通過 `pwsh -NoProfile -File scripts/check.ps1`：工具契約 12、Core 420，Release 建置零警告／零錯誤。報告：`artifacts/checks/build/20261101T235143564Z-90194d98ae39410c9f946c1f87c5d45e/report.json`。隨後以 PowerShell 陣列直接執行 `& ./scripts/test-desktop.ps1 -Suite Appearance,Actions,Layout,Keyboard,AiPanel`，依序通過 Appearance 164、Actions 66、Layout 262、Keyboard 21、AiPanel 130、Preflight 1，全部零失敗；報告：`artifacts/checks/desktop/20261101T235148947Z-a6dfa7ac9fac4b9e831d7bfb543c08e1/report.json`。該報告記錄來源指紋 `78D7131655ACA2C15C7957E01400BEC811670C4BAF6EE7F58EF4A30B093EA567`；之後僅更新驗證文件與計畫狀態。
+
+Core 新增直接序列化外部 JSON envelope 的匯入案例，不先經 Export 清理：未知合法及 legacy ID 保留；空值、空白、路徑、中文、控制字元及超過 128 字元退回 spark。桌面測試使用正式 `SettingsStore`／`ApplicationSettings.Actions`（專案沒有 `ActionPreferences` 類別）及可丟棄目錄，驗證所選 Fluent ID 保存／重新載入／Export／Import 一致，實際選圖後取消編輯不寫入設定，其他動作相等，AI 設定檔 bytes 完全一致。未修改使用者偏好；測試前後均無 SnapBar.App／SnapBar.Probe 程序殘留。
+
+以既有 snapshot helper 保存並逐張目視檢查 `artifacts/ui-polish/editor-custom-icon.png`、`editor-custom-icon-small.png`、`editor-custom-icon-picker.png`，以及 `action-icons-{settings,popup}-{Dark,Light}-{Bar,More}.png` 共八張：名稱與圖示對齊，最小視窗仍能操作儲存／取消，圖庫搜尋與取消可見，清單 Accent 與深淺色動作列／更多選單前景色一致，未知合法 ID 顯示星芒且資料保留。Layout 另涵蓋僅圖示模式、停用動作及內建圖示。
+
+本輪為同機 WPF fixture 與離線圖庫驗證；96 DPI snapshot 不等同實體多螢幕測試。未新增 125%／150%／200% 或混合 DPI、實體 IME、瀏覽器／Office／Sublime 等第三方 App 的人工覆蓋；既有來源安全限制維持。本輪未發佈套件。

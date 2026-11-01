@@ -254,6 +254,7 @@ internal static class UiAppearanceTest
                     {
                         var picker = editor.OwnedWindows.Cast<Window>().OfType<AiIconPickerWindow>().Single();
                         Check(picker.Owner == editor && System.Windows.Interop.ComponentDispatcher.IsThreadModal, "custom icon picker is owned and modal");
+                        Snapshot(picker, "editor-custom-icon-picker.png");
                         operate(picker);
                         Check(!picker.IsVisible, "custom icon picker closes after selection or dismissal");
                     });
@@ -278,6 +279,8 @@ internal static class UiAppearanceTest
                     && draftContent.TranslatePoint(new Point(), editor) == beforePosition && new Size(editor.ActualWidth, editor.ActualHeight) == beforeSize,
                     "custom picker preserves drafts editor size and content position");
                 Snapshot(editor, "editor-custom-icon.png");
+                editor.Width = editor.MinWidth; editor.Height = editor.MinHeight; editor.UpdateLayout();
+                Snapshot(editor, "editor-custom-icon-small.png");
                 foreach (var dismiss in new[] { "close", "cancel", "escape" })
                 {
                     OpenPicker(p =>
@@ -310,6 +313,34 @@ internal static class UiAppearanceTest
                     Children<Button>(selectedDialog).Single(b => AutomationProperties.GetName(b) == "儲存動作").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 });
                 Check(selectedDialog.ShowDialog() == true && selectedDialog.SavedAction?.Icon == "translate_20_regular", "explicit Save returns the selected custom icon");
+                var fixtureStore = new SettingsStore(Path.Combine(directory, "icon-persistence", "settings.json"));
+                var fixtureSettings = fixtureStore.Load().Settings;
+                var otherAction = script with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "Untouched fixture", Icon = "legacy:globe" };
+                fixtureStore.Save(fixtureSettings with { Actions = fixtureSettings.Actions with { CustomActions = [script, otherAction] } });
+                var aiDirectory = Path.Combine(directory, "icon-persistence");
+                var aiPreferences = new AiPreferences(aiDirectory);
+                Check(aiPreferences.TrySave(aiPreferences.Settings, out _), "custom icon persistence creates disposable AI fixture");
+                var aiBytes = File.ReadAllBytes(Path.Combine(aiDirectory, "ai.json"));
+                var beforeCancel = File.ReadAllBytes(fixtureStore.FilePath);
+                var cancelled = new ActionEditorWindow(script) { Owner = editor };
+                cancelled.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+                {
+                    cancelled.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+                        cancelled.OwnedWindows.Cast<Window>().OfType<AiIconPickerWindow>().Single().ChooseIcon.Execute("translate_20_regular"));
+                    Children<Button>(cancelled).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionChooseIcon").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    cancelled.Close();
+                });
+                Check(cancelled.ShowDialog() != true && cancelled.SavedAction == null
+                    && beforeCancel.SequenceEqual(File.ReadAllBytes(fixtureStore.FilePath)), "cancelled custom icon draft leaves persisted actions unchanged");
+                var savedSettings = fixtureStore.Load().Settings;
+                fixtureStore.Save(savedSettings with { Actions = savedSettings.Actions with { CustomActions = [selectedDialog.SavedAction!, otherAction] } });
+                var reloadedActions = new SettingsStore(fixtureStore.FilePath).Load();
+                var persistedAction = reloadedActions.Settings.Actions.CustomActions.Single(a => a.Id == script.Id);
+                Check(reloadedActions.Warning == null && persistedAction.Icon == "translate_20_regular"
+                    && CustomActionPolicy.Import(CustomActionPolicy.Export(persistedAction)).Icon == persistedAction.Icon
+                    && reloadedActions.Settings.Actions.CustomActions.Single(a => a.Id == otherAction.Id) == otherAction
+                    && aiBytes.SequenceEqual(File.ReadAllBytes(Path.Combine(aiDirectory, "ai.json"))),
+                    "saved custom icon survives production settings reload and export import without changing other actions or AI data");
                 var savedDialog = new ActionEditorWindow(script with { UseSelection = false }) { Owner = editor };
                 savedDialog.Loaded += (_, _) => Children<Button>(savedDialog).Single(b => AutomationProperties.GetName(b) == "儲存動作").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(savedDialog.ShowDialog() == true && savedDialog.SavedAction?.UseSelection == false,

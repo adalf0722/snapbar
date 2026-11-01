@@ -162,6 +162,18 @@ internal static class ActionCatalogTests
             return ActionCatalog.Normalize(settings with { CustomActions = [changed] }).CustomActions[0].Icon.Length == 128
                 && CustomActionPolicy.Import(CustomActionPolicy.Export(changed)).Icon.Length == 128;
         });
+        foreach (var externalIcon in new string?[] { "future_icon_20_regular", "legacy:globe", "bad icon", "../icon", "\u5716\u793a", new string('a', 129), null, "control\nicon" })
+        {
+            check("external JSON import normalizes icon " + externalIcon?.Length, () =>
+            {
+                // Serialize the external envelope directly: Export must not sanitize this fixture first.
+                var json = System.Text.Json.JsonSerializer.Serialize(new { Version = 2, Action = action with { Icon = externalIcon! } },
+                    new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+                var imported = CustomActionPolicy.Import(json);
+                return imported.Icon == (externalIcon is "future_icon_20_regular" or "legacy:globe" ? externalIcon : "spark")
+                    && imported.Name == action.Name && imported.Content == action.Content;
+            });
+        }
         check("timeout upper boundary accepts 300 seconds", () => CustomActionPolicy.Validate(action with { TimeoutSeconds = 300 }) == null);
         int invalidCase = 0;
         foreach (var invalid in new ActionSettings[] {
