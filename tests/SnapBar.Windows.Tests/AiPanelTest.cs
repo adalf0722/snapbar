@@ -154,6 +154,8 @@ internal static class AiPanelTest
                 var stored = File.ReadAllText(Path.Combine(directory, "ai.json")); Check(!stored.Contains("third result") && !stored.Contains("new draft") && !stored.Contains(snapshot.Text), "AI persisted settings omit source drafts and results");
                 panel.Close(); panel = null;
 
+                await AiPromptEditorTest.RunAsync(preferences, directory, Check, Snapshot);
+
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate();
                 var english = string.Join(" ", Enumerable.Repeat("A reading panel should keep natural spacing between words as a paragraph wraps across several lines. The document can become longer without stretching each line to meet the right edge. Readers should be able to follow the text and reach its final sentence.", 4)) + " Final English sentence.";
                 var chinese = string.Concat(Enumerable.Repeat("閱讀長文時，文字應自然換行，保留原有內容及標點。較長的結果可以捲動閱讀，最後一行也應完整顯示。", 12)) + "中文最後一句。";

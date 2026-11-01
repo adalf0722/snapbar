@@ -85,6 +85,16 @@
         </Setter>
     </Style>
 
+    <DataTemplate x:Key="AiPromptIconOption">
+        <StackPanel Orientation="Horizontal">
+            <Viewbox Width="16" Height="16">
+                <Path Data="{Binding Geometry}" Width="24" Height="24" Stroke="#626B78" StrokeThickness="1.6"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+            </Viewbox>
+            <TextBlock Text="{Binding Label}" FontSize="13" Margin="9,0,0,0" VerticalAlignment="Center" />
+        </StackPanel>
+    </DataTemplate>
+
     <Style x:Key="AiViewTab" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
