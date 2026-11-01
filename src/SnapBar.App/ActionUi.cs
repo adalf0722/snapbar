@@ -75,8 +75,20 @@ internal static class ActionUi
             foreach (var child in content.Children)
             {
                 if (child is TextBlock text) text.Foreground = foreground;
-                if (child is Viewbox { Child: Path path }) path.Stroke = foreground;
+                if (child is AiIconPresenter presenter) presenter.Foreground = foreground;
+                else if (child is Viewbox { Child: Path path }) path.Stroke = foreground;
             }
+    }
+
+    public static void ReplaceCustomIcon(Button button, ActionItem item)
+    {
+        if (item.Custom == null) return;
+        var content = (StackPanel)button.Content;
+        var previous = (FrameworkElement)content.Children[0];
+        var replacement = ItemIcon(item, Ink, previous.Width);
+        replacement.Margin = previous.Margin;
+        content.Children.RemoveAt(0);
+        content.Children.Insert(0, replacement);
     }
 
     public static void LoadStyles(FrameworkElement element) => element.Resources.MergedDictionaries.Add(new ResourceDictionary

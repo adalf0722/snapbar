@@ -120,11 +120,10 @@ public sealed class PopupWindow : Window
         foreach (var item in chosen.Concat(ActionCatalog.GetItems(settings).Where(a => !shown.Contains(a.Id))))
         {
             var button = ActionUi.Button(settings.ShowLabels ? item.Name : "", () => Dispatch(item), item.Icon);
+            ActionUi.ReplaceCustomIcon(button, item);
             button.Tag = item; button.Height = 36; button.Margin = new(1); button.Padding = new(9, 6, 9, 6); button.BorderThickness = new(0);
             button.Background = Brushes.Transparent; button.Focusable = false; button.IsTabStop = false;
-            var stack = (StackPanel)button.Content;
-            if (stack.Children[0] is Viewbox icon) ((System.Windows.Shapes.Path)icon.Child).Stroke = fg;
-            foreach (var text in stack.Children.OfType<TextBlock>()) text.Foreground = fg;
+            ActionUi.TintButton(button, dark);
             button.ToolTip = item.Name; AutomationProperties.SetName(button, item.Name);
             button.Visibility = shown.Contains(item.Id) ? Visibility.Visible : Visibility.Collapsed; button.IsEnabled = ActionCatalog.IsApplicable(item, snapshot);
             if (item.BuiltIn is { } action)
@@ -215,6 +214,7 @@ public sealed class PopupWindow : Window
             pin.IsEnabled = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < 6;
             DockPanel.SetDock(pin, Dock.Right); line.Children.Add(pin);
             var button = ActionUi.Button(item.Name, () => { if (ActionCatalog.IsApplicable(item, snapshot)) Dispatch(item); }, item.Icon); button.Focusable = false; button.IsTabStop = false;
+            ActionUi.ReplaceCustomIcon(button, item);
             button.BorderThickness = new(0); button.Margin = new(0); AutomationProperties.SetAutomationId(button, "MoreAction_" + item.Id);
             button.Background = surface; button.HorizontalContentAlignment = HorizontalAlignment.Left; ActionUi.TintButton(button, dark);
             button.IsEnabled = ActionCatalog.IsApplicable(item, snapshot)

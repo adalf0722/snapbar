@@ -158,7 +158,7 @@ internal sealed class ActionSettingsPanel : ContentControl
             element.ToolTip = item.BuiltIn switch
             { TextAction.OpenLink => "僅選取完整網址時顯示", TextAction.RevealPath => "僅選取完整路徑時顯示",
                 TextAction.Cut or TextAction.Paste => "僅可編輯來源時顯示", _ => item.Name };
-            element.Children.Add(ActionUi.Icon(item.Icon, dark ? Brushes.White : ActionUi.Ink, 17));
+            element.Children.Add(ActionUi.ItemIcon(item, dark ? Brushes.White : ActionUi.Ink, 17));
             if (settings.ShowLabels) { var label = ActionUi.Text(item.Name, 13, dark ? Brushes.White : ActionUi.Ink); label.Margin = new(7, 0, 0, 0); element.Children.Add(label); } preview.Children.Add(element);
         }
         var dots = ActionUi.Text("⋯", 18, dark ? Brushes.White : ActionUi.Ink); dots.Margin = new(12, 5, 12, 5); preview.Children.Add(dots);
@@ -179,7 +179,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                 AutomationProperties.SetAutomationId(row, "ActionRow_" + item.Id);
                 row.ColumnDefinitions.Add(new() { Width = placement == ActionPlacement.Bar ? new(24) : new(0) });
                 row.ColumnDefinitions.Add(new() { Width = new(36) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto }); row.ColumnDefinitions.Add(new() { Width = new(125) });
-                var image = ActionUi.Icon(item.Icon, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
+                var image = ActionUi.ItemIcon(item, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
                 var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(item.Name, 14));
                 if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind.ToString(), 12, ActionUi.Muted));
                 if (item.BuiltIn == TextAction.Search && editSearch != null)

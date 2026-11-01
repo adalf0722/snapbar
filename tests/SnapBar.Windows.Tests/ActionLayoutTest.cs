@@ -133,6 +133,7 @@ internal static class ActionLayoutTest
                 RestoreButton().RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); window.UpdateLayout();
                 Check(!RestoreButton().IsVisible && current.CustomActions.Contains(retry) && Children<TextBlock>(window).Any(t => t.Text.Contains("無法保存")),
                     "restore applies for the session while retaining a failed save warning");
+                CheckChosenIcons(Check, snapshot);
                 result = 0;
             }
             catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }
@@ -144,5 +145,91 @@ internal static class ActionLayoutTest
             }
         };
         app.Run(); return result;
+    }
+
+    private static void CheckChosenIcons(Action<bool, string> check, SelectionSnapshot snapshot)
+    {
+        var icons = new[] { "legacy:globe", "translate_20_regular", "future_icon_20_regular" };
+        var actions = icons.Select((icon, i) => new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"),
+            "Icon " + i, CustomActionKind.JavaScript, icon, "return selection;", ActionOutput.ReplaceSelection)).ToArray();
+        var popup = new PopupWindow();
+        try
+        {
+            foreach (var theme in new[] { "Dark", "Light" })
+            foreach (var labels in new[] { true, false })
+            foreach (var placement in new[] { ActionPlacement.Bar, ActionPlacement.More })
+            {
+                var settings = ActionCatalog.Normalize(new ActionSettings
+                {
+                    CustomActions = actions, Theme = theme, ShowLabels = labels,
+                    Layout = [new("copy", ActionPlacement.Bar), new("search", ActionPlacement.Bar),
+                        new("cut", ActionPlacement.More), new("paste", ActionPlacement.More),
+                        .. actions.Select(a => new ActionLayoutEntry(a.Id, placement))]
+                });
+                var foreground = theme == "Dark" ? Brushes.White : ActionUi.Ink;
+                bool Color(Brush actual, Brush expected) => actual.ToString() == expected.ToString();
+                void AssertIcon(DependencyObject surface, string icon, Brush color, string name)
+                {
+                    var presenter = Children<AiIconPresenter>(surface).Single();
+                    check(presenter.IconId == icon && presenter.Child != null && Color(presenter.Foreground, color), name);
+                    if (icon == icons[2])
+                        check(presenter.Child is Viewbox { Child: System.Windows.Shapes.Path { Data: not null } }, name + " unknown identifier renders fallback");
+                    if (icon == icons[1])
+                        check(presenter.Child is TextBlock { Text.Length: > 0 } glyph && Color(glyph.Foreground, color), name + " Fluent glyph is tinted");
+                }
+                var label = $"{theme} labels={labels} {placement}";
+                var settingsWindow = new ActionSettingsWindow(settings, _ => true);
+                try
+                {
+                    settingsWindow.Show(); settingsWindow.UpdateLayout();
+                    Children<RadioButton>(settingsWindow).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
+                    settingsWindow.UpdateLayout();
+                    foreach (var action in actions)
+                    {
+                        var row = Children<Grid>(settingsWindow).Single(g => AutomationProperties.GetAutomationId(g) == "ActionRow_" + action.Id);
+                        AssertIcon(row, action.Icon, ActionUi.Accent, label + " settings list " + action.Icon);
+                        if (placement != ActionPlacement.Bar) continue;
+                        var preview = Children<StackPanel>(settingsWindow).Single(p => AutomationProperties.GetAutomationId(p) == "ActionBarPreview_" + action.Id);
+                        AssertIcon(preview, action.Icon, foreground, label + " preview " + action.Icon);
+                        check(Children<TextBlock>(preview).Any(t => t.Text == action.Name) == labels, label + " preview labels");
+                    }
+                    if (labels) UiAppearanceTest.Snapshot(settingsWindow, $"action-icons-settings-{theme}-{placement}.png");
+                }
+                finally { settingsWindow.Close(); }
+                popup.Present(snapshot, 100, 100, actionSettings: settings);
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                popup.UpdateLayout();
+                foreach (var action in actions)
+                {
+                    var id = placement == ActionPlacement.Bar ? "CustomAction_" : "MoreAction_";
+                    var button = Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == id + action.Id);
+                    AssertIcon(button, action.Icon, foreground, label + " popup " + action.Icon);
+                    check(button.IsVisible && button.IsEnabled && !button.Focusable && !button.IsTabStop, label + " popup action availability and focus");
+                    var content = (StackPanel)button.Content;
+                    check(content.Children.OfType<TextBlock>().Any(t => t.Text == action.Name) == (labels || placement == ActionPlacement.More)
+                        && ((FrameworkElement)content.Children[0]).Margin.Right == (labels || placement == ActionPlacement.More ? 7 : 0), label + " popup labels and icon margin");
+                }
+                foreach (var action in new[] { TextAction.Copy, TextAction.Search })
+                {
+                    var button = popup.FindActionButton(action);
+                    check(((StackPanel)button.Content).Children[0] is Viewbox { Child: System.Windows.Shapes.Path path }
+                        && Color(path.Stroke, foreground), label + " builtin " + action + " retains tinted path");
+                }
+                if (labels) UiAppearanceTest.Snapshot(popup, $"action-icons-popup-{theme}-{placement}.png");
+                var disabledSettings = settings with { Layout = settings.Layout.Select(e => actions.Any(a => a.Id == e.Id)
+                    ? e with { Placement = ActionPlacement.More } : e).ToArray() };
+                popup.Present(snapshot with { Text = "" }, 100, 100, actionSettings: disabledSettings);
+                Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                popup.UpdateLayout();
+                foreach (var action in actions)
+                {
+                    var button = Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreAction_" + action.Id);
+                    AssertIcon(button, action.Icon, foreground, label + " disabled popup " + action.Icon);
+                    check(!button.IsEnabled, label + " unavailable action remains disabled");
+                }
+                popup.Dismiss();
+            }
+        }
+        finally { popup.Close(); }
     }
 }
