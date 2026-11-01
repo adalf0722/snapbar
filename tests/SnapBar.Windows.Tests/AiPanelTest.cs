@@ -66,6 +66,20 @@ internal static class AiPanelTest
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate(); await Task.Delay(100);
                 Check(panel.Session.ViewingOriginal && !Button(panel, "AiResultTab").IsEnabled && Children<TextBox>(panel).Any(t => t.Text == snapshot.Text && t.IsReadOnly), "AI opens with literal original and no empty result page");
                 Check(!Children<Expander>(panel).Single().IsExpanded, "AI category filter starts collapsed"); Snapshot(panel, "original.png");
+                var list = Children<ScrollViewer>(panel).Single(s => AutomationProperties.GetAutomationId(s) == "AiCommandList");
+                var initialCommands = Children<Button>(panel).Where(b => AutomationProperties.GetAutomationId(b).StartsWith("AiPrompt_", StringComparison.Ordinal)).ToArray();
+                Check(initialCommands.Length == 5 && list.ScrollableHeight < 1
+                    && initialCommands.All(b => b.TranslatePoint(new Point(), list).Y >= 0 && b.TranslatePoint(new Point(0, b.ActualHeight), list).Y <= list.ViewportHeight + 1),
+                    "AI standard window fully shows all five default commands without scrolling");
+                TextBlock Text(string id) => Children<TextBlock>(panel).Single(t => AutomationProperties.GetAutomationId(t) == id);
+                Check(Text("AiSourceStatus").Text.Contains("複製原文") && !Text("AiSourceStatus").Text.Contains("複製結果"),
+                    "AI readonly original status refers to original text");
+                var initialInputY = panel.CommandInput.TranslatePoint(new Point(), panel).Y;
+                var initialInputHeight = panel.CommandInput.ActualHeight;
+                panel.CommandInput.Text = string.Join("\n", Enumerable.Repeat("Multiline instruction", 8)); panel.UpdateLayout();
+                Check(panel.CommandInput.ActualHeight > initialInputHeight && panel.CommandInput.ActualHeight <= 120,
+                    "AI instruction input grows for multiline text with a bounded height"); Snapshot(panel, "multiline-input.png");
+                panel.CommandInput.Clear(); panel.UpdateLayout();
                 Button(panel, "AiPrompt_improve").Focus(); await Task.Delay(40);
                 var pinTool = Button(panel, "AiPin_improve");
                 Check(pinTool.Opacity == 1 && pinTool.Focus() && pinTool.IsKeyboardFocused,
@@ -79,11 +93,21 @@ internal static class AiPanelTest
                 Check(Children<Button>(panel).Any(b => AutomationProperties.GetAutomationId(b) == "AiPrompt_translate-en"), "AI search ignores current browsing category");
                 await panel.SubmitAsync("Translate to English", "translate-en");
                 Check(panel.Session.Current?.Text == "A clearer English version." && panel.CommandInput.Text.Length == 0 && panel.Session.BasisId == panel.Session.Current.Id, "AI completion consumes submitted search and prepares continuation");
+                panel.UpdateLayout();
+                Check(Math.Abs(panel.CommandInput.TranslatePoint(new Point(), panel).Y - initialInputY) < 1,
+                    "AI input position stays fixed when continuation controls appear");
+                Check(Text("AiExecutionLabel").Text == "· 翻成英文" && !Button(panel, "AiPreviousVersion").IsVisible && !Button(panel, "AiNextVersion").IsVisible,
+                    "AI first saved-command result uses its name and hides unnecessary history arrows"); Snapshot(panel, "saved-command-result.png");
                 string? seenSource = null; client.Handler = (source, _, _) => { seenSource = source; return Task.FromResult(new AiTextResult(true, "Clear English.")); };
                 panel.CommandInput.Text = "再短一點"; await panel.SubmitAsync(panel.CommandInput.Text);
                 Check(seenSource == "A clearer English version." && panel.Session.Current?.BasisLabel == "第 1 版", "AI next rewrite uses prior result rather than original");
+                Check(Text("AiExecutionLabel").Text == "· 自訂指令" && Button(panel, "AiPreviousVersion").IsVisible,
+                    "AI free instructions use a friendly label and multiple versions expose history");
                 var delayed = new TaskCompletionSource<AiTextResult>(TaskCreationOptions.RunContinuationsAsynchronously);
                 client.Handler = (_, _, _) => delayed.Task; panel.CommandInput.Text = "pending"; var pending = panel.SubmitAsync("pending");
+                panel.UpdateLayout();
+                Check(Math.Abs(panel.CommandInput.TranslatePoint(new Point(), panel).Y - initialInputY) < 1,
+                    "AI progress and stop controls preserve input position while processing");
                 panel.CommandInput.Text = "new draft"; Button(panel, "AiOriginalTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 delayed.SetResult(new(true, "third result")); await pending;
                 Check(panel.CommandInput.Text == "new draft" && panel.Session.ViewingOriginal && panel.Session.HasNewResult && panel.Session.BasisLabel == "第 2 版", "AI completion preserves new draft and explicit original view");
@@ -112,6 +136,10 @@ internal static class AiPanelTest
                 delayed = new(TaskCreationOptions.RunContinuationsAsynchronously); client.Handler = (_, _, _) => delayed.Task;
                 pending = panel.SubmitAsync("late"); panel.InvalidateTarget(); delayed.SetResult(new(true, "late ignored")); await pending;
                 Check(panel.Session.Current?.Text == "third result" && !panel.TargetValid, "AI invalidated target rejects a client completion that ignored cancellation");
+                Button(panel, "AiOriginalTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(Text("AiSourceStatus").Text.Contains("複製原文"), "AI invalidated original status still matches its copy action");
+                Button(panel, "AiResultTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(Text("AiSourceStatus").Text.Contains("複製結果"), "AI invalidated result status matches its copy action");
                 var settingsDialog = new AiSettingsWindow(preferences) { Owner = panel }; settingsDialog.Show(); settingsDialog.Activate();
                 var settingsHandle = new WindowInteropHelper(settingsDialog).Handle; Native.SetForegroundWindow(settingsHandle);
                 Console.WriteLine("WAITING: activate SnapBar · AI 設定 if necessary (up to 60 seconds)");
