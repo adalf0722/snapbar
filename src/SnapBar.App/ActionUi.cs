@@ -3,6 +3,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using SnapBar.Core;
 
 namespace SnapBar.App;
 
@@ -41,6 +42,9 @@ internal static class ActionUi
             Stroke = color ?? Ink, StrokeThickness = 1.6, StrokeStartLineCap = PenLineCap.Round,
             StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 24, Height = 24 }
     };
+    public static FrameworkElement ItemIcon(ActionItem item, Brush color, double size = 18) =>
+        item.Custom == null ? Icon(item.Icon, color, size)
+            : new AiIconPresenter { IconId = item.Icon, Foreground = color, Width = size, Height = size };
     public static TextBlock Text(string value, double size = 14, Brush? color = null) => new()
     { Text = value, FontSize = Math.Max(12, size), FontFamily = Font, Foreground = color ?? Ink, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     public static Button Button(string label, Action click, string? icon = null, bool primary = false)

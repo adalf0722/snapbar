@@ -50,6 +50,32 @@ internal static class AiIconTest
         var supplementary = catalog.First(i => i.Codepoint > 0xffff); var presenter = new AiIconPresenter { IconId = supplementary.Id };
         check(presenter.Child is TextBlock text && text.Text.Length == 2 && char.ConvertToUtf32(text.Text, 0) == supplementary.Codepoint,
             "AI supplementary-plane Fluent glyphs preserve their full Unicode codepoint");
+        check(ReferenceEquals(presenter.Foreground, ActionUi.Muted), "AI icon presenter retains the muted default color");
+        presenter.Foreground = Brushes.White;
+        check(presenter.Child is TextBlock themedGlyph && ReferenceEquals(themedGlyph.Foreground, Brushes.White),
+            "AI Fluent glyph updates its foreground after a theme color change");
+        foreach (var iconId in new[] { "legacy:translate", "translate", "unknown-icon-fixture" })
+        {
+            presenter.IconId = iconId;
+            var expected = (Viewbox)ActionUi.Icon(iconId == "unknown-icon-fixture" ? "spark" : "translate");
+            check(presenter.Child is Viewbox { Child: System.Windows.Shapes.Path vector }
+                && vector.Data.ToString() == ((System.Windows.Shapes.Path)expected.Child).Data.ToString()
+                && ReferenceEquals(vector.Stroke, Brushes.White),
+                $"AI stored icon {iconId} retains its expected vector and theme color");
+            presenter.Foreground = Brushes.Black;
+            check(presenter.Child is Viewbox { Child: System.Windows.Shapes.Path recolored } && ReferenceEquals(recolored.Stroke, Brushes.Black),
+                $"AI stored icon {iconId} updates its vector color after a theme change");
+            presenter.Foreground = Brushes.White;
+        }
+        presenter.IconId = translate.Id;
+        check(presenter.Child is TextBlock official && official.Text == char.ConvertFromUtf32(translate.Codepoint),
+            "AI official Fluent names render font glyphs after vector icons");
+        var custom = new CustomActionDefinition("icon-fixture", "Icon fixture", CustomActionKind.Url, translate.Id, "https://example.com/***");
+        check(ActionUi.ItemIcon(new ActionItem("custom", "Custom", translate.Id, Custom: custom), Brushes.White, 24)
+                is AiIconPresenter { Width: 24, Height: 24, Child: TextBlock customGlyph } && ReferenceEquals(customGlyph.Foreground, Brushes.White)
+            && ActionUi.ItemIcon(new ActionItem("copy", "Copy", "copy"), Brushes.Black) is Viewbox { Child: System.Windows.Shapes.Path builtIn }
+                && ReferenceEquals(builtIn.Stroke, Brushes.Black),
+            "AI shared action icon factory uses themed presenters for custom actions and vectors for built-ins");
         check(AiIconCatalog.Search("翻譯", "程式").Any(i => i.Id == translate.Id) && AiIconCatalog.Search("摘要", "全部圖示").Any(i => i.Id == "text_bullet_list_20_regular")
             && AiIconCatalog.Search("", "程式").All(i => i.Category == "程式"),
             "AI Fluent Chinese search crosses categories while browsing filters remain effective");
@@ -69,6 +95,7 @@ internal static class AiIconTest
         try
         {
             timer.Restart(); picker = new(translate.Id); picker.Show(); picker.Activate(); await Layout(picker); timer.Stop();
+            check(picker.Title == "選擇圖示", "AI shared icon picker uses a generic title");
             Console.WriteLine($"ICON METRIC picker-first-layout-ms={timer.Elapsed.TotalMilliseconds:F2}"); snapshot(picker, "icon-picker-common.png");
             Find<ComboBox>(picker, "AiIconCategory").SelectedItem = "全部圖示"; await Layout(picker);
             var realized = Enumerable.Range(0, picker.IconGrid.Items.Count).Count(n => picker.IconGrid.ItemContainerGenerator.ContainerFromIndex(n) != null);
