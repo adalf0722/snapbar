@@ -22,9 +22,12 @@ public sealed record ActionItem(string Id, string Name, string Icon, TextAction?
 
 public static class CustomActionPolicy
 {
-    internal static readonly HashSet<string> Icons = ["copy", "cut", "paste", "search", "link", "folder", "globe", "translate", "code", "terminal", "spark", "document", "clean"];
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     private sealed record Envelope(int Version, CustomActionDefinition Action);
+    internal static string NormalizeIcon(string? value) =>
+        value is { Length: > 0 and <= 128 }
+        && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-' or ':')
+            ? value : "spark";
     internal static bool ValidId(string? id) => id is { Length: 39 } && id.StartsWith("custom-", StringComparison.Ordinal)
         && Guid.TryParseExact(id[7..], "N", out _);
 
@@ -65,7 +68,7 @@ public static class CustomActionPolicy
     public static string Export(CustomActionDefinition action)
     {
         if (Validate(action) is { } error) throw new ArgumentException(error, nameof(action));
-        return JsonSerializer.Serialize(new Envelope(2, action with { Icon = Icons.Contains(action.Icon ?? "") ? action.Icon! : "spark" }), JsonOptions);
+        return JsonSerializer.Serialize(new Envelope(2, action with { Icon = NormalizeIcon(action.Icon) }), JsonOptions);
     }
 
     public static CustomActionDefinition Import(string json)
@@ -79,7 +82,7 @@ public static class CustomActionPolicy
             if (envelope?.Version is not (1 or 2) || envelope.Action == null || (envelope.Version == 1 && !envelope.Action.UseSelection))
                 throw new ArgumentException("不支援的動作檔案版本。", nameof(json));
             if (Validate(envelope.Action) is { } error) throw new ArgumentException(error, nameof(json));
-            return envelope.Action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Icon = Icons.Contains(envelope.Action.Icon ?? "") ? envelope.Action.Icon! : "spark" };
+            return envelope.Action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Icon = NormalizeIcon(envelope.Action.Icon) };
         }
         catch (JsonException error) { throw new ArgumentException("動作檔案格式無效。", nameof(json), error); }
     }

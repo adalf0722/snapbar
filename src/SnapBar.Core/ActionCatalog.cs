@@ -18,7 +18,7 @@ public static class ActionCatalog
         var customs = settings.CustomActions.Select(action =>
         {
             if (CustomActionPolicy.Validate(action!) is { } error) throw new ArgumentException(error);
-            return action with { Icon = CustomActionPolicy.Icons.Contains(action.Icon ?? "") ? action.Icon! : "spark" };
+            return action with { Icon = CustomActionPolicy.NormalizeIcon(action.Icon) };
         }).ToArray();
         if (customs.Select(a => a.Id).Distinct(StringComparer.Ordinal).Count() != customs.Length) throw new ArgumentException("動作識別碼重複。");
         var ids = BuiltIns.Select(a => a.Id).Concat(customs.Select(a => a.Id)).ToHashSet(StringComparer.Ordinal);

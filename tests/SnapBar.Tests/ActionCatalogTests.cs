@@ -136,7 +136,32 @@ internal static class ActionCatalogTests
         });
         check("More search matches Chinese names and URL aliases", () =>
             ActionCatalog.GetMore(settings, selection, "翻譯").Count == 1 && ActionCatalog.GetMore(settings, selection, "URL").Count == 1);
-        check("unknown action icons normalize to spark", () => ActionCatalog.Normalize(settings with { CustomActions = [action with { Icon = "unknown" }] }).CustomActions[0].Icon == "spark");
+        foreach (var iconId in new[] { "globe", "terminal", "legacy:clean", "translate_20_regular", "unknown-fixture" })
+        {
+            var expected = iconId;
+            check("custom icon round trip " + expected, () =>
+            {
+                var changed = action with { Icon = expected };
+                return ActionCatalog.Normalize(settings with { CustomActions = [changed] }).CustomActions[0].Icon == expected
+                    && CustomActionPolicy.Import(CustomActionPolicy.Export(changed)).Icon == expected;
+            });
+        }
+        foreach (var iconId in new[] { "", "bad icon", "../icon", "圖示", new string('a', 129), null!, "control\nicon" })
+        {
+            var invalid = iconId;
+            check("invalid custom icon falls back " + invalid?.Length, () =>
+            {
+                var changed = action with { Icon = invalid! };
+                return ActionCatalog.Normalize(settings with { CustomActions = [changed] }).CustomActions[0].Icon == "spark"
+                    && CustomActionPolicy.Import(CustomActionPolicy.Export(changed)).Icon == "spark";
+            });
+        }
+        check("custom icon boundary accepts 128 ASCII characters", () =>
+        {
+            var changed = action with { Icon = new string('a', 128) };
+            return ActionCatalog.Normalize(settings with { CustomActions = [changed] }).CustomActions[0].Icon.Length == 128
+                && CustomActionPolicy.Import(CustomActionPolicy.Export(changed)).Icon.Length == 128;
+        });
         check("timeout upper boundary accepts 300 seconds", () => CustomActionPolicy.Validate(action with { TimeoutSeconds = 300 }) == null);
         int invalidCase = 0;
         foreach (var invalid in new ActionSettings[] {
