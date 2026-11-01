@@ -87,6 +87,53 @@ internal static class ActionCatalogTests
         });
         check("recents keep five distinct known visible actions", () =>
             ActionCatalog.Normalize(settings with { RecentIds = ["missing", "copy", "copy", "cut", "paste", "search", "link", "path"] }).RecentIds.SequenceEqual(new[] { "copy", "cut", "paste", "search", "link" }));
+        check("restoring a deleted action preserves subsequent edits additions order and recents", () =>
+        {
+            var original = ActionCatalog.Remember(ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar), action.Id);
+            var remaining = ActionCatalog.DeleteCustom(original, action.Id, out var deleted);
+            var added = action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "新增動作" };
+            var edited = ActionCatalog.Remember(ActionCatalog.Move(remaining, "copy", 3), "search") with
+                { CustomActions = [added], Theme = "Light", ShowLabels = false };
+            edited = ActionCatalog.Normalize(edited);
+            var restored = ActionCatalog.RestoreCustom(edited, deleted);
+            return restored.Theme == "Light" && !restored.ShowLabels && restored.CustomActions.Contains(added)
+                && restored.CustomActions.Contains(action) && restored.RecentIds.SequenceEqual(edited.RecentIds)
+                && restored.Layout.Where(e => e.Id != action.Id).SequenceEqual(edited.Layout)
+                && ActionCatalog.GetPinned(restored)[4].Id == action.Id;
+        });
+        check("restoring a deleted pinned action uses More when later edits fill the bar", () =>
+        {
+            var original = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar);
+            var remaining = ActionCatalog.DeleteCustom(original, action.Id, out var deleted);
+            remaining = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(remaining, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
+            var restored = ActionCatalog.RestoreCustom(remaining, deleted);
+            return ActionCatalog.GetPinned(restored).SequenceEqual(ActionCatalog.GetPinned(remaining))
+                && restored.Layout.Single(e => e.Id == action.Id).Placement == ActionPlacement.More;
+        });
+        check("restore retains hidden placement and does not resurrect removed recents", () =>
+        {
+            var original = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Hidden);
+            var remaining = ActionCatalog.DeleteCustom(original, action.Id, out var deleted);
+            var restored = ActionCatalog.RestoreCustom(remaining, deleted);
+            return restored.Layout.SequenceEqual(original.Layout) && restored.RecentIds.Length == 0;
+        });
+        check("restore refuses duplicate identities and full custom capacity without changing current actions", () =>
+        {
+            var remaining = ActionCatalog.DeleteCustom(settings, action.Id, out var deleted);
+            var full = ActionCatalog.Normalize(remaining with { CustomActions = Enumerable.Range(0, 32)
+                .Select(_ => action with { Id = "custom-" + Guid.NewGuid().ToString("N") }).ToArray() });
+            return Reject(() => ActionCatalog.RestoreCustom(settings, deleted))
+                && Reject(() => ActionCatalog.RestoreCustom(full, deleted)) && full.CustomActions.Length == 32;
+        });
+        check("deleting builtins is refused and restoring only the latest deletion leaves older deletions removed", () =>
+        {
+            var other = action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "另一動作" };
+            var remaining = ActionCatalog.DeleteCustom(settings with { CustomActions = [action, other] }, action.Id, out _);
+            remaining = ActionCatalog.DeleteCustom(remaining, other.Id, out var latest);
+            var restored = ActionCatalog.RestoreCustom(remaining, latest);
+            return Reject(() => ActionCatalog.DeleteCustom(settings, "copy", out _))
+                && restored.CustomActions.Single() == other;
+        });
         check("More search matches Chinese names and URL aliases", () =>
             ActionCatalog.GetMore(settings, selection, "翻譯").Count == 1 && ActionCatalog.GetMore(settings, selection, "URL").Count == 1);
         check("unknown action icons normalize to spark", () => ActionCatalog.Normalize(settings with { CustomActions = [action with { Icon = "unknown" }] }).CustomActions[0].Icon == "spark");

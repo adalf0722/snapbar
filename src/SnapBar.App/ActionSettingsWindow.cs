@@ -16,10 +16,11 @@ internal sealed class ActionSettingsWindow : Window
     private readonly Func<ActionSettings, bool> save;
     private readonly StackPanel groups = new(), preview = new() { Orientation = Orientation.Horizontal };
     private readonly TextBlock status = ActionUi.Text("", 11, ActionUi.Muted);
-    private ActionSettings? undo;
+    private DeletedCustomAction? undo;
+    private readonly Border deletionNotice = new() { Visibility = Visibility.Collapsed };
+    private readonly TextBlock deletionText = ActionUi.Text("", 13);
     private readonly TextBlock previewHeading = ActionUi.Text("", 11, ActionUi.Muted);
     private readonly Border previewShell = new();
-    private readonly MenuItem undoItem = new() { Header = "復原刪除", IsEnabled = false };
     private readonly Dictionary<ActionPlacement, RadioButton> tabs = new();
     private readonly ScrollViewer listScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private ActionPlacement selectedPlacement = ActionPlacement.Bar;
@@ -32,12 +33,9 @@ internal sealed class ActionSettingsWindow : Window
         var top = new StackPanel(); var tools = new DockPanel { Margin = new(0, 0, 0, 20) };
         var add = ActionUi.Button("新增動作", () => Edit(null), "plus", true); add.VerticalAlignment = VerticalAlignment.Center;
         DockPanel.SetDock(add, Dock.Right); tools.Children.Add(add);
-        var extra = ActionUi.Button("", () => { }, "more"); extra.ToolTip = "動作選項"; extra.VerticalAlignment = VerticalAlignment.Center;
-        AutomationProperties.SetName(extra, "動作選項");
-        var menu = new ContextMenu(); var import = new MenuItem { Header = "匯入動作…" }; import.Click += (_, _) => Import(); menu.Items.Add(import);
-        undoItem.Click += (_, _) => { if (undo != null) { var previous = undo; undo = null; Commit(previous); } }; menu.Items.Add(undoItem);
-        extra.ContextMenu = menu; extra.Click += (_, _) => { menu.PlacementTarget = extra; menu.IsOpen = true; };
-        DockPanel.SetDock(extra, Dock.Right); tools.Children.Add(extra);
+        var import = ActionUi.Button("匯入…", Import); import.VerticalAlignment = VerticalAlignment.Center;
+        AutomationProperties.SetAutomationId(import, "ImportActions");
+        DockPanel.SetDock(import, Dock.Right); tools.Children.Add(import);
         var heading = new StackPanel(); heading.Children.Add(ActionUi.Heading("我的動作", 24));
         var subtitle = ActionUi.Text("把常用動作留在手邊。", 13, ActionUi.Muted); subtitle.Margin = new(0, 5, 0, 0); heading.Children.Add(subtitle);
         tools.Children.Add(heading); top.Children.Add(tools);
@@ -77,19 +75,30 @@ internal sealed class ActionSettingsWindow : Window
         }
         top.Children.Add(navigation);
         DockPanel.SetDock(top, Dock.Top); outer.Children.Add(top);
-        status.Margin = new(0, 10, 0, 0); DockPanel.SetDock(status, Dock.Bottom); outer.Children.Add(status);
+        var footer = new StackPanel();
+        var deletionContent = new DockPanel();
+        var restore = ActionUi.Button("復原", RestoreDeleted);
+        restore.Margin = new(12, 0, 0, 0); DockPanel.SetDock(restore, Dock.Right); deletionContent.Children.Add(restore);
+        AutomationProperties.SetAutomationId(restore, "RestoreDeletedAction");
+        AutomationProperties.SetAutomationId(deletionText, "DeletedActionNotice");
+        deletionContent.Children.Add(deletionText);
+        deletionNotice.Child = ActionUi.Card(deletionContent, new Thickness(12, 8, 12, 8));
+        deletionNotice.Margin = new(0, 10, 0, 0); footer.Children.Add(deletionNotice);
+        status.Margin = new(0, 10, 0, 0); footer.Children.Add(status);
+        DockPanel.SetDock(footer, Dock.Bottom); outer.Children.Add(footer);
         listScroll.Content = groups; outer.Children.Add(listScroll); Content = outer; Render();
     }
 
-    private void Commit(ActionSettings value)
+    private bool Commit(ActionSettings value, string successMessage = "已保存；新增動作預設放在更多選單。")
     {
-        try { settings = ActionCatalog.Normalize(value); var saved = save(settings); status.Text = saved ? "已保存；新增動作預設放在更多選單。" : "本次已生效，但無法保存；請檢查檔案權限或設定大小（64 KiB 上限）。"; Render(); }
-        catch (ArgumentException) { status.Text = "動作列最多六個動作；請先移出一個再加入。"; Render(); }
+        try { settings = ActionCatalog.Normalize(value); var saved = save(settings); status.Text = saved ? successMessage : "本次已生效，但無法保存；請檢查檔案權限或設定大小（64 KiB 上限）。"; Render(); return true; }
+        catch (ArgumentException error) { status.Text = error.Message; Render(); return false; }
     }
 
     private void Render()
     {
-        undoItem.IsEnabled = undo != null;
+        deletionNotice.Visibility = undo == null ? Visibility.Collapsed : Visibility.Visible;
+        deletionText.Text = undo == null ? "" : $"已刪除「{undo.Action.Name}」";
         if (selectedPlacement == ActionPlacement.Hidden && !settings.Layout.Any(e => e.Placement == ActionPlacement.Hidden))
             selectedPlacement = ActionPlacement.More;
         foreach (var (placement, tab) in tabs)
@@ -197,10 +206,25 @@ internal sealed class ActionSettingsWindow : Window
         Add("複製為新動作", () => Edit(action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = action.Name.Length > 28 ? action.Name[..28] + " 副本" : action.Name + " 副本" }));
         Add("匯出…", () => Export(action)); Add("刪除動作", () =>
         {
-            undo = settings;
-            Commit(settings with { CustomActions = settings.CustomActions.Where(a => a.Id != action.Id).ToArray(), Layout = settings.Layout.Where(a => a.Id != action.Id).ToArray(), RecentIds = settings.RecentIds.Where(a => a != action.Id).ToArray() });
-            status.Text = "動作已刪除；可從「動作選項」復原刪除。";
+            var updated = ActionCatalog.DeleteCustom(settings, action.Id, out var deleted);
+            if (Commit(updated, "已保存。")) { undo = deleted; Render(); }
         }); return menu;
+    }
+
+    private void RestoreDeleted()
+    {
+        if (undo is not { } deleted) return;
+        try
+        {
+            var restored = ActionCatalog.RestoreCustom(settings, deleted);
+            var placement = restored.Layout.Single(e => e.Id == deleted.Action.Id).Placement;
+            var message = placement != deleted.Placement ? "動作已復原；動作列已滿，已放入更多選單。" : "動作已復原。";
+            if (Commit(restored, message))
+            {
+                undo = null; selectedPlacement = placement; Render();
+            }
+        }
+        catch (ArgumentException error) { status.Text = error.Message; }
     }
 
     private void Edit(CustomActionDefinition? existing)

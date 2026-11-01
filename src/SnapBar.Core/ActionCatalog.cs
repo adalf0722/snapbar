@@ -1,5 +1,7 @@
 namespace SnapBar.Core;
 
+public sealed record DeletedCustomAction(CustomActionDefinition Action, ActionPlacement Placement, int PlacementIndex);
+
 public static class ActionCatalog
 {
     private static readonly ActionItem[] BuiltIns = [
@@ -110,5 +112,38 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         return Normalize(settings with { RecentIds = new[] { id }.Concat(settings.RecentIds).ToArray() });
+    }
+
+    public static ActionSettings DeleteCustom(ActionSettings settings, string id, out DeletedCustomAction deleted)
+    {
+        settings = Normalize(settings);
+        var action = settings.CustomActions.SingleOrDefault(a => a.Id == id)
+            ?? throw new ArgumentException("找不到自訂動作。", nameof(id));
+        var entry = settings.Layout.Single(e => e.Id == id);
+        var index = settings.Layout.Where(e => e.Placement == entry.Placement).TakeWhile(e => e.Id != id).Count();
+        deleted = new(action, entry.Placement, index);
+        return settings with
+        {
+            CustomActions = settings.CustomActions.Where(a => a.Id != id).ToArray(),
+            Layout = settings.Layout.Where(e => e.Id != id).ToArray(),
+            RecentIds = settings.RecentIds.Where(recent => recent != id).ToArray()
+        };
+    }
+
+    public static ActionSettings RestoreCustom(ActionSettings settings, DeletedCustomAction deleted)
+    {
+        settings = Normalize(settings);
+        if (settings.CustomActions.Length >= 32) throw new ArgumentException("目前已有 32 個自訂動作，無法復原。");
+        if (settings.CustomActions.Any(a => a.Id == deleted.Action.Id)) throw new ArgumentException("此動作已存在，無法復原。");
+        if (!Enum.IsDefined(deleted.Placement) || deleted.PlacementIndex < 0) throw new ArgumentException("動作排列無效。");
+        var placement = deleted.Placement;
+        if (placement == ActionPlacement.Bar && settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) >= 6)
+            placement = ActionPlacement.More;
+        var layout = settings.Layout.ToList();
+        var slots = Enumerable.Range(0, layout.Count).Where(i => layout[i].Placement == placement).ToArray();
+        var index = placement == deleted.Placement ? deleted.PlacementIndex : slots.Length;
+        var insertion = index < slots.Length ? slots[index] : slots.Length > 0 ? slots[^1] + 1 : layout.Count;
+        layout.Insert(insertion, new(deleted.Action.Id, placement));
+        return Normalize(settings with { CustomActions = settings.CustomActions.Append(deleted.Action).ToArray(), Layout = layout.ToArray() });
     }
 }

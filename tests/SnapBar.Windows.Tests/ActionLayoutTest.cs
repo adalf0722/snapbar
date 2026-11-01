@@ -80,6 +80,57 @@ internal static class ActionLayoutTest
                     "valid path stays in configured More menu and becomes enabled without promotion");
                 MenuPath().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(dispatched == 1, "enabled path menu item dispatches through the existing action event");
+
+                void DeleteCustom(string id)
+                {
+                    var placement = current.Layout.Single(e => e.Id == id).Placement;
+                    Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
+                    window.UpdateLayout();
+                    var row = Children<Grid>(window).Single(g => AutomationProperties.GetAutomationId(g) == "ActionRow_" + id);
+                    var more = Children<Button>(row).Single(b => AutomationProperties.GetName(b) == "⋯");
+                    more.ContextMenu.Items.OfType<MenuItem>().Single(i => (string)i.Header == "刪除動作")
+                        .RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                    window.UpdateLayout();
+                }
+                Button RestoreButton() => Children<Button>(window).Single(b => AutomationProperties.GetAutomationId(b) == "RestoreDeletedAction");
+                var import = Children<Button>(window).Single(b => AutomationProperties.GetAutomationId(b) == "ImportActions");
+                Check(import.IsVisible && AutomationProperties.GetName(import) == "匯入…" && import.ContextMenu == null
+                    && !Children<Button>(window).Any(b => AutomationProperties.GetName(b) == "動作選項") && !RestoreButton().IsVisible,
+                    "import is directly available without a global options menu and restore stays hidden before deletion");
+                DeleteCustom(fifth.Id);
+                Check(RestoreButton().IsVisible && Children<TextBlock>(window).Any(t => t.Text == $"已刪除「{fifth.Name}」")
+                    && !current.CustomActions.Any(a => a.Id == fifth.Id), "deletion exposes named inline restore next to the removed action notice");
+                UiAppearanceTest.Snapshot(window, "actions-deleted.png");
+                Children<ComboBox>(window).Single(c => AutomationProperties.GetName(c) == "動作列主題").SelectedIndex = 1;
+                Children<CheckBox>(window).Single(c => (string)c.Content == "圖示與文字").IsChecked = false;
+                Children<CheckBox>(window).Single(c => (string)c.Content == "圖示與文字").RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
+                var afterDelete = current;
+                RestoreButton().RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); window.UpdateLayout();
+                Check(!RestoreButton().IsVisible && current.CustomActions.Contains(fifth) && current.Theme == "Light" && !current.ShowLabels
+                    && current.Layout.Where(e => e.Id != fifth.Id).SequenceEqual(afterDelete.Layout) && Preview(window).SequenceEqual(expected),
+                    "inline restore returns the original slot without rolling back later theme labels or other layout entries");
+                Check(new SettingsStore(path).Load().Settings.Actions.CustomActions.Contains(fifth), "restored action is persisted to disk");
+                DeleteCustom(fifth.Id); Place(seventh.Name, ActionPlacement.Bar);
+                var filled = Preview(window);
+                RestoreButton().RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); window.UpdateLayout();
+                Check(current.Layout.Single(e => e.Id == fifth.Id).Placement == ActionPlacement.More && Preview(window).SequenceEqual(filled)
+                    && Children<TextBlock>(window).Any(t => t.Text.Contains("動作列已滿，已放入更多選單")),
+                    "restore falls back to More with an explanation when the bar has filled since deletion");
+                DeleteCustom(fifth.Id); DeleteCustom(seventh.Id);
+                RestoreButton().RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); window.UpdateLayout();
+                Check(!current.CustomActions.Any(a => a.Id == fifth.Id) && current.CustomActions.Contains(seventh), "only the latest deleted action is restored");
+                DeleteCustom(seventh.Id); window.Close();
+                window = new ActionSettingsWindow(current, value => { current = value; return false; }); window.Show(); window.UpdateLayout();
+                Check(!RestoreButton().IsVisible, "closing settings clears the temporary restore offer");
+                // A failed disk save still applies settings for this session; keep its warning visible.
+                var retry = fifth with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "儲存失敗測試" };
+                window.Close(); current = ActionCatalog.Normalize(current with { CustomActions = [retry] });
+                window = new ActionSettingsWindow(current, value => { current = value; return false; }); window.Show(); window.UpdateLayout();
+                DeleteCustom(retry.Id);
+                Check(RestoreButton().IsVisible && Children<TextBlock>(window).Any(t => t.Text.Contains("無法保存")), "deletion notice preserves a failed save warning");
+                RestoreButton().RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); window.UpdateLayout();
+                Check(!RestoreButton().IsVisible && current.CustomActions.Contains(retry) && Children<TextBlock>(window).Any(t => t.Text.Contains("無法保存")),
+                    "restore applies for the session while retaining a failed save warning");
                 result = 0;
             }
             catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }

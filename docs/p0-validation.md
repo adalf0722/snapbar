@@ -594,6 +594,24 @@ Core 282、UI appearance 58、action layout 13、action diagnostics 25，共 378
 
 接續使用該份報告完成自含式 staging 發佈，Core 298 與 Probe smoke 10 再次通過，切換前重新確認原始碼指紋與程序狀態。成功更新 `artifacts/p0`；前一套件保留於 `artifacts/publish/f78cd4a213c848669498e47f53625ab9/previous`，確認新舊 Core DLL 雜湊不同且舊套件完整存在。發佈報告為 `artifacts/checks/build/20261031T134654585Z-5b0117aece944f3aabc508f69d61b1e2/report.json`。新版正常啟動，自動偵測、選字相容模式與 Sublime 支援維持既有開啟偏好，設定視窗已關閉並回到系統匣待命。本節最終狀態為已驗證並發佈；遠端 CI、真實跨 App／實體 DPI 的覆蓋限制仍維持上述說明。
 
+## 2026-11-01 刪除後直接復原自訂動作
+
+- 「我的動作」刪除自訂動作後，底部直接顯示動作名稱及「復原」按鈕；上方選單移除「復原刪除」。提示保留到復原、下一次刪除或關閉視窗。
+- 復原只合併該動作及原顯示位置，不回退整份設定。動作列後來已滿六個時改放更多選單並說明原因；自訂動作滿額或識別碼衝突時拒絕復原。刪除及復原都保留儲存失敗警告。
+- `scripts/check.ps1` 通過 12 項工具契約及 303 項 Core 測試；Release 建置零警告、零錯誤。Core 新增五項回歸涵蓋保留後續修改、位置、滿額、身分及連續刪除。
+- 同一原始碼的桌面 Layout 22、Lifecycle 28、Appearance 60、CompatibilitySlow 22 全數通過，另有 Preflight 1；慢速案例包含真正 35 秒腳本。正常結束既有 SnapBar 後執行，測試使用隔離設定檔。報告：`artifacts/checks/desktop/20261031T222658814Z-e803354f53924fc4b0cdeabd0bb038e9/report.json`。
+- Layout 原生 WPF 事件驗證刪除後顯示提示、復原與保存、保留主題及標籤修改、動作列滿額回退、只復原最近一次、關閉視窗清除提示及儲存失敗。截圖 `artifacts/ui-polish/actions-deleted.png` 已目視確認；既有 Appearance 另覆蓋最小視窗。此次沒有新增實體混合 DPI 或真實跨 App 驗證。
+
+使用上述同一份桌面報告完成本機自含式 staging 發佈；Core 303 及 Probe smoke 10 通過，`artifacts/p0` 已更新，舊套件保留於 `artifacts/publish/c0b6979cea494614818bbec0f61ba395/previous`。發佈報告為 `artifacts/checks/build/20261031T222847693Z-6d5a903ef2b84523a6e1c306000057c5/report.json`。
+
+## 2026-11-01 匯入按鈕直接顯示
+
+移除「我的動作」頂部僅剩匯入的「⋯」選單，直接顯示「匯入…」次要按鈕，位於藍色「＋ 新增動作」左側。沿用既有檔案選擇及匯入預覽流程。更新既有 Layout 斷言，確認直接入口可見且沒有上層選單。`scripts/check.ps1` 的 12 項工具契約、303 項 Core 測試及零警告／零錯誤建置均通過；Layout 22、Lifecycle 28、Appearance 60 通過。已目視確認一般及窄視窗截圖（`artifacts/ui-polish/actions.png`、`actions-small.png`）；此次沒有新增實體混合 DPI 或真實跨 App 驗證。
+
+同一份原始碼的 CompatibilitySlow 22（包含真實 35 秒腳本）與 Preflight 1 亦通過，完整桌面報告為 `artifacts/checks/desktop/20261031T223343209Z-ad5565a679544884bfa670e30aaeba80/report.json`。使用該報告更新 `artifacts/p0`，發佈時 Core 303、Probe smoke 10 通過；舊套件保留於 `artifacts/publish/21610ed8dd8a4c6eac664afab838c7d0/previous`。發佈報告為 `artifacts/checks/build/20261031T223516035Z-9fa76b6613ee457fbb3593aba0261f03/report.json`。
+
+新版正常啟動，原有自動偵測及相容性偏好恢復。以 computer-use 點擊「匯入…」，確認直接開啟含 SnapBar 動作檔案篩選器的原生檔案選擇對話框；取消後回到「我的動作」，未選取或匯入任何檔案。
+
 ## 2026-11-01 AI 改寫面板
 
 - 新增「AI 改寫」內建動作，預設位於更多選單。面板開啟先顯示原文，原文與結果共用閱讀區；同一輸入框支援全指令搜尋與直接下指令，分類只限制空白時的瀏覽。支援釘選、最近使用、指令管理、接續版本與從原文重做。
