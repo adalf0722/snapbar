@@ -121,8 +121,36 @@ internal static class SettingsNavigationTest
         commands.SetFilter("", "");
         check(commands.VisiblePromptIds.SequenceEqual(new[] { "settings-extra" }), "settings uncategorized filter differs from all categories");
         commands.SetFilter(""); UiAppearanceTest.Snapshot(main, "settings-ai-commands-populated.png");
+        preferences.TrySavePrompt(new("filter-last", "Filter fixture", "Preserve input.", "暫存分類"), true, out _);
+        commands.SetFilter("", "暫存分類"); commands.DeletePrompt("filter-last");
+        check(commands.VisiblePromptIds.Count == 0,
+            "settings deleting the final member keeps the selected category instead of exposing other commands");
+        commands.RestoreDeletedCommand();
+        check(commands.VisiblePromptIds.SequenceEqual(new[] { "filter-last" }),
+            "settings restoring the final category member returns it to the unchanged active filter");
+        commands.DeletePrompt("filter-last"); commands.SetFilter("");
+        var sentinelPrompt = new AiPrompt("__new", "Legal stored identity", "Preserve input.", "");
+        preferences.TrySavePrompt(sentinelPrompt, true, out _);
+        var storedIdentityEditor = preferences.OpenEditor(main, sentinelPrompt);
+        var createEditor = preferences.OpenEditor(main, null);
+        check(!ReferenceEquals(storedIdentityEditor, createEditor),
+            "settings a legal command ID cannot collide with the new-command editor registry entry");
+        storedIdentityEditor.Close(); createEditor.Close(); preferences.DeletePrompt(sentinelPrompt.Id, out _);
 
         main.SearchPanel.Reveal(); searchProvider.SelectedIndex = 1;
+        var exitChoices = 0;
+        main.ExitChoiceProvider = _ =>
+        {
+            exitChoices++;
+            if (exitChoices == 1) main.ExitAsync().GetAwaiter().GetResult();
+            return ExitChoice.Cancel;
+        };
+        await main.ExitAsync();
+        check(exitChoices == 1 && main.IsVisible && main.SearchPanel.IsDirty,
+            "settings repeated exit during draft resolution reuses the pending decision instead of opening another");
+        await main.ExitAsync();
+        check(exitChoices == 2 && main.IsVisible,
+            "settings canceled exit releases its resolution guard so a later exit can be attempted");
         main.ExitChoiceProvider = _ => ExitChoice.Cancel;
         check(!main.TryResolveDraftsForExit() && main.SearchPanel.IsDirty,
             "settings canceling true exit leaves the unsaved draft intact");
