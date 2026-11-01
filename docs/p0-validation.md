@@ -654,3 +654,15 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 已目視核對 `artifacts/ai-panel/long-english.png`、`long-chinese.png`、`long-markdown.png`、各自的 `-bottom.png` 及 `long-markdown-small-bottom.png`；包含原本完整可捲動長段落與最末行。長文 fixture 含額外的隔離測試指令，不修改使用者設定；沒有呼叫真實模型。實體 IME、混合 DPI 與第三方 App 覆蓋限制維持。
 
 已使用相同成功桌面報告完成自含式發佈，Core 389、Probe smoke 10 通過；`artifacts/p0` 已更新，正常啟動後回到系統匣，原有偏好與 AI 設定保留。發佈報告：`artifacts/checks/build/20261101T012929892Z-34f1dfe3b6eb46a68f70ba563fe682f9/report.json`；舊套件保留於 `artifacts/publish/1c1ee87613f84d7ebe602e11abad7fea/previous`。
+
+## 2026-11-01 AI prompt editor 新增指令表單
+
+- 名稱與指令內容優先顯示，補上選取文字會自動帶入的提示。分類、搜尋關鍵字及圖示改放預設收合的「更多設定（選填）」。新指令沿用自訂分類及預設圖示，編輯既有指令保留收合欄位及未知圖示識別碼。
+- 指令框隨正常視窗可用空間伸縮，最小 140 DIP，長內容在框內捲動。表單最小高度依主欄位及選填區實測高度決定；小視窗或展開選填項目時才需要外層捲動，儲存列固定。開啟時聚焦名稱，空名稱／空指令不呼叫保存，保存失敗保留草稿。
+- 圖示採共用線條圖形及中文名稱，使用資料範本建立選單與選取預覽，修正收合／小視窗下重用 UIElement 預覽可能空白的問題。正常、小視窗、展開選填的截圖 `artifacts/ai-panel/prompt-editor.png`、`prompt-editor-advanced.png`、`prompt-editor-small-advanced.png` 已目視核對。
+
+新增 13 項原生編輯器檢查，涵蓋預設收合、正常尺寸無須捲動、隨視窗增高、必填驗證、完整指令保存、隱藏值與未知圖示保留、小視窗儲存列、實際圖示預覽、選填項目可達性、保存後重新載入仍保留服務與模型、失敗及取消。快速檢查通過工具契約 12、Core 389，建置零警告／零錯誤；同一原始碼 Release + Layout 通過 Lifecycle 28、Appearance 60、CompatibilitySlow 22、AiRuntime 35、AiPanel 56、Layout 22、Preflight 1。報告：`artifacts/checks/desktop/20261101T090419652Z-740faa08365e49839f48bf707ac05ec4/report.json`。
+
+服務狀態另以唯讀方式檢查實際 ai.json：透過正式 AiSettingsStore 成功載入、所選服務具有模型 ID，本輪前後檔案雜湊一致。沒有重設或改寫使用者服務設定，亦未輸出網址、模型值、指令內容或金鑰。不能用目前狀態回推先前截圖顯示「設定 AI 服務」時的原因。所有新增保存測試都使用隔離目錄，沒有呼叫真實模型；既有實體 IME、混合 DPI 及第三方 App 覆蓋限制維持。
+
+已使用上述成功桌面報告完成自含式發佈，Core 389、Probe smoke 10 通過；新版 `artifacts/p0` 正常啟動後回到系統匣。啟動後再次確認 ai.json 載入成功、模型存在及檔案雜湊不變。發佈報告：`artifacts/checks/build/20261101T090622366Z-6b0da336a4394582825c5b03856a206f/report.json`；舊套件保留於 `artifacts/publish/b5b33983b43e4f4ca70b48b1dcdc79ef/previous`。

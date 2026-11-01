@@ -8,6 +8,8 @@ The instruction editor fills remaining normal-window space and scrolls internall
 
 - [x] Implement the form in `src/SnapBar.App/AiPromptEditorWindow.cs`, including field identifiers, required-field validation and initial name focus.
 - [x] Extend native AI tests for collapsed default, complete normal view, small-window reachability, advanced options/icons, exact save and hidden-value preservation, error/cancel behavior and unchanged provider configuration after saving prompts. Use isolated settings only.
-- [ ] Inspect editor snapshots, run check and desktop Release/Layout, publish with successful current-fingerprint evidence and launch the updated package. Verify UTF-8 documentation and preserve pre-existing uncommitted changes.
+- [x] Inspect editor snapshots, run check and desktop Release/Layout, publish with successful current-fingerprint evidence and launch the updated package. Verify UTF-8 documentation and preserve pre-existing uncommitted changes.
+
+Final desktop evidence: `artifacts/checks/desktop/20261101T090419652Z-740faa08365e49839f48bf707ac05ec4/report.json` (AiPanel 56, all Release/Layout checks pass). Publication: `artifacts/checks/build/20261101T090622366Z-6b0da336a4394582825c5b03856a206f/report.json` (Core 389, Probe smoke 10). Updated App launched and returned to tray. Real user AI settings still load successfully with a configured selected model; before/after hashes match.
 
 Service-state read-only audit: current user ai.json is readable schema 1 with two profiles; selected profile has a model ID. No endpoint, model value, prompt text or secret was printed. Baseline hash recorded in this session for final preservation verification; do not rewrite user AI settings to address the earlier screenshot.
