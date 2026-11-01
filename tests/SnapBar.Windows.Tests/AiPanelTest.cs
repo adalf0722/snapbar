@@ -233,6 +233,13 @@ internal static class AiPanelTest
                         "AI registered management foreground preserves pending capture without granting panel foreground");
                     managementCompletion.SetResult(new(true, "Disposable management result")); await managementRequest;
                     var managerHandle = new WindowInteropHelper(management).Handle;
+                    Check(panel.Session.Current?.Text == "Disposable management result" && value.Current.Value == before
+                        && Native.GetForegroundWindow() == managerHandle,
+                        "AI completion in settings preserves result without writing or stealing settings focus");
+                    await ForegroundPanel();
+                    Check(panel.TargetValid && controller.ActiveSelection != null,
+                        "AI returning directly from settings retains the validated source session");
+                    panel.RequestManagement(SettingsCategory.AiServices); await Task.Delay(250);
                     var sequenceBeforeManagementApply = Native.GetClipboardSequenceNumber();
                     await panel.ApplyAsync();
                     Check(panel.Session.Current?.Text == "Disposable management result" && value.Current.Value == before
@@ -244,7 +251,14 @@ internal static class AiPanelTest
                     preferences.SettingsRequested -= ShowManagement; preferences.SettingsHost = null;
                     management.Close();
                 }
-                await ForegroundPanel();
+                panel.Close(); panel = null;
+                await ForegroundFixture(); element.SetFocus();
+                var managementRange = ((TextPattern)element.GetCurrentPattern(TextPattern.Pattern)).DocumentRange.Clone();
+                managementRange.MoveEndpointByRange(TextPatternRangeEndpoint.End, managementRange, TextPatternRangeEndpoint.Start);
+                managementRange.MoveEndpointByUnit(TextPatternRangeEndpoint.End, TextUnit.Character, selectedText.Length); managementRange.Select();
+                await controller.CaptureAsync(false, 0, 0);
+                Check(controller.ActiveSelection?.Text == selectedText, "AI fresh capture follows a deliberately rejected off-panel Apply");
+                await controller.ExecuteAsync(TextAction.Ai); panel = controller.ActiveAiWindow!; await ForegroundPanel();
                 Check(panel.Topmost, "AI panel restores its topmost placement when reactivated after settings");
                 client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, "AI fixture replacement"));
                 await panel.SubmitAsync("rewrite"); Snapshot(panel, "editable-result.png");
