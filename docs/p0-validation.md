@@ -608,3 +608,16 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 本輪未填入真實服務金鑰、未呼叫付費模型；服務與模型相容性需使用實際設定確認。IME 測試涵蓋組字中 Enter 不提交的模擬事件，尚未等同實體繁中輸入法驗收；實體混合 DPI 與第三方 App 全套驗證仍未新增。
 
 使用同一份桌面報告完成自含式 staging 發佈，Core 389 與 Probe smoke 10 再次通過；`artifacts/p0` 已更新，舊套件保留於 `artifacts/publish/4f3220d17447405d8378f9f610b34dcd/previous`。發佈報告：`artifacts/checks/build/20261031T235652632Z-6ea95c9c0bb34334a15a5d51bf82633c/report.json`。以 computer-use 啟動新版，確認原有自動偵測、選字相容模式及 Sublime 支援恢復；點擊「設定 AI 服務」正常開啟服務、網址、模型及金鑰表單，未儲存測試值。AI 設定視窗保留開啟供使用者填入。
+
+## 2026-11-01 AI panel 視覺整合
+
+- 依使用者確認的方向，統一 24 DIP 外側留白、標題與淺灰指令區／白色閱讀卡片。原文及結果分頁沿用既有動作管理的選取樣式；正文增為 15 DIP、Markdown 行高 24 DIP、閱讀內距 20 DIP。透明閱讀背景保留卡片圓角。
+- 指令名稱維持直接顯示；釘選與選項改用共用線條圖示，滑鼠移入或鍵盤聚焦該列時顯示管理按鈕，已釘選的狀態另有小圖示。按鈕保留鍵盤焦點與原位置，開啟選單後仍顯示選項入口。服務入口縮成供應商名稱與設定圖示，完整模型名稱保留在提示及設定內。
+- 移除重複的結果標題，版本、基準與指令整合成一條有界資訊列；完整指令仍可開啟所屬的捲動視窗。來源狀態與操作並列；唯讀／失效來源的結果複製採藍底白字，可替換時保留「替換原文」為主按鈕。AI 請求、session、控制器與選取安全流程未修改。
+- 目視核對一般、唯讀、可替換、最小尺寸及長指令畫面（`artifacts/ai-panel/`）。截圖改為直接繪製視窗 client 根視覺，避免外側留白被 VisualBrush 再次縮放。新增鍵盤聚焦揭露管理按鈕及唯讀複製對比檢查。
+
+快速檢查通過工具契約 12、Core 389，建置零警告／零錯誤；最終相同原始碼的 Release + Layout 通過 Lifecycle 28、Appearance 60、CompatibilitySlow 22（實際 35 秒腳本）、AiRuntime 35、AiPanel 26、Layout 22 與 Preflight 1。桌面報告：`artifacts/checks/desktop/20261101T004222963Z-3a975a9064d245efaa2e1831d7d984be/report.json`。專用 fixture 的前景啟用由 computer-use 協助；最終指紋相符。較早一次前置檢查因舊 App 尚未退出而拒絕，正常結束後重跑；開發中的聚焦測試曾因截圖修正而變更指紋，沒有使用該份報告發佈。
+
+本輪未呼叫真實模型、未修改使用者服務／模型／金鑰設定；實體 IME、混合 DPI 與第三方 App 完整回歸的覆蓋限制沿用前節。
+
+使用上述相同原始碼報告完成 staging 發佈，Core 389、Probe smoke 10 再次通過，`artifacts/p0` 已更新。舊套件保留於 `artifacts/publish/7a47359908864a80bfa691b417ac3b42/previous`；發佈報告：`artifacts/checks/build/20261101T004531328Z-01681e5d77ee47d3a7dd9b2138abcf6b/report.json`。以 computer-use 正常啟動新套件，確認自動偵測、選字相容及 Sublime 偏好恢復，再關閉設定視窗回到系統匣待命。
