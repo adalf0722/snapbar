@@ -642,3 +642,15 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 快速檢查通過工具契約 12、Core 389，建置零警告／零錯誤；相同最終原始碼的 Release + Layout 通過 Lifecycle 28、Appearance 60、CompatibilitySlow 22、AiRuntime 35、AiPanel 35、Layout 22 及 Preflight 1。報告：`artifacts/checks/desktop/20261101T011146025Z-bd7406a6d29c4ad498c725224e3bf671/report.json`。已目視核對一般結果與最小尺寸長指令截圖，並沿用既有幾何、完整指令、原文／結果文案與實際原選取替換案例。沒有呼叫真實模型或改動使用者 AI 設定；實體 IME、混合 DPI 及第三方 App 覆蓋限制維持。
 
 同一份成功報告已完成自含式發佈，Core 389、Probe smoke 10 通過；新版 `artifacts/p0` 已正常啟動並回到系統匣。發佈報告：`artifacts/checks/build/20261101T011323176Z-42196545ee6540a68da67182f477c68d/report.json`；舊套件：`artifacts/publish/46674e352623415daa3093934b54e96b/previous`。原有偏好及 AI 設定保留。
+
+## 2026-11-01 AI panel reading 長文對齊
+
+明確設定 AI FlowDocument 的靠左對齊，避免閱讀元件初始化將未設定的對齊改為左右撐滿，造成英文單字間距不自然。保留既有字級、行高、段落處理與面板配置；複製／替換仍使用原始回應。未擴大修改其他自訂動作的結果視窗。
+
+新增實際載入後的長英文、中文、多段 Markdown 對齊檢查，逐一確認捲動到底後最末行的幾何範圍位於 viewport 內；另驗證最小尺寸與 Markdown 原始內容複製。修正前確實在新對齊斷言失敗（30 項先前檢查通過）：`artifacts/checks/desktop/20261101T012336984Z-85b5045b12d34956abb2eb9ab0bf17bb/report.json`。修正後聚焦執行的長文檢查全部通過，後續來源 fixture 未取得前景而中止；未使用該報告發佈。
+
+最終相同原始碼的 Release + Layout 完整通過：Lifecycle 28、Appearance 60、CompatibilitySlow 22、AiRuntime 35、AiPanel 43、Layout 22 與 Preflight 1；報告 `artifacts/checks/desktop/20261101T012704605Z-2f7f45be29074b0db6f748754e01732d/report.json`。快速檢查另通過工具契約 12、Core 389，建置零警告／零錯誤。專用 fixture 以 computer-use 帶到前景，沒有放寬來源安全檢查。
+
+已目視核對 `artifacts/ai-panel/long-english.png`、`long-chinese.png`、`long-markdown.png`、各自的 `-bottom.png` 及 `long-markdown-small-bottom.png`；包含原本完整可捲動長段落與最末行。長文 fixture 含額外的隔離測試指令，不修改使用者設定；沒有呼叫真實模型。實體 IME、混合 DPI 與第三方 App 覆蓋限制維持。
+
+已使用相同成功桌面報告完成自含式發佈，Core 389、Probe smoke 10 通過；`artifacts/p0` 已更新，正常啟動後回到系統匣，原有偏好與 AI 設定保留。發佈報告：`artifacts/checks/build/20261101T012929892Z-34f1dfe3b6eb46a68f70ba563fe682f9/report.json`；舊套件保留於 `artifacts/publish/1c1ee87613f84d7ebe602e11abad7fea/previous`。
