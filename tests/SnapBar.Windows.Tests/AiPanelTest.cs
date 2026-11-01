@@ -26,15 +26,15 @@ internal static class AiPanelTest
     private static Button Button(Window window, string id) => Children<Button>(window).Single(b => AutomationProperties.GetAutomationId(b) == id);
     private static void Snapshot(Window window, string name)
     {
-        window.UpdateLayout(); var content = (FrameworkElement)window.Content;
+        window.UpdateLayout(); var content = (FrameworkElement)VisualTreeHelper.GetChild(window, 0);
         var image = new RenderTargetBitmap(Math.Max(1, (int)content.ActualWidth), Math.Max(1, (int)content.ActualHeight), 96, 96, PixelFormats.Pbgra32);
         var visual = new DrawingVisual();
         using (var drawing = visual.RenderOpen())
         {
             var bounds = new Rect(0, 0, content.ActualWidth, content.ActualHeight);
-            drawing.DrawRectangle(window.Background, null, bounds); drawing.DrawRectangle(new VisualBrush(content), null, bounds);
+            drawing.DrawRectangle(window.Background, null, bounds);
         }
-        image.Render(visual); var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(image));
+        image.Render(visual); image.Render(content); var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(image));
         var directory = Path.Combine(TestPaths.Repository, "artifacts", "ai-panel"); Directory.CreateDirectory(directory);
         using var stream = File.Create(Path.Combine(directory, name)); png.Save(stream);
     }
@@ -66,6 +66,10 @@ internal static class AiPanelTest
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate(); await Task.Delay(100);
                 Check(panel.Session.ViewingOriginal && !Button(panel, "AiResultTab").IsEnabled && Children<TextBox>(panel).Any(t => t.Text == snapshot.Text && t.IsReadOnly), "AI opens with literal original and no empty result page");
                 Check(!Children<Expander>(panel).Single().IsExpanded, "AI category filter starts collapsed"); Snapshot(panel, "original.png");
+                Button(panel, "AiPrompt_improve").Focus(); await Task.Delay(40);
+                var pinTool = Button(panel, "AiPin_improve");
+                Check(pinTool.Opacity == 1 && pinTool.Focus() && pinTool.IsKeyboardFocused,
+                    "AI row management is revealed by keyboard focus and remains reachable"); panel.CommandInput.Focus();
                 var composition = new TextComposition(InputManager.Current, panel.CommandInput, "測"); panel.CommandInput.Text = "composition fixture";
                 panel.CommandInput.RaiseEvent(new TextCompositionEventArgs(Keyboard.PrimaryDevice, composition) { RoutedEvent = TextCompositionManager.PreviewTextInputStartEvent });
                 panel.CommandInput.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(panel), 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
@@ -87,6 +91,8 @@ internal static class AiPanelTest
                 await panel.SubmitAsync("failure"); Check(panel.Session.Versions.Count == versions && panel.Session.Current?.Text == "third result", "AI failure preserves the latest completed result");
                 Button(panel, "AiResultTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
                 Check(!Button(panel, "AiReplace").IsVisible && Button(panel, "AiCopy").IsVisible, "AI readonly source offers copying without replacement");
+                Check(Button(panel, "AiCopy").Background == ActionUi.Accent && Button(panel, "AiCopy").Foreground == Brushes.White,
+                    "AI readonly result has an emphasized copy action with readable contrast");
                 Snapshot(panel, "readonly-result.png"); panel.Width = 680; panel.Height = 500; panel.UpdateLayout(); Snapshot(panel, "small.png");
                 Check(panel.CommandInput.ActualWidth > 200 && Button(panel, "AiCopy").ActualWidth > 0, "AI minimum window preserves command and footer controls");
                 panel.Width = 800; panel.Height = 650;

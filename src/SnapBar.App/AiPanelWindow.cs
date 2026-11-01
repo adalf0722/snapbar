@@ -19,7 +19,7 @@ internal sealed class AiPanelWindow : Window
     private readonly Func<string, Task<bool>>? apply;
     private readonly SelectionSnapshot selection;
     private readonly TextBox input = null!, original;
-    private readonly TextBlock basis, hint, count, status, version, resultHeading, execution, placeholder;
+    private readonly TextBlock basis, hint, count, status, version, execution, placeholder, modelLabel;
     private readonly Button direct, stop, restart, resume, originalTab, resultTab, previous, next, copy, replace, model;
     private readonly StackPanel commandRows;
     private readonly List<Button> commandButtons = [];
@@ -43,23 +43,27 @@ internal sealed class AiPanelWindow : Window
         this.selection = selection; this.preferences = preferences; this.apply = apply; ownsClient = client == null;
         this.client = client ?? new AiHttpClient(); lastProfile = preferences.SelectedProfile; Session = new(selection.Text);
         ActionUi.Setup(this, "SnapBar · AI 改寫", 800, 650); MinWidth = 680; MinHeight = 500; Topmost = true;
-        var root = new DockPanel(); var header = new DockPanel { Margin = new(20, 12, 16, 12) };
-        model = ActionUi.Button("服務／模型", ShowSettings); model.HorizontalAlignment = HorizontalAlignment.Right;
-        DockPanel.SetDock(model, Dock.Right); header.Children.Add(model); header.Children.Add(ActionUi.Heading("AI 改寫", 18));
+        var root = new DockPanel { Margin = new(24, 18, 24, 20) }; var header = new DockPanel { Margin = new(0, 0, 0, 20) };
+        model = QuietButton("", ShowSettings, "settings"); model.HorizontalAlignment = HorizontalAlignment.Right;
+        model.MaxWidth = 180; model.Padding = new(8); model.MinHeight = 36;
+        modelLabel = ActionUi.Text("AI 設定", 13, ActionUi.Muted); modelLabel.TextWrapping = TextWrapping.NoWrap; modelLabel.TextTrimming = TextTrimming.CharacterEllipsis;
+        var modelContent = new DockPanel(); var settingsIcon = ActionUi.Icon("settings", ActionUi.Muted, 16);
+        settingsIcon.Margin = new(8, 0, 0, 0); DockPanel.SetDock(settingsIcon, Dock.Right); modelContent.Children.Add(settingsIcon); modelContent.Children.Add(modelLabel); model.Content = modelContent;
+        DockPanel.SetDock(model, Dock.Right); header.Children.Add(model); header.Children.Add(ActionUi.Heading("AI 改寫", 24));
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         progress = new ProgressBar { Height = 2, IsIndeterminate = true, Visibility = Visibility.Collapsed };
         DockPanel.SetDock(progress, Dock.Top); root.Children.Add(progress);
         main = new Grid(); main.ColumnDefinitions.Add(new() { Width = new(280) }); main.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        var rail = new DockPanel { Margin = new(12, 12, 12, 8) };
+        var rail = new DockPanel { Margin = new(0, 0, 20, 0) };
         var railHeader = new StackPanel(); var heading = new DockPanel();
-        var add = ActionUi.Button("新增", () => EditPrompt(null), "plus"); add.Padding = new(5); add.MinHeight = 28; add.Margin = new(0);
+        var add = QuietButton("新增", () => EditPrompt(null), "plus"); add.Padding = new(6); add.MinHeight = 28;
         stop = ActionUi.Button("停止", Stop); stop.Padding = new(5); stop.MinHeight = 28; stop.Margin = new(0);
         DockPanel.SetDock(add, Dock.Right); heading.Children.Add(add); DockPanel.SetDock(stop, Dock.Right); heading.Children.Add(stop);
         heading.Children.Add(ActionUi.Heading("想怎麼處理？", 14)); railHeader.Children.Add(heading);
         var basisRow = new DockPanel { Margin = new(0, 8, 0, 6) };
         var basisButtons = new StackPanel { Orientation = Orientation.Horizontal };
-        restart = SmallButton("從原文重做", () => { Session.FromOriginal(); Refresh(); input.Focus(); });
-        resume = SmallButton("接續這一版", () => { Session.ContinueCurrent(); Refresh(); input.Focus(); });
+        restart = QuietButton("從原文重做", () => { Session.FromOriginal(); Refresh(); input.Focus(); });
+        resume = QuietButton("接續這一版", () => { Session.ContinueCurrent(); Refresh(); input.Focus(); });
         basisButtons.Children.Add(resume); basisButtons.Children.Add(restart); DockPanel.SetDock(basisButtons, Dock.Right); basisRow.Children.Add(basisButtons);
         basis = ActionUi.Text("基於：原文", 12, ActionUi.Muted); basisRow.Children.Add(basis); railHeader.Children.Add(basisRow);
         input = ActionUi.Input("", 8192); input.Height = 84; input.AcceptsReturn = true; input.TextWrapping = TextWrapping.Wrap;
@@ -69,7 +73,8 @@ internal sealed class AiPanelWindow : Window
         placeholder = ActionUi.Text("搜尋指令，或說明怎麼處理原文…", 12, ActionUi.Muted);
         placeholder.Margin = new(10, 8, 10, 0); placeholder.VerticalAlignment = VerticalAlignment.Top; placeholder.IsHitTestVisible = false;
         var inputShell = new Grid(); inputShell.Children.Add(input); inputShell.Children.Add(placeholder); railHeader.Children.Add(inputShell);
-        railHeader.Children.Add(ActionUi.Text("Enter 直接執行 · ↓ 選指令\nShift+Enter 換行", 12, ActionUi.Muted));
+        var shortcuts = ActionUi.Text("Enter 執行 · ↓ 選指令", 12, ActionUi.Muted); shortcuts.Margin = new(0, 6, 0, 0);
+        shortcuts.ToolTip = "Shift+Enter 換行"; input.ToolTip = "Enter 執行 · ↓ 選指令 · Shift+Enter 換行"; railHeader.Children.Add(shortcuts);
         direct = ActionUi.Button("直接執行這段指令 ↵", () => _ = SubmitAsync(input.Text), primary: true); direct.Margin = new(0, 8, 0, 0);
         AutomationProperties.SetAutomationId(direct, "AiDirectCommand"); railHeader.Children.Add(direct);
         category = new ComboBox { MinHeight = 30, Margin = new(0, 6, 0, 0) };
@@ -77,34 +82,39 @@ internal sealed class AiPanelWindow : Window
         railHeader.Children.Add(filter); DockPanel.SetDock(railHeader, Dock.Top); rail.Children.Add(railHeader);
         count = ActionUi.Text("", 12, ActionUi.Muted); count.Margin = new(4, 6, 0, 0); DockPanel.SetDock(count, Dock.Bottom); rail.Children.Add(count);
         commandRows = new StackPanel(); rail.Children.Add(new ScrollViewer { Content = commandRows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        var left = new Border { Background = Brushes.White, BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 1, 0), Child = rail }; main.Children.Add(left);
+        main.Children.Add(rail);
         var right = new DockPanel(); Grid.SetColumn(right, 1); main.Children.Add(right);
-        var footer = new StackPanel { Margin = new(16, 10, 16, 12) };
-        status = ActionUi.Text("", 12, ActionUi.Muted); footer.Children.Add(status);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new(0, 7, 0, 0) };
+        var footer = new DockPanel { Margin = new(0, 16, 0, 0) };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new(12, 0, 0, 0) };
         copy = ActionUi.Button("複製結果", Copy); replace = ActionUi.Button("替換原文", () => _ = ApplyAsync(), primary: true);
         AutomationProperties.SetAutomationId(copy, "AiCopy"); AutomationProperties.SetAutomationId(replace, "AiReplace");
-        actions.Children.Add(copy); actions.Children.Add(replace); footer.Children.Add(actions); DockPanel.SetDock(footer, Dock.Bottom); right.Children.Add(footer);
-        var body = new DockPanel { Margin = new(16, 12, 16, 0) };
+        copy.Margin = new(0); replace.Margin = new(8, 0, 0, 0);
+        actions.Children.Add(copy); actions.Children.Add(replace); DockPanel.SetDock(actions, Dock.Right); footer.Children.Add(actions);
+        status = ActionUi.Text("", 12, ActionUi.Muted); footer.Children.Add(status); DockPanel.SetDock(footer, Dock.Bottom); right.Children.Add(footer);
+        var body = new DockPanel();
         var tabs = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 10) };
         originalTab = ActionUi.Button("原文", () => { Session.ShowOriginal(); Refresh(); }); resultTab = ActionUi.Button("結果", () => { Session.ShowResult(); Refresh(); });
+        foreach (var tab in new[] { originalTab, resultTab })
+        {
+            tab.Style = (Style)FindResource("AiViewTab"); tab.ClearValue(BackgroundProperty); tab.ClearValue(BorderBrushProperty);
+            tab.ClearValue(ForegroundProperty); tab.ClearValue(PaddingProperty); tab.Content = tab == originalTab ? "原文" : "結果";
+        }
         AutomationProperties.SetAutomationId(originalTab, "AiOriginalTab"); AutomationProperties.SetAutomationId(resultTab, "AiResultTab");
         tabs.Children.Add(originalTab); tabs.Children.Add(resultTab); DockPanel.SetDock(tabs, Dock.Top); body.Children.Add(tabs);
         hint = ActionUi.Text("", 12, ActionUi.Muted); hint.Margin = new(0, 10, 0, 0); DockPanel.SetDock(hint, Dock.Bottom); body.Children.Add(hint);
         original = AiMarkdownView.Plain(selection.Text); AutomationProperties.SetAutomationId(original, "AiOriginalText");
-        var resultBody = new DockPanel(); var resultHeader = new DockPanel { Margin = new(10, 7, 6, 4) };
+        var resultBody = new DockPanel(); var resultHeader = new DockPanel { Margin = new(12, 8, 12, 0) };
         var history = new StackPanel { Orientation = Orientation.Horizontal };
-        previous = SmallButton("‹", () => { Session.MoveHistory(-1); Refresh(); }); previous.ToolTip = "上一版";
-        next = SmallButton("›", () => { Session.MoveHistory(1); Refresh(); }); next.ToolTip = "下一版";
+        previous = QuietButton("‹", () => { Session.MoveHistory(-1); Refresh(); }); previous.ToolTip = "上一版";
+        next = QuietButton("›", () => { Session.MoveHistory(1); Refresh(); }); next.ToolTip = "下一版";
         version = ActionUi.Text("", 12, ActionUi.Muted); history.Children.Add(previous); history.Children.Add(version); history.Children.Add(next);
-        DockPanel.SetDock(history, Dock.Right); resultHeader.Children.Add(history); resultHeading = ActionUi.Text("結果", 12, ActionUi.Muted); resultHeader.Children.Add(resultHeading);
-        DockPanel.SetDock(resultHeader, Dock.Top); resultBody.Children.Add(resultHeader);
-        var instructionRow = new DockPanel { Margin = new(12, 0, 8, 5) };
-        var details = SmallButton("查看指令", ShowInstruction); AutomationProperties.SetAutomationId(details, "AiInstructionDetails");
-        DockPanel.SetDock(details, Dock.Right); instructionRow.Children.Add(details);
+        DockPanel.SetDock(history, Dock.Left); resultHeader.Children.Add(history);
+        var details = QuietButton("", ShowInstruction, "document"); details.ToolTip = "查看完整指令";
+        AutomationProperties.SetName(details, "查看完整指令"); AutomationProperties.SetAutomationId(details, "AiInstructionDetails");
+        DockPanel.SetDock(details, Dock.Right); resultHeader.Children.Add(details);
         execution = ActionUi.Text("", 12, ActionUi.Muted); execution.TextWrapping = TextWrapping.NoWrap;
-        execution.TextTrimming = TextTrimming.CharacterEllipsis; execution.MaxHeight = 24; instructionRow.Children.Add(execution);
-        DockPanel.SetDock(instructionRow, Dock.Top); resultBody.Children.Add(instructionRow);
+        execution.Margin = new(8, 0, 4, 0); execution.TextTrimming = TextTrimming.CharacterEllipsis; execution.MaxHeight = 24; resultHeader.Children.Add(execution);
+        DockPanel.SetDock(resultHeader, Dock.Top); resultBody.Children.Add(resultHeader);
         resultContent = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
         AutomationProperties.SetAutomationId(resultContent, "AiResultContent");
         resultBody.Children.Add(resultContent); resultCard = ActionUi.Card(resultBody, new(0));
@@ -127,8 +137,11 @@ internal sealed class AiPanelWindow : Window
         if (preferences.Warning != null) hint.Text = "AI 設定無法讀取，本次使用預設值並保留原檔。";
     }
 
-    private static Button SmallButton(string text, Action click)
-    { var button = ActionUi.Button(text, click); button.Padding = new(4, 2, 4, 2); button.MinHeight = 28; button.Margin = new(0); return button; }
+    private static Button QuietButton(string text, Action click, string? icon = null)
+    {
+        var button = ActionUi.Button(text, click, icon); button.Background = Brushes.Transparent;
+        button.BorderBrush = Brushes.Transparent; button.Padding = new(6, 4, 6, 4); button.MinHeight = 28; button.Margin = new(0); return button;
+    }
     internal bool HasForeground => IsOwnedForeground(this);
     private static bool IsOwnedForeground(Window window) => window.IsVisible && Native.GetForegroundWindow() == new WindowInteropHelper(window).Handle
         || window.OwnedWindows.Cast<Window>().Any(IsOwnedForeground);
@@ -187,22 +200,35 @@ internal sealed class AiPanelWindow : Window
         {
             var name = settings.PinnedIds.Contains(prompt.Id) ? "已釘選" : settings.RecentIds.Contains(prompt.Id) ? "最近使用" : prompt.Category;
             if (name != group) { var label = ActionUi.Text(name, 12, ActionUi.Muted); label.Margin = new(5, 10, 0, 4); commandRows.Children.Add(label); group = name; }
-            var line = new DockPanel(); var options = SmallButton("⋯", () => { }); options.ToolTip = "指令選項";
+            var row = new Border { Style = (Style)FindResource("AiPromptRow"), Margin = new(0, 0, 0, 3) };
+            var line = new DockPanel(); row.Child = line;
+            Button RowTool(string icon, Action click)
+            {
+                var tool = QuietButton("", click, icon); tool.Style = (Style)FindResource("AiRowTool");
+                tool.Width = 28; tool.MinHeight = 32; return tool;
+            }
+            var options = RowTool("more", () => { }); options.ToolTip = "指令選項";
+            AutomationProperties.SetName(options, "指令選項 " + prompt.Name);
             var menu = new ContextMenu(); var edit = new MenuItem { Header = "編輯指令" }; edit.Click += (_, _) => EditPrompt(prompt);
             var delete = new MenuItem { Header = "刪除指令" }; delete.Click += (_, _) => DeletePrompt(prompt);
             menu.Items.Add(edit); menu.Items.Add(delete); options.ContextMenu = menu; options.Click += (_, _) => { menu.PlacementTarget = options; menu.IsOpen = true; };
             DockPanel.SetDock(options, Dock.Right); line.Children.Add(options);
-            var pin = SmallButton(settings.PinnedIds.Contains(prompt.Id) ? "★" : "☆", () => TogglePin(prompt)); pin.ToolTip = "釘選／取消釘選";
+            var pinned = settings.PinnedIds.Contains(prompt.Id);
+            var pin = RowTool("pin", () => TogglePin(prompt)); pin.ToolTip = pinned ? "取消釘選" : "釘選";
+            AutomationProperties.SetAutomationId(pin, "AiPin_" + prompt.Id);
             AutomationProperties.SetName(pin, "釘選 " + prompt.Name); DockPanel.SetDock(pin, Dock.Right); line.Children.Add(pin);
             var button = ActionUi.Button(prompt.Name, () => _ = SubmitAsync(prompt.Instruction, prompt.Id), prompt.Icon);
-            button.HorizontalContentAlignment = HorizontalAlignment.Left; button.BorderThickness = new(0); button.Margin = new(0, 0, 0, 3); button.IsEnabled = !Session.Busy;
+            button.HorizontalContentAlignment = HorizontalAlignment.Left; button.BorderThickness = new(0); button.Margin = new(0); button.IsEnabled = !Session.Busy;
+            button.Background = Brushes.Transparent; button.Padding = new(8, 9, 4, 9); button.MinHeight = 40;
+            if (pinned && button.Content is StackPanel commandContent)
+            { var indicator = ActionUi.Icon("pin", ActionUi.Muted, 11); indicator.Margin = new(6, 0, 0, 0); commandContent.Children.Add(indicator); }
             button.ToolTip = prompt.Name; AutomationProperties.SetAutomationId(button, "AiPrompt_" + prompt.Id); commandButtons.Add(button);
             button.PreviewKeyDown += (_, e) =>
             {
                 if (e.Key is Key.Up or Key.Down) { var index = commandButtons.IndexOf(button) + (e.Key == Key.Down ? 1 : -1); if (index < 0) input.Focus(); else if (index < commandButtons.Count) commandButtons[index].Focus(); e.Handled = true; }
                 else if (e.Key == Key.Enter) { e.Handled = true; _ = SubmitAsync(prompt.Instruction, prompt.Id); }
             };
-            line.Children.Add(button); commandRows.Children.Add(line);
+            line.Children.Add(button); commandRows.Children.Add(row);
         }
         if (items.Count == 0) commandRows.Children.Add(ActionUi.Text(input.Text.Length > 0 ? "沒有符合的已存指令，仍可直接執行輸入內容。" : "這個分類尚無指令。", 12, ActionUi.Muted));
         count.Text = (input.Text.Trim().Length > 0 ? "搜尋全部 · " : "") + $"{items.Count} / {settings.Prompts.Length} 個指令";
@@ -213,8 +239,7 @@ internal sealed class AiPanelWindow : Window
         syncing = true; if (input.Text != Session.Draft) { input.Text = Session.Draft; input.CaretIndex = input.Text.Length; } syncing = false;
         basis.Text = "基於：" + Session.BasisLabel; restart.Visibility = Session.BasisId == null ? Visibility.Collapsed : Visibility.Visible;
         var profile = preferences.SelectedProfile;
-        model.Content = new TextBlock { Text = profile.Model.Length == 0 ? "設定服務／模型" : profile.Name + " · " + profile.Model,
-            TextTrimming = TextTrimming.CharacterEllipsis, TextWrapping = TextWrapping.NoWrap, MaxWidth = 320, FontSize = 13 };
+        modelLabel.Text = profile.Model.Length == 0 ? "設定 AI 服務" : profile.Name;
         AutomationProperties.SetName(model, "AI 服務與模型設定"); model.ToolTip = profile.Name + " · " + profile.Model;
         resume.Visibility = Session.Current != null && Session.BasisId != Session.Current.Id ? Visibility.Visible : Visibility.Collapsed;
         restart.IsEnabled = resume.IsEnabled = !Session.Busy;
@@ -222,17 +247,22 @@ internal sealed class AiPanelWindow : Window
         original.Parent.SetValue(VisibilityProperty, Session.ViewingOriginal ? Visibility.Visible : Visibility.Collapsed);
         resultCard.Visibility = Session.ViewingOriginal ? Visibility.Collapsed : Visibility.Visible;
         resultTab.IsEnabled = Session.Current != null; resultTab.Content = Session.HasNewResult ? "結果 · 新" : Session.Busy ? "結果 · 產生中" : "結果";
-        originalTab.Background = Session.ViewingOriginal ? ActionUi.Pale : Brushes.White; resultTab.Background = !Session.ViewingOriginal ? ActionUi.Pale : Brushes.White;
+        originalTab.Tag = Session.ViewingOriginal ? "Selected" : ""; resultTab.Tag = !Session.ViewingOriginal ? "Selected" : "";
         previous.IsEnabled = !Session.Busy && Session.Index > 0; next.IsEnabled = !Session.Busy && Session.Index + 1 < Session.Versions.Count;
         if (Session.Current is { } current)
         {
-            version.Text = $"第 {current.Id} 版"; resultHeading.Text = "結果"; execution.Text = "基於" + current.BasisLabel + " · " + current.Instruction;
+            version.Text = $"第 {current.Id} 版"; execution.Text = "基於" + current.BasisLabel + " · " + current.Instruction.ReplaceLineEndings(" ");
             if (renderedText != current.Text) { renderedText = current.Text; resultContent.Content = AiMarkdownView.Create(current.Text); }
         }
         copy.Content = Session.ViewingOriginal ? "複製原文" : "複製結果";
         var writable = targetValid && SessionPolicy.CanWrite(selection, selection.Target) && apply != null;
         replace.Visibility = !Session.ViewingOriginal && writable ? Visibility.Visible : Visibility.Collapsed; replace.IsEnabled = !Session.Busy && !applying;
-        copy.Background = !Session.ViewingOriginal && !writable ? ActionUi.Pale : Brushes.White;
+        var primaryCopy = !Session.ViewingOriginal && !writable;
+        copy.Background = copy.BorderBrush = primaryCopy ? ActionUi.Accent : Brushes.White;
+        if (!primaryCopy) copy.BorderBrush = ActionUi.Line;
+        copy.Foreground = primaryCopy ? Brushes.White : ActionUi.Ink;
+        copy.Resources["ControlHover"] = primaryCopy ? ActionUi.Brush("#2E58BE") : ActionUi.Brush("#EEF1F6");
+        copy.Resources["ControlPressed"] = primaryCopy ? ActionUi.Brush("#24489F") : ActionUi.Brush("#E2E7F0");
         status.Text = !targetValid ? "原選取已失效，請複製結果後自行貼上。" : !SessionPolicy.CanWrite(selection, selection.Target) ? "來源不提供寫入，可以複製結果。" : Session.ViewingOriginal ? "選擇指令後才傳送文字。" : "替換時也會複製結果。";
         RenderCommands();
     }

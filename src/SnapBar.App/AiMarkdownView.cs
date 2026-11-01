@@ -13,7 +13,7 @@ internal static class AiMarkdownView
     {
         // Large output remains fully available without creating thousands of document blocks.
         if (text.Length > 64000 || text.Count(c => c == '\n') > 1000) return Plain(text);
-        var document = new FlowDocument { FontFamily = ActionUi.Font, FontSize = 14, PagePadding = new(12), Background = Brushes.White };
+        var document = new FlowDocument { FontFamily = ActionUi.Font, FontSize = 15, LineHeight = 24, PagePadding = new(20), Foreground = ActionUi.Ink, Background = Brushes.Transparent };
         var code = new List<string>(); bool inCode = false;
         foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
         {
@@ -46,11 +46,11 @@ internal static class AiMarkdownView
             document.Blocks.Add(paragraph);
         }
         if (code.Count > 0) AddCode(document, string.Join("\n", code));
-        return new FlowDocumentScrollViewer { Document = document, IsToolBarVisible = false, IsSelectionEnabled = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        return new FlowDocumentScrollViewer { Document = document, Background = Brushes.Transparent, IsToolBarVisible = false, IsSelectionEnabled = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }
     public static TextBox Plain(string text) => new() { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
         VerticalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalContentAlignment = VerticalAlignment.Top,
-        Padding = new(12), BorderThickness = new(0), Background = Brushes.White, FontSize = 14 };
+        Padding = new(20), BorderThickness = new(0), Background = Brushes.Transparent, FontSize = 15 };
     private static void AddCode(FlowDocument document, string text)
     {
         var panel = new DockPanel { Background = ActionUi.Canvas, Margin = new(0, 6, 0, 12) };

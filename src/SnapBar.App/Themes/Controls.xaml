@@ -85,6 +85,38 @@
         </Setter>
     </Style>
 
+    <Style x:Key="AiViewTab" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="14,7" />
+        <Style.Triggers>
+            <Trigger Property="Tag" Value="Selected">
+                <Setter Property="Background" Value="#EDF2FF" />
+                <Setter Property="Foreground" Value="{DynamicResource ControlAccent}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="AiPromptRow" TargetType="Border">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource ControlHover}" /></Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="Background" Value="{DynamicResource ControlHover}" /></Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="AiRowTool" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Opacity" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Border}}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger>
+            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=Border}}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger>
+            <DataTrigger Binding="{Binding ContextMenu.IsOpen, RelativeSource={RelativeSource Self}}" Value="True"><Setter Property="Opacity" Value="1" /></DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style TargetType="TextBox">
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="Padding" Value="10,7" />
