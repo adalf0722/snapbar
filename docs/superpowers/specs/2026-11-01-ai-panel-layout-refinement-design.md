@@ -9,3 +9,7 @@ Approved by the user with “go” after review of real original/result screensh
 - Original/result footer text matches the active view, including readonly and invalidated targets. Preserve foreground, selection and clipboard revalidation without relaxing invalidation.
 
 Validate native geometry (all five buttons inside the viewport and stable input position), input growth, saved/free instruction labels, history controls and view-specific status. Reuse original replacement/stale-request checks, inspect normal/minimum screenshots, run check plus Release/Layout, and publish through the existing fingerprint gate. Do not modify user AI settings or pre-existing uncommitted action-management changes.
+
+## Approved copy clarity follow-up
+
+User requested “繼續” after review of the refined panel. Keep the layout. Label the processing basis “下次改寫”, name the shown-version source switch “改用第 n 版” and the original switch “改用原文”. Keep the basis single-line with a full tooltip so simultaneous source switches cannot wrap it and move the input. Replace the document-only details icon with the quiet text action “指令詳情”. Explain readonly sources as “此處無法直接替換，請複製結果。” with matching original-view wording. No session, safety or persistence changes; verify through existing native regressions and screenshots.

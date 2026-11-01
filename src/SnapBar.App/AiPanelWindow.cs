@@ -63,10 +63,12 @@ internal sealed class AiPanelWindow : Window
         heading.Children.Add(ActionUi.Heading("想怎麼處理？", 14)); railHeader.Children.Add(heading);
         var basisRow = new DockPanel { MinHeight = 28, Margin = new(0, 8, 0, 6) };
         var basisButtons = new StackPanel { Orientation = Orientation.Horizontal };
-        restart = QuietButton("從原文重做", () => { Session.FromOriginal(); Refresh(); input.Focus(); });
-        resume = QuietButton("接續這一版", () => { Session.ContinueCurrent(); Refresh(); input.Focus(); });
+        restart = QuietButton("改用原文", () => { Session.FromOriginal(); Refresh(); input.Focus(); });
+        resume = QuietButton("改用這一版", () => { Session.ContinueCurrent(); Refresh(); input.Focus(); });
         basisButtons.Children.Add(resume); basisButtons.Children.Add(restart); DockPanel.SetDock(basisButtons, Dock.Right); basisRow.Children.Add(basisButtons);
-        basis = ActionUi.Text("基於：原文", 12, ActionUi.Muted); basisRow.Children.Add(basis); railHeader.Children.Add(basisRow);
+        basis = ActionUi.Text("下次改寫：原文", 12, ActionUi.Muted);
+        basis.TextWrapping = TextWrapping.NoWrap; basis.TextTrimming = TextTrimming.CharacterEllipsis;
+        basisRow.Children.Add(basis); railHeader.Children.Add(basisRow);
         input = ActionUi.Input("", 8192); input.MinHeight = 60; input.MaxHeight = 120; input.MinLines = 2; input.MaxLines = 5;
         input.AcceptsReturn = true; input.TextWrapping = TextWrapping.Wrap;
         input.VerticalContentAlignment = VerticalAlignment.Top;
@@ -114,7 +116,7 @@ internal sealed class AiPanelWindow : Window
         AutomationProperties.SetAutomationId(previous, "AiPreviousVersion"); AutomationProperties.SetAutomationId(next, "AiNextVersion");
         version = ActionUi.Text("", 12, ActionUi.Muted); history.Children.Add(previous); history.Children.Add(version); history.Children.Add(next);
         DockPanel.SetDock(history, Dock.Left); resultHeader.Children.Add(history);
-        var details = QuietButton("", ShowInstruction, "document"); details.ToolTip = "查看完整指令";
+        var details = QuietButton("指令詳情", ShowInstruction); details.ToolTip = "查看完整指令";
         AutomationProperties.SetName(details, "查看完整指令"); AutomationProperties.SetAutomationId(details, "AiInstructionDetails");
         DockPanel.SetDock(details, Dock.Right); resultHeader.Children.Add(details);
         execution = ActionUi.Text("", 12, ActionUi.Muted); execution.TextWrapping = TextWrapping.NoWrap;
@@ -245,11 +247,13 @@ internal sealed class AiPanelWindow : Window
     {
         if (closed) return;
         syncing = true; if (input.Text != Session.Draft) { input.Text = Session.Draft; input.CaretIndex = input.Text.Length; } syncing = false;
-        basis.Text = "基於：" + Session.BasisLabel; restart.Visibility = Session.BasisId == null ? Visibility.Collapsed : Visibility.Visible;
+        basis.Text = "下次改寫：" + Session.BasisLabel; basis.ToolTip = basis.Text;
+        restart.Visibility = Session.BasisId == null ? Visibility.Collapsed : Visibility.Visible;
         var profile = preferences.SelectedProfile;
         modelLabel.Text = profile.Model.Length == 0 ? "設定 AI 服務" : profile.Name;
         AutomationProperties.SetName(model, "AI 服務與模型設定"); model.ToolTip = profile.Name + " · " + profile.Model;
         resume.Visibility = Session.Current != null && Session.BasisId != Session.Current.Id ? Visibility.Visible : Visibility.Collapsed;
+        resume.Content = Session.Current is { } shown ? $"改用第 {shown.Id} 版" : "改用這一版";
         restart.IsEnabled = resume.IsEnabled = !Session.Busy;
         stop.Visibility = Session.Busy ? Visibility.Visible : Visibility.Collapsed;
         progress.Visibility = Session.Busy ? Visibility.Visible : Visibility.Hidden;
@@ -276,7 +280,7 @@ internal sealed class AiPanelWindow : Window
         status.Text = !targetValid
             ? Session.ViewingOriginal ? "原選取已失效，仍可複製原文。" : "原選取已失效，請複製結果後自行貼上。"
             : !SessionPolicy.CanWrite(selection, selection.Target)
-                ? Session.ViewingOriginal ? "來源不提供寫入，可以複製原文。" : "來源不提供寫入，可以複製結果。"
+                ? Session.ViewingOriginal ? "此處無法直接替換，可複製原文。" : "此處無法直接替換，請複製結果。"
                 : Session.ViewingOriginal ? "選擇指令後才傳送文字。" : "替換時也會複製結果。";
         RenderCommands();
     }
