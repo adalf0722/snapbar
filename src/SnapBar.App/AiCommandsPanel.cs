@@ -65,6 +65,7 @@ internal sealed class AiCommandsPanel : ContentControl
         syncing = true;
         var categories = new List<CategoryItem> { new("全部分類", null), new("未分類", "") };
         categories.AddRange(preferences.Settings.Prompts.Select(p => p.Category).Where(c => c.Length > 0).Distinct(StringComparer.Ordinal).Select(c => new CategoryItem(c, c)));
+        if (chosen != null && categories.All(c => c.Value != chosen)) categories.Add(new(chosen, chosen));
         category.ItemsSource = categories; category.SelectedItem = categories.FirstOrDefault(c => c.Value == chosen) ?? categories[0];
         syncing = false; Render();
     }

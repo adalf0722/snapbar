@@ -15,7 +15,7 @@ internal sealed class AiPreferences
     public event Action<SettingsCategory>? SettingsRequested;
     internal System.Windows.Window? SettingsHost { get; set; }
     public DeletedAiPrompt? LastDeletion { get; private set; }
-    private readonly Dictionary<string, AiPromptEditorWindow> editors = [];
+    private readonly Dictionary<(bool IsNew, string Id), AiPromptEditorWindow> editors = [];
     private readonly List<ISettingsDraft> drafts = [];
     internal IReadOnlyList<ISettingsDraft> Drafts => drafts.ToArray();
 
@@ -88,7 +88,7 @@ internal sealed class AiPreferences
 
     internal AiPromptEditorWindow OpenEditor(System.Windows.Window? owner, AiPrompt? prompt)
     {
-        var identity = prompt?.Id ?? "__new";
+        var identity = (IsNew: prompt == null, Id: prompt?.Id ?? "");
         if (editors.TryGetValue(identity, out var active)) { active.Activate(); return active; }
         var editor = new AiPromptEditorWindow(prompt, changed => TrySavePrompt(changed, prompt == null, out var error) ? null : error);
         if (owner != null) editor.Owner = owner;

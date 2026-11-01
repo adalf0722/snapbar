@@ -21,7 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly SettingsStore settingsStore;
     private readonly AiPreferences aiPreferences;
     private ApplicationSettings preferences;
-    private bool exitRequested, hiddenNoticeShown;
+    private bool exitRequested, exitResolutionInProgress, hiddenNoticeShown;
     private bool updatingCompatibility, updatingSublime;
     private readonly Action configureSublime;
     private readonly Func<bool> sublimeIsReady;
@@ -216,9 +216,14 @@ public sealed partial class MainWindow : Window
 
     internal async Task ExitAsync()
     {
-        if (exitRequested) return;
-        if (!TryResolveDraftsForExit()) return;
-        exitRequested = true;
+        if (exitRequested || exitResolutionInProgress) return;
+        exitResolutionInProgress = true;
+        try
+        {
+            if (!TryResolveDraftsForExit()) return;
+            exitRequested = true;
+        }
+        finally { exitResolutionInProgress = false; }
         IsEnabled = false;
         controller?.BeginShutdown();
         foreach (var draft in aiPreferences.Drafts.ToArray()) draft.Discard();
