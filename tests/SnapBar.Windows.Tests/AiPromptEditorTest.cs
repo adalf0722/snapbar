@@ -38,7 +38,7 @@ internal static class AiPromptEditorTest
             editor = new(null, prompt => { calls++; saved = prompt; return null; }); editor.Show(); await Layout(editor);
             var form = Find<ScrollViewer>(editor, "AiPromptForm"); var advanced = Find<Expander>(editor, "AiPromptAdvanced");
             var name = Find<TextBox>(editor, "AiPromptName"); var instruction = Find<TextBox>(editor, "AiPromptInstruction");
-            check(!advanced.IsExpanded && !Find<TextBox>(editor, "AiPromptCategory").IsVisible && !Find<ComboBox>(editor, "AiPromptIcon").IsVisible,
+            check(!advanced.IsExpanded && !Find<TextBox>(editor, "AiPromptCategory").IsVisible && !Find<TextBox>(editor, "AiPromptIcon").IsVisible,
                 "AI new prompt shows only primary fields with optional settings collapsed");
             check(form.ScrollableHeight < 1 && instruction.ActualHeight >= 140
                 && instruction.TranslatePoint(new Point(0, instruction.ActualHeight), form).Y <= form.ViewportHeight + 1
@@ -70,10 +70,11 @@ internal static class AiPromptEditorTest
             advanced = Find<Expander>(editor, "AiPromptAdvanced"); advanced.IsExpanded = true; await Layout(editor);
             var category = Find<TextBox>(editor, "AiPromptCategory"); category.Text = "翻譯";
             var keywords = Find<TextBox>(editor, "AiPromptKeywords"); keywords.Text = "日文 japanese";
-            var icons = Find<ComboBox>(editor, "AiPromptIcon");
-            icons.SelectedValue = "translate"; await Layout(editor);
-            check(Children<Viewbox>(icons).Any(v => v.IsVisible && v.ActualWidth > 0 && v.ActualHeight > 0)
-                && Children<TextBlock>(icons).Any(t => t.IsVisible && t.ActualWidth > 0 && t.Text == "翻譯"),
+            var icons = Find<TextBox>(editor, "AiPromptIcon");
+            icons.Text = "translate_20_regular"; await Layout(editor);
+            var iconPreview = Find<AiIconPresenter>(editor, "AiPromptIconPreview");
+            check(iconPreview.ActualWidth > 0 && iconPreview.ActualHeight > 0 && iconPreview.Child is TextBlock glyph && glyph.Text.Length > 0
+                && Find<TextBlock>(editor, "AiPromptIconHint").Text == "翻譯",
                 "AI selected icon shows a visible vector preview and readable name in the minimum window");
             icons.BringIntoView(); await Layout(editor); form = Find<ScrollViewer>(editor, "AiPromptForm");
             check(form.ScrollableHeight > 0 && icons.TranslatePoint(new Point(), form).Y >= 0 && icons.TranslatePoint(new Point(0, icons.ActualHeight), form).Y <= form.ViewportHeight + 1,
@@ -82,7 +83,7 @@ internal static class AiPromptEditorTest
             Click(editor, "AiPromptSave"); editor = null;
             var reloaded = new AiPreferences(directory).Settings;
             check(reloaded.Profiles.SequenceEqual(before.Profiles) && reloaded.SelectedProfileId == before.SelectedProfileId
-                && reloaded.Prompts.Single(p => p.Id == existing.Id) is { Category: "翻譯", Keywords: "日文 japanese", Icon: "translate" },
+                && reloaded.Prompts.Single(p => p.Id == existing.Id) is { Category: "翻譯", Keywords: "日文 japanese", Icon: "translate_20_regular" },
                 "AI prompt saving retains configured provider profiles and selected service");
 
             editor = new(existing, _ => "儲存失敗測試"); editor.Show(); await Layout(editor); Click(editor, "AiPromptSave");

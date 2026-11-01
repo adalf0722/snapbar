@@ -63,6 +63,7 @@ internal static class AiPanelTest
                 var compatible = settings.Profiles.Single(p => p.Id == "compatible") with { Model = "fixture-model" };
                 Check(preferences.TrySave(settings with { SelectedProfileId = compatible.Id, Profiles = settings.Profiles.Select(p => p.Id == compatible.Id ? compatible : p).ToArray() }, out _), "AI fixture uses isolated configured service without credentials");
                 var client = new Client();
+                await AiIconTest.RunAsync(directory, Check, Snapshot);
                 var snapshot = new SelectionSnapshot("ui", new(0, 1, 1), "# Literal source\n**keep original markers**", new(100, 100, 50, 20), false, 1, 43);
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate(); await Task.Delay(100);
                 Check(panel.Session.ViewingOriginal && !Button(panel, "AiResultTab").IsEnabled && Children<TextBox>(panel).Any(t => t.Text == snapshot.Text && t.IsReadOnly), "AI opens with literal original and no empty result page");
@@ -179,7 +180,9 @@ internal static class AiPanelTest
                         "AI long " + sample.Name + " exposes the complete last line at scroll end"); Snapshot(panel, "long-" + sample.Name + "-bottom.png");
                 }
                 Button(panel, "AiCopy").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                Check(Clipboard.GetText() == markdown, "AI long Markdown copying preserves the exact raw response");
+                var exactCopy = Clipboard.GetText() == markdown;
+                if (!exactCopy) Console.WriteLine($"COPY DIAGNOSTIC viewing-original={panel.Session.ViewingOriginal}; write-busy={Children<TextBlock>(panel).Any(t => t.Text == "剪貼簿忙碌，請稍後再試。")}");
+                Check(exactCopy, "AI long Markdown copying preserves the exact raw response");
                 panel.Width = 680; panel.Height = 500; panel.UpdateLayout();
                 var smallViewer = Children<FlowDocumentScrollViewer>(panel).Single(); var smallScroll = Children<ScrollViewer>(smallViewer).Single();
                 smallScroll.ScrollToBottom(); panel.UpdateLayout();
@@ -216,8 +219,12 @@ internal static class AiPanelTest
                 Check(controller.ActiveSelection != null && panel.TargetValid, "AI foreground timer preserves source while native panel owns focus");
                 await panel.SubmitAsync("rewrite"); Snapshot(panel, "editable-result.png");
                 await panel.ApplyAsync(); await Task.Delay(200);
-                Check(value.Current.Value == "AI fixture replacement" + before[selectedText.Length..]
-                    && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id && Clipboard.GetText() == "AI fixture replacement",
+                var rangeMatches = value.Current.Value == "AI fixture replacement" + before[selectedText.Length..];
+                var sourceForeground = Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id;
+                var clipboardMatches = Clipboard.GetText() == "AI fixture replacement";
+                if (!rangeMatches || !sourceForeground || !clipboardMatches)
+                    Console.WriteLine($"APPLY DIAGNOSTIC range-matches={rangeMatches}; source-foreground={sourceForeground}; clipboard-matches={clipboardMatches}; panel-visible={panel.IsVisible}; target-valid={panel.TargetValid}");
+                Check(rangeMatches && sourceForeground && clipboardMatches,
                     "AI replacement revalidates restores source and changes only original selected range");
                 panel = null; value.SetValue(before); element.SetFocus();
                 var range = ((TextPattern)element.GetCurrentPattern(TextPattern.Pattern)).DocumentRange.Clone();

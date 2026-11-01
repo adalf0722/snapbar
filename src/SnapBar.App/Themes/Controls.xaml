@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:SnapBar.App">
     <SolidColorBrush x:Key="ControlHover" Color="#EEF1F6" />
     <SolidColorBrush x:Key="ControlPressed" Color="#E2E7F0" />
     <SolidColorBrush x:Key="ControlLine" Color="#DDE2E9" />
@@ -85,14 +86,23 @@
         </Setter>
     </Style>
 
-    <DataTemplate x:Key="AiPromptIconOption">
-        <StackPanel Orientation="Horizontal">
-            <Viewbox Width="16" Height="16">
-                <Path Data="{Binding Geometry}" Width="24" Height="24" Stroke="#626B78" StrokeThickness="1.6"
-                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
-            </Viewbox>
-            <TextBlock Text="{Binding Label}" FontSize="13" Margin="9,0,0,0" VerticalAlignment="Center" />
-        </StackPanel>
+    <DataTemplate x:Key="AiIconGridRow">
+        <ItemsControl ItemsSource="{Binding Icons}" Focusable="False">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" Columns="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Command="{Binding ChooseIcon, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding Id}"
+                            Tag="{Binding Id}" ToolTip="{Binding Id}" Margin="3" Padding="5,9" MinHeight="84" HorizontalContentAlignment="Stretch"
+                            AutomationProperties.Name="{Binding Label}">
+                        <StackPanel>
+                            <local:AiIconPresenter IconId="{Binding Id}" Width="24" Height="24" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding Label}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       LineHeight="16" MaxHeight="32" Margin="0,7,0,0" />
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </DataTemplate>
 
     <Style x:Key="AiViewTab" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">

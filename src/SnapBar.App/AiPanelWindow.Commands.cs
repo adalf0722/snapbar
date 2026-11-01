@@ -35,7 +35,7 @@ internal sealed partial class AiPanelWindow
             button.Background = Brushes.Transparent; button.Padding = new(7, 9, 7, 8); button.MinHeight = 76;
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             var content = new Grid(); content.RowDefinitions.Add(new() { Height = new(18) }); content.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
-            var icon = ActionUi.Icon(prompt.Icon, ActionUi.Muted, 16); icon.HorizontalAlignment = HorizontalAlignment.Center; content.Children.Add(icon);
+            var icon = new AiIconPresenter { IconId = AiIconCatalog.ForPrompt(prompt), Width = 16, Height = 16, HorizontalAlignment = HorizontalAlignment.Center }; content.Children.Add(icon);
             var title = ActionUi.Text(Session.Busy && runningPromptId == prompt.Id ? "處理中…" : prompt.Name, 13);
             title.TextAlignment = TextAlignment.Center; title.TextTrimming = TextTrimming.CharacterEllipsis;
             title.LineHeight = 18; title.MaxHeight = 36; title.Margin = new(0, 5, 0, 0); Grid.SetRow(title, 1); content.Children.Add(title); button.Content = content;

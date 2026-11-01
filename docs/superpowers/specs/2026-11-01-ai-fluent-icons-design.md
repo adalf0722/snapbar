@@ -1,0 +1,9 @@
+# AI Fluent Icon Selection
+
+The approved design adds an offline Fluent UI System Icons Regular catalog, name entry with live preview, Chinese keyword search, category browsing and a selectable grid. A compact name field, preview and Choose button replace the prompt editor's small icon ComboBox inside optional settings. Invalid changed names cannot be saved; existing unknown IDs remain unchanged unless deliberately replaced. Canceling the picker preserves the editor's draft.
+
+Bundle Microsoft's pinned Regular font and name-to-codepoint map with MIT attribution. This is the open-source Fluent System Icons font, not the Windows Segoe font. All official Regular names and sizes in that pinned map are accepted, optionally with the ic_fluent_ prefix; bare names resolve to 20 then 24 then an available size. Browsing presents each shape once, with Chinese labels/keywords for common concepts and English names for the rest. Legacy SnapBar icon IDs remain supported; an explicit legacy: prefix disambiguates choices from Fluent names.
+
+Only unchanged factory commands still using the old spark default receive distinct presentation defaults. Match the full legacy factory definition so modified/custom commands retain their icons. The editor opens with the effective default; deliberately choosing legacy:spark remains a stable explicit override. No automatic writes to user AI settings, profiles or secrets are made.
+
+The picker virtualizes rows of six cells, creates previews only for realized rows and searches metadata without constructing every icon. The main panel renders only command icons. Validate supplementary Unicode glyphs, exact names, aliases, invalid names, legacy/unknown preservation, Chinese searches, keyboard selection, cancellation and persisted round trips. Measure bundled asset bytes, catalog startup/search and realized UI count; inspect normal/small UI screenshots, run current-source Release/Layout and publish normally.

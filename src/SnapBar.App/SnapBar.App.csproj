@@ -8,4 +8,11 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../SnapBar.Windows/SnapBar.Windows.csproj" /></ItemGroup>
   <ItemGroup><Using Remove="System.Drawing" /><Using Remove="System.Windows.Forms" /></ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets/FluentIcons/FluentSystemIcons-Regular.ttf" />
+    <Resource Include="Assets/FluentIcons/catalog.json" />
+    <Content Include="Assets/FluentIcons/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/FluentIcons/NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/FluentIcons/SOURCE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

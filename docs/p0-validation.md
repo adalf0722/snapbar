@@ -678,3 +678,19 @@ AI runtime 使用注入 HTTP handler 驗證請求、錯誤、取消及邊界；�
 已目視核對 `artifacts/ai-panel/original.png`、`readonly-result.png`、`toolbox-long-name.png`、`toolbox-many-small.png` 及長文閱讀截圖。測試使用隔離設定與模擬回應，沒有呼叫真實模型；實體 IME、混合 DPI 與第三方 App 覆蓋限制仍沿用前節。發佈前使用者 ai.json 雜湊與前輪記錄一致，未改寫服務或指令設定。
 
 已使用上述成功桌面報告完成自含式 staging 發佈，Core 389、Probe smoke 10 通過。新版 `artifacts/p0` 正常啟動，確認既有偏好後回到系統匣，ai.json 雜湊保持不變。發佈報告：`artifacts/checks/build/20261101T093502525Z-dcf12795ad3c4a3f90605e842dad04a4/report.json`；舊套件保留於 `artifacts/publish/a97826e1fb644b90852a6dfa52f90468/previous`。
+
+## 2026-11-01 AI Fluent icons 圖庫與名稱輸入
+
+新增離線 Fluent UI System Icons Regular 圖庫，固定使用微軟上游 commit `9eb184e96268d3293462f9d9d19225b4c7b07774` 的字型與名稱表，隨套件附帶 MIT LICENSE、NOTICE 與來源記錄。字型 SHA-256：`AF1B71AB7BB475AE30B8C87172551503F8DE6CF733548FE7DDBDA15FC08DEA34`。不是依賴系統安裝的 Segoe 字型，執行時不連網下載。完整 10,265 個尺寸變體都經字型 glyph 對照驗證；瀏覽時合併為 3,015 種圖形，另保留 13 個原有圖示。圖庫、字型、授權及來源檔合計 3,261,374 bytes。
+
+新增／編輯指令的選填設定改為名稱輸入、即時預覽與「選擇圖示」。接受 `translate`、`translate_20_regular`、`ic_fluent_` 前綴及 SVG 檔名，保存時使用正式識別碼；可搜尋常用中文字詞、英文名稱，或依用途分類。輸入錯誤時不保存，修正後清除舊錯誤；取消圖庫不改動草稿。保留未知舊識別碼與已修改指令；只有仍完整符合出廠定義且使用舊星芒的五個指令，套用不同的顯示預設。明確選擇 `legacy:spark` 可以覆蓋預設，無須重設其他資料。
+
+六欄選擇網格按列虛擬化，支援方向鍵、Enter、Esc 與 IME 確認保護。最終原始碼同機 fixture 量測：首次讀取 catalog 約 31.52 ms、保留的 managed 記憶體增量 3,375,496 bytes、25 次暖搜尋平均 0.76 ms、首次圖庫視窗完成 layout 約 221.43 ms；全部 505 列中只實現 5 列，含標頭共 31 個可見 preview。記憶體數值僅為 managed heap 增量，不是整個程序或原生字型快取；這些是單機樣本，非跨硬體保證。
+
+新增 23 項圖庫／編輯器檢查，包含所有變體 glyph、補充平面碼點、字型實際來源、中文搜尋、名稱正規化、無效輸入、五個預設與自訂保留、可見列數、跨 viewport 鍵盤移動、IME、取消、最小尺寸及保存重載。最終相同原始碼通過 AiPanel 103、Lifecycle 28、Appearance 60、CompatibilitySlow 22（含真實 35 秒腳本）、AiRuntime 35、Layout 22、Preflight 1；報告 `artifacts/checks/desktop/20261101T100034035Z-1709ab6994c14ecf8d7230398e315160/report.json`，使用 `AiPanel, Release, Layout` 的完整必需套件順序。快速檢查另通過工具契約 12、Core 389，建置零警告／零錯誤。
+
+前兩次完整回歸分別在既有 Markdown 複製及原選取替換檢查失敗（`20261101T095556846Z-38821df4969b454c8dd835357f6f8679`、`20261101T095759495Z-47507b3347c447a99ece30830c1531fd`），未用於發佈。增加不含文字內容的布林診斷後，聚焦執行 103 項及上述完整套件皆通過；未重現失敗，因此不能斷言先前原因，亦未放寬任何來源、前景、剪貼簿或替換斷言。
+
+已目視核對 `artifacts/ai-panel/original.png`、`icon-picker-common.png`、`icon-picker-all.png`、`icon-picker-search.png`、`icon-picker-small.png`、`prompt-editor-fluent.png` 與小視窗截圖。實體 IME、混合 DPI 與第三方 App 覆蓋限制仍沿用前節。所有新測試使用隔離設定，沒有呼叫付費服務；真實 ai.json 發佈前的雜湊與前輪一致，未自動改寫使用者設定。
+
+已用成功的完整桌面報告完成自含式發佈，Core 389、Probe smoke 10 通過；新版正常啟動後回到系統匣，ai.json 雜湊仍保持不變。發佈報告：`artifacts/checks/build/20261101T100303622Z-85ed9b180420424cbe957933161d0393/report.json`；舊套件保留於 `artifacts/publish/74a2023432d744aab6fdfa48318b80ea/previous`。更新後套件於附加本段前為 330,039,963 bytes，比基準 326,747,611 bytes 增加 3,292,352 bytes，約 1.01%；包含程式、圖庫、符號與驗證文件的整體差異，非壓縮下載大小。
