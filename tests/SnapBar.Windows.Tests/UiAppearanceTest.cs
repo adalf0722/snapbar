@@ -48,7 +48,7 @@ internal static class UiAppearanceTest
             try
             {
                 main = new MainWindow(new SettingsStore(Path.Combine(directory, "settings.json"))); main.Show(); main.UpdateLayout();
-                Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
+                Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).Where(e => e.IsVisible).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
                 Check(main.ClipboardCompatibilityEnabled && Children<CheckBox>(main).Single(c => AutomationProperties.GetAutomationId(c) == "ClipboardCompatibilityToggle").IsChecked == true,
                     "compatibility is enabled by default and separated from optional Sublime setup");
                 Check(!Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "LatestDiagnosticStatus").IsVisible,
@@ -58,7 +58,7 @@ internal static class UiAppearanceTest
                 Check(notice.IsVisible && notice.Text.Contains("無效"), "invalid settings remain visible without opening diagnostics");
                 notice.Visibility = Visibility.Collapsed;
                 Snapshot(main, "settings.png");
-                var searchPanel = Children<SearchSettingsPanel>(main).Single(); searchPanel.IsExpanded = true; main.UpdateLayout();
+                var searchPanel = Children<SearchSettingsPanel>(main).Single(); searchPanel.Reveal(); searchPanel.IsExpanded = true; main.UpdateLayout();
                 var provider = Children<ComboBox>(searchPanel).Single(c => AutomationProperties.GetAutomationId(c) == "SearchProvider");
                 var template = Children<TextBox>(searchPanel).Single(t => AutomationProperties.GetAutomationId(t) == "SearchUrlTemplate");
                 Check(provider.SelectedIndex == 0 && !template.IsVisible, "default search shows provider choice and hides custom URL details");
@@ -75,9 +75,12 @@ internal static class UiAppearanceTest
                 Children<Button>(searchPanel).Single(b => AutomationProperties.GetAutomationId(b) == "ResetSearchTemplate").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(provider.SelectedIndex == 0 && !template.IsVisible, "reset returns to Google provider and hides custom fields");
                 searchPanel.IsExpanded = false; notice.Visibility = Visibility.Collapsed;
+                await SettingsNavigationTest.RunAsync(main, directory, Check);
+                main.NavigateTo(SettingsCategory.General);
                 main.Width = main.MinWidth; main.Height = main.MinHeight; main.UpdateLayout(); Snapshot(main, "settings-small.png");
-                Check(((ScrollViewer)main.Content).ScrollableHeight > 0, "compact settings can scroll to all sections and exit");
-                main.Width = 740; main.Height = 760; main.UpdateLayout();
+                Check(main.Content is not ScrollViewer && Children<ScrollViewer>(main).Where(s => s.IsVisible).All(s => s.ScrollableHeight < 1),
+                    "compact general settings retain fixed navigation without vertical overflow");
+                main.Width = 980; main.Height = 720; main.UpdateLayout();
 
                 var script = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "清理多餘空白", CustomActionKind.PowerShell, "terminal", "($env:POPCLIP_TEXT -replace '\\s+', ' ').Trim()");
                 var counter = script with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "統計字數", Content = "$env:POPCLIP_TEXT.Length" };
@@ -281,7 +284,11 @@ internal static class UiAppearanceTest
             {
                 popup?.Close(); editor?.Close(); actions?.Close();
                 main?.PrepareSessionEnd(); main?.Close();
-                foreach (var file in Directory.GetFiles(directory)) File.Delete(file); Directory.Delete(directory, false);
+                var tempRoot = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                var cleanupPath = Path.GetFullPath(directory);
+                if (Directory.Exists(cleanupPath) && cleanupPath.StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase)
+                    && Path.GetFileName(cleanupPath).StartsWith("SnapBar.Appearance.", StringComparison.Ordinal)
+                    && new DirectoryInfo(cleanupPath).LinkTarget == null) Directory.Delete(cleanupPath, true);
                 Console.WriteLine($"{passed} passed, {(exit == 0 ? 0 : 1)} failed"); app.Shutdown();
             }
         };

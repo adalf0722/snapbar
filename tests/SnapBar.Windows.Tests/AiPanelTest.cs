@@ -63,6 +63,7 @@ internal static class AiPanelTest
                 var compatible = settings.Profiles.Single(p => p.Id == "compatible") with { Model = "fixture-model" };
                 Check(preferences.TrySave(settings with { SelectedProfileId = compatible.Id, Profiles = settings.Profiles.Select(p => p.Id == compatible.Id ? compatible : p).ToArray() }, out _), "AI fixture uses isolated configured service without credentials");
                 var client = new Client();
+                AiManagementTest.Run(directory, Check);
                 await AiIconTest.RunAsync(directory, Check, Snapshot);
                 var snapshot = new SelectionSnapshot("ui", new(0, 1, 1), "# Literal source\n**keep original markers**", new(100, 100, 50, 20), false, 1, 43);
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate(); await Task.Delay(100);
@@ -217,6 +218,35 @@ internal static class AiPanelTest
                 }
                 await ForegroundPanel(); await Task.Delay(250);
                 Check(controller.ActiveSelection != null && panel.TargetValid, "AI foreground timer preserves source while native panel owns focus");
+                var managementCompletion = new TaskCompletionSource<AiTextResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+                client.Handler = (_, _, _) => managementCompletion.Task;
+                var managementRequest = panel.SubmitAsync("Disposable management request");
+                var management = new Window { Title = "SnapBar management fixture", Width = 420, Height = 260, Content = new TextBox { Text = "Disposable management content" } };
+                void ShowManagement(SettingsCategory category) { management.Show(); management.Activate(); }
+                preferences.SettingsHost = management; preferences.SettingsRequested += ShowManagement;
+                try
+                {
+                    Check(panel.RequestManagement(SettingsCategory.AiCommands), "AI management action routes to the registered settings host");
+                    await Task.Delay(250);
+                    Check(panel.HasCaptureForeground && !panel.HasForeground && !panel.Topmost && panel.Session.Busy
+                        && panel.TargetValid && controller.ActiveSelection != null,
+                        "AI registered management foreground preserves pending capture without granting panel foreground");
+                    managementCompletion.SetResult(new(true, "Disposable management result")); await managementRequest;
+                    var managerHandle = new WindowInteropHelper(management).Handle;
+                    var sequenceBeforeManagementApply = Native.GetClipboardSequenceNumber();
+                    await panel.ApplyAsync();
+                    Check(panel.Session.Current?.Text == "Disposable management result" && value.Current.Value == before
+                        && Native.GetForegroundWindow() == managerHandle && Native.GetClipboardSequenceNumber() == sequenceBeforeManagementApply,
+                        "AI completion in settings preserves result while Apply cannot write copy or steal settings focus");
+                }
+                finally
+                {
+                    preferences.SettingsRequested -= ShowManagement; preferences.SettingsHost = null;
+                    management.Close();
+                }
+                await ForegroundPanel();
+                Check(panel.Topmost, "AI panel restores its topmost placement when reactivated after settings");
+                client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, "AI fixture replacement"));
                 await panel.SubmitAsync("rewrite"); Snapshot(panel, "editable-result.png");
                 await panel.ApplyAsync(); await Task.Delay(200);
                 var rangeMatches = value.Current.Value == "AI fixture replacement" + before[selectedText.Length..];
