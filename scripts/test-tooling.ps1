@@ -217,6 +217,15 @@ try {
         $result = Invoke-WorkflowFixtureCheck 'StagedMissingLabel'
         Assert-Tooling (-not $result.success -and $result.exitCode -ne 0)
     }
+    Check-Tooling 'deleting staged actionlint configuration revalidates all remaining workflows' {
+        Write-WorkflowFixture $validWorkflow; Stage-WorkflowFixture $workflowRelative
+        & git -C $script:SnapBarRepo update-index --force-remove -- $configRelative
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot remove configuration from fixture index.' }
+        [IO.File]::WriteAllBytes($configPath, $originalConfig)
+        $result = Invoke-WorkflowFixtureCheck 'StagedDeletedConfig'
+        Assert-Tooling (-not $result.success -and $result.exitCode -ne 0)
+        Assert-Tooling ([IO.File]::ReadAllText($result.log).Contains('label "snapbar-desktop" is unknown'))
+    }
 }
 finally {
     $env:GIT_INDEX_FILE = $savedWorkflowIndex

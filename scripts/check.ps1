@@ -8,8 +8,11 @@ try {
         $names = & git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMR -z
         if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect index.' }
         $files = @($names -split "`0" | Where-Object { $_ })
+        $changedNames = & git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMRD -z
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect workflow changes.' }
+        $workflowChanges = @($changedNames -split "`0" | Where-Object { $_ })
     }
-    else { $files = Get-SnapBarFiles }
+    else { $files = Get-SnapBarFiles; $workflowChanges = $files }
     foreach ($file in $files) {
         if ($file -notmatch '\.(md|ps1)$') { continue }
         if ($Staged) {
@@ -24,7 +27,7 @@ try {
     }
     & git diff --cached --check
     if ($LASTEXITCODE -ne 0) { throw 'Index whitespace check failed.' }
-    Invoke-SnapBarWorkflowCheck -ChangedFiles $files -Staged:$Staged
+    Invoke-SnapBarWorkflowCheck -ChangedFiles $workflowChanges -Staged:$Staged
     if (-not $Staged) {
         & git diff --check
         if ($LASTEXITCODE -ne 0) { throw 'Working tree whitespace check failed.' }
