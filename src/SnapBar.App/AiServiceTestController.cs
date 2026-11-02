@@ -38,6 +38,9 @@ internal sealed class AiServiceTestController(IAiTextClient client) : IDisposabl
         Changed?.Invoke();
         try
         {
+            if (disposed || currentRevision != revision || !ReferenceEquals(request, cancellation)
+                || cancellation.IsCancellationRequested) return;
+
             var result = await client.ExecuteAsync(profile, key, Source, Instruction,
                 cancellation.Token).WaitAsync(cancellation.Token);
             if (!disposed && currentRevision == revision)

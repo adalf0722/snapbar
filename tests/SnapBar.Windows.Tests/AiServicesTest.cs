@@ -25,6 +25,30 @@ internal static class AiServicesTest
     private static async Task RunControllerChecks(Action<bool, string> check)
     {
         var profile = AiProviderCatalog.CreateProfiles()[0];
+
+        foreach (var action in new[] { "reset", "cancel", "dispose" })
+        {
+            var reentrantClient = new DeferredClient();
+            var reentrantController = new AiServiceTestController(reentrantClient);
+            var handled = false;
+            reentrantController.Changed += () =>
+            {
+                if (handled || reentrantController.Status != "testing") return;
+                handled = true;
+                switch (action)
+                {
+                    case "reset": reentrantController.Reset(); break;
+                    case "cancel": reentrantController.Cancel(); break;
+                    case "dispose": reentrantController.Dispose(); break;
+                }
+            };
+            await reentrantController.StartAsync(profile, "reentrant-key");
+            check(reentrantClient.Calls.Count == 0, $"synchronous {action} prevents service invocation");
+            check(!reentrantController.Busy && reentrantController.Status == "untested",
+                $"synchronous {action} leaves controller idle and untested");
+            reentrantController.Dispose();
+        }
+
         var client = new DeferredClient();
         var controller = new AiServiceTestController(client);
         var changed = 0;
@@ -41,11 +65,14 @@ internal static class AiServicesTest
 
         controller.Reset();
         check(!controller.Busy && controller.Status == "untested", "reset cancels pending service test");
-        client.Requests[0].SetResult(new(true, "must not be retained"));
-        await first;
-        check(controller.Status == "untested", "reset rejects a late service response");
-
+        var changedAfterReset = changed;
         var replacement = controller.StartAsync(profile, "replacement-key");
+        await first;
+        check(controller.Busy && controller.Status == "testing" && changed == changedAfterReset + 1,
+            "old request unwinding cannot clear busy or notify the pending replacement");
+        client.Requests[0].SetResult(new(true, "must not be retained"));
+        await Task.Yield();
+        check(controller.Busy && controller.Status == "testing", "late old completion cannot change pending replacement");
         client.Requests[1].SetResult(new(true, "transient success body"));
         await replacement;
         check(!controller.Busy && controller.Status == "success", "replacement request can finish successfully");
