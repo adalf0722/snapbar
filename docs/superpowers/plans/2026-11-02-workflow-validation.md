@@ -11,6 +11,6 @@
 - [x] Add `scripts/workflow-checks.ps1` for verified tool provisioning and workflow snapshots; extract index blob reads into `scripts/common.ps1` and reuse them from `scripts/check.ps1`.
 - [x] Add isolated-index regression tests to `scripts/test-tooling.ps1` for staged errors, unstaged repairs, invalid context expressions and staged custom runner labels.
 - [x] Update `.github/workflows/release.yml` with manual dispatch, shared read-only verification, release-only upload and Actions summary. Document operation in `docs/development.md`.
-- [ ] Run full repository checks and hook tests, push changes, run a manual rehearsal with the online desktop runner, and inspect jobs, artifacts and unchanged Release/tag inventory.
+- [x] Run full repository checks and hook tests, push changes, run a manual rehearsal with the online desktop runner, and inspect jobs, artifacts and unchanged Release/tag inventory.
 
 Execute in this chat under the user's approved retro scope. Do not create another Release or alter the desktop safety gates.
