@@ -71,7 +71,7 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 ### 一次性 runner 設定
 
 1. 在 repository 的 Settings → Actions → Runners → New self-hosted runner 選 Windows x64，依 GitHub 顯示的命令下載及註冊。加入自訂標籤 `snapbar-desktop`，每個測試桌面只啟動一個 runner。
-2. 使用專用的 Windows 測試帳號／機器，安裝 Git、PowerShell 7，並允許 setup-dotnet 取得 `global.json` 指定的 SDK。此 runner 只接收維護者發布的 Release 工作，不應用於不受信任的 PR。註冊方式見 [GitHub 官方文件](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners)。
+2. 使用專用的 Windows 測試帳號／機器並安裝 Git。workflow 會在 runner 可寫入的暫存目錄準備 PowerShell 7 與 `global.json` 指定的 .NET SDK，不需要管理員權限；PowerShell ZIP 會核對固定 SHA-256。此 runner 只接收維護者發布的 Release 工作，不應用於不受信任的 PR。註冊方式見 [GitHub 官方文件](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners)。
 3. 在已登入且未鎖定的互動桌面執行 runner 的 `run.cmd`；不要以 Windows service 執行桌面測試。關閉 SnapBar，避免 Ctrl+Alt+V 衝突，測試期間不要操作鍵盤或剪貼簿。runner 離線時工作會等待，不會略過測試發布。
 
 ### 每次發布
