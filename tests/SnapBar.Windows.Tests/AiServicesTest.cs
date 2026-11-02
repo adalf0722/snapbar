@@ -8,6 +8,71 @@ using SnapBar.Core;
 
 internal static class AiServicesTest
 {
+    private sealed class DeferredClient : IAiTextClient
+    {
+        internal readonly List<TaskCompletionSource<AiTextResult>> Requests = [];
+        internal readonly List<(AiProviderProfile Profile, string Key, string Source, string Instruction)> Calls = [];
+        public Task<AiTextResult> ExecuteAsync(AiProviderProfile profile, string key,
+            string source, string instruction, CancellationToken token)
+        {
+            Calls.Add((profile, key, source, instruction));
+            var completion = new TaskCompletionSource<AiTextResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Requests.Add(completion);
+            return completion.Task;
+        }
+    }
+
+    private static async Task RunControllerChecks(Action<bool, string> check)
+    {
+        var profile = AiProviderCatalog.CreateProfiles()[0];
+        var client = new DeferredClient();
+        var controller = new AiServiceTestController(client);
+        var changed = 0;
+        controller.Changed += () => changed++;
+
+        var first = controller.StartAsync(profile, "fixture-key");
+        check(controller.Busy && controller.Status == "testing" && client.Calls.Count == 1,
+            "service test starts one fixed-text request");
+        check(client.Calls[0] == (profile, "fixture-key", AiServiceTestController.Source, AiServiceTestController.Instruction),
+            "service test never sends user selection or instruction text");
+        var callsWhileBusy = client.Calls.Count;
+        await controller.StartAsync(profile, "ignored-key");
+        check(client.Calls.Count == callsWhileBusy, "service test ignores duplicate start while busy");
+
+        controller.Reset();
+        check(!controller.Busy && controller.Status == "untested", "reset cancels pending service test");
+        client.Requests[0].SetResult(new(true, "must not be retained"));
+        await first;
+        check(controller.Status == "untested", "reset rejects a late service response");
+
+        var replacement = controller.StartAsync(profile, "replacement-key");
+        client.Requests[1].SetResult(new(true, "transient success body"));
+        await replacement;
+        check(!controller.Busy && controller.Status == "success", "replacement request can finish successfully");
+
+        var cancelled = controller.StartAsync(profile, "cancel-key");
+        controller.Cancel();
+        await cancelled;
+        check(!controller.Busy && controller.Status == "untested", "cancel releases wait when client ignores cancellation");
+        client.Requests[2].SetResult(new(true, "late cancelled response"));
+        await Task.Yield();
+        check(controller.Status == "untested", "cancelled late response cannot change status");
+
+        var failed = controller.StartAsync(profile, "failure-key");
+        client.Requests[3].SetResult(new(false, "private diagnostic body", "network"));
+        await failed;
+        check(controller.Status == "network", "service failure exposes status without response text");
+
+        var beforeDispose = changed;
+        var disposed = controller.StartAsync(profile, "dispose-key");
+        controller.Dispose();
+        await disposed;
+        client.Requests[4].SetResult(new(true, "post-dispose response"));
+        await Task.Yield();
+        check(changed == beforeDispose + 1, "dispose cancels wait and late response raises no change");
+        check(controller.Status == "untested", "dispose leaves no response status behind");
+    }
+
     private static IEnumerable<T> Children<T>(DependencyObject item) where T : DependencyObject
     {
         if (item is T match) yield return match;
@@ -19,6 +84,7 @@ internal static class AiServicesTest
     private static T Find<T>(Window window, string id) where T : DependencyObject => Children<T>(window).Single(x => AutomationProperties.GetAutomationId(x) == id);
     public static async Task RunAsync(string directory, Action<bool, string> check, Action<Window, string> snapshot)
     {
+        await RunControllerChecks(check);
         var preferences = new AiPreferences(Path.Combine(directory, "services"));
         var original = preferences.Settings;
         var legacy = original.Profiles[0] with { Model = "legacy-private-model" };
