@@ -307,14 +307,7 @@ internal sealed partial class AiPanelWindow : Window
         { if (!closed && ReferenceEquals(request, cancellation) && !cancellation.IsCancellationRequested) hint.Text = "AI 請求未完成，上一版已保留。"; }
         finally { if (ReferenceEquals(request, cancellation)) { request = null; runningPromptId = null; Session.Cancel(); if (!closed) Refresh(); } }
     }
-    private static string ErrorMessage(string code) => code switch
-    {
-        "key-required" or "authentication" => "API Key 無效或未設定，請開啟服務設定。",
-        "settings-required" => "請檢查服務網址與模型 ID。", "rate-limit" => "服務目前限制請求，請稍後再試。",
-        "timeout" => "服務回應逾時，上一版已保留。", "network" => "無法連上 AI 服務，請檢查連線及網址。",
-        "too-large" => "文字或回應超過限制，上一版已保留。", "incomplete" => "服務回傳的結果不完整，上一版已保留。",
-        "refused" => "服務未提供可用結果，上一版已保留。", _ => "服務回應格式無效，上一版已保留。"
-    };
+    private static string ErrorMessage(string code) => AiErrorMessages.Describe(code) + "上一版已保留。";
     private void Stop() { request?.Cancel(); Session.Cancel(); if (!closed) Refresh(); }
     internal void InvalidateTarget() { targetValid = false; Stop(); if (!closed) { hint.Text = "來源已變更，結果仍可複製。"; Refresh(); } }
     internal async Task ApplyAsync()

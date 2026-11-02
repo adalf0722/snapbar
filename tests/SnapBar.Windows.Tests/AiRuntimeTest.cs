@@ -23,6 +23,41 @@ internal static class AiRuntimeTest
         }
         const string messagesBody = """{"type":"message","stop_reason":"end_turn","content":[{"type":"text","text":"done"}]}""";
         var claude = AiProviderCatalog.Find("claude")!.Profile with { Model = "fixture-model" };
+        const string modelError = """{"error":{"code":"model_not_found","message":"private text"}}""";
+        foreach (var body in new[] { modelError, "<html>missing path</html>", "", "{}", "null", modelError.Replace("model_not_found", "unknown"), """{"error":{"type":"not_found_error","message":"model_not_found"}}""" })
+            await Check("AI error code classification body length " + body.Length, async () =>
+                (await Execute(OpenAi, body, HttpStatusCode.NotFound)).Status == (body == modelError ? "model-unavailable" : "network"));
+        foreach (var (code, status) in new[] { (401, "authentication"), (403, "authentication"), (429, "rate-limit"), (408, "timeout"), (504, "timeout") })
+            await Check("AI fixed HTTP status precedes model code " + code, async () =>
+                (await Execute(OpenAi, modelError, (HttpStatusCode)code)).Status == status);
+        foreach (var profile in new[] { OpenAi, Compatible, claude })
+        {
+            await Check("AI 2xx error object rejected " + profile.Protocol, async () =>
+                (await Execute(profile, modelError)).Status == "model-unavailable");
+            var validBody = profile.Protocol == AiProtocol.Messages ? messagesBody : profile.Protocol == AiProtocol.Responses ? Responses : Chat;
+            await Check("AI 2xx unknown error overrides valid output " + profile.Protocol, async () =>
+                (await Execute(profile, validBody.Insert(1, "\"error\":{\"code\":\"unknown\",\"message\":\"private text\"},"))).Status == "invalid-response");
+            await Check("AI error advertised body cap " + profile.Protocol, async () =>
+                (await Execute(profile, new string('x', 2 * 1024 * 1024 + 1), HttpStatusCode.NotFound)).Status == "too-large");
+        }
+        await Check("AI Anthropic not found type alone stays network", async () =>
+            (await Execute(claude, """{"type":"error","error":{"type":"not_found_error","message":"model_not_found"}}""", HttpStatusCode.NotFound)).Status == "network");
+        await Check("AI unknown-length error body cap", async () =>
+        {
+            using var http = new HttpClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)
+                { Content = new StreamContent(new UnknownLengthStream(2 * 1024 * 1024 + 1)) })));
+            using var client = new AiHttpClient(http);
+            return (await client.ExecuteAsync(OpenAi, "fake", "source", "rewrite", default)).Status == "too-large";
+        });
+        await Check("AI error stream cancellation propagates", async () =>
+        {
+            using var cancellation = new CancellationTokenSource();
+            using var http = new HttpClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)
+                { Content = new StreamContent(new CancellingStream(cancellation)) })));
+            using var client = new AiHttpClient(http);
+            try { await client.ExecuteAsync(OpenAi, "fake", "source", "rewrite", cancellation.Token); return false; }
+            catch (OperationCanceledException e) { return e.CancellationToken == cancellation.Token; }
+        });
         foreach (var definition in AiProviderCatalog.Definitions)
         {
             var profile = definition.Profile with { Model = "fixture-model" };
@@ -270,7 +305,12 @@ internal static class AiRuntimeTest
     private static HttpResponseMessage Response(string body, HttpStatusCode code = HttpStatusCode.OK) => new(code) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
     private sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
     { protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => send(request, cancellationToken); }
-    private sealed class UnknownLengthStream(int remaining) : Stream
+    private sealed class CancellingStream(CancellationTokenSource cancellation) : UnknownLengthStream(1)
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        { cancellation.Cancel(); cancellationToken.ThrowIfCancellationRequested(); return ValueTask.FromResult(0); }
+    }
+    private class UnknownLengthStream(int remaining) : Stream
     {
         public override bool CanRead => true;
         public override bool CanSeek => false;

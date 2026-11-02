@@ -7,7 +7,15 @@ namespace SnapBar.Windows;
 internal static class AiResponseParser
 {
     private const int MaximumText = 262144;
-    public static AiTextResult Parse(AiProviderProfile profile, JsonElement root) => profile.Protocol switch
+    internal static bool IsModelUnavailable(JsonElement root) => root.ValueKind == JsonValueKind.Object
+        && root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object
+        && error.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.String
+        && code.GetString() == "model_not_found";
+
+    public static AiTextResult Parse(AiProviderProfile profile, JsonElement root) =>
+        IsModelUnavailable(root) ? Failure("model-unavailable") :
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object
+        ? Failure("invalid-response") : profile.Protocol switch
     {
         AiProtocol.Responses => ParseResponses(root),
         AiProtocol.ChatCompletions => ParseChat(root, profile.Id == "minimax"),

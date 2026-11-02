@@ -53,26 +53,27 @@ public sealed class AiHttpClient : IAiTextClient, IDisposable
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
             timeout.Token.ThrowIfCancellationRequested();
-            if (!response.IsSuccessStatusCode)
-                return Failure(response.StatusCode switch
+            var fixedStatus = response.StatusCode switch
                 {
                     HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "authentication",
                     HttpStatusCode.TooManyRequests => "rate-limit",
                     HttpStatusCode.RequestTimeout or HttpStatusCode.GatewayTimeout => "timeout",
-                    _ => "network"
-                });
-            if (response.Content.Headers.ContentLength > MaximumBody) return Failure("too-large");
-            await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-            using var buffer = new MemoryStream();
-            var chunk = new byte[16384];
-            while (true)
+                    _ => null
+                };
+            if (fixedStatus != null) return Failure(fixedStatus);
+            var bodyBytes = await ReadBoundedBodyAsync(response.Content, timeout.Token).ConfigureAwait(false);
+            if (bodyBytes == null) return Failure("too-large");
+            if (!response.IsSuccessStatusCode)
             {
-                var count = await stream.ReadAsync(chunk, timeout.Token).ConfigureAwait(false);
-                if (count == 0) break;
-                if (buffer.Length + count > MaximumBody) return Failure("too-large");
-                buffer.Write(chunk, 0, count);
+                try
+                {
+                    using var errorDocument = JsonDocument.Parse(bodyBytes);
+                    timeout.Token.ThrowIfCancellationRequested();
+                    return Failure(AiResponseParser.IsModelUnavailable(errorDocument.RootElement) ? "model-unavailable" : "network");
+                }
+                catch (JsonException) { return Failure("network"); }
             }
-            using var document = JsonDocument.Parse(buffer.GetBuffer().AsMemory(0, (int)buffer.Length));
+            using var document = JsonDocument.Parse(bodyBytes);
             timeout.Token.ThrowIfCancellationRequested();
             return AiResponseParser.Parse(profile, document.RootElement);
         }
@@ -80,6 +81,24 @@ public sealed class AiHttpClient : IAiTextClient, IDisposable
         catch (OperationCanceledException) { throw new OperationCanceledException(cancellationToken); }
         catch (Exception e) when (e is HttpRequestException or IOException) { return Failure("network"); }
         catch (Exception e) when (e is JsonException or InvalidOperationException or ArgumentException or FormatException) { return Failure("invalid-response"); }
+    }
+
+    private static async Task<byte[]?> ReadBoundedBodyAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (content.Headers.ContentLength > MaximumBody) return null;
+        await using var stream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[16384];
+        while (true)
+        {
+            var count = await stream.ReadAsync(chunk, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (count == 0) break;
+            if (buffer.Length + count > MaximumBody) return null;
+            buffer.Write(chunk, 0, count);
+        }
+        return buffer.ToArray();
     }
 
     private static AiTextResult Failure(string status) => new(false, Status: status);
