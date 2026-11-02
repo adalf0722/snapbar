@@ -9,7 +9,7 @@ internal static class AiRuntimeTests
         var defaults = new AiSettings();
         bool Reject(Action action) { try { action(); return false; } catch (ArgumentException) { return true; } }
         check("AI defaults leave models unset and pin stable prompt ids", () => defaults.Profiles.All(p => p.Model == "")
-            && defaults.Profiles.Length == 2 && defaults.Prompts.Length == 5
+            && defaults.Profiles.Length == 9 && defaults.Prompts.Length == 5
             && defaults.PinnedIds.SequenceEqual(new[] { "improve", "shorten", "translate-en" }));
         check("AI search finds English aliases globally despite browsing category", () => AiPolicy.Search(defaults, "TRANSLATE english", "寫作").Single().Id == "translate-en");
         check("AI search requires every query word", () => AiPolicy.Search(defaults, "grammar english").Count == 0);
@@ -42,7 +42,7 @@ internal static class AiRuntimeTests
             check("AI invalid prompt rejected " + ++invalidCase, () => Reject(() => AiPolicy.Normalize(defaults with { Prompts = [invalid] })));
         foreach (var invalid in new AiSettings[] { null!, defaults with { SchemaVersion = 2 }, defaults with { Profiles = null! }, defaults with { Profiles = [] },
             defaults with { Profiles = [profile, profile] }, defaults with { Profiles = [null!] }, defaults with { SelectedProfileId = null! }, defaults with { SelectedProfileId = "missing" },
-            defaults with { Profiles = Enumerable.Range(0, 9).Select(i => profile with { Id = "id" + i }).ToArray() }, defaults with { Prompts = null! },
+            defaults with { Profiles = Enumerable.Range(0, 33).Select(i => profile with { Id = "id" + i }).ToArray() }, defaults with { Prompts = null! },
             defaults with { Prompts = [null!] }, defaults with { Prompts = [prompt, prompt] },
             defaults with { Prompts = Enumerable.Range(0, 129).Select(i => prompt with { Id = "id" + i }).ToArray() } })
             check("AI invalid settings rejected " + ++invalidCase, () => Reject(() => AiPolicy.Normalize(invalid)));

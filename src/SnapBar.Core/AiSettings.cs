@@ -3,16 +3,14 @@ using System.Text.Json;
 
 namespace SnapBar.Core;
 
-public enum AiProtocol { Responses, ChatCompletions }
+public enum AiProtocol { Responses, ChatCompletions, Messages }
 public sealed record AiProviderProfile(string Id, string Name, AiProtocol Protocol, string Endpoint, string Model);
 public sealed record AiPrompt(string Id, string Name, string Instruction, string Category, string Keywords = "", string Icon = "spark");
 public sealed record AiSettings
 {
     public int SchemaVersion { get; init; } = 1;
     public string SelectedProfileId { get; init; } = "openai";
-    public AiProviderProfile[] Profiles { get; init; } =
-    [new("openai", "OpenAI", AiProtocol.Responses, "https://api.openai.com/v1/responses", ""),
-     new("compatible", "自訂相容服務", AiProtocol.ChatCompletions, "http://localhost:11434/v1/chat/completions", "")];
+    public AiProviderProfile[] Profiles { get; init; } = AiProviderCatalog.CreateProfiles();
     public AiPrompt[] Prompts { get; init; } =
     [new("grammar", "修正文法拼字", "Correct grammar and spelling while preserving meaning. Return only the corrected text.", "寫作", "grammar spelling correct"),
      new("improve", "改善寫作", "Improve clarity and flow while preserving meaning. Return only the revised text.", "寫作", "improve writing rewrite"),
@@ -51,7 +49,7 @@ public static class AiPolicy
 
     public static AiSettings Normalize(AiSettings settings)
     {
-        if (settings == null || settings.SchemaVersion != 1 || settings.Profiles == null || settings.Profiles.Length is < 1 or > 8
+        if (settings == null || settings.SchemaVersion != 1 || settings.Profiles == null || settings.Profiles.Length is < 1 or > 32
             || settings.Prompts == null || settings.Prompts.Length > 128)
             throw new ArgumentException("Invalid AI settings.");
         var profileIds = new HashSet<string>(StringComparer.Ordinal);
@@ -100,7 +98,7 @@ public sealed class AiSettingsStore(string path)
             var settings = JsonSerializer.Deserialize<AiSettings>(json, JsonOptions);
             if (settings == null) return new(new(), "settings-invalid");
             if (settings.SchemaVersion != 1) return new(new(), "settings-version");
-            settings = AiPolicy.Normalize(settings);
+            settings = AiProviderCatalog.MergeMissing(settings);
             writable = true;
             return new(settings);
         }
