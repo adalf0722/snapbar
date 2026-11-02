@@ -64,6 +64,35 @@ pwsh -NoProfile -File scripts/build.ps1 -Publish -DesktopReport artifacts/checks
 
 App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通過 Probe 協定 smoke 後，再檢查程序與指紋並以目錄搬移切換。舊套件保留在同次 `previous`，第二次搬移失敗會嘗試回復舊目錄；搬移、備份路徑必須在本 repository 的 artifacts 內，且不能穿過 junction／symlink。任一步失敗不會以部分新檔覆寫既有套件。保存的報告是本機回歸證據，不是簽章或防竄改證明；跨應用程式、DPI 與真實長腳本仍需按變更內容判斷驗證範圍。
 
+## GitHub 自動發布
+
+`.github/workflows/release.yml` 在 Release 發布時觸發，包含正式版與預覽版。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。先將 workflow 與腳本合併並推送至 GitHub，再發布版本；僅修改本機檔案不會啟用自動發布。
+
+### 一次性 runner 設定
+
+1. 在 repository 的 Settings → Actions → Runners → New self-hosted runner 選 Windows x64，依 GitHub 顯示的命令下載及註冊。加入自訂標籤 `snapbar-desktop`，每個測試桌面只啟動一個 runner。
+2. 使用專用的 Windows 測試帳號／機器，安裝 Git、PowerShell 7，並允許 setup-dotnet 取得 `global.json` 指定的 SDK。此 runner 只接收維護者發布的 Release 工作，不應用於不受信任的 PR。註冊方式見 [GitHub 官方文件](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners)。
+3. 在已登入且未鎖定的互動桌面執行 runner 的 `run.cmd`；不要以 Windows service 執行桌面測試。關閉 SnapBar，避免 Ctrl+Alt+V 衝突，測試期間不要操作鍵盤或剪貼簿。runner 離線時工作會等待，不會略過測試發布。
+
+### 每次發布
+
+在 GitHub 建立新版本並按 Publish release。流程依序執行 `check.ps1`、`test-desktop.ps1 -Suite Release`、`package-release.ps1 -Version <tag>`。發布腳本沿用目前原始碼指紋、桌面測試證據、App／Probe self-contained 發布及 Probe smoke 門檻。沒有有效桌面或測試失敗時停止，不會附加套件。
+
+測試機只有 contents read，checkout 不保留 Git 憑證。驗證過的 ZIP 經 Actions artifact 傳至 GitHub 託管的 Windows runner，重新核對 SHA-256 後，以該工作專用的 contents write token 上傳 Release。無需設定 PAT 或額外發布 secret。
+
+產物為 `SnapBar-v<版本>-win-x64.zip` 與同名 `.zip.sha256`。完整解壓縮後根目錄可找到 `SnapBar.App.exe` 與 `Probe/`。套件仍未簽章；AI 金鑰、使用者設定與 Node.js 不隨套件提供。
+
+檢查與桌面日誌保存在 workflow 的 `release-check-logs` artifact（14 天）；套件 artifact 保留 7 天，Release 附件不受此保留期影響。失敗可從 Actions 重跑；上傳失敗優先選 Re-run failed jobs，沿用本次已驗證的套件。超過 artifact 保留期需重跑整個流程。上傳不使用 `--clobber`，不會刪除舊附件；若一次上傳僅成功部分附件，請先核對已上傳檔案，僅補上缺少的檔案。啟用 immutable releases 的 repository 需另設草稿上傳流程，本 workflow 適用可在發布後新增附件的 Release。
+
+本機也可執行同一入口：
+
+```powershell
+pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
+pwsh -NoProfile -File scripts/package-release.ps1 -Version v0.1.0
+```
+
+打包會拒絕缺少必要 App／Probe 或執行環境檔案、空檔案、符號連結及不合法版本。每次使用新的 artifacts 目錄；完成 ZIP 結構檢查後才輸出套件路徑與校驗碼，不覆蓋既有 ZIP。
+
 ## 找程式與審查
 
 | 需求 | 入口 |
