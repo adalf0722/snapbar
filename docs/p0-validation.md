@@ -1,5 +1,29 @@
 # P0 驗證紀錄
 
+## 2026-11-03 AI 服務 Provider 整合驗證
+
+來源提交 `69374c2`（`codex/ai-providers`）；本輪驗證後只更新文件。所有建置與桌面報告的來源指紋一致：`B9160ADA5D8B4CF54FBF9F401C3BB5B802C2946660C8A590627DE7482F25775D`。
+
+`pwsh -NoProfile -File scripts/check.ps1` exit 0：Actionlint exit 0、工具契約 20 通過／0 失敗、Core 437 通過／0 失敗，Release 建置成功（5 個既有警告、0 錯誤：AiPanelWindow CS8602，以及 AiIconTest／UiAppearanceTest CS4014）。建置與 Core 報告：`D:/codex/snapbar/artifacts/checks/build/20261102T232425817Z-5762caa59e4c44808873e01f76ec6442/report.json`；Actionlint 記錄：`D:/codex/snapbar/artifacts/checks/workflows/20261102T232419030Z-d08f19446638427bbefcd9d60643ceef/Actionlint.log`；工具契約的預期失敗 fixture 記錄位於 `D:/codex/snapbar/artifacts/checks/tooling/20261102T232419331Z-e21a900766044abcbada2445baf97770/`，其非零 fixture exit 不代表主檢查失敗。
+
+Warnings are unchanged from plan baseline `eaaf482`: AiPanelWindow.cs(95,143) CS8602 appears twice for WPF temp/final builds; AiIconTest.cs(142,13), UiAppearanceTest.cs(312,17)/(330,17) are CS4014. Both test files have no branch diff, and App line 95 is identical. Earlier log `D:/codex/snapbar/artifacts/checks/build/20261101T141803066Z-e5246b10d5c44cce8a131da937ea7d15/Build.log` already records the App warning and AiIconTest warning (then line 115). No unrelated warning fixes made.
+
+逐項串行執行下列命令，全部 exit 0、各 report `success=true`，每項 Preflight 另通過 1 項，沒有失敗。數字取自實際 runner 結果：
+
+| 命令 | 通過數 | 報告絕對路徑（同目錄有 Build、Preflight 與 suite `.log`） |
+| --- | ---: | --- |
+| `pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite AiRuntime` | 117 | `D:/codex/snapbar/artifacts/checks/desktop/20261102T232441374Z-e9c952e3fa7f44088c7e0b5905b87ac4/report.json` |
+| `pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite AiPanel` | 239 | `D:/codex/snapbar/artifacts/checks/desktop/20261102T232453787Z-71bceb204eec48bc8b5d3306da0320cb/report.json` |
+| `pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Appearance` | 164 | `D:/codex/snapbar/artifacts/checks/desktop/20261102T232513712Z-ad714894b2314ce8b73e1c8b7ec8ac68/report.json` |
+
+每次執行前與全部完成後均確認無 SnapBar.App／SnapBar.Probe 程序；沒有強制終止程序，也未在 suite 期間操作 UI helper。本輪無重跑。Task 6 較早一次整合執行在既有剪貼簿敏感的 `AI long Markdown copying preserves the exact raw response` 斷言失敗，先通過 223 項：`D:/codex/snapbar/artifacts/checks/desktop/20261102T232132387Z-2ed6b508101f4190853c32d667c5affd/report.json`。後續完整重跑及本輪皆通過；不能據此確定前次原因，沒有放寬前景、剪貼簿或替換斷言。
+
+逐張目視檢查本輪更新的 `D:/codex/snapbar/artifacts/ai-panel/services-normal.png`、`services-small-advanced.png`、`services-test-success.png`、`services-test-failure.png`：正常具名服務、最小視窗進階區捲動、成功與固定失敗提示均可讀，測試區與固定儲存列可操作。最小視窗截圖位於內容捲動後的位置；suite 另驗證測試／儲存鍵盤焦點與欄位可達性。
+
+自查涵蓋本分支變更的來源與測試：沒有新增實際金鑰、原文、剪貼簿、HTTP message 或錯誤 body 記錄；測試僅輸出固定案例名稱與結果。schema 仍為 1，協定數值維持 Responses=0、ChatCompletions=1、Messages=2；載入僅補缺少的服務，不覆寫舊模型、網址、同 ID profile 或選擇，不立即寫檔。沒有修改選取、前景、焦點、candidate、stale-result 或 action permission 政策。官方模型建議、具名服務 HTTPS 入口及 2026-11-03 查核日期均有具體資料，來源見服務 catalog 與核准設計的官方參考，沒有待補欄位。
+
+八家具名服務 OpenAI、Gemini、Claude、DeepSeek、Groq、OpenRouter、xAI、MiniMax 只完成假的 HTTP handler／client 協定及狀態驗證；沒有使用真實金鑰、呼叫付費 API、讀寫真實使用者設定或開啟外部瀏覽器，不能宣稱真實連通性或帳號模型權限。96 DPI WPF fixture 不代表實體 125%／150%／200% 或混合 DPI、實體 IME，以及瀏覽器／Office／Sublime 的人工驗證。本輪未執行完整桌面 Release suite，未發佈、合併或建立套件；後續發佈仍須按當時來源重跑 Release 與正式發佈流程。全分支最終審查另待完成。
+
 ## 2026-11-02 搜尋動作編輯與顯示位置
 
 依使用者指出的語意混淆，移除動作頁上方「動作／搜尋」分頁。搜尋引擎與網址改從「搜尋」動作旁的「編輯」進入，標題為「編輯搜尋動作」，保留明確返回入口。返回不提交、不丟棄草稿；搜尋項目顯示「尚未儲存」，重新開啟延續相同內容，真正退出仍由既有協調器處理保存、捨棄、取消與失敗定位。
