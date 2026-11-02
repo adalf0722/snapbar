@@ -4,7 +4,9 @@
 
 ## 直接執行
 
-開啟 `artifacts/p0/SnapBar.App.exe`。這份 Windows x64 自含式套件包含 .NET 執行環境，不需另裝 SDK。
+一般使用者請至 [GitHub Releases](https://github.com/adalf0722/snapbar/releases) 下載 `SnapBar-v<版本>-win-x64.zip`，完整解壓縮後雙擊 `SnapBar.App.exe`。請選版本附件中的 SnapBar ZIP；GitHub 自動產生的 Source code ZIP 是原始碼。若版本剛發布，需等自動測試與打包完成後才會出現附件。
+
+本機開發套件仍位於 `artifacts/p0/SnapBar.App.exe`。這份 Windows x64 自含式套件包含 .NET 執行環境，不需另裝 SDK 或 .NET Runtime。AI 服務仍需自行設定，JavaScript 自訂動作另需 Node.js。
 
 1. 主視窗顯示「準備完成 · Ctrl+Alt+V」。
 2. 按「開啟測試視窗」，在獨立視窗內選取文字。
@@ -181,7 +183,9 @@ pwsh -NoProfile -File .\scripts\build.ps1 -Publish
 
 測試採 console runner，刻意不依賴第三方測試套件；使用 `build.ps1` 或 `dotnet run`，不是以 `dotnet test` 的空白成功結果判定測試通過。
 
-`build.ps1 -Publish` 更新 `artifacts/p0/`，不會自動重建 `artifacts/SnapBar-Windows-P0.zip`；交付 ZIP 時需另行重新打包。
+`build.ps1 -Publish` 更新 `artifacts/p0/`。需要可分享 ZIP 時，在 Release 桌面測試通過後執行 `scripts/package-release.ps1 -Version v0.1.0`，產物與 SHA-256 檔存於獨立 `artifacts/releases/<識別碼>/` 目錄。
+
+GitHub Release 發布後會自動執行同樣的驗證與打包流程，並附加 ZIP 及 SHA-256 供下載；需先配置專用互動桌面 runner，詳見 [自動發布設定](docs/development.md#github-自動發布)。
 
 ## 專案結構
 

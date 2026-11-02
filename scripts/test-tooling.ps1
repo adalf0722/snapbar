@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
+. (Join-Path $PSScriptRoot 'release-common.ps1')
 $run = New-SnapBarRun 'tooling'
 $script:toolingPassed = 0
 function Check-Tooling([string]$Name, [scriptblock]$Test) {
@@ -115,5 +116,51 @@ Check-Tooling 'staged checks inspect index blobs even when working files are rep
         Assert-Tooling (-not $result.success)
     }
     finally { $env:GIT_INDEX_FILE = $oldIndex; Pop-Location }
+}
+$releaseFixture = Join-Path $run 'release-fixture'
+[IO.Directory]::CreateDirectory((Join-Path $releaseFixture 'Probe')) | Out-Null
+$releaseFiles = @(
+    'SnapBar.App.exe', 'SnapBar.App.dll', 'SnapBar.App.deps.json', 'SnapBar.App.runtimeconfig.json',
+    'coreclr.dll', 'hostfxr.dll', 'wpfgfx_cor3.dll', 'README.md', 'VALIDATION.md', 'CLIPBOARD-RECOVERY.md',
+    'Probe/SnapBar.Probe.exe', 'Probe/SnapBar.Probe.dll', 'Probe/SnapBar.Probe.deps.json',
+    'Probe/SnapBar.Probe.runtimeconfig.json', 'Probe/coreclr.dll', 'Probe/hostfxr.dll'
+)
+foreach ($file in $releaseFiles) {
+    [IO.File]::WriteAllText((Join-Path $releaseFixture $file), "fixture: $file", [Text.UTF8Encoding]::new($false))
+}
+Check-Tooling 'release archive rejects unsafe version names before creating output' {
+    $output = Join-Path $run 'invalid-release'
+    foreach ($version in @('../escape', 'v1/2/3', 'v1.2', 'v01.2.3', 'v1.2.3 trailing', '-v1.2.3')) {
+        Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture $version $output }
+    }
+    Assert-Tooling (-not (Test-Path -LiteralPath $output))
+}
+Check-Tooling 'release archive refuses incomplete self-contained App and Probe packages' {
+    foreach ($file in @('SnapBar.App.exe', 'coreclr.dll', 'Probe/SnapBar.Probe.exe', 'Probe/coreclr.dll', 'README.md')) {
+        $path = Join-Path $releaseFixture $file
+        $bytes = [IO.File]::ReadAllBytes($path)
+        try {
+            [IO.File]::WriteAllBytes($path, [byte[]]@())
+            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'incomplete-release') }
+        }
+        finally { [IO.File]::WriteAllBytes($path, $bytes) }
+    }
+}
+Check-Tooling 'release ZIP preserves root layout and Probe content with a matching SHA-256' {
+    $result = New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' (Join-Path $run 'release-output')
+    $zip = [IO.Compression.ZipFile]::OpenRead($result.archive)
+    try {
+        Assert-Tooling ($zip.Entries.Count -eq $releaseFiles.Count)
+        foreach ($file in $releaseFiles) {
+            $reader = [IO.StreamReader]::new($zip.GetEntry($file).Open())
+            try { Assert-Tooling ($reader.ReadToEnd() -eq "fixture: $file") }
+            finally { $reader.Dispose() }
+        }
+    }
+    finally { $zip.Dispose() }
+    $hash = (Get-FileHash -LiteralPath $result.archive -Algorithm SHA256).Hash.ToLowerInvariant()
+    Assert-Tooling ([IO.File]::ReadAllText($result.checksum) -eq "$hash  SnapBar-v1.2.3-rc.1-win-x64.zip`n")
+    Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' $result.directory }
+    Assert-Tooling ((Get-FileHash -LiteralPath $result.archive -Algorithm SHA256).Hash.ToLowerInvariant() -eq $hash)
 }
 Write-Host "$script:toolingPassed passed, 0 failed"

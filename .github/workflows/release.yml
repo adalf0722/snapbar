@@ -1,0 +1,79 @@
+name: Publish Windows release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+concurrency:
+  group: snapbar-release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+jobs:
+  package:
+    name: Desktop tests and self-contained package
+    runs-on: [self-hosted, Windows, X64, snapbar-desktop]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Check, build and test
+        shell: pwsh
+        run: ./scripts/check.ps1
+      - name: Validate interactive desktop and run Release tests
+        shell: pwsh
+        run: ./scripts/test-desktop.ps1 -Suite Release
+      - name: Publish and verify release ZIP
+        id: package
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $package = ./scripts/package-release.ps1 -Version $env:RELEASE_TAG
+          "directory=$($package.directory)" >> $env:GITHUB_OUTPUT
+      - name: Transfer release package
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-release-package
+          path: ${{ steps.package.outputs.directory }}/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Save check and desktop logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-check-logs
+          path: artifacts/checks/
+          if-no-files-found: warn
+          retention-days: 14
+  upload:
+    name: Attach downloads to GitHub Release
+    needs: package
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: windows-release-package
+          path: release-package
+      - name: Upload verified assets without replacing existing downloads
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $PWD "release-package/SnapBar-$env:RELEASE_TAG-win-x64.zip"
+          $checksum = "$archive.sha256"
+          $expected = (Get-Content -LiteralPath $checksum -Raw -Encoding utf8).Split(' ')[0]
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $expected) {
+            throw 'Downloaded release ZIP checksum mismatch.'
+          }
+          & gh release upload $env:RELEASE_TAG $archive $checksum --repo $env:GH_REPO
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed; existing assets were not overwritten.' }
