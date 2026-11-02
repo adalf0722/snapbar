@@ -8,7 +8,7 @@ using SnapBar.Windows;
 
 namespace SnapBar.App;
 
-internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
+internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
 {
     private readonly AiPreferences preferences;
     private readonly ComboBox profiles;
@@ -34,7 +34,7 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
     public bool IsDirty => selected >= 0 && (HasPendingKeyChanges || drafts[selected].Id != baselineSelected
         || !drafts.Select((p, i) => i == selected ? CurrentDraft() : p).SequenceEqual(baseline));
 
-    public AiSettingsPanel(AiPreferences preferences, Action<Uri>? openLink = null)
+    public AiSettingsPanel(AiPreferences preferences, Action<Uri>? openLink = null, IAiTextClient? testClient = null)
     {
         this.preferences = preferences;
         baseline = preferences.Settings.Profiles.ToArray(); baselineSelected = preferences.Settings.SelectedProfileId;
@@ -95,16 +95,19 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
         removeKey = new CheckBox { Content = "移除此網址已保存的 API Key", Margin = new(0, 12, 0, 0) };
         AutomationProperties.SetAutomationId(removeKey, "AiRemoveKey"); advancedFields.Children.Add(removeKey);
         advanced.Content = advancedFields; fields.Children.Add(advanced);
+        InitializeTesting(fields, testClient);
         profiles.SelectionChanged += (_, _) =>
         {
             if (syncing) return;
+            ResetTest();
             CaptureDraft(); selected = profiles.SelectedIndex; ShowDraft(); UpdateState();
         };
-        endpoint.TextChanged += (_, _) => { if (!syncing) { ShowKeyStatus(); ShowEndpointNotice(); UpdateState(); } };
-        model.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler((_, _) => { if (!syncing) UpdateState(); }));
-        key.PasswordChanged += (_, _) => { if (!syncing) UpdateState(); };
-        removeKey.Checked += (_, _) => { if (!syncing) UpdateState(); };
-        removeKey.Unchecked += (_, _) => { if (!syncing) UpdateState(); };
+        endpoint.TextChanged += (_, _) => { if (!syncing) { ResetTest(); ShowKeyStatus(); ShowEndpointNotice(); UpdateState(); } };
+        model.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent, new TextChangedEventHandler((_, _) => { if (!syncing) { ResetTest(); UpdateState(); } }));
+        key.PasswordChanged += (_, _) => { if (!syncing) { ResetTest(); UpdateState(); } };
+        removeKey.Checked += (_, _) => { if (!syncing) { ResetTest(); UpdateState(); } };
+        removeKey.Unchecked += (_, _) => { if (!syncing) { ResetTest(); UpdateState(); } };
+        Unloaded += (_, _) => ResetTest();
         body.Children.Add(new ScrollViewer { Content = fields, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }); Content = body;
         profiles.SelectedIndex = Math.Max(0, drafts.FindIndex(p => p.Id == baselineSelected));
         preferences.Changed += OnPreferencesChanged; preferences.RegisterDraft(this);
@@ -162,6 +165,7 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
     private void OnPreferencesChanged() { if (!saving && !IsDirty) Discard(); }
     public bool TrySave()
     {
+        if (testController.Busy) ResetTest();
         CaptureDraft(); var current = drafts[selected];
         if (AiPolicy.ValidateProfile(current) is { } validation) { hint.Text = validation; return false; }
         saving = true;
@@ -174,14 +178,18 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
             {
                 try { preferences.Secrets.Set(change.Profile, change.Key); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException or ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
-                { hint.Text = "服務設定已保存，但金鑰無法保存。請檢查權限後重試。"; UpdateState(); return false; }
+                { ResetTest(); hint.Text = "服務設定已保存，但金鑰無法保存。請檢查權限後重試。"; UpdateState(); return false; }
                 keyChanges.Remove(scope);
                 if (scope == Scope(CurrentDraft()))
                 {
-                    syncing = true; key.Clear(); removeKey.IsChecked = false; syncing = false;
+                    syncing = true;
+                    try { key.Clear(); removeKey.IsChecked = false; }
+                    finally { syncing = false; }
                 }
             }
-            key.Clear(); keyChanges.Clear(); removeKey.IsChecked = false;
+            syncing = true;
+            try { key.Clear(); keyChanges.Clear(); removeKey.IsChecked = false; }
+            finally { syncing = false; }
             hint.Text = ""; state.Text = "已儲存"; ShowKeyStatus();
             preferences.NotifyChanged(); Saved?.Invoke(); return true;
         }
@@ -189,6 +197,7 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
     }
     public void Discard()
     {
+        ResetTest();
         syncing = true;
         try
         {
@@ -200,6 +209,6 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
         finally { syncing = false; }
         ShowDraft(); hint.Text = ""; UpdateState();
     }
-    internal void Detach() { preferences.Changed -= OnPreferencesChanged; preferences.UnregisterDraft(this); Discard(); }
+    internal void Detach() { DisposeTesting(); preferences.Changed -= OnPreferencesChanged; preferences.UnregisterDraft(this); Discard(); }
     public void Reveal() => RevealRequested?.Invoke();
 }
