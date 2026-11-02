@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using SnapBar.Core;
 
@@ -14,6 +15,17 @@ internal static class ActionUi
     public static readonly Brush ButtonLine = Brush("#9AA7B8");
     public static readonly FontFamily Font = new("Microsoft JhengHei UI, Segoe UI");
     public static Brush Brush(string value) => (Brush)new BrushConverter().ConvertFromString(value)!;
+    public static Image BrandIcon(double size)
+    {
+        var image = new Image
+        {
+            Source = new BitmapImage(new Uri("pack://application:,,,/SnapBar.App;component/Assets/Branding/snapbar.png")),
+            Width = size, Height = size, Stretch = Stretch.Uniform,
+            VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false
+        };
+        RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+        return image;
+    }
     public static readonly string[] Icons = ["copy", "cut", "paste", "search", "link", "folder", "globe", "translate", "code", "terminal", "spark", "document", "clean"];
     private static readonly Dictionary<string, string> Paths = new()
     {

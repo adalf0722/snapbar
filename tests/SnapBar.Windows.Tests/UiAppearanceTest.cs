@@ -82,6 +82,10 @@ internal static class UiAppearanceTest
                     "compact general settings retain fixed navigation without vertical overflow");
                 main.Width = 980; main.Height = 720; main.UpdateLayout();
 
+                main.NavigateTo(SettingsCategory.About); Snapshot(main, "settings-about-brand.png");
+                main.Width = main.MinWidth; main.Height = main.MinHeight; Snapshot(main, "settings-about-brand-small.png");
+                main.NavigateTo(SettingsCategory.General); main.Width = 980; main.Height = 720; main.UpdateLayout();
+
                 var script = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "清理多餘空白", CustomActionKind.PowerShell, "terminal", "($env:POPCLIP_TEXT -replace '\\s+', ' ').Trim()");
                 var counter = script with { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "統計字數", Content = "$env:POPCLIP_TEXT.Length" };
                 var settings = ActionCatalog.Normalize(new() { CustomActions = [script, counter] });

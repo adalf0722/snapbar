@@ -41,7 +41,10 @@ public sealed partial class MainWindow
         var shell = new Grid(); shell.ColumnDefinitions.Add(new() { Width = new(180) }); shell.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         AutomationProperties.SetAutomationId(shell, "SettingsShell");
         var sidebar = new DockPanel { Margin = new(14, 24, 12, 16) };
-        var product = ActionUi.Heading("SnapBar", 22); product.Margin = new(12, 0, 0, 26); DockPanel.SetDock(product, Dock.Top); sidebar.Children.Add(product);
+        var product = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(12, 0, 0, 26) };
+        var brandIcon = ActionUi.BrandIcon(24); brandIcon.Margin = new(0, 0, 10, 0);
+        product.Children.Add(brandIcon); product.Children.Add(ActionUi.Heading("SnapBar", 22));
+        DockPanel.SetDock(product, Dock.Top); sidebar.Children.Add(product);
         var navigationPanel = new StackPanel();
         foreach (var category in Enum.GetValues<SettingsCategory>())
         {

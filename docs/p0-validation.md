@@ -770,3 +770,25 @@ Core 新增直接序列化外部 JSON envelope 的匯入案例，不先經 Expor
 以既有 snapshot helper 保存並逐張目視檢查 `artifacts/ui-polish/editor-custom-icon.png`、`editor-custom-icon-small.png`、`editor-custom-icon-picker.png`，以及 `action-icons-{settings,popup}-{Dark,Light}-{Bar,More}.png` 共八張：名稱與圖示對齊，最小視窗仍能操作儲存／取消，圖庫搜尋與取消可見，清單 Accent 與深淺色動作列／更多選單前景色一致，未知合法 ID 顯示星芒且資料保留。Layout 另涵蓋僅圖示模式、停用動作及內建圖示。
 
 本輪為同機 WPF fixture 與離線圖庫驗證；96 DPI snapshot 不等同實體多螢幕測試。未新增 125%／150%／200% 或混合 DPI、實體 IME、瀏覽器／Office／Sublime 等第三方 App 的人工覆蓋；既有來源安全限制維持。本輪未發佈套件。
+
+## 2026-11-02 App 品牌圖示 C
+
+依使用者選定的幾何 S 定稿，新增 App 藍底主圖示及透明底深、淺色系統匣資產。EXE 透過 `ApplicationIcon` 套用；系統匣自動偵測開啟時使用藍底，僅使用快捷鍵時依 Windows 系統主題使用單色 S，並監聽外觀偏好變更。保留現有選單、提示文字與偵測偏好。
+
+三份 ICO 共 27 個圖框，已檢查各自包含 16、20、24、32、40、48、64、128、256 px 與透明通道。Repository checks 通過工具契約 12、Core 420 及 Release 建置。建置仍有既有 AiPanelWindow nullability 與桌面測試未 await 的警告；本次圖示程式碼沒有新增警告。
+
+完整桌面 Release 通過 Preflight 1、Lifecycle 28、Appearance 164、CompatibilitySlow 22（含真實 35 秒腳本）、AiRuntime 35、AiPanel 130。成功報告：`artifacts/checks/desktop/20261102T122233645Z-b9dc5deea5e948c685b005c98012571e/report.json`。先前一次 preflight 因舊版尚未結束而拒絕，另一次慢速相容測試因 fixture 未取得前景失敗；均未用於發布，正常結束舊版並啟用 fixture 後完整重跑通過。
+
+本輪未切換使用者 Windows 主題或高對比設定，亦未新增混合 DPI 人工覆蓋；上述情境仍需人工驗證。
+
+已完成 staging 發布與 Probe smoke 10 項檢查，更新 `artifacts/p0`。發布報告：`artifacts/checks/build/20261102T122423869Z-24998e31c1e7452085014c4a9873fca0/report.json`；舊套件保留於 `artifacts/publish/496ee2f7b12348589e0584386ea50166/previous`。重新啟動新版後，目視確認設定視窗標題列顯示藍底 S，自動偵測沿用開啟狀態，介面顯示關閉後繼續待命。另從發布 EXE 擷取關聯圖示並確認為新圖示（`artifacts/branding/published-exe-icon.png`）。系統匣深淺主題的概念預覽不視為實際切換驗證。
+
+## 2026-11-02 設定頁品牌圖示
+
+依使用者確認的配置，左側品牌名稱前加入 24 DIP 藍底 S；關於頁以 48 DIP 圖示搭配產品名稱與版本。兩處使用共用的內嵌 PNG，保留功能選單圖示與原有設定行為。
+
+已目視檢查 `artifacts/ui-polish/settings-about-brand.png` 與 `settings-about-brand-small.png`：標準 980×720 及最小 860×600 視窗的品牌文字、版本、診斷區與結束按鈕均完整可見。這些為 96 DPI fixture 截圖，不代表混合 DPI 人工驗證。
+
+Repository checks 通過工具契約 12、Core 420 與 Release 建置；完整 Release 桌面套件通過 Preflight 1、Lifecycle 28、Appearance 164、CompatibilitySlow 22、AiRuntime 35、AiPanel 130。報告：`artifacts/checks/desktop/20261102T123024953Z-35471bb9173c4b539e5dbb93e05ae283/report.json`。
+
+已透過 staging 更新 `artifacts/p0`，Probe smoke 10 通過。發布報告：`artifacts/checks/build/20261102T123154282Z-6cd89208c8064dabb34c0486adb7b5b6/report.json`。正常啟動新版並開啟關於頁，確認左側與關於頁的品牌圖示均正常顯示，既有自動偵測仍為開啟；保留關於頁供使用者直接檢視。

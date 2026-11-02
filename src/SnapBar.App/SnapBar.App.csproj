@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/Branding/snapbar.ico</ApplicationIcon>
     <UseWindowsForms>true</UseWindowsForms>
     <!-- WPF owns per-monitor DPI through app.manifest; Forms is only used for NotifyIcon. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
@@ -9,6 +10,8 @@
   <ItemGroup><ProjectReference Include="../SnapBar.Windows/SnapBar.Windows.csproj" /></ItemGroup>
   <ItemGroup><Using Remove="System.Drawing" /><Using Remove="System.Windows.Forms" /></ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets/Branding/*.ico" />
+    <Resource Include="Assets/Branding/snapbar.png" />
     <Resource Include="Assets/FluentIcons/FluentSystemIcons-Regular.ttf" />
     <Resource Include="Assets/FluentIcons/catalog.json" />
     <Content Include="Assets/FluentIcons/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

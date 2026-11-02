@@ -16,10 +16,16 @@ internal sealed class SettingsSupportPage : ContentControl
         var body = new DockPanel(); var exitButton = ActionUi.Button("結束 SnapBar", exit);
         exitButton.HorizontalAlignment = HorizontalAlignment.Left; exitButton.Margin = new(0, 12, 0, 0); AutomationProperties.SetAutomationId(exitButton, "ExitSnapBar");
         DockPanel.SetDock(exitButton, Dock.Bottom); body.Children.Add(exitButton);
-        var content = new DockPanel(); var heading = new StackPanel(); heading.Children.Add(ActionUi.Heading("SnapBar", 22));
+        var content = new DockPanel(); var heading = new StackPanel();
+        var identity = new DockPanel { LastChildFill = true };
+        var brandIcon = ActionUi.BrandIcon(48); brandIcon.Margin = new(0, 0, 14, 0);
+        DockPanel.SetDock(brandIcon, Dock.Left); identity.Children.Add(brandIcon);
+        var product = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        product.Children.Add(ActionUi.Heading("SnapBar", 22));
         var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "未知版本";
-        var versionLabel = ActionUi.Text("版本 " + version.Split('+')[0], 14, ActionUi.Muted); versionLabel.ToolTip = version; heading.Children.Add(versionLabel);
+        var versionLabel = ActionUi.Text("版本 " + version.Split('+')[0], 14, ActionUi.Muted); versionLabel.ToolTip = version; product.Children.Add(versionLabel);
+        identity.Children.Add(product); heading.Children.Add(identity);
         var lifetime = ActionUi.Text("關閉視窗後會繼續在背景待命。使用系統匣圖示可返回設定；「結束 SnapBar」才會完整結束。", 13, ActionUi.Muted); lifetime.Margin = new(0, 16, 0, 16); heading.Children.Add(lifetime);
         DockPanel.SetDock(heading, Dock.Top); content.Children.Add(heading);
         var diagnostics = new DockPanel();
