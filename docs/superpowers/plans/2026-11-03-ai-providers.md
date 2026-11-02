@@ -372,6 +372,9 @@ internal sealed class AiServiceTestController(IAiTextClient client) : IDisposabl
         Changed?.Invoke();
         try
         {
+            if (disposed || currentRevision != revision
+                || !ReferenceEquals(request, cancellation) || cancellation.IsCancellationRequested)
+                return;
             var result = await client.ExecuteAsync(profile, key, Source, Instruction,
                 cancellation.Token).WaitAsync(cancellation.Token);
             if (!disposed && currentRevision == revision)
@@ -491,7 +494,7 @@ git status --short
 
 ## 規格覆蓋自查
 
-Task 1–7 已完成；Task 7 證據見 docs/p0-validation.md 的 2026-11-03 紀錄。全分支最終審查另待完成，不包含本輪完成勾選；未發佈或合併。
+Task 1–7 及全分支最終審查已完成；驗證證據見 docs/p0-validation.md 的 2026-11-03 紀錄。最終審查未發現 Critical／Important 問題，兩個保存／測試交互情境的專項回歸測試列為後續建議。控制器範例已同步實作中的送出前重入檢查。未發佈或合併。
 
 | 核准要求 | 對應任務 |
 | --- | --- |

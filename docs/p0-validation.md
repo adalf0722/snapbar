@@ -22,7 +22,9 @@ Warnings are unchanged from plan baseline `eaaf482`: AiPanelWindow.cs(95,143) CS
 
 自查涵蓋本分支變更的來源與測試：沒有新增實際金鑰、原文、剪貼簿、HTTP message 或錯誤 body 記錄；測試僅輸出固定案例名稱與結果。schema 仍為 1，協定數值維持 Responses=0、ChatCompletions=1、Messages=2；載入僅補缺少的服務，不覆寫舊模型、網址、同 ID profile 或選擇，不立即寫檔。沒有修改選取、前景、焦點、candidate、stale-result 或 action permission 政策。官方模型建議、具名服務 HTTPS 入口及 2026-11-03 查核日期均有具體資料，來源見服務 catalog 與核准設計的官方參考，沒有待補欄位。
 
-八家具名服務 OpenAI、Gemini、Claude、DeepSeek、Groq、OpenRouter、xAI、MiniMax 只完成假的 HTTP handler／client 協定及狀態驗證；沒有使用真實金鑰、呼叫付費 API、讀寫真實使用者設定或開啟外部瀏覽器，不能宣稱真實連通性或帳號模型權限。96 DPI WPF fixture 不代表實體 125%／150%／200% 或混合 DPI、實體 IME，以及瀏覽器／Office／Sublime 的人工驗證。本輪未執行完整桌面 Release suite，未發佈、合併或建立套件；後續發佈仍須按當時來源重跑 Release 與正式發佈流程。全分支最終審查另待完成。
+八家具名服務 OpenAI、Gemini、Claude、DeepSeek、Groq、OpenRouter、xAI、MiniMax 只完成假的 HTTP handler／client 協定及狀態驗證；沒有使用真實金鑰、呼叫付費 API、讀寫真實使用者設定或開啟外部瀏覽器，不能宣稱真實連通性或帳號模型權限。96 DPI WPF fixture 不代表實體 125%／150%／200% 或混合 DPI、實體 IME，以及瀏覽器／Office／Sublime 的人工驗證。本輪未執行完整桌面 Release suite，未發佈、合併或建立套件；後續發佈仍須按當時來源重跑 Release 與正式發佈流程。
+
+全分支最終審查已完成，範圍為 `eaaf482..c998db0`，結論可合併，未發現 Critical／Important 問題；此結論不代表已執行合併或發佈。審查保留兩個非阻擋的專項回歸測試建議：請求未完成時儲存應取消並拒絕晚到結果，以及測試成功後金鑰保存失敗應清除成功狀態並保留可重試草稿。實作已有對應處理，現有通過證據不宣稱涵蓋這兩個獨立情境。本段及計畫狀態更新僅修改文件，沒有改變已測試的來源指紋。
 
 ## 2026-11-02 搜尋動作編輯與顯示位置
 
