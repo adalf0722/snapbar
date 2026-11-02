@@ -1,11 +1,18 @@
 name: Publish Windows release
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version for validation only; no Release will be created
+        required: true
+        type: string
+        default: v0.0.0-validation
   release:
     types: [published]
 permissions:
   contents: read
 concurrency:
-  group: snapbar-release-${{ github.event.release.tag_name }}
+  group: snapbar-${{ github.event_name }}-${{ github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 jobs:
   package:
@@ -15,12 +22,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Prepare portable PowerShell without administrator access
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
           $destination = Join-Path $env:RUNNER_TEMP 'snapbar-pwsh'
           $archive = Join-Path $env:RUNNER_TEMP 'snapbar-pwsh.zip'
           Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/PowerShell-7.6.6-win-x64.zip' -OutFile $archive
@@ -47,9 +55,9 @@ jobs:
         id: package
         shell: pwsh
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PACKAGE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
         run: |
-          $package = ./scripts/package-release.ps1 -Version $env:RELEASE_TAG
+          $package = ./scripts/package-release.ps1 -Version $env:PACKAGE_VERSION
           "directory=$($package.directory)" >> $env:GITHUB_OUTPUT
       - name: Transfer release package
         uses: actions/upload-artifact@v7
@@ -66,9 +74,41 @@ jobs:
           path: artifacts/checks/
           if-no-files-found: warn
           retention-days: 14
+  verify:
+    name: Verify transferred package
+    needs: package
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: windows-release-package
+          path: release-package
+      - name: Verify checksum and summarize validation
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $PWD "release-package/SnapBar-$env:PACKAGE_VERSION-win-x64.zip"
+          $checksum = "$archive.sha256"
+          $expected = (Get-Content -LiteralPath $checksum -Raw -Encoding utf8).Split(' ')[0]
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $expected) {
+            throw 'Downloaded release ZIP checksum mismatch.'
+          }
+          $summary = @(
+            "Package verified: SnapBar-$env:PACKAGE_VERSION-win-x64.zip",
+            "Source commit: $env:GITHUB_SHA",
+            "SHA-256: $expected",
+            "Event: $env:GITHUB_EVENT_NAME",
+            'Download the windows-release-package artifact from this workflow run.',
+            'Manual validation does not create a tag, Release, or Release attachment.'
+          ) -join "`n`n"
+          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, $summary + "`n", [Text.UTF8Encoding]::new($false))
   upload:
     name: Attach downloads to GitHub Release
-    needs: package
+    if: github.event_name == 'release'
+    needs: verify
     runs-on: windows-latest
     timeout-minutes: 10
     permissions:
@@ -88,9 +128,5 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $archive = Join-Path $PWD "release-package/SnapBar-$env:RELEASE_TAG-win-x64.zip"
           $checksum = "$archive.sha256"
-          $expected = (Get-Content -LiteralPath $checksum -Raw -Encoding utf8).Split(' ')[0]
-          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $expected) {
-            throw 'Downloaded release ZIP checksum mismatch.'
-          }
           & gh release upload $env:RELEASE_TAG $archive $checksum --repo $env:GH_REPO
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed; existing assets were not overwritten.' }

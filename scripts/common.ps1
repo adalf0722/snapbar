@@ -35,6 +35,21 @@ function Get-SnapBarFiles {
     return @($files -split "`0" | Where-Object { $_ } | Sort-Object -Unique)
 }
 
+function Read-SnapBarIndexBlob([string]$File) {
+    $start = [Diagnostics.ProcessStartInfo]::new('git')
+    $start.WorkingDirectory = $script:SnapBarRepo
+    $start.UseShellExecute = $false; $start.RedirectStandardOutput = $true
+    $start.ArgumentList.Add('cat-file'); $start.ArgumentList.Add('blob'); $start.ArgumentList.Add(":$File")
+    $process = [Diagnostics.Process]::Start($start)
+    $stream = [IO.MemoryStream]::new()
+    try {
+        $process.StandardOutput.BaseStream.CopyTo($stream); $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw "Cannot read index blob: $File" }
+        return ,($stream.ToArray())
+    }
+    finally { $stream.Dispose(); $process.Dispose() }
+}
+
 function Get-SnapBarFingerprint {
     $files = @(Get-SnapBarFiles | Where-Object {
         $_ -match '^(src/|tests/|scripts/|\.github/|\.githooks/)' -or $_ -match '^[^/]+\.(props|targets|json|slnx|config)$'

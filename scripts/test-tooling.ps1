@@ -163,4 +163,64 @@ Check-Tooling 'release ZIP preserves root layout and Probe content with a matchi
     Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' $result.directory }
     Assert-Tooling ((Get-FileHash -LiteralPath $result.archive -Algorithm SHA256).Hash.ToLowerInvariant() -eq $hash)
 }
+$workflowRelative = '.github/workflows/guardrail-' + [guid]::NewGuid().ToString('N') + '.yml'
+$workflowPath = Join-Path $script:SnapBarRepo $workflowRelative
+$configRelative = '.github/actionlint.yaml'
+$configPath = Join-Path $script:SnapBarRepo $configRelative
+$originalConfig = [IO.File]::ReadAllBytes($configPath)
+$savedWorkflowIndex = $env:GIT_INDEX_FILE
+$realIndex = & git -C $script:SnapBarRepo rev-parse --git-path index
+if ($LASTEXITCODE -ne 0) { throw 'Cannot find index for workflow fixtures.' }
+if (-not [IO.Path]::IsPathRooted($realIndex)) { $realIndex = Join-Path $script:SnapBarRepo $realIndex }
+$workflowIndex = Join-Path $run 'workflow-index'
+Copy-Item -LiteralPath $realIndex -Destination $workflowIndex
+$validWorkflow = @('name: Guardrail fixture', 'on: push', 'jobs:', '  check:', '    runs-on: windows-latest', '    steps:', '      - run: echo fixture') -join "`n"
+$invalidContext = $validWorkflow.Replace('    runs-on:', ('    env:' + "`n" + '      BAD: ${{ runner.temp }}' + "`n" + '    runs-on:'))
+function Stage-WorkflowFixture([string]$File) {
+    & git -C $script:SnapBarRepo add -- $File
+    if ($LASTEXITCODE -ne 0) { throw "Cannot stage workflow fixture: $File" }
+}
+function Write-WorkflowFixture([string]$Content) { [IO.File]::WriteAllText($workflowPath, $Content, [Text.UTF8Encoding]::new($false)) }
+function Invoke-WorkflowFixtureCheck([string]$Name) {
+    return Invoke-SnapBarCommand $Name (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'check.ps1'), '-Staged') $run
+}
+try {
+    $env:GIT_INDEX_FILE = $workflowIndex
+    Check-Tooling 'staged workflow context errors fail even after an unstaged repair' {
+        Write-WorkflowFixture $invalidContext; Stage-WorkflowFixture $workflowRelative
+        Write-WorkflowFixture $validWorkflow
+        $result = Invoke-WorkflowFixtureCheck 'StagedInvalidContext'
+        Assert-Tooling (-not $result.success -and $result.exitCode -ne 0)
+        Assert-Tooling ([IO.File]::ReadAllText($result.log).Contains('context "runner" is not allowed here'))
+        Assert-Tooling (-not [IO.File]::ReadAllText($result.log).Contains('Repository checks passed.'))
+    }
+    Check-Tooling 'valid staged workflows pass independently of unstaged YAML errors' {
+        Write-WorkflowFixture $validWorkflow; Stage-WorkflowFixture $workflowRelative
+        Write-WorkflowFixture 'on: [push'
+        Assert-SnapBarCommand (Invoke-WorkflowFixtureCheck 'StagedValidWorkflow')
+    }
+    Check-Tooling 'malformed staged YAML fails independently of a valid working file' {
+        Write-WorkflowFixture 'on: [push'; Stage-WorkflowFixture $workflowRelative
+        Write-WorkflowFixture $validWorkflow
+        $result = Invoke-WorkflowFixtureCheck 'StagedMalformedWorkflow'
+        Assert-Tooling (-not $result.success -and $result.exitCode -ne 0)
+    }
+    Check-Tooling 'staged actionlint configuration controls custom runner labels' {
+        $customConfig = @('self-hosted-runner:', '  labels:', '    - snapbar-desktop', '    - index-only') -join "`n"
+        Write-WorkflowFixture ($validWorkflow.Replace('windows-latest', '[self-hosted, Windows, X64, index-only]'))
+        Stage-WorkflowFixture $workflowRelative
+        [IO.File]::WriteAllText($configPath, $customConfig, [Text.UTF8Encoding]::new($false)); Stage-WorkflowFixture $configRelative
+        [IO.File]::WriteAllBytes($configPath, $originalConfig)
+        Assert-SnapBarCommand (Invoke-WorkflowFixtureCheck 'StagedCustomLabel')
+        Stage-WorkflowFixture $configRelative
+        [IO.File]::WriteAllText($configPath, $customConfig, [Text.UTF8Encoding]::new($false))
+        $result = Invoke-WorkflowFixtureCheck 'StagedMissingLabel'
+        Assert-Tooling (-not $result.success -and $result.exitCode -ne 0)
+    }
+}
+finally {
+    $env:GIT_INDEX_FILE = $savedWorkflowIndex
+    [IO.File]::WriteAllBytes($configPath, $originalConfig)
+    if (Test-Path -LiteralPath $workflowPath) { Remove-Item -LiteralPath $workflowPath }
+}
 Write-Host "$script:toolingPassed passed, 0 failed"
