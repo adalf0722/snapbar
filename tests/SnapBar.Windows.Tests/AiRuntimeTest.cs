@@ -21,6 +21,109 @@ internal static class AiRuntimeTest
             try { if (!await test()) throw new Exception("Assertion failed"); Console.WriteLine("PASS " + name); passed++; }
             catch (Exception) { Console.WriteLine("FAIL " + name); failed++; }
         }
+        const string messagesBody = """{"type":"message","stop_reason":"end_turn","content":[{"type":"text","text":"done"}]}""";
+        var claude = AiProviderCatalog.Find("claude")!.Profile with { Model = "fixture-model" };
+        foreach (var definition in AiProviderCatalog.Definitions)
+        {
+            var profile = definition.Profile with { Model = "fixture-model" };
+            await Check("AI provider wire contract " + profile.Id, async () =>
+            {
+                var valid = false;
+                using var http = new HttpClient(new Handler(async (request, token) =>
+                {
+                    using var json = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(token));
+                    var root = json.RootElement;
+                    valid = request.RequestUri!.AbsoluteUri == profile.Endpoint && root.GetProperty("model").GetString() == "fixture-model";
+                    if (profile.Protocol == AiProtocol.Messages)
+                        valid &= request.Headers.Authorization == null && request.Headers.GetValues("x-api-key").Single() == "fake-key"
+                            && request.Headers.GetValues("anthropic-version").Single() == "2023-06-01"
+                            && root.GetProperty("system").GetString()!.EndsWith("shorten") && root.GetProperty("max_tokens").GetInt32() == 8192
+                            && !root.GetProperty("stream").GetBoolean() && root.GetProperty("messages")[0].GetProperty("content").GetString() == "literal source";
+                    else
+                        valid &= request.Headers.Authorization?.Parameter == "fake-key" && (profile.Protocol == AiProtocol.Responses
+                            ? !root.GetProperty("store").GetBoolean() && root.GetProperty("instructions").GetString()!.EndsWith("shorten") && root.GetProperty("input")[0].GetProperty("content").GetString() == "literal source"
+                            : !root.GetProperty("stream").GetBoolean() && root.GetProperty("messages")[0].GetProperty("role").GetString() == "system" && root.GetProperty("messages")[1].GetProperty("content").GetString() == "literal source");
+                    return Response(profile.Protocol == AiProtocol.Messages ? messagesBody : profile.Protocol == AiProtocol.Responses ? Responses : Chat);
+                }));
+                using var client = new AiHttpClient(http);
+                return (await client.ExecuteAsync(profile, "fake-key", "literal source", "shorten", default)).Success && valid;
+            });
+            await Check("AI provider empty key policy " + profile.Id, async () =>
+            {
+                var sent = 0;
+                using var http = new HttpClient(new Handler((_, _) => { sent++; return Task.FromResult(Response(Chat)); }));
+                using var client = new AiHttpClient(http);
+                var result = await client.ExecuteAsync(profile, "", "source", "rewrite", default);
+                return profile.Id == "compatible" ? result.Success && sent == 1 : result.Status == "key-required" && sent == 0;
+            });
+        }
+        foreach (var endpoint in new[] { "https://example.invalid/chat", "http://127.0.0.1:11434/chat", "https://api.openai.com/v1/chat/completions" })
+            await Check("AI compatible empty key endpoint " + endpoint, async () =>
+            {
+                var sent = 0;
+                using var http = new HttpClient(new Handler((_, _) => { sent++; return Task.FromResult(Response(Chat)); }));
+                using var client = new AiHttpClient(http);
+                var result = await client.ExecuteAsync(Compatible with { Endpoint = endpoint }, "", "source", "rewrite", default);
+                return endpoint.Contains("api.openai.com") ? result.Status == "key-required" && sent == 0 : result.Success && sent == 1;
+            });
+        foreach (var (body, status, text) in new[]
+        {
+            (messagesBody, "", "done"),
+            (messagesBody.Replace("end_turn", "max_tokens"), "incomplete", ""),
+            (messagesBody.Replace("end_turn", "refusal"), "refused", ""),
+            (messagesBody.Replace("end_turn", "tool_use"), "invalid-response", ""),
+            (messagesBody.Replace("end_turn", "unknown"), "invalid-response", ""),
+            (messagesBody.Replace("\"message\"", "false"), "invalid-response", ""),
+            ("{}", "invalid-response", ""),
+            (messagesBody.Replace("\"end_turn\"", "42"), "invalid-response", ""),
+            (messagesBody.Replace("\"content\":[{\"type\":\"text\",\"text\":\"done\"}]", "\"content\":null"), "invalid-response", ""),
+            (messagesBody.Replace("\"text\":\"done\"", "\"missing\":\"done\""), "invalid-response", ""),
+            (messagesBody.Replace("{\"type\":\"text\",\"text\":\"done\"}", "null"), "invalid-response", ""),
+            (messagesBody.Replace("\"text\":\"done\"", "\"text\":42"), "invalid-response", ""),
+            (messagesBody.Replace("\"text\",\"text\"", "\"tool_use\",\"text\""), "invalid-response", ""),
+            (messagesBody.Replace("\"text\",\"text\"", "\"unknown\",\"text\""), "invalid-response", ""),
+            (messagesBody.Replace("[{", "[{\"type\":\"thinking\",\"thinking\":\"hidden\"},{\"type\":\"redacted_thinking\"},{\"type\":\"text\",\"text\":\"first \"},{"), "", "first done"),
+            (messagesBody.Replace("done", "  "), "invalid-response", "")
+        })
+            await Check("AI Messages final text " + status + " length " + body.Length, async () =>
+            { var result = await Execute(claude, body); return status == "" ? result.Success && result.Text == text : result.Status == status; });
+        var minimax = AiProviderCatalog.Find("minimax")!.Profile with { Model = "fixture-model" };
+        foreach (var (content, expected) in new[] { ("final", "final"), (" <think>secret</think> <think>more</think> final", "final"), ("<think>open", ""), ("<think>hidden</think>  ", ""), ("normal <think>tag</think>", "normal <think>tag</think>") })
+            await Check("AI MiniMax final text length " + content.Length, async () =>
+            {
+                var body = JsonSerializer.Serialize(new { choices = new[] { new { finish_reason = "stop", message = new { content, reasoning_content = "hidden" } } } });
+                var result = await Execute(minimax, body);
+                return expected == "" ? result.Status == "invalid-response" : result.Success && result.Text == expected;
+            });
+        await Check("AI other Chat preserves leading think tags", async () =>
+            (await Execute(Compatible, Chat.Replace("chat result", "<think>literal</think> final"))).Text == "<think>literal</think> final");
+        foreach (var profile in new[] { OpenAi, Compatible, claude })
+        {
+            var body = profile.Protocol == AiProtocol.Messages ? messagesBody : profile.Protocol == AiProtocol.Responses ? Responses : Chat;
+            var value = profile.Protocol == AiProtocol.Messages ? "done" : profile.Protocol == AiProtocol.Responses ? "first" : "chat result";
+            await Check("AI protocol output cap " + profile.Protocol, async () => (await Execute(profile, body.Replace(value, new string('x', 262145)))).Status == "too-large");
+            await Check("AI protocol output limit accepts boundary " + profile.Protocol, async () =>
+            {
+                var size = 262144 - (profile.Protocol == AiProtocol.Responses ? " second third".Length : 0);
+                var result = await Execute(profile, body.Replace(value, new string('x', size)));
+                return result.Success && result.Text!.Length == 262144;
+            });
+            await Check("AI protocol body cap " + profile.Protocol, async () => (await Execute(profile, new string('x', 2 * 1024 * 1024 + 1))).Status == "too-large");
+            await Check("AI protocol fake timeout " + profile.Protocol, async () =>
+            {
+                using var http = new HttpClient(new Handler((_, _) => throw new TaskCanceledException()));
+                using var client = new AiHttpClient(http);
+                return (await client.ExecuteAsync(profile, "fake", "source", "rewrite", default)).Status == "timeout";
+            });
+            await Check("AI protocol cancellation " + profile.Protocol, async () =>
+            {
+                using var cancellation = new CancellationTokenSource();
+                using var http = new HttpClient(new Handler((_, token) => { cancellation.Cancel(); token.ThrowIfCancellationRequested(); return Task.FromResult(Response(body)); }));
+                using var client = new AiHttpClient(http);
+                try { await client.ExecuteAsync(profile, "fake", "source", "rewrite", cancellation.Token); return false; }
+                catch (OperationCanceledException e) { return e.CancellationToken == cancellation.Token; }
+            });
+        }
         await Check("AI Responses serializes literal source with store false and full endpoint", async () =>
         {
             bool valid = false;
