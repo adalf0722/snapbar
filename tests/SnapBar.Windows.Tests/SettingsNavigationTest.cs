@@ -131,9 +131,10 @@ internal static class SettingsNavigationTest
             "settings missing-service action routes directly to the embedded service page");
         var services = main.AiServicesPanel;
         var provider = Find<ComboBox>(services, "AiProvider");
-        var model = Find<TextBox>(services, "AiModel");
+        var model = Find<ComboBox>(services, "AiModel");
         var key = Find<PasswordBox>(services, "AiApiKey");
-        provider.SelectedIndex = 1; model.Text = "disposable-local-model";
+        var compatibleIndex = Array.FindIndex(main.AiPreferences.Settings.Profiles, profile => profile.Id == "compatible");
+        provider.SelectedIndex = compatibleIndex; model.Text = "disposable-local-model";
         check(services.IsDirty && main.AiPreferences.SelectedProfile.Id == "openai",
             "settings selecting a service changes only its draft before save");
         key.Password = "disposable-preview-key";
@@ -143,7 +144,7 @@ internal static class SettingsNavigationTest
         services.Discard();
         check(!services.IsDirty && !services.HasPendingKeyChanges && key.Password.Length == 0
             && provider.SelectedIndex == 0, "settings discarding service changes clears pending key controls and restores effective selection");
-        provider.SelectedIndex = 1; model.Text = "disposable-local-model";
+        provider.SelectedIndex = compatibleIndex; model.Text = "disposable-local-model";
         check(services.TrySave() && !services.IsDirty && main.AiPreferences.SelectedProfile.Id == "compatible"
             && new AiPreferences(directory).SelectedProfile.Model == "disposable-local-model",
             "settings saving a local service persists fields without requiring a key");

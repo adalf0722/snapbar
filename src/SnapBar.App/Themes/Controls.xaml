@@ -359,9 +359,14 @@
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
-                        <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                        <ContentPresenter x:Name="SelectionContent" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="10,7,32,7"
                                           VerticalAlignment="Center" IsHitTestVisible="False" />
+                        <TextBox x:Name="PART_EditableTextBox" Visibility="Collapsed" Margin="10,4,32,4"
+                                 Background="Transparent" Foreground="{TemplateBinding Foreground}" BorderThickness="0"
+                                 Padding="0" MinHeight="0" VerticalContentAlignment="Center"
+                                 Style="{x:Null}" FocusVisualStyle="{x:Null}"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}" />
                         <Border x:Name="FocusRing" BorderBrush="{DynamicResource ControlAccent}" BorderThickness="1" CornerRadius="8"
                                 IsHitTestVisible="False" Visibility="Collapsed" />
                         <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True" Focusable="False"
@@ -374,6 +379,10 @@
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsEditable" Value="True">
+                            <Setter TargetName="SelectionContent" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible" />
+                        </Trigger>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="FocusRing" Property="Visibility" Value="Visible" /></Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
                     </ControlTemplate.Triggers>

@@ -2,7 +2,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Data;
 using SnapBar.Core;
+using SnapBar.Windows;
 
 namespace SnapBar.App;
 
@@ -10,7 +12,11 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
 {
     private readonly AiPreferences preferences;
     private readonly ComboBox profiles;
-    private readonly TextBox endpoint, model;
+    private readonly TextBox endpoint;
+    private readonly ComboBox model;
+    private readonly Expander advanced;
+    private readonly TextBlock customEndpointNotice, protocolHint;
+    private readonly Button keyLink, modelsLink;
     private readonly PasswordBox key;
     private readonly CheckBox removeKey;
     private readonly TextBlock hint, keyStatus, state;
@@ -28,7 +34,7 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
     public bool IsDirty => selected >= 0 && (HasPendingKeyChanges || drafts[selected].Id != baselineSelected
         || !drafts.Select((p, i) => i == selected ? CurrentDraft() : p).SequenceEqual(baseline));
 
-    public AiSettingsPanel(AiPreferences preferences)
+    public AiSettingsPanel(AiPreferences preferences, Action<Uri>? openLink = null)
     {
         this.preferences = preferences;
         baseline = preferences.Settings.Profiles.ToArray(); baselineSelected = preferences.Settings.SelectedProfileId;
@@ -47,22 +53,55 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
         void Label(string text) { var label = ActionUi.Heading(text, 14); label.Margin = new(0, 12, 0, 5); fields.Children.Add(label); }
         Label("服務"); profiles = new ComboBox { ItemsSource = drafts.Select(p => p.Name).ToArray(), MinHeight = 36 };
         AutomationProperties.SetAutomationId(profiles, "AiProvider"); AutomationProperties.SetName(profiles, "AI 服務"); fields.Children.Add(profiles);
-        Label("完整 API 網址"); endpoint = ActionUi.Input("", 2048); AutomationProperties.SetAutomationId(endpoint, "AiEndpoint"); fields.Children.Add(endpoint);
-        fields.Children.Add(ActionUi.Text("OpenAI 使用 /v1/responses；相容服務使用完整 /chat/completions 網址。", 12, ActionUi.Muted));
-        Label("模型 ID"); model = ActionUi.Input("", 128); fields.Children.Add(model); AutomationProperties.SetAutomationId(model, "AiModel");
         Label("API Key"); key = new PasswordBox { MaxLength = 8192, Padding = new(10, 8, 10, 8), MinHeight = 36 };
         AutomationProperties.SetAutomationId(key, "AiApiKey"); AutomationProperties.SetName(key, "API Key"); fields.Children.Add(key);
         keyStatus = ActionUi.Text("", 12, ActionUi.Muted); AutomationProperties.SetAutomationId(keyStatus, "AiKeyStatus"); fields.Children.Add(keyStatus);
+        Action<Uri> launch = openLink ?? BrowserLauncher.Open;
+        Button Link(string title, string id, bool models)
+        {
+            var button = ActionUi.Button(title, () =>
+            {
+                var definition = AiProviderCatalog.Find(drafts[selected].Id);
+                var url = models ? definition?.ModelsUrl : definition?.KeyUrl;
+                if (url == null) return;
+                try { launch(new Uri(url)); }
+                catch { hint.Text = "無法開啟官方頁面，請稍後再試。"; }
+            });
+            AutomationProperties.SetAutomationId(button, id); return button;
+        }
+        keyLink = Link("取得 API Key", "AiKeyLink", false); fields.Children.Add(keyLink);
         fields.Children.Add(ActionUi.Text("留白保留已存金鑰。金鑰依服務與網址分開保護；本機相容服務可不填。", 12, ActionUi.Muted));
+        Label("模型 ID（必填，可選擇或輸入）");
+        model = new ComboBox { IsEditable = true, MinHeight = 36, SelectedValuePath = "Id" };
+        TextSearch.SetTextPath(model, "Id");
+        var item = new FrameworkElementFactory(typeof(TextBlock));
+        item.SetBinding(TextBlock.TextProperty, new MultiBinding { StringFormat = "{0}  ·  {1}", Bindings = { new Binding("Name"), new Binding("Id") } });
+        model.ItemTemplate = new DataTemplate { VisualTree = item };
+        model.Loaded += (_, _) =>
+        {
+            model.ApplyTemplate();
+            if (model.Template.FindName("PART_EditableTextBox", model) is TextBox editor) editor.MaxLength = 128;
+        };
+        fields.Children.Add(model); AutomationProperties.SetAutomationId(model, "AiModel"); AutomationProperties.SetName(model, "模型 ID");
+        modelsLink = Link("官方模型清單", "AiModelsLink", true); fields.Children.Add(modelsLink);
+        customEndpointNotice = ActionUi.Text("使用自訂網址", 12, ActionUi.Muted);
+        AutomationProperties.SetAutomationId(customEndpointNotice, "AiCustomEndpointNotice"); fields.Children.Add(customEndpointNotice);
+        advanced = new Expander { Header = "進階設定", Margin = new(0, 12, 0, 0) };
+        AutomationProperties.SetAutomationId(advanced, "AiAdvancedSettings");
+        var advancedFields = new StackPanel();
+        advancedFields.Children.Add(ActionUi.Heading("完整 API 網址", 14));
+        endpoint = ActionUi.Input("", 2048); AutomationProperties.SetAutomationId(endpoint, "AiEndpoint"); advancedFields.Children.Add(endpoint);
+        protocolHint = ActionUi.Text("", 12, ActionUi.Muted); advancedFields.Children.Add(protocolHint);
         removeKey = new CheckBox { Content = "移除此網址已保存的 API Key", Margin = new(0, 12, 0, 0) };
-        AutomationProperties.SetAutomationId(removeKey, "AiRemoveKey"); fields.Children.Add(removeKey);
+        AutomationProperties.SetAutomationId(removeKey, "AiRemoveKey"); advancedFields.Children.Add(removeKey);
+        advanced.Content = advancedFields; fields.Children.Add(advanced);
         profiles.SelectionChanged += (_, _) =>
         {
             if (syncing) return;
             CaptureDraft(); selected = profiles.SelectedIndex; ShowDraft(); UpdateState();
         };
-        endpoint.TextChanged += (_, _) => { if (!syncing) { ShowKeyStatus(); UpdateState(); } };
-        model.TextChanged += (_, _) => { if (!syncing) UpdateState(); };
+        endpoint.TextChanged += (_, _) => { if (!syncing) { ShowKeyStatus(); ShowEndpointNotice(); UpdateState(); } };
+        model.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler((_, _) => { if (!syncing) UpdateState(); }));
         key.PasswordChanged += (_, _) => { if (!syncing) UpdateState(); };
         removeKey.Checked += (_, _) => { if (!syncing) UpdateState(); };
         removeKey.Unchecked += (_, _) => { if (!syncing) UpdateState(); };
@@ -87,13 +126,32 @@ internal sealed class AiSettingsPanel : ContentControl, ISettingsDraft
         syncing = true;
         try
         {
-            var profile = drafts[selected]; endpoint.Text = profile.Endpoint; model.Text = profile.Model;
+            var profile = drafts[selected]; endpoint.Text = profile.Endpoint;
+            var definition = AiProviderCatalog.Find(profile.Id);
+            var text = profile.Model;
+            model.ItemsSource = definition?.Models ?? []; model.Text = text;
+            advanced.IsExpanded = profile.Id == "compatible";
+            keyLink.Visibility = definition?.KeyUrl == null ? Visibility.Collapsed : Visibility.Visible;
+            modelsLink.Visibility = definition?.ModelsUrl == null ? Visibility.Collapsed : Visibility.Visible;
+            protocolHint.Text = profile.Protocol switch
+            {
+                AiProtocol.Responses => "使用 Responses 協定與完整 /responses 網址。",
+                AiProtocol.Messages => "使用 Messages 協定與完整 /messages 網址。",
+                _ => "使用 Chat Completions 協定與完整 /chat/completions 網址。"
+            };
             key.Clear(); removeKey.IsChecked = false;
             if (keyChanges.TryGetValue(Scope(profile), out var pending))
             { key.Password = pending.Key ?? ""; removeKey.IsChecked = pending.Key == null; }
         }
         finally { syncing = false; }
-        ShowKeyStatus();
+        ShowKeyStatus(); ShowEndpointNotice();
+    }
+    private void ShowEndpointNotice()
+    {
+        var definition = AiProviderCatalog.Find(drafts[selected].Id);
+        var matches = definition != null && Uri.TryCreate(endpoint.Text.Trim(), UriKind.Absolute, out var current)
+            && current.Equals(new Uri(definition.Profile.Endpoint));
+        customEndpointNotice.Visibility = drafts[selected].Id != "compatible" && !matches ? Visibility.Visible : Visibility.Collapsed;
     }
     private void ShowKeyStatus()
     {

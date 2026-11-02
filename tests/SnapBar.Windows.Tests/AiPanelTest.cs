@@ -65,6 +65,7 @@ internal static class AiPanelTest
                 var client = new Client();
                 AiManagementTest.Run(directory, Check);
                 await AiIconTest.RunAsync(directory, Check, Snapshot);
+                await AiServicesTest.RunAsync(directory, Check, Snapshot);
                 var snapshot = new SelectionSnapshot("ui", new(0, 1, 1), "# Literal source\n**keep original markers**", new(100, 100, 50, 20), false, 1, 43);
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate(); await Task.Delay(100);
                 Check(panel.Session.ViewingOriginal && !Button(panel, "AiResultTab").IsEnabled && Children<TextBox>(panel).Any(t => t.Text == snapshot.Text && t.IsReadOnly), "AI opens with literal original and no empty result page");
