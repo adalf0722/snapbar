@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 45
     outputs:
       version: ${{ steps.package.outputs.version }}
+      previous-tag: ${{ steps.package.outputs.previous-tag }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -65,12 +66,21 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
           DESKTOP_REPORT: ${{ steps.desktop.outputs.report }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           $version = $env:PACKAGE_VERSION
+          $previous = ''
+          if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -eq 'refs/heads/main') {
+            $plan = ./scripts/resolve-auto-version.ps1
+            $version = $plan.version
+            $previous = $plan.previousTag
+          }
           if (-not $version) { $version = "v0.0.0-ci.$env:GITHUB_RUN_NUMBER.g$($env:GITHUB_SHA.Substring(0, 12))" }
           $package = ./scripts/package-release.ps1 -Version $version -DesktopReport $env:DESKTOP_REPORT
           "directory=$($package.directory)" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
+          "previous-tag=$previous" >> $env:GITHUB_OUTPUT
       - name: Transfer release package
         uses: actions/upload-artifact@v7
         with:
@@ -114,7 +124,7 @@ jobs:
             "SHA-256: $expected",
             "Event: $env:GITHUB_EVENT_NAME",
             'Download the windows-release-package artifact from this workflow run.',
-            'Push and manual validation do not create a tag, Release, or Release attachment.',
+            'Push main automatically publishes a prerelease after all verification; other pushes and manual validation produce artifacts only.',
             'Interactive Release desktop tests ran locally before push; their receipt matches this commit.'
           ) -join "`n`n"
           [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, $summary + "`n", [Text.UTF8Encoding]::new($false))
@@ -143,3 +153,31 @@ jobs:
           $checksum = "$archive.sha256"
           & gh release upload $env:RELEASE_TAG $archive $checksum --repo $env:GH_REPO
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed; existing assets were not overwritten.' }
+  auto-release:
+    name: Publish automatic main prerelease
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [package, verify]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v7
+        with:
+          name: windows-release-package
+          path: release-package
+      - name: Create draft, upload verified assets and publish prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PACKAGE_VERSION: ${{ needs.package.outputs.version }}
+          PREVIOUS_TAG: ${{ needs.package.outputs.previous-tag }}
+        run: |
+          ./scripts/publish-auto-release.ps1 -Version $env:PACKAGE_VERSION -Commit $env:GITHUB_SHA -PackageDirectory (Join-Path $PWD 'release-package') -PreviousTag $env:PREVIOUS_TAG
+          $summary = "Published prerelease [$env:PACKAGE_VERSION](https://github.com/$env:GH_REPO/releases/tag/$env:PACKAGE_VERSION)"
+          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, $summary + "`n", [Text.UTF8Encoding]::new($false))

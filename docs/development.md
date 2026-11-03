@@ -72,7 +72,7 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 
 ## GitHub 自動發布
 
-`.github/workflows/release.yml` 支援 branch／tag push 自動打包、手動完整演練與 Release 發布，全部建置／打包均使用 GitHub 託管的 `windows-latest`，不再等待本機自架 runner。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。先將 workflow 與腳本合併並推送至 GitHub，再執行；手動觸發入口需要 workflow 已存在於預設分支。
+`.github/workflows/release.yml` 支援 push main 自動發布預覽版、其他 branch／tag push 自動打包、手動完整演練與手動 Release 發布，全部建置／打包均使用 GitHub 託管的 `windows-latest`，不再等待本機自架 runner。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。先將 workflow 與腳本合併並推送至 GitHub，再執行；手動觸發入口需要 workflow 已存在於預設分支。
 
 ### 一次性本機設定與測試證據
 
@@ -84,9 +84,17 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 
 Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執行本機 hook；但缺少該 commit 紀錄時雲端會拒絕打包。請 checkout 該確切 commit，再以已安裝 hook 的一般 branch／tag push 完成驗證。若來源已在遠端，沒有更新的 push 不會重新測試；可新增指向該 commit 的驗證 branch 或 tag 並推送，再重跑原工作。測試紀錄不是簽章，不能防止有 repository 寫入權限的人偽造紀錄。由於 notes 先送出，原始 push 最後失敗或使用 `git push --dry-run` 時仍可能留下測試紀錄；不會因此自行產生套件。原有自架 runner 可自行停止，本次不自動移除註冊。
 
-### 每次 push 下載測試版
+### 每次 push main 自動發布
 
-branch／tag push 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。在 Actions → Publish Windows release → 該次執行下載 `windows-release-package`。push 版本為 `v0.0.0-ci.<run number>.g<commit 前綴>`，不建立 Release。一般使用者的固定版本下載請使用下方 Release 流程。
+`git push origin main` 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。最後自動建立預覽版 Release，附上 ZIP、SHA-256 與 GitHub 自動產生的更新說明，一般使用者直接到 Releases 下載。
+
+自動版本固定使用 `v0.1.0-rc.N`，取遠端 tags 與 Releases（含草稿）內同系列最大的整數 N 加一；現有 rc.4 後為 rc.5、rc.6。不同系列與正式版不參與比較，改變系列需另行調整腳本。main push 工作依 concurrency group 序列執行；GitHub 預設只保留一個等待工作，密集連續 push 可能使尚未開始的舊工作被較新的 push 取代。正在執行的工作不會被取消。只有最後發布工作具有 contents write，不需額外 PAT。
+
+發布先建立對應確切 commit 的草稿，完整上傳兩個附件並核對 digest 後才公開，避免只有原始碼或部分附件的公開版本。整條流程在同一個 workflow 完成；GITHUB_TOKEN 建立的 Release 不會再次觸發 release 事件，避免重複打包。
+
+同一 workflow run 透過 Release 說明中的 run ID 與來源 SHA 標記識別。請優先使用 Re-run failed jobs，沿用原始 artifact，缺少的附件會補傳，既有附件必須名稱、大小、SHA-256 全部相符才略過。其他來源／run 占用版本或附件不同時拒絕覆寫。完整重跑會沿用同 run 已建立的版本；若重新建置使 ZIP 位元組不同，會拒絕替換既有下載。人工操作剛好搶先建立同一版本時，請重跑整條流程，讓版本解析重新選擇下一號。
+
+其他 branch／tag push 維持只產生 Actions 的 `windows-release-package` artifact，不公開 Release；版本為 `v0.0.0-ci.<run number>.g<commit 前綴>`。推送後必須保持工作區乾淨，下一次提交會要求自己的桌面測試證據。
 
 ### 先做完整演練
 
@@ -102,7 +110,7 @@ gh workflow run release.yml --repo adalf0722/snapbar --ref main -f version=v0.0.
 
 ### 每次發布
 
-先以一般 push 將已測試來源送到 GitHub，再以該 commit 建立新版本並按 Publish release。流程先以 `import-desktop-evidence.ps1` 核對既有桌面 note，再執行 `check.ps1`、`package-release.ps1 -Version <tag> -DesktopReport <匯入報告>`。發布腳本沿用目前原始碼指紋、桌面測試證據、App／Probe self-contained 發布、Probe／Startup smoke 門檻。沒有相符紀錄或任一步失敗時停止，不會附加套件；不在雲端重跑互動桌面測試。
+main 的日常預覽版直接使用上方自動流程即可。若需特定正式版本或自行指定 tag，可先以一般 push 將已測試來源送到 GitHub，再以該 commit 建立新版本並按 Publish release。流程先以 `import-desktop-evidence.ps1` 核對既有桌面 note，再執行 `check.ps1`、`package-release.ps1 -Version <tag> -DesktopReport <匯入報告>`。發布腳本沿用目前原始碼指紋、桌面測試證據、App／Probe self-contained 發布、Probe／Startup smoke 門檻。沒有相符紀錄或任一步失敗時停止，不會附加套件；不在雲端重跑互動桌面測試。
 
 package 與 verify 只有 contents read，checkout 不保留 Git 憑證。ZIP 經 Actions artifact 傳至 GitHub 託管的 Windows runner，重新核對 SHA-256；成功後，只有 Release 事件才啟動最後的 upload 工作，以該工作專用的 contents write token 上傳相同 artifact 的套件。手動演練不會啟動這個具有寫入權限的工作。無需設定 PAT 或額外發布 secret。
 
