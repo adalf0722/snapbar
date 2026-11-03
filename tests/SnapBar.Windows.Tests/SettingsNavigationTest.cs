@@ -133,6 +133,16 @@ internal static class SettingsNavigationTest
         var provider = Find<ComboBox>(services, "AiProvider");
         var model = Find<ComboBox>(services, "AiModel");
         var key = Find<PasswordBox>(services, "AiApiKey");
+        var serviceScroll = Children<ScrollViewer>(services).First(s => s.Content is StackPanel);
+        check(serviceScroll.ScrollableHeight < 1,
+            "standard service page shows fields connection test and fee notice without scrolling");
+        check(Find<TextBlock>(main, "SettingsMode").Text.Contains("選字偵測："),
+            "settings global status identifies selection detection rather than AI connectivity");
+        UiAppearanceTest.Snapshot(main, "settings-ai-services.png");
+        var serviceAdvanced = Find<Expander>(services, "AiAdvancedSettings");
+        serviceAdvanced.IsExpanded = true; await Layout(main);
+        UiAppearanceTest.Snapshot(main, "settings-ai-services-advanced.png");
+        serviceAdvanced.IsExpanded = false; serviceScroll.ScrollToTop(); await Layout(main);
         var compatibleIndex = Array.FindIndex(main.AiPreferences.Settings.Profiles, profile => profile.Id == "compatible");
         provider.SelectedIndex = compatibleIndex; model.Text = "disposable-local-model";
         check(services.IsDirty && main.AiPreferences.SelectedProfile.Id == "openai",
@@ -314,6 +324,12 @@ internal static class SettingsNavigationTest
         var saveBounds = save.TransformToAncestor(content).TransformBounds(new Rect(save.RenderSize));
         check(save.IsVisible && saveBounds.Top >= 0 && saveBounds.Bottom <= content.ActualHeight + 1,
             "settings constrained service page keeps its save row completely inside the frame");
+        serviceAdvanced.IsExpanded = true; serviceScroll.ScrollToBottom(); await Layout(main);
+        var testConnection = Find<Button>(services, "AiTestService");
+        var connectionBounds = testConnection.TransformToAncestor(content).TransformBounds(new Rect(testConnection.RenderSize));
+        check(testConnection.IsVisible && connectionBounds.Top >= 0 && connectionBounds.Bottom <= content.ActualHeight + 1,
+            "settings constrained expanded service page keeps its connection test reachable by scrolling");
+        UiAppearanceTest.Snapshot(main, "settings-ai-services-constrained.png");
         main.NavigateTo(SettingsCategory.AiCommands); await Layout(main);
         check(Find<ScrollViewer>(commands, "AiCommandsSettingsList").ViewportHeight >= 60,
             "settings constrained command page retains a usable local scrolling list");

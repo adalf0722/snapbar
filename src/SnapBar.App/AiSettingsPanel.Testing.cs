@@ -1,4 +1,5 @@
 using System.IO;
+using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using SnapBar.Core;
@@ -17,15 +18,17 @@ internal sealed partial class AiSettingsPanel
     private void InitializeTesting(StackPanel fields, IAiTextClient? client)
     {
         testController = new(client ?? (ownedTestClient = new AiHttpClient()));
-        fields.Children.Add(ActionUi.Text("會發送少量測試文字，可能產生費用", 12, ActionUi.Muted));
-        var buttons = new WrapPanel();
-        testService = ActionUi.Button("測試服務", async () => await RunTestAsync());
+        var buttons = new WrapPanel { Margin = new(0, 16, 0, 0) };
+        testService = ActionUi.Button("測試連線", async () => await RunTestAsync());
         AutomationProperties.SetAutomationId(testService, "AiTestService"); buttons.Children.Add(testService);
         cancelServiceTest = ActionUi.Button("取消測試", () => testController.Cancel());
         AutomationProperties.SetAutomationId(cancelServiceTest, "AiCancelServiceTest"); buttons.Children.Add(cancelServiceTest);
-        fields.Children.Add(buttons);
         testStatus = ActionUi.Text("", 12, ActionUi.Muted);
-        AutomationProperties.SetAutomationId(testStatus, "AiServiceTestStatus"); fields.Children.Add(testStatus);
+        testStatus.Margin = new(6, 8, 0, 8);
+        AutomationProperties.SetAutomationId(testStatus, "AiServiceTestStatus"); buttons.Children.Add(testStatus);
+        fields.Children.Add(buttons);
+        var cost = ActionUi.Text("測試會傳送少量文字，可能產生費用。", 12, ActionUi.Muted);
+        cost.Margin = new(0, 6, 0, 0); fields.Children.Add(cost);
         testController.Changed += RenderTestStatus;
         RenderTestStatus();
     }
@@ -59,9 +62,12 @@ internal sealed partial class AiSettingsPanel
     {
         testService.IsEnabled = !testController.Busy;
         cancelServiceTest.IsEnabled = testController.Busy;
+        cancelServiceTest.Visibility = testController.Busy ? Visibility.Visible : Visibility.Collapsed;
+        testStatus.Foreground = testController.Status == "success" ? ActionUi.Brush("#237346")
+            : testController.Status is "testing" or "untested" ? ActionUi.Muted : System.Windows.Media.Brushes.Firebrick;
         testStatus.Text = testController.Status switch
         {
-            "testing" => "測試中…", "success" => "測試成功",
+            "testing" => "測試中…", "success" => "✓ 連線成功",
             "untested" => "尚未測試",
             _ => "測試失敗：" + AiErrorMessages.Describe(testController.Status)
         };

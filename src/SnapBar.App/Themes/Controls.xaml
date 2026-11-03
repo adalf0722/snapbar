@@ -480,4 +480,69 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style x:Key="AiSettingsLink" TargetType="Button">
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="Padding" Value="3,2" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource ControlAccent}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="LinkChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                   TextDecorations="Underline" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="LinkChrome" Property="Background" Value="{DynamicResource ControlHover}" /></Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="LinkChrome" Property="Background" Value="{DynamicResource ControlPressed}" /></Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="LinkChrome" Property="BorderBrush" Value="{DynamicResource ControlAccent}" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AiSettingsExpander" TargetType="Expander">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
+                    <StackPanel>
+                        <Border BorderBrush="{DynamicResource ControlLine}" BorderThickness="0,1,0,0" Padding="0,8,0,0">
+                            <ToggleButton x:Name="HeaderToggle" Content="{TemplateBinding Header}" HorizontalContentAlignment="Stretch"
+                                          AutomationProperties.Name="進階設定" FocusVisualStyle="{x:Null}"
+                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="HeaderChrome" Background="Transparent" Padding="4,8" CornerRadius="6" BorderThickness="1" BorderBrush="Transparent">
+                                            <DockPanel>
+                                                <Path x:Name="Arrow" Data="M0,0 L4,4 0,8" Stroke="#626B78" StrokeThickness="1.4"
+                                                      Width="8" Height="8" Stretch="Uniform" Margin="0,0,10,0" RenderTransformOrigin="0.5,0.5" />
+                                                <ContentPresenter VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True"><Setter TargetName="Arrow" Property="RenderTransform"><Setter.Value><RotateTransform Angle="90" /></Setter.Value></Setter></Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="HeaderChrome" Property="Background" Value="{DynamicResource ControlHover}" /></Trigger>
+                                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="HeaderChrome" Property="Background" Value="{DynamicResource ControlPressed}" /></Trigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="HeaderChrome" Property="BorderBrush" Value="{DynamicResource ControlAccent}" /></Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                        </Border>
+                        <ContentPresenter x:Name="ExpandSite" ContentSource="Content" Visibility="Collapsed" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True"><Setter TargetName="ExpandSite" Property="Visibility" Value="Visible" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

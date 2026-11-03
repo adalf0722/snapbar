@@ -852,3 +852,17 @@ Core 新增直接序列化外部 JSON envelope 的匯入案例，不先經 Expor
 Repository checks 通過工具契約 12、Core 420 與 Release 建置；完整 Release 桌面套件通過 Preflight 1、Lifecycle 28、Appearance 164、CompatibilitySlow 22、AiRuntime 35、AiPanel 130。報告：`artifacts/checks/desktop/20261102T123024953Z-35471bb9173c4b539e5dbb93e05ae283/report.json`。
 
 已透過 staging 更新 `artifacts/p0`，Probe smoke 10 通過。發布報告：`artifacts/checks/build/20261102T123154282Z-6cd89208c8064dabb34c0486adb7b5b6/report.json`。正常啟動新版並開啟關於頁，確認左側與關於頁的品牌圖示均正常顯示，既有自動偵測仍為開啟；保留關於頁供使用者直接檢視。
+
+## 2026-11-03 AI 服務設定頁體驗
+
+依核准規格改為白色卡片、欄位標題旁的官方文字連結、低干擾進階展開列，以及固定底部的草稿狀態與儲存／捨棄操作。卡片水平內距 24 DIP、垂直內距 16 DIP；依實際截圖收緊間距，980×720 標準設定視窗的基本欄位、測試連線及費用提示全部完整顯示，無須捲動。最小及工作區受限視窗可捲動至完整網址、移除金鑰、測試列，底部儲存列保持可達。
+
+已存金鑰改呈現摘要與更換按鈕；更換才顯示並聚焦空白密碼框，不預填已存秘密。驗證待更換／待移除狀態、切換服務保留草稿、切換網址不顯示其他 scope 的已存金鑰、捨棄恢復摘要、無變更時停用操作，以及部分保存失敗後重試。測試請求仍由使用者明確發起；取消僅在執行中出現，成功與已儲存狀態分開，修改後取消及過期結果拒絕維持原行為。
+
+新增鍵盤回歸檢查曾抓到外層 ContentControl 及底部操作列搶先取得焦點；已移除純容器的焦點停留，明確設定內容區與 footer 的導覽順序。最終檢查確認有未儲存草稿時第一個焦點為服務選單，從測試連線按 Tab 進入捨棄變更，再可達儲存設定。最終桌面報告為 `artifacts/checks/desktop/20261103T113652492Z-276c789d75a74d3f984aa03f89704e48/report.json`，來源指紋 `DDB4E996F79405A22915D48FE83E438331DF2D92197242445D564D4B123EFF91`：Preflight 1、AiPanel 251、Appearance 167、AiRuntime 117、Lifecycle 28，全部零失敗。先前鍵盤檢查失敗的報告不作為通過證據。
+
+已目視檢查 `artifacts/ui-polish/settings-ai-services.png`、`settings-ai-services-advanced.png`、`settings-ai-services-constrained.png` 與 `artifacts/ai-panel/services-saved-key.png`、`services-small-advanced.png`：連結、標題、金鑰摘要與操作列對齊，進階內容及測試在窄小視窗可透過捲動到達。這些是同機 96 DPI 的 WPF fixture 截圖；未變更 Windows 縮放，150%／混合 DPI 的實體桌面人工驗證仍未完成。
+
+本輪使用隔離設定與受控 AI 回應，不呼叫真實付費 AI 服務；測試前已從舊版設定頁正常結束 App，未強制終止程序。既有 AiPanelWindow nullability 與桌面測試未 await 的建置警告不在本次範圍。本輪僅提供本機建置，未更新發佈套件。
+
+最終 `scripts/check.ps1` 通過 actionlint、工具契約 20、Core 437 與 Release 建置。建置報告：`artifacts/checks/build/20261103T113830873Z-852c8e1e626d4ff5b727fcd99241b2e7/report.json`；修改後的中文 Markdown 已以嚴格 UTF-8 無 BOM 重新讀取確認，差異空白檢查通過。

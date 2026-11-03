@@ -129,6 +129,13 @@ internal static class AiServicesTest
             var advanced = Find<Expander>(window, "AiAdvancedSettings");
             var model = Find<ComboBox>(window, "AiModel");
             var endpoint = Find<TextBox>(window, "AiEndpoint");
+            model.Text = "navigation-draft";
+            window.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.First));
+            check(Find<ComboBox>(window, "AiProvider").IsKeyboardFocusWithin,
+                "dirty service settings keyboard navigation starts at the provider rather than the footer; actual="
+                + (System.Windows.Input.Keyboard.FocusedElement is DependencyObject focused
+                    ? focused.GetType().Name + "/" + AutomationProperties.GetAutomationId(focused) : "none"));
+            model.Text = "legacy-private-model";
             check(!advanced.IsExpanded, "named provider starts with advanced settings collapsed");
             check(model.IsEditable && model.Text == "legacy-private-model", "model editor preserves a value absent from recommendations");
             var editor = (TextBox)model.Template.FindName("PART_EditableTextBox", model);
@@ -138,13 +145,17 @@ internal static class AiServicesTest
             check(model.Text == "keyboard-model", "editing the actual model text box updates the draft");
             model.Text = "typed-model"; advanced.IsExpanded = true; advanced.IsExpanded = false;
             check(model.Text == "typed-model" && endpoint.Text == legacy.Endpoint, "collapsing advanced settings preserves field values");
+            Find<Button>(window, "AiTestService").Focus();
+            Find<Button>(window, "AiTestService").MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Next));
+            check(Find<Button>(window, "DiscardAiSettings").IsKeyboardFocused,
+                "service test tab navigation continues to the fixed draft action row");
             snapshot(window, "services-normal.png");
             check(testClient.Calls.Count == 0, "opening and editing settings never tests automatically");
             Find<Button>(window, "AiTestService").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
             check(testClient.Calls.Count == 1 && testClient.Calls[0].Profile.Model == "typed-model", "explicit test sends unsaved model draft");
             testClient.Requests[0].SetResult(new(true, "private response"));
             await Task.Delay(40);
-            check(Find<TextBlock>(window, "AiServiceTestStatus").Text == "測試成功" && panel.IsDirty, "successful test preserves dirty draft");
+            check(Find<TextBlock>(window, "AiServiceTestStatus").Text == "✓ 連線成功" && panel.IsDirty, "successful test preserves dirty draft");
             var providers = Find<ComboBox>(window, "AiProvider");
             check(providers.Items.Count == 9 && links.Count == 0, "nine services load without opening a browser");
             var key = Find<PasswordBox>(window, "AiApiKey");
@@ -229,19 +240,53 @@ internal static class AiServicesTest
             var status = Find<TextBlock>(window, "AiServiceTestStatus");
             void Click(string id) => Find<Button>(window, id).RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
             void Test() => Click("AiTestService");
+            var save = Find<Button>(window, "SaveAiSettings");
+            var discard = Find<Button>(window, "DiscardAiSettings");
+            var replace = Find<Button>(window, "AiReplaceKey");
+            var keyStatus = Find<TextBlock>(window, "AiKeyStatus");
+            var cancel = Find<Button>(window, "AiCancelServiceTest");
+            check(!save.IsEnabled && !discard.IsEnabled && key.Visibility == Visibility.Collapsed
+                && key.Password.Length == 0 && replace.IsVisible && keyStatus.Text == "✓ 已儲存金鑰",
+                "clean stored-key settings show summary without prefilling the secret or enabling save");
+            check(cancel.Visibility == Visibility.Collapsed, "idle service test hides cancellation");
+            snapshot(window, "services-saved-key.png");
+            Click("AiReplaceKey"); window.UpdateLayout();
+            check(key.IsVisible && key.IsKeyboardFocused && !panel.IsDirty && !save.IsEnabled,
+                "replace key reveals and focuses the editor without creating a dirty draft");
+            key.Password = "replacement-draft";
+            check(save.IsEnabled && discard.IsEnabled && keyStatus.Text == "新金鑰尚未儲存",
+                "typing replacement enables draft actions and marks the key pending");
+            providers.SelectedIndex = 1; providers.SelectedIndex = 0;
+            check(key.Password == "replacement-draft" && key.IsVisible && keyStatus.Text == "新金鑰尚未儲存",
+                "switching services restores the pending key and its editing presentation");
+            panel.Discard(); window.UpdateLayout();
+            check(!save.IsEnabled && !discard.IsEnabled && key.Visibility == Visibility.Collapsed,
+                "discard restores the stored-key summary and disables clean actions");
+            endpoint.Text = "https://fixture.invalid/new-scope"; window.UpdateLayout();
+            check(key.IsVisible && replace.Visibility == Visibility.Collapsed && keyStatus.Text == "尚未設定金鑰",
+                "a different endpoint never displays another endpoint's saved credential");
+            panel.Discard();
+            remove.IsChecked = true;
+            check(keyStatus.Text == "金鑰將在儲存後移除" && save.IsEnabled && key.Visibility == Visibility.Collapsed,
+                "pending removal is explicit and hides the editor until unchecked");
+            remove.IsChecked = false;
+            check(keyStatus.Text == "✓ 已儲存金鑰" && !save.IsEnabled,
+                "unchecking removal restores the stored-key summary without dirtying the draft");
             model.Text = "draft-model";
             Test(); Test();
+            check(cancel.Visibility == Visibility.Visible, "active service test exposes cancellation");
             check(client.Calls.Count == 1 && client.Calls[^1].Key == "stored-fixture-key", "blank draft key uses only matching stored secret and duplicate test is ignored");
             check(client.Calls[^1].Source == AiServiceTestController.Source && client.Calls[^1].Instruction == AiServiceTestController.Instruction,
                 "settings test uses fixed source and instruction");
             Find<Expander>(window, "AiAdvancedSettings").IsExpanded = true;
             check(status.Text == "測試中…", "advanced expansion does not cancel test");
             client.Requests[^1].SetResult(new(true, "private test output")); await Task.Delay(40);
-            check(status.Text == "測試成功" && panel.IsDirty, "testing success is separate from dirty state");
+            check(status.Text == "✓ 連線成功" && panel.IsDirty && cancel.Visibility == Visibility.Collapsed, "testing success is separate from dirty state and hides cancellation");
             snapshot(window, "services-test-success.png");
             var editor = (TextBox)model.Template.FindName("PART_EditableTextBox", model);
             editor.Text = "keyboard-edited-model";
             check(status.Text == "尚未測試", "typing in actual editable model resets test status");
+            Click("AiReplaceKey");
             key.Password = "draft-fixture-key";
             check(status.Text == "尚未測試", "key edit clears previous test success");
             endpoint.Text = "https://fixture.invalid/v1/responses";
@@ -273,9 +318,10 @@ internal static class AiServicesTest
             var after = Files();
             check(before.Count == after.Count && before.All(p => after.TryGetValue(p.Key, out var bytes) && p.Value.SequenceEqual(bytes)),
                 "all service test edits and requests preserve every isolated settings file byte");
-            key.Password = "saved-new-key"; Test();
+            Click("AiReplaceKey"); key.Password = "saved-new-key"; Test();
             client.Requests[^1].SetResult(new(true, "private success")); await Task.Delay(40);
-            check(panel.TrySave() && status.Text == "測試成功" && !panel.IsDirty && key.Password == "",
+            check(panel.TrySave() && status.Text == "✓ 連線成功" && !panel.IsDirty && key.Password == ""
+                && !save.IsEnabled && !discard.IsEnabled && key.Visibility == Visibility.Collapsed,
                 "save clears password programmatically while preserving effective-key test success");
             model.Text = "failure-model"; Test();
             client.Requests[^1].SetResult(new(false, "private failure", "network")); await Task.Delay(40);

@@ -214,7 +214,7 @@ public sealed partial class MainWindow : Window
     {
         var automatic = controller?.Automatic == true;
         toggle.IsChecked = automatic;
-        mode.Text = controller?.HotkeyRegistered != true ? "● 快捷鍵不可用" : automatic ? "● 自動偵測中" : "● 快捷鍵待命";
+        mode.Text = controller?.HotkeyRegistered != true ? "● 選字偵測：快捷鍵不可用" : automatic ? "● 選字偵測：自動" : "● 選字偵測：快捷鍵待命";
         mode.Foreground = controller?.HotkeyRegistered == true ? ActionUi.Muted : Brushes.Firebrick;
         UpdateModeVisibility();
         tray?.Update(automatic, controller != null);
