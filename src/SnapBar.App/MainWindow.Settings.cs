@@ -81,7 +81,9 @@ public sealed partial class MainWindow
         notice = ActionUi.Text("", 12, Brushes.Firebrick); notice.Margin = new(0, 0, 0, 12); notice.Visibility = Visibility.Collapsed;
         AutomationProperties.SetAutomationId(notice, "SettingsNotice"); Grid.SetRow(notice, 1); workspace.Children.Add(notice);
         pageHost = new Grid(); Grid.SetRow(pageHost, 2); workspace.Children.Add(pageHost);
-        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic); toggle = generalPage.AutomaticToggle;
+        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic, preferences.Hotkey, SaveHotkey, startupRegistration);
+        generalPage.RecordingChanged = recording => { if (controller != null) controller.SetHotkeyRecording(recording); };
+        toggle = generalPage.AutomaticToggle;
         AddPage(SettingsCategory.General, generalPage);
         actionSettingsPanel = new(preferences.Actions, SaveActionSettings, ShowSearchSettings);
         searchSettingsPanel = new(); searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
@@ -93,7 +95,7 @@ public sealed partial class MainWindow
         aiSettingsPanel = new(aiPreferences); aiSettingsPanel.RevealRequested = () => ShowCategory(SettingsCategory.AiServices); AddPage(SettingsCategory.AiServices, aiSettingsPanel);
         AddPage(SettingsCategory.Compatibility, BuildCompatibilityPage());
         var support = new SettingsSupportPage(() => _ = ExitAsync()); status = support.Status; events = support.Events; AddPage(SettingsCategory.About, support);
-        lifetimeHint = ActionUi.Text("關閉視窗後繼續待命", 12, ActionUi.Muted); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
+        lifetimeHint = ActionUi.Text("關閉設定後，SnapBar 會繼續在背景執行。", 13, ActionUi.Brush("#4F5968")); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
         Content = shell;
         aiPreferences.SettingsHost = this;
         aiPreferences.SettingsRequested += ShowCategory;

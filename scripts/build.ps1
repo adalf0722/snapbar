@@ -38,6 +38,8 @@ try {
         $results.Add($result); Assert-SnapBarCommand $result
         $result = Invoke-SnapBarCommand 'ProbeSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-probe.ps1'), '-Executable', (Join-Path $probe 'SnapBar.Probe.exe')) $run
         $results.Add($result); Assert-SnapBarCommand $result
+        $result = Invoke-SnapBarCommand 'StartupSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-startup.ps1'), '-Executable', (Join-Path $stage 'SnapBar.App.exe')) $run
+        $results.Add($result); Assert-SnapBarCommand $result
         Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $stage 'README.md')
         Copy-Item -LiteralPath (Join-Path $repo 'docs/p0-validation.md') -Destination (Join-Path $stage 'VALIDATION.md')
         Copy-Item -LiteralPath (Join-Path $repo 'docs/2026-10-26-clipboard-backup-recovery.md') -Destination (Join-Path $stage 'CLIPBOARD-RECOVERY.md')

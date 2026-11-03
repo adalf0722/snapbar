@@ -3,8 +3,9 @@ using System.Text.Json;
 
 namespace SnapBar.Core;
 
-public sealed record ApplicationSettings(int SchemaVersion = 6, bool AutomaticDetectionEnabled = false)
+public sealed record ApplicationSettings(int SchemaVersion = 7, bool AutomaticDetectionEnabled = false)
 {
+    public HotkeySettings Hotkey { get; init; } = HotkeySettings.Default;
     public bool ClipboardCompatibilityEnabled { get; init; } = true;
     public bool? SublimeCompatibilityEnabled { get; init; }
     public ExcludedApplication[] ExcludedApplications { get; init; } = [];
@@ -18,11 +19,13 @@ public sealed class SettingsStore(string path)
     private static readonly JsonSerializerOptions JsonOptions = new()
     { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     private bool writable;
+    private bool backupBeforeSave;
     public string FilePath { get; } = Path.GetFullPath(path);
 
     public SettingsLoadResult Load()
     {
         writable = false;
+        backupBeforeSave = false;
         try
         {
             // File.ReadAllText must not allocate an arbitrarily large user-edited file.
@@ -31,12 +34,13 @@ public sealed class SettingsStore(string path)
             using var reader = new StreamReader(stream, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: false);
             var settings = JsonSerializer.Deserialize<ApplicationSettings>(reader.ReadToEnd(), JsonOptions);
             if (settings == null) return new(new(), "settings-invalid");
-            if (settings.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6)) return new(new(), "settings-version");
+            if (settings.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6 or 7)) return new(new(), "settings-version");
             if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate)) return new(new(), "settings-invalid");
-            settings = settings with { SchemaVersion = 6,
+            backupBeforeSave = settings.Hotkey?.IsValid != true;
+            settings = settings with { SchemaVersion = 7, Hotkey = backupBeforeSave ? HotkeySettings.Default : settings.Hotkey!,
                 ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
             writable = true;
-            return new(settings);
+            return new(settings, backupBeforeSave ? "hotkey-invalid" : null);
         }
         catch (FileNotFoundException) { writable = true; return new(new()); }
         catch (DirectoryNotFoundException) { writable = true; return new(new()); }
@@ -48,10 +52,11 @@ public sealed class SettingsStore(string path)
 
     public void Save(ApplicationSettings settings)
     {
-        if (!writable || settings.SchemaVersion != 6)
+        if (!writable || settings.SchemaVersion != 7)
             throw new InvalidOperationException("Existing settings must be preserved");
         if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate))
             throw new InvalidOperationException("Invalid search template");
+        if (settings.Hotkey?.IsValid != true) throw new InvalidOperationException("Invalid hotkey");
         settings = settings with { ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, JsonOptions);
         if (bytes.Length > 64 * 1024) throw new InvalidOperationException("Settings exceed 64 KiB");
@@ -65,7 +70,10 @@ public sealed class SettingsStore(string path)
                 stream.Write(bytes);
                 stream.Flush(flushToDisk: true);
             }
+            if (backupBeforeSave && File.Exists(FilePath))
+                File.Copy(FilePath, FilePath + ".hotkey-recovery-" + Guid.NewGuid().ToString("N") + ".bak");
             File.Move(temporary, FilePath, overwrite: true);
+            backupBeforeSave = false;
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }

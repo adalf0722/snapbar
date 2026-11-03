@@ -3,6 +3,11 @@ $ErrorActionPreference = 'Stop'
 $start = [System.Diagnostics.ProcessStartInfo]::new([System.IO.Path]::GetFullPath($Executable))
 $start.UseShellExecute = $false
 $start.CreateNoWindow = $true
+$start.WorkingDirectory = [Environment]::SystemDirectory
+foreach ($name in @($start.Environment.Keys)) {
+    if ($name -match '^(DOTNET_|COREHOST_)') { $start.Environment.Remove($name) | Out-Null }
+}
+$start.Environment['DOTNET_DISABLE_GUI_ERRORS'] = '1'
 $start.RedirectStandardInput = $true
 $start.RedirectStandardOutput = $true
 $start.StandardInputEncoding = [System.Text.UTF8Encoding]::new($false)

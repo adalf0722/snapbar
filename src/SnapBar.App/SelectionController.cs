@@ -40,6 +40,9 @@ public sealed partial class SelectionController : IDisposable
         set { automatic = value; Invalidate(); }
     }
     public bool HotkeyRegistered => monitor.HotkeyRegistered;
+    public event Action<HotkeySettings>? HotkeyRecorded;
+    public bool TryChangeHotkey(HotkeySettings candidate, Action persist) => monitor.TryChangeHotkey(candidate, persist);
+    public void SetHotkeyRecording(bool recording) { monitor.HotkeySuppressed = recording; Invalidate(); }
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
     internal SelectionSnapshot? ActiveSelection => selection;
@@ -61,7 +64,8 @@ public sealed partial class SelectionController : IDisposable
 
     public SelectionController(HwndSource source, string probeExecutable, Action<Uri>? launchWeb = null,
         Func<IPathRevealSession>? createPathSession = null,
-        Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null)
+        Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null,
+        HotkeySettings? initialHotkey = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
@@ -69,7 +73,8 @@ public sealed partial class SelectionController : IDisposable
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
-        monitor = new(source);
+        monitor = new(source, initialHotkey);
+        monitor.HotkeyRecorded += value => HotkeyRecorded?.Invoke(value);
         // Low-level hooks run on this installing UI thread. Invalidate immediately so a queued
         // click/key cannot leave an old selection valid during an async action continuation.
         monitor.Input += OnInput;

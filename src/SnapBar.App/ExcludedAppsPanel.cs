@@ -27,7 +27,7 @@ internal sealed class ExcludedAppsPanel : ContentControl
         AutomationProperties.SetAutomationId(this, "ExcludedAppsPanel");
         var panel = new DockPanel(); var introduction = new StackPanel();
         heading = ActionUi.Heading("排除 App（0）", 16); introduction.Children.Add(heading);
-        introduction.Children.Add(new TextBlock { Text = "在這些 App 不會自動彈出；Ctrl+Alt+V 仍可使用。",
+        introduction.Children.Add(new TextBlock { Text = "在這些 App 不會自動彈出；手動快捷鍵仍可使用。",
             TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = ActionUi.Muted, Margin = new(0, 4, 0, 8) });
         DockPanel.SetDock(introduction, Dock.Top); panel.Children.Add(introduction);
         applications = new ListBox { BorderBrush = ActionUi.Line, BorderThickness = new(1), DisplayMemberPath = nameof(ExcludedApplication.DisplayName) };

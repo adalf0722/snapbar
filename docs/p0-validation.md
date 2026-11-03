@@ -1,5 +1,39 @@
 # P0 驗證紀錄
 
+## 2026-11-03 一般設定頁比例與可讀性
+
+依使用者截圖審閱與「go」授權，快捷鍵改為左側用途說明、右側鍵帽／更換同排；正常模式收成與其他兩張卡片一致的高度，錄製或錯誤時才展開說明與儲存／取消。移除鍵帽群組外框，錄製焦點保留底線。登入啟動正常副標簡化為「登入後在系統匣待命。」，其餘錯誤與搬動提示保留；一般頁說明改為 14 DIP、#4F5968，頁尾文字改為 13 DIP 的「關閉設定後，SnapBar 會繼續在背景執行。」。側欄、整體視窗尺寸與配色維持原設計。
+
+使用既有 runner 驗證，未為本次版面修改新增測試。Lifecycle 65／0、Appearance 167／0 先通過並檢查 `artifacts/ui-polish/settings.png`、`settings-small.png`、`settings-shortcut-recording.png` 與 `settings-shortcut-conflict.png`，正常、小視窗、錄製及錯誤內容均無裁切，鍵帽與更換在同排，非編輯狀態不占用編輯列空間。報告：`artifacts/checks/desktop/20261103T125427927Z-799d40e8434d4660a77eede7f28cda31/report.json`。
+
+完整 Release 五套件共 622 項通過／0 失敗：CompatibilitySlow 22、Lifecycle 65、Appearance 167、AiRuntime 117、AiPanel 251，另 Preflight 1／0，來源指紋 `85C28234B54DCDC2448906844B65D8AEA2F4E59D052665C128CA771F05DA2F55`。報告：`artifacts/checks/desktop/20261103T125507717Z-75e8eabd826f41eb8e34e34a70a38118/report.json`。較早一輪 `125323` 的既有剪貼簿案例因讀取期間剪貼簿再次變動而安全取消，完整重跑通過，未放寬判斷。`scripts/check.ps1` exit 0，工具契約 20／0、Core 460／0、Actionlint 通過；建置報告：`artifacts/checks/build/20261103T125645961Z-3944077ba2794e5e8c96aa5a03d28e75/report.json`。
+
+正式自含式套件依現行發布閘門更新 `artifacts/p0`，ProbeSmoke 10／0、StartupSmoke 1／0；報告：`artifacts/checks/build/20261103T125714303Z-fbfe1abc7a06469bacad1accdb0ab62b/report.json`。正常結束舊版後才發布，舊套件保留於 staging previous。清除開發環境覆寫後已開啟新版設定；使用者 settings.json 雜湊與更新前一致，登入啟動仍指向相同的完整套件位置。
+
+## 2026-11-03 修復登入啟動依賴開發環境
+
+使用者在新版啟用登入啟動後重開機，程式未啟動。實查 HKCU Run 的 SnapBar 項目存在且指向 `src/SnapBar.App/bin/Release/net10.0-windows/SnapBar.App.exe --background`，沒有 Windows 停用記錄，也沒有執行中的 App。系統全域只有 .NETCore 6.0.16，.NET 10 Desktop Runtime 在 repository 的 `.tools/dotnet`。先前 smoke 帶入臨時 DOTNET_ROOT，無法代表登入時的 Explorer 環境。移除該覆寫並從 Windows 系統目錄執行後，確實得到 exit -2147450730 與缺少 Microsoft.NETCore.App 10.0.0 的 host 訊息。
+
+新增無副作用的 `--startup-check`，不讀寫偏好、不建立系統匣或通知既有執行個體；啟用登入啟動前，StartupLaunchValidator 以清除 DOTNET／COREHOST 覆寫的子程序驗證，無法獨立執行時拒絕註冊並提供完整套件提示。新增對應的隔離登錄檢查。發布新增 App StartupSmoke，ProbeSmoke 也移除環境覆寫並使用系統目錄作為工作目錄；保留原有 Release 閘門。
+
+`scripts/check.ps1` exit 0：Actionlint 通過、工具契約 20／0、Core 460／0。Build 報告：`artifacts/checks/build/20261103T123550202Z-f3fc766e37a04ad89e9c06d9937eba31/report.json`。完整 Release 相同來源指紋 `7F5B8996E6D56D3EE74643CFD34AC5E9B71BE12FD915352A734DE8229FE69473` 的 622 項桌面檢查通過：CompatibilitySlow 22、Lifecycle 65、Appearance 167、AiRuntime 117、AiPanel 251，各 0 失敗，另 Preflight 1／0。報告：`artifacts/checks/desktop/20261103T123936452Z-e7d75cc84d2340b2837e960a6c11fa3d/report.json`。較早三輪未通過：123156 因 fixture 未取得前景；123413 因 fixture 失去前景；123841 因讀取期間剪貼簿再變動而安全取消。未放寬安全斷言；使用者暫停桌面操作後，改先跑剪貼簿套件的一次完整執行通過。
+
+`scripts/build.ps1 -Publish` exit 0，App／Probe 自含式 win-x64 發布、無環境覆寫的 ProbeSmoke 10／0、StartupSmoke 1／0 全部通過，並以既有 staging／備份流程更新 `artifacts/p0`。發布報告：`artifacts/checks/build/20261103T124109580Z-92104f3ba18049c6ae5335dff2dd19ba/report.json`。實際從系統目錄清除環境覆寫啟動完整套件 `--background`，程序維持執行且沒有可見主視窗；背景重複啟動退出、不顯示設定；手動啟動能顯示既有設定。首次自含式冷啟動比固定 500 ms 觀察窗慢，後續確認同一程序持續存活且設定已顯示，沒有據短暫等待判為程式失效。
+
+透過修正版一般頁重新啟用登入啟動，已驗證 Run 命令為 `"D:\codex\snapbar\artifacts\p0\SnapBar.App.exe" --background`，畫面顯示「已開啟 · 登入後在背景待命」。原項目備份：`artifacts/checks/startup-repair/20261103T124119435Z-757422c9d74f4070986dc7520b5b448b/registration-before.json`。修復前後使用者 settings.json 的 SHA-256 完全一致，沒有更改快捷鍵、自動偵測或其他偏好，也沒有修改全域 runtime 或系統環境變數。結束時執行的是完整套件，保留設定視窗；實際再次重開機後的登入驗收仍待使用者確認。
+
+## 2026-11-03 登入啟動與快捷鍵設定
+
+一般頁新增登入 Windows 後自動啟動開關、系統停用／讀取失敗回饋與快捷鍵錄製、取消、儲存及恢復預設。快捷鍵使用 schema 7，舊版本偏好保留；只有鍵位損壞時獨立回退，首次保存前備份原檔。快捷鍵更換先取得新註冊，保存失敗或占用時保留原鍵位。錄製期間不執行動作列快捷鍵，離頁、Esc、失焦會取消。
+
+最終 `scripts/check.ps1` exit 0：Actionlint 通過、工具契約 20 通過／0 失敗、Core 460 通過／0 失敗。建置與 Core 報告為 `D:/codex/snapbar/artifacts/checks/build/20261103T121650966Z-b19c84f7b61142d9ae962793edc843e3/report.json`。完整重建曾顯示 3 個既有 CS4014 警告（AiIconTest.cs 與 UiAppearanceTest.cs）、0 錯誤，本次未改動那些檔案。
+
+最終 Lifecycle 64 通過／0 失敗、Appearance 167 通過／0 失敗，含真實 WPF Ctrl+Alt+B 錄製與 Esc 取消、註冊占用、存檔鎖定回復、重啟載入、系統匣初始化失敗時顯示設定，以及隔離登錄項目的四種啟動狀態。報告：`D:/codex/snapbar/artifacts/checks/desktop/20261103T121551453Z-879395431f5046609d9a9dec49482423/report.json`，來源指紋 `CEADC594455644D38D0D2AAB25C48FCFB5D820381B888C4D8A850D702C8FC96D`。較早的 Keyboard 原生回歸 21 通過／0 失敗，報告：`D:/codex/snapbar/artifacts/checks/desktop/20261103T121220246Z-4653eece93934cfd9aa1cd580d62a506/report.json`；之後的修改為提示、測試補強與系統匣建立注入，InputMonitor／GlobalHotkey 未再更動。最初建置遭執行中的舊 App 鎖檔，使用者正常結束後重跑成功；新增原生錄製測試的第一次執行因未取得前景而中止，加入與既有原生鍵盤測試相同的有界前景等待後通過，未向其他視窗注入按鍵。
+
+逐張目視檢查 `artifacts/ui-polish/settings-small.png`、`settings-shortcut-recording.png`、`settings-shortcut-conflict.png`、`settings-startup-disabled.png`，正常與小視窗內容可讀，錯誤與 Windows 設定入口可見。實際 `src/SnapBar.App/bin/Release/net10.0-windows/SnapBar.App.exe --background` 程序保持無可見主視窗；第二次背景啟動退出且不喚出設定，手動啟動退出重複程序並喚出原視窗，三項程序 smoke 皆通過。結束時保留新版設定視窗供使用者操作。
+
+測試未變更使用者的真實登入啟動登錄項目，未執行登出登入或多 DPI 人工測試。Explorer StartupApproved 為 Windows 私有格式，只讀取已知狀態，未知格式顯示無法讀取；不覆寫系統停用記錄。本次完成來源與建置輸出，未發布或替換 `artifacts/p0` 正式套件。
+
 ## 2026-11-03 AI 服務 Provider 整合驗證
 
 來源提交 `69374c2`（`codex/ai-providers`）；本輪驗證後只更新文件。所有建置與桌面報告的來源指紋一致：`B9160ADA5D8B4CF54FBF9F401C3BB5B802C2946660C8A590627DE7482F25775D`。

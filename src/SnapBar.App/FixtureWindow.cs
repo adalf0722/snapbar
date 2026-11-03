@@ -17,7 +17,7 @@ public sealed class FixtureWindow : Window
         Background = new SolidColorBrush(Color.FromRgb(246, 248, 251));
         var stack = new StackPanel { Margin = new Thickness(30) };
         stack.Children.Add(new TextBlock { Text = "獨立程序測試視窗", FontSize = 25, FontWeight = FontWeights.SemiBold });
-        stack.Children.Add(new TextBlock { Text = "在下方選字，再按 Ctrl+Alt+V，或回主視窗啟用自動偵測。", Margin = new(0, 10, 0, 20) });
+        stack.Children.Add(new TextBlock { Text = "在下方選字，再按已設定的快捷鍵，或回設定啟用自動偵測。", Margin = new(0, 10, 0, 20) });
         stack.Children.Add(new TextBlock { Text = "可編輯文字" });
         TextBox edit = delayedUia ? new DelayedTextBox() : new TextBox();
         edit.Text = "SnapBar Windows — 測試選取文字。\nSelect this sentence to test Copy, Cut and Paste.\n第二行保留原文，確認只取代選取範圍。";

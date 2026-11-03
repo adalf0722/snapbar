@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
+using SnapBar.Core;
 
 namespace SnapBar.Windows;
 
@@ -15,15 +16,19 @@ public sealed class InputMonitor : IDisposable
     private int clickCount;
     private bool pressed;
     public event Action<InputEvent>? Input;
+    public event Action<HotkeySettings>? HotkeyRecorded;
     public Func<uint, bool>? KeyFilter { get; set; }
     private readonly HashSet<uint> filteredKeys = [];
-    public bool HotkeyRegistered { get; }
+    private readonly GlobalHotkey hotkey;
+    public bool HotkeyRegistered => hotkey.Registered;
+    public bool HotkeySuppressed { get => hotkey.Suppressed; set => hotkey.Suppressed = value; }
+    public bool TryChangeHotkey(HotkeySettings candidate, Action persist) => hotkey.TryChange(candidate, persist);
 
-    public InputMonitor(HwndSource source)
+    public InputMonitor(HwndSource source, HotkeySettings? initialHotkey = null)
     {
         this.source = source;
         source.AddHook(WindowMessage);
-        HotkeyRegistered = Native.RegisterHotKey(source.Handle, 1, 0x4000 | 1 | 2, 0x56);
+        hotkey = new(source.Handle, initialHotkey ?? HotkeySettings.Default);
         mouseProc = MouseCallback; keyboardProc = KeyboardCallback;
         mouseHook = Native.SetWindowsHookEx(14, mouseProc, Native.GetModuleHandle(null), 0);
         keyboardHook = Native.SetWindowsHookEx(13, keyboardProc, Native.GetModuleHandle(null), 0);
@@ -35,8 +40,12 @@ public sealed class InputMonitor : IDisposable
 
     private nint WindowMessage(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
     {
-        if (message == Native.WM_HOTKEY && wParam == 1)
-        { Input?.Invoke(new("hotkey")); handled = true; }
+        if (message == Native.WM_HOTKEY && hotkey.OwnsMessage(wParam))
+        {
+            if (hotkey.Suppressed && hotkey.Matches(wParam, lParam)) HotkeyRecorded?.Invoke(hotkey.Current);
+            else if (hotkey.ShouldTrigger(wParam, lParam)) Input?.Invoke(new("hotkey"));
+            handled = true;
+        }
         return 0;
     }
 
@@ -99,7 +108,7 @@ public sealed class InputMonitor : IDisposable
     {
         if (mouseHook != 0) { Native.UnhookWindowsHookEx(mouseHook); mouseHook = 0; }
         if (keyboardHook != 0) { Native.UnhookWindowsHookEx(keyboardHook); keyboardHook = 0; }
-        if (HotkeyRegistered) Native.UnregisterHotKey(source.Handle, 1);
+        hotkey.Dispose();
         source.RemoveHook(WindowMessage);
     }
 }

@@ -250,6 +250,7 @@ Check("native success past total deadline is rejected", () =>
     return result.Response.Status == "timeout" && result.Response.Selection == null;
 });
 SettingsStoreTests.Run(Check);
+HotkeySettingsTests.Run(Check);
 ClipboardSelectionPolicyTests.Run(Check);
 ClipboardCandidateLeaseTests.Run(Check);
 AppExclusionPolicyTests.Run(Check);

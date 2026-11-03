@@ -11,6 +11,8 @@ pwsh -NoProfile -File scripts/install-hooks.ps1
 
 `check.ps1` 驗證 Git 管理及未忽略的新 Markdown／PowerShell 檔案的 UTF-8 無 BOM 編碼、PowerShell 語法、差異空白，以及全部 GitHub workflow 的 actionlint，再跑工具契約測試、Release 建置與 Core 測試。建置會把 Probe 和 fixture README 複製到 App 輸出目錄。GitHub Actions 在 Windows 上執行同一入口並保存日誌；互動式桌面測試需在本機執行。
 
+一般 `build` 的 bin 輸出依賴 .NET 10 Desktop Runtime；透過 `.tools/dotnet` 或臨時 `DOTNET_ROOT` 啟動成功，不代表 Explorer 登入啟動也能找到該 runtime。交付與登入啟動驗收使用 `scripts/build.ps1 -Publish` 產生的自含式 `artifacts/p0`。App 的 `--startup-check` 僅驗證程序可載入，不讀寫設定、不建立系統匣或單一執行個體訊號。啟用登入啟動前會清除子程序的 DOTNET／COREHOST 覆寫並從 Windows 系統目錄驗證此入口；發布閘門另以相同乾淨環境檢查 App 與 Probe，失敗不替換舊套件。
+
 actionlint 固定為 1.7.12，首次檢查 workflow 時自動下載至 `.tools/actionlint/1.7.12/`，核對固定 SHA-256；之後使用快取。首次需要網路，下載或 lint 失敗均阻擋提交／CI，不會略過。workflow 與 actionlint 設定也要求有效的 UTF-8 無 BOM。停用選用的 shellcheck／pyflakes 外掛，以固定各機器的檢查範圍；既有 PowerShell parser 檢查仍保留。
 
 安裝器僅設定本 checkout 的 `core.hooksPath=.githooks`。若已有其他 hook 設定或 pre-commit，會保留並提示手動整合。pre-commit 驗證暫存區版本的編碼、語法與空白；若 workflow 或 `.github/actionlint.yaml`／`.yml` 有變動，另從 Git index 擷取全部 workflow 與設定至獨立快照並執行 actionlint，避免未暫存的修正掩蓋問題。其他檔案提交不需執行 actionlint。完整檢查由日常入口和 CI 執行。Commit message 驗證器維持原狀。

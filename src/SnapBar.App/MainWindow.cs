@@ -19,10 +19,12 @@ public sealed partial class MainWindow : Window
     private SelectionController? controller;
     private TrayIcon? tray;
     private readonly SettingsStore settingsStore;
+    private readonly StartupRegistration startupRegistration;
     private readonly AiPreferences aiPreferences;
     private ApplicationSettings preferences;
     private bool exitRequested, exitResolutionInProgress, hiddenNoticeShown;
     private bool updatingCompatibility, updatingSublime;
+    private bool hotkeyNotice;
     private readonly Action configureSublime;
     private readonly Func<bool> sublimeIsReady;
     internal bool AutomaticDetectionEnabled => controller?.Automatic == true;
@@ -30,29 +32,32 @@ public sealed partial class MainWindow : Window
     internal bool SublimeCompatibilityEnabled => controller?.SublimeClipboardEnabled == true;
     internal IReadOnlyList<ExcludedApplication> ExcludedApplications => preferences.ExcludedApplications;
 
-    public MainWindow(SettingsStore? settingsStore = null, Action? configureSublime = null, Func<bool>? sublimeIsReady = null)
+    public MainWindow(SettingsStore? settingsStore = null, Action? configureSublime = null, Func<bool>? sublimeIsReady = null,
+        StartupRegistration? startupRegistration = null)
     {
         this.configureSublime = configureSublime ?? SublimeCompatibility.InstallBinding;
         this.sublimeIsReady = sublimeIsReady ?? SublimeCompatibility.Ready;
+        this.startupRegistration = startupRegistration ?? new StartupRegistration(Path.Combine(AppContext.BaseDirectory, "SnapBar.App.exe"));
         this.settingsStore = settingsStore ?? new SettingsStore(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
         var loaded = this.settingsStore.Load();
         aiPreferences = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
         preferences = loaded.Settings;
-        if (loaded.Warning != null) preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
+        if (loaded.Warning != null && loaded.Warning != "hotkey-invalid") preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
         preferences = preferences with { SublimeCompatibilityEnabled = preferences.SublimeCompatibilityEnabled ?? this.sublimeIsReady() };
         BuildSettingsPages();
         SourceInitialized += (_, _) =>
         {
-            try { tray = new TrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); }
+            try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
             { lifetimeHint.Text = "無法建立系統匣圖示；關閉視窗會完整結束 SnapBar。"; }
             try
             {
                 var executable = Path.Combine(AppContext.BaseDirectory, "Probe", "SnapBar.Probe.exe");
-                controller = new(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), executable);
+                controller = new(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), executable, initialHotkey: preferences.Hotkey);
                 controller.Status += AddStatus;
+                controller.HotkeyRecorded += generalPage.Record;
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
@@ -62,16 +67,24 @@ public sealed partial class MainWindow : Window
                 controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; actionSettingsPanel.ShowSettings(value); SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
-                if (controller.HotkeyRegistered) AddStatus("準備完成 · Ctrl+Alt+V");
-                else ShowNotice("Ctrl+Alt+V 已被占用；仍可啟用自動偵測。");
+                if (controller.HotkeyRegistered) AddStatus("準備完成 · " + preferences.Hotkey.Display);
+                else { ShowNotice(preferences.Hotkey.Display + " 無法使用；請到一般設定更換，仍可啟用自動偵測。"); hotkeyNotice = true; }
             }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
             {
                 toggle.IsEnabled = false; mode.Text = "● 啟動失敗"; mode.Foreground = Brushes.Firebrick;
                 tray?.Update(false, false); ShowNotice("無法初始化輸入監聽，請結束後重新啟動。");
             }
-            if (loaded.Warning != null) ShowNotice("設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。");
+            if (loaded.Warning == "hotkey-invalid")
+            {
+                ShowNotice("快捷鍵設定損壞，暫用 Ctrl + Alt + V；其他偏好已保留。下次儲存會先備份原檔。"
+                    + (controller?.HotkeyRegistered == true ? "" : "目前預設快捷鍵也無法使用，請到一般設定更換。"));
+                hotkeyNotice = true;
+            }
+            else if (loaded.Warning != null) ShowNotice("設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。");
         };
+        Activated += (_, _) => generalPage.RefreshStartup();
+        Deactivated += (_, _) => generalPage.CancelRecording();
         Closing += (_, e) =>
         {
             if (exitRequested) return;
@@ -251,6 +264,7 @@ public sealed partial class MainWindow : Window
 
     private void ShowNotice(string message)
     {
+        hotkeyNotice = false;
         notice.Text = message; notice.Visibility = Visibility.Visible;
         AddStatus(message);
     }

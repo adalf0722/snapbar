@@ -7,6 +7,8 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        // A side-effect-free launch check: no settings, tray, input hooks or single-instance signal.
+        if (args.SequenceEqual(["--startup-check"])) return;
         bool fixture = args.Contains("--fixture");
         if (fixture)
         {
@@ -18,7 +20,8 @@ internal static class Program
         }
         using var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\SnapBar.ShowSettings");
         using var instance = new Mutex(true, "Local\\SnapBar.P0", out var first);
-        if (!first) { showSettings.Set(); return; }
+        var background = args.Contains("--background");
+        if (!first) { if (!background) showSettings.Set(); return; }
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         var window = new MainWindow();
         var wait = ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) =>
@@ -27,7 +30,11 @@ internal static class Program
                 app.Dispatcher.BeginInvoke(window.ShowSettings);
         }, null, Timeout.Infinite, executeOnlyOnce: false);
         app.SessionEnding += (_, _) => window.PrepareSessionEnd();
-        try { app.Run(window); }
+        try
+        {
+            if (background) { app.MainWindow = window; window.InitializeBackground(); app.Run(); }
+            else app.Run(window);
+        }
         finally { wait.Unregister(null); }
     }
 }

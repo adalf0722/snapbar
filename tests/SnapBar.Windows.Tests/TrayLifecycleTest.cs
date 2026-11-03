@@ -49,6 +49,7 @@ internal static class TrayLifecycleTest
         {
             try
             {
+                await GeneralSettingsTest.Run(Check, directory);
                 window = new MainWindow(new SettingsStore(path), SetupSublime, () => sublimeReady);
                 window.Show();
                 await Task.Delay(100);
