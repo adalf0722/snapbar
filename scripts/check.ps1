@@ -32,6 +32,7 @@ try {
         & git diff --check
         if ($LASTEXITCODE -ne 0) { throw 'Working tree whitespace check failed.' }
         & (Join-Path $PSScriptRoot 'test-tooling.ps1')
+        & (Join-Path $PSScriptRoot 'test-push.ps1')
         & (Join-Path $PSScriptRoot 'build.ps1')
     }
     Write-Host 'Repository checks passed.'

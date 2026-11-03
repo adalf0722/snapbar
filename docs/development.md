@@ -15,7 +15,9 @@ pwsh -NoProfile -File scripts/install-hooks.ps1
 
 actionlint 固定為 1.7.12，首次檢查 workflow 時自動下載至 `.tools/actionlint/1.7.12/`，核對固定 SHA-256；之後使用快取。首次需要網路，下載或 lint 失敗均阻擋提交／CI，不會略過。workflow 與 actionlint 設定也要求有效的 UTF-8 無 BOM。停用選用的 shellcheck／pyflakes 外掛，以固定各機器的檢查範圍；既有 PowerShell parser 檢查仍保留。
 
-安裝器僅設定本 checkout 的 `core.hooksPath=.githooks`。若已有其他 hook 設定或 pre-commit，會保留並提示手動整合。pre-commit 驗證暫存區版本的編碼、語法與空白；若 workflow 或 `.github/actionlint.yaml`／`.yml` 有變動，另從 Git index 擷取全部 workflow 與設定至獨立快照並執行 actionlint，避免未暫存的修正掩蓋問題。其他檔案提交不需執行 actionlint。完整檢查由日常入口和 CI 執行。Commit message 驗證器維持原狀。
+安裝器僅設定本 checkout 的 `core.hooksPath=.githooks`，啟用 pre-commit 與 pre-push。若已有其他 hook 設定或傳統 pre-commit／pre-push，會保留並提示手動整合。pre-commit 驗證暫存區版本的編碼、語法與空白；若 workflow 或 `.github/actionlint.yaml`／`.yml` 有變動，另從 Git index 擷取全部 workflow 與設定至獨立快照並執行 actionlint，避免未暫存的修正掩蓋問題。其他檔案提交不需執行 actionlint。完整檢查由日常入口和 CI 執行，包含隔離 bare remote 的 push 流程測試。Commit message 驗證器維持原狀。
+
+pre-push 在每次推送 branch／tag 前執行完整 Release 桌面測試。先提交或 stash 所有修改、正常結束 SnapBar，並在測試期間避免輸入與複製。推送來源必須指向目前 HEAD；其他分支請切換後個別推送。不接受 assume-unchanged／skip-worktree 的追蹤檔案。刪除遠端 ref 或傳送桌面證據 notes ref 不跑桌面測試。測試失敗會擋下 push；通過後先上傳綁定 commit 的精簡 Git note，再繼續原始 push。新 clone 必須重新安裝 hooks。
 
 ## 桌面測試
 
@@ -70,13 +72,21 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 
 ## GitHub 自動發布
 
-`.github/workflows/release.yml` 支援手動完整演練與 Release 發布，包含正式版與預覽版。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。先將 workflow 與腳本合併並推送至 GitHub，再執行；手動觸發入口需要 workflow 已存在於預設分支。
+`.github/workflows/release.yml` 支援 branch／tag push 自動打包、手動完整演練與 Release 發布，全部建置／打包均使用 GitHub 託管的 `windows-latest`，不再等待本機自架 runner。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。先將 workflow 與腳本合併並推送至 GitHub，再執行；手動觸發入口需要 workflow 已存在於預設分支。
 
-### 一次性 runner 設定
+### 一次性本機設定與測試證據
 
-1. 在 repository 的 Settings → Actions → Runners → New self-hosted runner 選 Windows x64，依 GitHub 顯示的命令下載及註冊。加入自訂標籤 `snapbar-desktop`，每個測試桌面只啟動一個 runner。
-2. 使用專用的 Windows 測試帳號／機器並安裝 Git。workflow 會在 runner 可寫入的暫存目錄準備 PowerShell 7 與 `global.json` 指定的 .NET SDK，不需要管理員權限；PowerShell ZIP 會核對固定 SHA-256。此 runner 只接收維護者發布的 Release 工作，不應用於不受信任的 PR。註冊方式見 [GitHub 官方文件](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners)。
-3. 在已登入且未鎖定的互動桌面執行 runner 的 `run.cmd`；不要以 Windows service 執行桌面測試。關閉 SnapBar，避免 Ctrl+Alt+V 衝突，測試期間不要操作鍵盤或剪貼簿。runner 離線時工作會等待，不會略過測試發布。
+1. Windows 安裝 Git、PowerShell 7 與 `global.json` 指定的 SDK，執行 `scripts/install-hooks.ps1`。推送帳號必須有寫入 repository 與 `refs/notes/snapbar-desktop` 的權限。
+2. 在已登入且未鎖定的互動桌面執行 `git push`，先正常結束 SnapBar。完整 Release 測試會在 push 前執行；失敗時修正問題並重新 push。
+3. hook 先取得遠端 notes，在獨立暫存 ref 新增該 commit 的通過紀錄，使用非強制 push 傳送；並行更新或網路錯誤均阻擋 branch／tag 推送。重新 push 會重新完整測試，不覆蓋別人的紀錄。
+
+紀錄只含 commit、tree、時間、原始碼指紋、Build／Preflight 及 Release 各套件的成功狀態、exit code、計數與耗時；本機路徑及詳細日誌不隨 note 上傳。雲端 fetch notes 後核對確切 commit／tree 與完整成功結果，再把紀錄匯入為目前乾淨 checkout 的發布報告。原始紀錄另存於檢查 artifact，Git checkout 的 LF／CRLF 差異不影響 commit 身分。
+
+Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執行本機 hook；但缺少該 commit 紀錄時雲端會拒絕打包。請 checkout 該確切 commit，再以已安裝 hook 的一般 branch／tag push 完成驗證。若來源已在遠端，沒有更新的 push 不會重新測試；可新增指向該 commit 的驗證 branch 或 tag 並推送，再重跑原工作。測試紀錄不是簽章，不能防止有 repository 寫入權限的人偽造紀錄。由於 notes 先送出，原始 push 最後失敗或使用 `git push --dry-run` 時仍可能留下測試紀錄；不會因此自行產生套件。原有自架 runner 可自行停止，本次不自動移除註冊。
+
+### 每次 push 下載測試版
+
+branch／tag push 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。在 Actions → Publish Windows release → 該次執行下載 `windows-release-package`。push 版本為 `v0.0.0-ci.<run number>.g<commit 前綴>`，不建立 Release。一般使用者的固定版本下載請使用下方 Release 流程。
 
 ### 先做完整演練
 
@@ -86,19 +96,19 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 gh workflow run release.yml --repo adalf0722/snapbar --ref main -f version=v0.0.0-validation
 ```
 
-演練與正式發布共用 package、verify 工作：全部 repository checks、Release 桌面測試、自含式打包、artifact 上傳至 GitHub，再由另一個 runner 下載並核對 SHA-256。成功後可在該次 Actions 頁面下載 `windows-release-package`；摘要包含來源 commit、版本與校驗碼。演練不建立 tag／Release，不上傳 Release 附件，upload 工作會明確顯示 skipped。
+演練與正式發布共用 package、verify 工作：核對 push 前的桌面證據、全部 repository checks、自含式打包、artifact 上傳至 GitHub，再由另一個 runner 下載並核對 SHA-256。成功後可在該次 Actions 頁面下載 `windows-release-package`；摘要包含來源 commit、版本與校驗碼。演練不建立 tag／Release，不上傳 Release 附件，upload 工作會明確顯示 skipped。
 
-兩種事件均 checkout 觸發時的 commit SHA；分支後續移動不會改變此次測試來源。演練結果只證明該來源於該次執行成功，不會讓未來發布略過測試或接受不同來源的桌面證據。
+所有事件均 checkout 觸發時的 commit SHA；分支後續移動不會改變此次來源。同一 commit 可重用 push 前的桌面紀錄；不同 commit 即使只有文件變動，也必須先完成該 commit 的 pre-push 驗證。不要在 GitHub 建立未經本機 push 驗證的新來源 commit 後直接發布。
 
 ### 每次發布
 
-在 GitHub 建立新版本並按 Publish release。流程依序執行 `check.ps1`、`test-desktop.ps1 -Suite Release`、`package-release.ps1 -Version <tag>`。發布腳本沿用目前原始碼指紋、桌面測試證據、App／Probe self-contained 發布及 Probe smoke 門檻。沒有有效桌面或測試失敗時停止，不會附加套件。
+先以一般 push 將已測試來源送到 GitHub，再以該 commit 建立新版本並按 Publish release。流程先以 `import-desktop-evidence.ps1` 核對既有桌面 note，再執行 `check.ps1`、`package-release.ps1 -Version <tag> -DesktopReport <匯入報告>`。發布腳本沿用目前原始碼指紋、桌面測試證據、App／Probe self-contained 發布、Probe／Startup smoke 門檻。沒有相符紀錄或任一步失敗時停止，不會附加套件；不在雲端重跑互動桌面測試。
 
 package 與 verify 只有 contents read，checkout 不保留 Git 憑證。ZIP 經 Actions artifact 傳至 GitHub 託管的 Windows runner，重新核對 SHA-256；成功後，只有 Release 事件才啟動最後的 upload 工作，以該工作專用的 contents write token 上傳相同 artifact 的套件。手動演練不會啟動這個具有寫入權限的工作。無需設定 PAT 或額外發布 secret。
 
 產物為 `SnapBar-v<版本>-win-x64.zip` 與同名 `.zip.sha256`。完整解壓縮後根目錄可找到 `SnapBar.App.exe` 與 `Probe/`。套件仍未簽章；AI 金鑰、使用者設定與 Node.js 不隨套件提供。
 
-檢查與桌面日誌保存在 workflow 的 `release-check-logs` artifact（14 天）；套件 artifact 保留 7 天，Release 附件不受此保留期影響。失敗可從 Actions 重跑；上傳失敗優先選 Re-run failed jobs，沿用本次已驗證的套件。超過 artifact 保留期需重跑整個流程。上傳不使用 `--clobber`，不會刪除舊附件；若一次上傳僅成功部分附件，請先核對已上傳檔案，僅補上缺少的檔案。啟用 immutable releases 的 repository 需另設草稿上傳流程，本 workflow 適用可在發布後新增附件的 Release。
+雲端檢查日誌與匯入桌面紀錄保存在 workflow 的 `release-check-logs` artifact（14 天），詳細互動桌面日誌保留本機；套件 artifact 保留 7 天，Release 附件不受此保留期影響。失敗可從 Actions 重跑；上傳失敗優先選 Re-run failed jobs，沿用本次已驗證的套件。超過 artifact 保留期需重跑整個流程。上傳不使用 `--clobber`，不會刪除舊附件；若一次上傳僅成功部分附件，請先核對已上傳檔案，僅補上缺少的檔案。啟用 immutable releases 的 repository 需另設草稿上傳流程，本 workflow 適用可在發布後新增附件的 Release。
 
 本機也可執行同一入口：
 

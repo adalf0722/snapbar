@@ -218,7 +218,7 @@ try {
         Assert-Tooling (-not $result.success -and $result.exitCode -ne 0)
     }
     Check-Tooling 'deleting staged actionlint configuration revalidates all remaining workflows' {
-        Write-WorkflowFixture $validWorkflow; Stage-WorkflowFixture $workflowRelative
+        Write-WorkflowFixture ($validWorkflow.Replace('windows-latest', '[self-hosted, Windows, X64, snapbar-desktop]')); Stage-WorkflowFixture $workflowRelative
         & git -C $script:SnapBarRepo update-index --force-remove -- $configRelative
         if ($LASTEXITCODE -ne 0) { throw 'Cannot remove configuration from fixture index.' }
         [IO.File]::WriteAllBytes($configPath, $originalConfig)
