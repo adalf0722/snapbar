@@ -51,6 +51,7 @@ $global:SnapBarFixtureTags = @()
 $global:SnapBarFixtureCommands = [Collections.Generic.List[string]]::new()
 $global:SnapBarFixtureFailUpload = $false
 $global:SnapBarFixtureFailQuery = $false
+$global:SnapBarFixtureHideDraft = $false
 function gh {
     $arguments = @($args)
     $global:SnapBarFixtureCommands.Add(($arguments -join ' '))
@@ -59,27 +60,30 @@ function gh {
         if ($global:SnapBarFixtureFailQuery) { $global:LASTEXITCODE = 1; return }
         $endpoint = @($arguments | Where-Object { $_ -like 'repos/*' })[0]
         if ($endpoint -like '*/releases?per_page=*') {
-            return '[' + (ConvertTo-Json -InputObject @($global:SnapBarFixtureReleases) -Depth 12 -Compress) + ']'
+            $listed = @($global:SnapBarFixtureReleases | Where-Object { -not ($global:SnapBarFixtureHideDraft -and $_.draft) })
+            return '[' + (ConvertTo-Json -InputObject $listed -Depth 12 -Compress) + ']'
         }
         if ($endpoint -like '*/git/matching-refs/*') { return ConvertTo-Json -InputObject @($global:SnapBarFixtureTags) -Compress }
         if ($endpoint -like '*/releases/generate-notes') { return '{"body":"Controlled generated changes"}' }
         if ($endpoint -like '*/commits/*') { return '{"sha":"different-source"}' }
-    }
-    if ($arguments[0] -eq 'release') {
-        switch ($arguments[1]) {
-            'create' {
-                $global:SnapBarFixtureRelease = New-AutoFixtureRelease $arguments[2] $true
-                $global:SnapBarFixtureRelease.target_commitish = $arguments[[Array]::IndexOf($arguments, '--target') + 1]
-                $global:SnapBarFixtureRelease.body = [IO.File]::ReadAllText($arguments[[Array]::IndexOf($arguments, '--notes-file') + 1])
-                $global:SnapBarFixtureReleases = @($global:SnapBarFixtureRelease)
-                return 'https://example.invalid/draft'
-            }
-            'upload' {
-                if ($global:SnapBarFixtureFailUpload) { $global:LASTEXITCODE = 1; return }
-                $global:SnapBarFixtureRelease.assets += (New-AutoAsset $arguments[3])
-                return
-            }
-            'edit' { $global:SnapBarFixtureRelease.draft = $false; return }
+        if ($endpoint -eq 'repos/fixture/repo/releases' -and $arguments[2] -eq 'POST') {
+            $version = ($arguments | Where-Object { $_ -like 'tag_name=*' }) -replace '^tag_name=', ''
+            $global:SnapBarFixtureRelease = New-AutoFixtureRelease $version $true
+            $global:SnapBarFixtureRelease | Add-Member -NotePropertyName id -NotePropertyValue 42
+            $global:SnapBarFixtureRelease.target_commitish = ($arguments | Where-Object { $_ -like 'target_commitish=*' }) -replace '^target_commitish=', ''
+            $notesPath = ($arguments | Where-Object { $_ -like 'body=@*' }) -replace '^body=@', ''
+            $global:SnapBarFixtureRelease.body = [IO.File]::ReadAllText($notesPath)
+            $global:SnapBarFixtureReleases = @($global:SnapBarFixtureRelease)
+            return ConvertTo-Json -InputObject $global:SnapBarFixtureRelease -Depth 12 -Compress
+        }
+        if ($arguments[3] -like 'https://uploads.github.com/repos/fixture/repo/releases/42/assets?name=*') {
+            if ($global:SnapBarFixtureFailUpload) { $global:LASTEXITCODE = 1; return }
+            $global:SnapBarFixtureRelease.assets += (New-AutoAsset $arguments[-1])
+            return
+        }
+        if ($endpoint -eq 'repos/fixture/repo/releases/42') {
+            if ($arguments[2] -eq 'PATCH') { $global:SnapBarFixtureRelease.draft = $false }
+            return ConvertTo-Json -InputObject $global:SnapBarFixtureRelease -Depth 12 -Compress
         }
     }
     throw "Unexpected fake GitHub call: $arguments"
@@ -89,32 +93,33 @@ function Invoke-AutoPublishFixture {
     & (Join-Path $PSScriptRoot 'publish-auto-release.ps1') -Version v0.1.0-rc.5 -Commit $commit -PackageDirectory $run -PreviousTag v0.1.0-rc.4 -Repository fixture/repo -RunId 123
 }
 try {
-    Check-Auto 'publisher stages complete assets before making a prerelease public' {
-        Invoke-AutoPublishFixture
+    Check-Auto 'publisher stages complete assets even when its new draft is absent from the release list' {
+        $global:SnapBarFixtureHideDraft = $true
+        try { Invoke-AutoPublishFixture } finally { $global:SnapBarFixtureHideDraft = $false }
         Assert-Auto (-not $global:SnapBarFixtureRelease.draft -and $global:SnapBarFixtureRelease.assets.Count -eq 2)
         Assert-Auto ($global:SnapBarFixtureRelease.body.Contains("<!-- snapbar-source: $commit -->") -and $global:SnapBarFixtureRelease.body.Contains('Controlled generated changes'))
-        Assert-Auto ($global:SnapBarFixtureCommands[$global:SnapBarFixtureCommands.Count - 1] -like 'release edit*')
+        Assert-Auto ($global:SnapBarFixtureCommands[$global:SnapBarFixtureCommands.Count - 1] -like 'api --method PATCH repos/fixture/repo/releases/42*')
     }
     Check-Auto 'successful rerun does not create a second Release or overwrite attachments' {
         $global:SnapBarFixtureCommands.Clear()
         Invoke-AutoPublishFixture
-        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'release create*' -or $_ -like 'release upload*' -or $_ -like 'release edit*' }).Count)
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
     }
     Check-Auto 'upload failure leaves a draft and failed-job retry completes it' {
         $global:SnapBarFixtureReleases = @(); $global:SnapBarFixtureCommands.Clear(); $global:SnapBarFixtureFailUpload = $true
         Reject-Auto { Invoke-AutoPublishFixture }
-        Assert-Auto ($global:SnapBarFixtureRelease.draft -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'release edit*' }).Count)
+        Assert-Auto ($global:SnapBarFixtureRelease.draft -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method PATCH*' }).Count)
         $global:SnapBarFixtureFailUpload = $false
         # A first attachment may already exist after an interrupted upload.
         $global:SnapBarFixtureRelease.assets = @((New-AutoAsset $archive))
         $global:SnapBarFixtureCommands.Clear()
         Invoke-AutoPublishFixture
-        Assert-Auto (-not $global:SnapBarFixtureRelease.draft -and @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'release upload*' }).Count -eq 1)
+        Assert-Auto (-not $global:SnapBarFixtureRelease.draft -and @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method POST https://uploads.github.com/*' }).Count -eq 1)
     }
     Check-Auto 'publisher rejects foreign Releases before any write' {
         $global:SnapBarFixtureRelease.target_commitish = 'b' * 40; $global:SnapBarFixtureCommands.Clear()
         Reject-Auto { Invoke-AutoPublishFixture }
-        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'release *' }).Count)
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
     }
     Check-Auto 'reserved tag and GitHub query failure never publish a Release' {
         $global:SnapBarFixtureReleases = @(); $global:SnapBarFixtureTags = @([pscustomobject]@{ ref = 'refs/tags/v0.1.0-rc.5' }); $global:SnapBarFixtureCommands.Clear()
@@ -132,7 +137,7 @@ try {
         $global:SnapBarFixtureTags = @([pscustomobject]@{ ref = 'refs/tags/v0.1.0-rc.5' })
         $global:SnapBarFixtureCommands.Clear()
         Reject-Auto { Invoke-AutoPublishFixture }
-        Assert-Auto ($global:SnapBarFixtureRelease.draft -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'release edit*' }).Count)
+        Assert-Auto ($global:SnapBarFixtureRelease.draft -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method PATCH*' }).Count)
         $global:SnapBarFixtureTags = @()
     }
     Check-Auto 'corrupted ZIP fails before any GitHub command' {
@@ -142,5 +147,5 @@ try {
         Assert-Auto ($global:SnapBarFixtureCommands.Count -eq 0)
     }
 }
-finally { Remove-Item Function:gh; Remove-Variable -Scope Global -Name SnapBarFixtureReleases, SnapBarFixtureTags, SnapBarFixtureCommands, SnapBarFixtureFailUpload, SnapBarFixtureFailQuery, SnapBarFixtureRelease -ErrorAction SilentlyContinue }
+finally { Remove-Item Function:gh; Remove-Variable -Scope Global -Name SnapBarFixtureReleases, SnapBarFixtureTags, SnapBarFixtureCommands, SnapBarFixtureFailUpload, SnapBarFixtureFailQuery, SnapBarFixtureHideDraft, SnapBarFixtureRelease -ErrorAction SilentlyContinue }
 Write-Host "$script:autoPassed passed, 0 failed"

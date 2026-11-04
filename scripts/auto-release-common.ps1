@@ -9,12 +9,6 @@ function Get-SnapBarReleases([string]$Repository) {
     return @($pages | ForEach-Object { foreach ($release in $_) { $release } })
 }
 
-function Get-SnapBarReleaseByVersion([string]$Repository, [string]$Version) {
-    $matches = @(Get-SnapBarReleases $Repository | Where-Object { $_.tag_name -ceq $Version })
-    if ($matches.Count -ne 1) { throw 'Expected exactly one Release for the selected version.' }
-    return $matches[0]
-}
-
 function Get-SnapBarAutoVersion([object[]]$Releases, [string[]]$Tags, [string]$RunId) {
     if ($RunId -notmatch '^[0-9]+$') { throw 'Automatic release requires a numeric workflow run ID.' }
     $marker = "<!-- snapbar-run: $RunId -->"
