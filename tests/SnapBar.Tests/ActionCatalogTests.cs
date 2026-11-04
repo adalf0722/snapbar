@@ -123,7 +123,7 @@ internal static class ActionCatalogTests
             var full = ActionCatalog.Normalize(remaining with { CustomActions = Enumerable.Range(0, 32)
                 .Select(_ => action with { Id = "custom-" + Guid.NewGuid().ToString("N") }).ToArray() });
             return Reject(() => ActionCatalog.RestoreCustom(settings, deleted))
-                && Reject(() => ActionCatalog.RestoreCustom(full, deleted)) && full.CustomActions.Length == 32;
+                && Reject(() => ActionCatalog.RestoreCustom(full, deleted)) && full.CustomActions.Length == 34;
         });
         check("deleting builtins is refused and restoring only the latest deletion leaves older deletions removed", () =>
         {
@@ -132,10 +132,27 @@ internal static class ActionCatalogTests
             remaining = ActionCatalog.DeleteCustom(remaining, other.Id, out var latest);
             var restored = ActionCatalog.RestoreCustom(remaining, latest);
             return Reject(() => ActionCatalog.DeleteCustom(settings, "copy", out _))
-                && restored.CustomActions.Single() == other;
+                && restored.CustomActions.Single(a => a.Id == other.Id) == other
+                && !restored.CustomActions.Any(a => a.Id == action.Id);
         });
         check("More search matches Chinese names and URL aliases", () =>
-            ActionCatalog.GetMore(settings, selection, "翻譯").Count == 1 && ActionCatalog.GetMore(settings, selection, "URL").Count == 1);
+            ActionCatalog.GetMore(settings, selection, "翻譯").Single().Id == action.Id
+            && ActionCatalog.GetMore(settings, selection, "URL").Any(a => a.Id == action.Id));
+        check("bundled Gmail action resolves encoded selection from More", () =>
+        {
+            var item = ActionCatalog.GetMore(new(), selection, "Gmail").Single();
+            var destination = CustomActionPolicy.ResolveUrl("中文 #&/", item.Custom!.Content);
+            return item.Name == "搜尋 Gmail" && item.Custom.Kind == CustomActionKind.Url
+                && ActionCatalog.IsApplicable(item, selection)
+                && destination.Uri?.AbsoluteUri == "https://mail.google.com/mail/u/0/#search/%E4%B8%AD%E6%96%87%20%23%26%2F";
+        });
+        check("bundled public IP action uses no selection input and displays its result", () =>
+        {
+            var item = ActionCatalog.GetMore(new(), selection, "取得公網 IP").Single();
+            return item.Custom is { Kind: CustomActionKind.PowerShell, UseSelection: false, Output: ActionOutput.Window }
+                && CustomActionPolicy.Validate(item.Custom) == null
+                && ActionCatalog.IsApplicable(item, selection);
+        });
         foreach (var iconId in new[] { "globe", "terminal", "legacy:clean", "translate_20_regular", "unknown-fixture" })
         {
             var expected = iconId;
@@ -221,14 +238,16 @@ internal static class ActionCatalogTests
         var path = Path.Combine(directory, "settings.json");
         try
         {
-            foreach (var version in new[] { 1, 2, 3, 4, 5, 6 })
+            foreach (var version in new[] { 1, 2, 3, 4, 5, 6, 7 })
                 check("action settings migration from v" + version, () =>
                 {
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 7
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 9
                         && loaded.Settings.Actions.Layout.Single(e => e.Id == "ai").Placement == ActionPlacement.More
+                        && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "Gmail").Count == 1
+                        && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "取得公網 IP").Count == 1
                         && before.SequenceEqual(File.ReadAllBytes(path));
                 });
             check("legacy stored action without input flag defaults to true without rewriting", () =>
@@ -236,14 +255,31 @@ internal static class ActionCatalogTests
                 var actionJson = System.Text.Json.JsonSerializer.Serialize(action, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
                 File.WriteAllText(path, "{\"schemaVersion\":4,\"actions\":{\"customActions\":[" + actionJson.Replace(",\"useSelection\":true", "") + "]}}", new UTF8Encoding(false));
                 var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
-                return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.CustomActions.Single().UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
+                return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.CustomActions.Single(a => a.Id == action.Id).UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
             });
             check("current schema preserves explicit disabled selection on disk", () =>
             {
                 var store = new SettingsStore(path); var loaded = store.Load();
                 store.Save(loaded.Settings with { Actions = new() { CustomActions = [independent] } });
                 var roundtrip = new SettingsStore(path).Load();
-                return roundtrip.Warning == null && !roundtrip.Settings.Actions.CustomActions.Single().UseSelection;
+                return roundtrip.Warning == null && !roundtrip.Settings.Actions.CustomActions.Single(a => a.Id == independent.Id).UseSelection;
+            });
+            check("bundled Gmail edits, removal, and undo survive settings normalization", () =>
+            {
+                var store = new SettingsStore(path);
+                var loaded = store.Load();
+                var actions = loaded.Settings.Actions;
+                var gmail = ActionCatalog.GetMore(actions, selection, "Gmail").Single().Custom!;
+                var edited = gmail with { Content = gmail.Content.Replace("/u/0/", "/u/1/") };
+                actions = actions with { CustomActions = actions.CustomActions.Select(a => a.Id == gmail.Id ? edited : a).ToArray() };
+                store.Save(loaded.Settings with { Actions = actions });
+                var editedSettings = store.Load().Settings;
+                if (editedSettings.Actions.CustomActions.Single(a => a.Id == gmail.Id) != edited) return false;
+                var removed = ActionCatalog.DeleteCustom(editedSettings.Actions, gmail.Id, out var undo);
+                store.Save(editedSettings with { Actions = removed });
+                var reloaded = store.Load().Settings.Actions;
+                return !ActionCatalog.GetItems(reloaded).Any(a => a.Id == gmail.Id)
+                    && ActionCatalog.GetMore(ActionCatalog.RestoreCustom(reloaded, undo), selection, "Gmail").Single().Custom == edited;
             });
             check("action settings roundtrip preserves layout theme labels and recents", () =>
             {

@@ -282,7 +282,6 @@ internal sealed class ActionSettingsPanel : ContentControl
         if (dialog.ShowDialog() == true && dialog.SavedAction is { } action)
         {
             var customs = settings.CustomActions.Where(a => a.Id != action.Id).Append(action).ToArray();
-            if (customs.Length > 32) { status.Text = "最多 32 個自訂動作，請先移除不需要的項目。"; return; }
             selectedPlacement = settings.Layout.FirstOrDefault(e => e.Id == action.Id)?.Placement ?? ActionPlacement.More;
             Commit(settings with { CustomActions = customs });
         }

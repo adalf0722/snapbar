@@ -4,6 +4,19 @@ public sealed record DeletedCustomAction(CustomActionDefinition Action, ActionPl
 
 public static class ActionCatalog
 {
+    private const int CustomActionLimit = 32;
+    private static readonly CustomActionDefinition GmailSearch = new(
+        "custom-62bf87b962054dc7bacd6588e37c2843", "搜尋 Gmail", CustomActionKind.Url, "search",
+        "https://mail.google.com/mail/u/0/#search/***");
+    private static readonly CustomActionDefinition PublicIp = new(
+        "custom-7a935c9cbd654f8aace39e311174cc72", "取得公網 IP", CustomActionKind.PowerShell, "globe",
+        """
+        curl.exe -q --fail --silent --show-error --max-time 8 https://ifconfig.me/ip
+        exit $LASTEXITCODE
+        """, UseSelection: false);
+
+    private static bool IsBundled(string id) => id == GmailSearch.Id || id == PublicIp.Id;
+
     private static readonly ActionItem[] BuiltIns = [
         new("copy", "複製", "copy", TextAction.Copy), new("cut", "剪下", "cut", TextAction.Cut),
         new("paste", "貼上", "paste", TextAction.Paste), new("search", "搜尋", "search", TextAction.Search),
@@ -14,13 +27,18 @@ public static class ActionCatalog
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (settings.CustomActions == null || settings.Layout == null || settings.RecentIds == null
-            || settings.CustomActions.Length > 32 || settings.Theme is not ("Dark" or "Light")) throw new ArgumentException("動作設定無效。");
+            || settings.CustomActions.Length > CustomActionLimit + 2 || settings.Theme is not ("Dark" or "Light")) throw new ArgumentException("動作設定無效。");
         var customs = settings.CustomActions.Select(action =>
         {
             if (CustomActionPolicy.Validate(action!) is { } error) throw new ArgumentException(error);
             return action with { Icon = CustomActionPolicy.NormalizeIcon(action.Icon) };
         }).ToArray();
         if (customs.Select(a => a.Id).Distinct(StringComparer.Ordinal).Count() != customs.Length) throw new ArgumentException("動作識別碼重複。");
+        if (customs.Count(a => !IsBundled(a.Id)) > CustomActionLimit) throw new ArgumentException("最多 32 個自訂動作，請先移除不需要的項目。");
+        if (!settings.GmailSearchRemoved && !customs.Any(a => a.Id == GmailSearch.Id))
+            customs = [.. customs, GmailSearch];
+        if (!settings.PublicIpRemoved && !customs.Any(a => a.Id == PublicIp.Id))
+            customs = [.. customs, PublicIp];
         var ids = BuiltIns.Select(a => a.Id).Concat(customs.Select(a => a.Id)).ToHashSet(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var layout = new List<ActionLayoutEntry>();
@@ -125,6 +143,8 @@ public static class ActionCatalog
         return settings with
         {
             CustomActions = settings.CustomActions.Where(a => a.Id != id).ToArray(),
+            GmailSearchRemoved = settings.GmailSearchRemoved || id == GmailSearch.Id,
+            PublicIpRemoved = settings.PublicIpRemoved || id == PublicIp.Id,
             Layout = settings.Layout.Where(e => e.Id != id).ToArray(),
             RecentIds = settings.RecentIds.Where(recent => recent != id).ToArray()
         };
@@ -133,7 +153,8 @@ public static class ActionCatalog
     public static ActionSettings RestoreCustom(ActionSettings settings, DeletedCustomAction deleted)
     {
         settings = Normalize(settings);
-        if (settings.CustomActions.Length >= 32) throw new ArgumentException("目前已有 32 個自訂動作，無法復原。");
+        if (!IsBundled(deleted.Action.Id) && settings.CustomActions.Count(a => !IsBundled(a.Id)) >= CustomActionLimit)
+            throw new ArgumentException("目前已有 32 個自訂動作，無法復原。");
         if (settings.CustomActions.Any(a => a.Id == deleted.Action.Id)) throw new ArgumentException("此動作已存在，無法復原。");
         if (!Enum.IsDefined(deleted.Placement) || deleted.PlacementIndex < 0) throw new ArgumentException("動作排列無效。");
         var placement = deleted.Placement;
@@ -144,6 +165,12 @@ public static class ActionCatalog
         var index = placement == deleted.Placement ? deleted.PlacementIndex : slots.Length;
         var insertion = index < slots.Length ? slots[index] : slots.Length > 0 ? slots[^1] + 1 : layout.Count;
         layout.Insert(insertion, new(deleted.Action.Id, placement));
-        return Normalize(settings with { CustomActions = settings.CustomActions.Append(deleted.Action).ToArray(), Layout = layout.ToArray() });
+        return Normalize(settings with
+        {
+            CustomActions = settings.CustomActions.Append(deleted.Action).ToArray(),
+            GmailSearchRemoved = settings.GmailSearchRemoved && deleted.Action.Id != GmailSearch.Id,
+            PublicIpRemoved = settings.PublicIpRemoved && deleted.Action.Id != PublicIp.Id,
+            Layout = layout.ToArray()
+        });
     }
 }

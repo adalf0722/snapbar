@@ -12,6 +12,8 @@ public sealed record ActionLayoutEntry(string Id, ActionPlacement Placement);
 public sealed record ActionSettings
 {
     public CustomActionDefinition[] CustomActions { get; init; } = [];
+    public bool GmailSearchRemoved { get; init; }
+    public bool PublicIpRemoved { get; init; }
     public ActionLayoutEntry[] Layout { get; init; } = [];
     public string[] RecentIds { get; init; } = [];
     public bool ShowLabels { get; init; } = true;
