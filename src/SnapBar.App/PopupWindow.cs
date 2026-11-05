@@ -23,6 +23,7 @@ public sealed class PopupWindow : Window
     private string searchTemplate = WebActionPolicy.DefaultSearchTemplate, query = "";
     private nint handle;
     private int pointerX, pointerY, menuIndex = -1;
+    private (int X, int Y)? lastPointer;
     private bool searchMode, syncingQuery, composing;
     public event Action<TextAction>? ActionRequested;
     public event Action<string>? CustomActionRequested;
@@ -98,6 +99,7 @@ public sealed class PopupWindow : Window
         snapshot = selection; pointerX = x; pointerY = y; this.searchTemplate = searchTemplate;
         settings = ActionCatalog.Normalize(actionSettings ?? new()); EndSearchInput(); query = ""; menuIndex = -1; more.Visibility = Visibility.Collapsed;
         RenderBar(); Place(); Show(); Place();
+        lastPointer = Native.GetCursorPos(out var cursor) ? (cursor.X, cursor.Y) : null;
     }
 
     private void RenderBar()
@@ -294,4 +296,29 @@ public sealed class PopupWindow : Window
 
     public void Dismiss() { EndSearchInput(); more.Visibility = Visibility.Collapsed; query = ""; Hide(); }
     public bool Contains(int x, int y) => IsVisible && Native.GetWindowRect(handle, out var r) && x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom;
+
+    internal bool ShouldDismissForPointer()
+    {
+        if (!IsVisible || snapshot == null || !Native.GetCursorPos(out var cursor))
+            return false;
+
+        var position = (cursor.X, cursor.Y);
+        var moved = lastPointer is { } previous && previous != position;
+        lastPointer = position;
+        if (!moved || MenuOpen || HasSearchForeground || !Native.GetWindowRect(handle, out var bounds))
+            return false;
+
+        const double marginDip = 48;
+        var dpi = Native.GetDpiForWindow(handle);
+        var margin = marginDip * (dpi == 0 ? 96 : dpi) / 96;
+        var anchor = snapshot.Bounds ?? new ScreenRect(pointerX, pointerY, 1, 1);
+
+        // Keep the route from the selection to every button inside the dismissal boundary.
+        var left = Math.Min(bounds.Left, Math.Min(anchor.X, pointerX));
+        var top = Math.Min(bounds.Top, Math.Min(anchor.Y, pointerY));
+        var right = Math.Max(bounds.Right, Math.Max(anchor.Right, pointerX));
+        var bottom = Math.Max(bounds.Bottom, Math.Max(anchor.Bottom, pointerY));
+        return cursor.X < left - margin || cursor.X > right + margin
+            || cursor.Y < top - margin || cursor.Y > bottom + margin;
+    }
 }

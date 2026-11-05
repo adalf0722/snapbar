@@ -86,7 +86,11 @@ public sealed partial class SelectionController : IDisposable
         monitor.KeyFilter = key => selection != null && !popup.HasSearchForeground && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
         foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
         {
-            if (selection != null && Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasCaptureForeground != true) Invalidate();
+            if (selection == null) return;
+            if (Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasCaptureForeground != true)
+                Invalidate();
+            else if (popup.ShouldDismissForPointer())
+                Invalidate();
         }, dispatcher);
     }
 
