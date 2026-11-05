@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SnapBar 是 Windows 選字工具列。從正在看的文字開始搜尋、AI 改寫，或執行自訂動作。">
+  <meta name="theme-color" content="#f7f8fb">
+  <title>SnapBar — 讓常用動作，跟著選字出現</title>
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="selection-demo.js" defer></script>
+  <script src="download.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至主要內容</a>
+<header class="nav wrap">
+  <a class="brand" href="./"><img src="icon.png" width="32" height="32" alt="">SnapBar</a>
+  <nav aria-label="主要導覽"><a href="#experience">產品畫面</a><a class="blue" href="#download">下載預覽版 ↓</a></nav>
+</header>
+<main id="main">
+  <section class="hero wrap" aria-labelledby="headline">
+    <div class="hero-copy">
+      <p class="eyebrow">WINDOWS 選字工具列</p>
+      <h1 id="headline">選一段文字。<br><span>動作就在旁邊。</span></h1>
+      <p class="lead">在原本的視窗叫出工具列，直接複製、搜尋，或用 AI 改寫。</p>
+      <div class="hero-actions">
+        <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
+        <button class="play-bubble" type="button" aria-controls="selection-preview" hidden>
+          <span aria-hidden="true" class="play-icon">▶</span>
+          <span class="play-label">看 4 秒示範</span>
+        </button>
+      </div>
+      <p class="small">Windows x64 · 免登入下載 · ZIP 解壓即用 · 未簽章預覽版</p>
+      <span class="play-status" role="status"></span>
+    </div>
+    <figure class="hero-figure">
+      <div class="demo-window">
+        <div class="demo-titlebar" aria-hidden="true">
+          <span class="demo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="3" y="2" width="10" height="12" rx="2" fill="currentColor"/>
+              <path d="M5 6h6M5 9h6M5 12h4" stroke="#17243c" stroke-linecap="round"/>
+            </svg>
+            記事本
+          </span>
+          <span class="demo-window-controls">─ □ ×</span>
+        </div>
+        <p class="demo-line" aria-hidden="true">回覆草稿</p>
+        <div class="selection-preview" id="selection-preview">
+          <img src="assets/selection-detail.png" width="360" height="112" alt="反白選取「這個部分我們可能需要再做一些確認」後，SnapBar 動作列顯示複製、剪下、貼上及搜尋。">
+          <div class="selection-overlay" aria-hidden="true">
+            <span class="selection-unmarked">這個部分我們可能需要再做一些確認。</span>
+            <span class="selection-caret"></span>
+            <span class="selection-cover"></span>
+          </div>
+        </div>
+      </div>
+      <figcaption>記事本情境示意 · 工具列為 SnapBar 實機截圖</figcaption>
+    </figure>
+  </section>
+  <section id="experience" class="experience section" aria-labelledby="experience-title">
+    <div class="wrap">
+      <div class="section-heading"><h2 id="experience-title">選了文字，接著能做什麼？</h2></div>
+      <article class="story">
+        <div class="story-copy"><span class="number">01 / 改寫</span><h3>讓草稿更接近你想說的。</h3><p>從「更多」開啟 AI 改寫。看完結果後，可以複製，或在可編輯的來源替換原文。</p></div>
+        <figure class="rewrite-example">
+          <figcaption>AI 改寫範例</figcaption>
+          <dl>
+            <dt>原文</dt>
+            <dd><mark>這部分我們這邊還需要再確認一下，等確認完之後會再回覆你。</mark></dd>
+            <dt><span class="action-label">AI 改寫 → 縮短</span> 結果</dt>
+            <dd>我們確認後會再回覆。</dd>
+          </dl>
+          <p class="rewrite-note">AI 服務與金鑰需自行設定。執行指令時，選取的文字才會傳送至所選 AI 服務。</p>
+        </figure>
+      </article>
+      <article class="story reverse">
+        <div class="story-copy"><span class="number">02 / 自訂</span><h3>把常用的，<br>放到最順手的位置。</h3><p>選擇哪些動作出現在動作列，調整順序，把其餘項目留在更多選單。</p><p>進一步加入網址、PowerShell 或 JavaScript 動作，讓選中的文字接上你的工作流程。</p><p class="detail">JavaScript 動作需另裝 Node.js。</p></div>
+        <figure class="app-figure">
+          <div class="pin-example">
+            <p>調整前 · 搜尋收在「更多」</p>
+            <div class="demo-toolbar"><span>複製</span><span>剪下</span><span>貼上</span><span class="demo-more">⋯</span></div>
+            <p>調整後 · 搜尋就在動作列上</p>
+            <div class="demo-toolbar"><span>複製</span><span>剪下</span><span>貼上</span><span class="demo-active">搜尋</span><span class="demo-more">⋯</span></div>
+          </div>
+          <details><summary>查看動作列設定畫面</summary><img src="assets/actions-detail.png" width="744" height="220" loading="lazy" alt="動作列設定可調整動作順序與顯示位置。"></details>
+        </figure>
+      </article>
+    </div>
+  </section>
+  <section id="download" class="download section wrap" aria-labelledby="download-title">
+    <div class="download-panel">
+      <div class="section-heading">
+        <h2 id="download-title">下載，選一句，試試看。</h2>
+        <div class="download-actions">
+          <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
+          <a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases/tag/v0.1.0-rc.8">版本說明 ↗</a>
+        </div>
+        <p>Windows x64 · 內含 .NET 執行環境 · 套件尚未簽章</p>
+        <p class="small"><span id="download-version">v0.1.0-rc.8</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">所有版本 ↗</a></p>
+      </div>
+      <ol class="steps">
+        <li><span class="step-number" aria-hidden="true">1</span><h3>解壓縮</h3><p>把 ZIP 裡的檔案完整解壓縮到同一個資料夾。</p></li>
+        <li><span class="step-number" aria-hidden="true">2</span><h3>開啟 SnapBar</h3><p>執行 <code>SnapBar.App.exe</code>，再到記事本選一句文字。</p></li>
+        <li><span class="step-number" aria-hidden="true">3</span><h3>按 <kbd>Ctrl+Alt+V</kbd></h3><p>用預設快捷鍵叫出工具列，試著複製或搜尋這句話。</p></li>
+      </ol>
+    </div>
+    <p class="update-note"><strong>已在使用 SnapBar？</strong> 先從系統匣完整結束舊版，再解壓縮並開啟新版。同一台電腦、同一個 Windows 帳號會沿用已儲存的動作列、自訂動作與 AI 金鑰。</p>
+    <div class="questions">
+      <details><summary>怎麼讓動作列自動出現？</summary><p>在「一般」設定開啟「自動顯示動作列」，之後拖曳或雙擊選字即可試用。</p></details>
+      <details><summary>AI 改寫可以直接使用嗎？</summary><p>需先設定自己的 AI 服務、模型與 API Key。服務可能另外計費。複製、搜尋等基本動作可獨立使用。</p></details>
+      <details><summary>為什麼有時只能複製結果？</summary><p>唯讀來源或無法確認可編輯狀態時，AI 結果提供複製。替換前會重新驗證原視窗與選取內容，來源改變時會取消操作。不同應用程式的選字支援程度會有差異。</p></details>
+    </div>
+  </section>
+</main>
+<footer class="wrap"><a class="brand" href="./"><img src="icon.png" alt="" width="24" height="24">SnapBar</a><div><a href="https://github.com/adalf0722/snapbar">GitHub</a><a href="https://github.com/adalf0722/snapbar/issues">回報問題</a></div><span>為 Windows 上的每一次選字。</span></footer>
+</body>
+</html>
