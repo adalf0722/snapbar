@@ -31,6 +31,13 @@ Check-Auto 'rerun retains its version and rejects ambiguous ownership' {
     Reject-Auto { Get-SnapBarAutoVersion @($release, $release) @() '123' }
     Reject-Auto { Get-SnapBarAutoVersion @() @() 'not-a-run' }
 }
+Check-Auto 'a new run skips a draft reserved by an earlier failed run' {
+    $published = New-AutoFixtureRelease 'v0.1.0-rc.5'
+    $draft = New-AutoFixtureRelease 'v0.1.0-rc.6' $true
+    $draft.body = '<!-- snapbar-run: 123 -->'
+    $plan = Get-SnapBarAutoVersion @($draft, $published) @('v0.1.0-rc.5') '124'
+    Assert-Auto ($plan.version -eq 'v0.1.0-rc.7' -and $plan.previousTag -eq 'v0.1.0-rc.5')
+}
 $archive = Join-Path $run 'SnapBar-v0.1.0-rc.5-win-x64.zip'
 [IO.File]::WriteAllText($archive, 'controlled package fixture', [Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()

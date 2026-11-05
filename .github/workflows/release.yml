@@ -18,13 +18,41 @@ concurrency:
   group: snapbar-${{ github.event_name }}-${{ github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 jobs:
+  auto-version:
+    name: Select automatic prerelease version
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      previous-tag: ${{ steps.plan.outputs.previous-tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Select a version using published releases and drafts
+        id: plan
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $plan = ./scripts/resolve-auto-version.ps1
+          "version=$($plan.version)" >> $env:GITHUB_OUTPUT
+          "previous-tag=$($plan.previousTag)" >> $env:GITHUB_OUTPUT
+          Write-Host "Selected automatic prerelease version: $($plan.version)"
   package:
     name: Verify desktop evidence and build self-contained package
+    needs: auto-version
+    if: ${{ !cancelled() && (needs.auto-version.result == 'success' || needs.auto-version.result == 'skipped') }}
     runs-on: windows-latest
     timeout-minutes: 45
     outputs:
       version: ${{ steps.package.outputs.version }}
-      previous-tag: ${{ steps.package.outputs.previous-tag }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -64,23 +92,17 @@ jobs:
         id: package
         shell: pwsh
         env:
-          PACKAGE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+          PACKAGE_VERSION: ${{ needs.auto-version.outputs.version || github.event.release.tag_name || inputs.version }}
           DESKTOP_REPORT: ${{ steps.desktop.outputs.report }}
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
         run: |
           $version = $env:PACKAGE_VERSION
-          $previous = ''
-          if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -eq 'refs/heads/main') {
-            $plan = ./scripts/resolve-auto-version.ps1
-            $version = $plan.version
-            $previous = $plan.previousTag
+          if (-not $version -and $env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -eq 'refs/heads/main') {
+            throw 'Automatic prerelease version was not selected.'
           }
           if (-not $version) { $version = "v0.0.0-ci.$env:GITHUB_RUN_NUMBER.g$($env:GITHUB_SHA.Substring(0, 12))" }
           $package = ./scripts/package-release.ps1 -Version $version -DesktopReport $env:DESKTOP_REPORT
           "directory=$($package.directory)" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
-          "previous-tag=$previous" >> $env:GITHUB_OUTPUT
       - name: Transfer release package
         uses: actions/upload-artifact@v7
         with:
@@ -156,7 +178,7 @@ jobs:
   auto-release:
     name: Publish automatic main prerelease
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [package, verify]
+    needs: [auto-version, package, verify]
     runs-on: windows-latest
     timeout-minutes: 10
     permissions:
@@ -176,7 +198,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PACKAGE_VERSION: ${{ needs.package.outputs.version }}
-          PREVIOUS_TAG: ${{ needs.package.outputs.previous-tag }}
+          PREVIOUS_TAG: ${{ needs.auto-version.outputs.previous-tag }}
         run: |
           ./scripts/publish-auto-release.ps1 -Version $env:PACKAGE_VERSION -Commit $env:GITHUB_SHA -PackageDirectory (Join-Path $PWD 'release-package') -PreviousTag $env:PREVIOUS_TAG
           $summary = "Published prerelease [$env:PACKAGE_VERSION](https://github.com/$env:GH_REPO/releases/tag/$env:PACKAGE_VERSION)"
