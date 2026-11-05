@@ -143,7 +143,12 @@ internal sealed class ActionSettingsPanel : ContentControl
         foreach (var (placement, tab) in tabs)
         {
             var count = settings.Layout.Count(e => e.Placement == placement);
-            tab.Content = (placement switch { ActionPlacement.Bar => "動作列", ActionPlacement.More => "更多", _ => "隱藏" }) + " · " + count;
+            tab.Content = placement switch
+            {
+                ActionPlacement.Bar => $"動作列 · {count}／{ActionCatalog.BarActionLimit}",
+                ActionPlacement.More => $"更多 · {count}",
+                _ => $"隱藏 · {count}"
+            };
             tab.Visibility = placement == ActionPlacement.Hidden && count == 0 ? Visibility.Collapsed : Visibility.Visible;
             tab.IsChecked = selectedPlacement == placement;
         }
@@ -221,7 +226,12 @@ internal sealed class ActionSettingsPanel : ContentControl
                 }
                 Grid.SetColumn(buttons, 3); row.Children.Add(buttons);
                 var combo = new ComboBox { ItemsSource = new[] { "動作列", "更多選單", "隱藏" }, SelectedIndex = (int)placement, VerticalAlignment = VerticalAlignment.Center, Margin = new(6), Padding = new(5) };
-                AutomationProperties.SetName(combo, item.Name + "顯示位置"); combo.SelectionChanged += (_, _) => { try { Commit(ActionCatalog.SetPlacement(settings, item.Id, (ActionPlacement)combo.SelectedIndex)); } catch (ArgumentException) { status.Text = "動作列已滿六個，請先移出一個。"; Render(); } };
+                AutomationProperties.SetName(combo, item.Name + "顯示位置");
+                combo.SelectionChanged += (_, _) =>
+                {
+                    try { Commit(ActionCatalog.SetPlacement(settings, item.Id, (ActionPlacement)combo.SelectedIndex)); }
+                    catch (ArgumentException error) { status.Text = error.Message; Render(); }
+                };
                 Grid.SetColumn(combo, 4); row.Children.Add(combo);
                 var rowCard = ActionUi.Card(row, new Thickness(8, 0, 6, 0)); rowCard.CornerRadius = new(8); rowCard.Margin = new(0, 0, 0, 3);
                 groups.Children.Add(rowCard);

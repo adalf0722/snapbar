@@ -10,6 +10,9 @@ internal static class ActionCatalogTests
         var selection = new SelectionSnapshot("s", target, "hello", null, true, 1, 5);
         var settings = new ActionSettings { CustomActions = [action] };
         bool Reject(Action test) { try { test(); return false; } catch (ArgumentException) { return true; } }
+        ActionSettings PinFiveMore(ActionSettings value) => ActionCatalog.GetMore(value, selection)
+            .Where(item => item.Id != action.Id).Take(5)
+            .Aggregate(value, (layout, item) => ActionCatalog.SetPlacement(layout, item.Id, ActionPlacement.Bar));
         check("action defaults pin four builtins and keep custom actions in More", () =>
             ActionCatalog.GetBar(settings, selection).Select(a => a.Id).SequenceEqual(new[] { "copy", "cut", "paste", "search" })
             && ActionCatalog.GetMore(settings, selection).Any(a => a.Id == action.Id));
@@ -43,10 +46,12 @@ internal static class ActionCatalogTests
         });
         check("URL action remains readable after switching from replace-output script", () =>
             ActionCatalog.IsApplicable(new(action.Id, action.Name, action.Icon, Custom: action with { Output = ActionOutput.ReplaceSelection }), selection with { Editable = false }));
-        check("pin cap rejects seventh pinned item", () =>
+        check("pin cap accepts nine in both display modes and rejects a tenth", () =>
         {
-            var six = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(settings, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
-            return Reject(() => ActionCatalog.SetPlacement(six, action.Id, ActionPlacement.Bar));
+            var nine = PinFiveMore(settings);
+            var pinned = ActionCatalog.GetPinned(nine);
+            return pinned.Count == 9 && pinned.SequenceEqual(ActionCatalog.GetPinned(nine with { ShowLabels = false }))
+                && Reject(() => ActionCatalog.SetPlacement(nine, action.Id, ActionPlacement.Bar));
         });
         check("pinning sixth action appends after existing fifth instead of using its old More slot", () =>
         {
@@ -105,9 +110,10 @@ internal static class ActionCatalogTests
         {
             var original = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar);
             var remaining = ActionCatalog.DeleteCustom(original, action.Id, out var deleted);
-            remaining = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(remaining, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
+            remaining = PinFiveMore(remaining);
             var restored = ActionCatalog.RestoreCustom(remaining, deleted);
-            return ActionCatalog.GetPinned(restored).SequenceEqual(ActionCatalog.GetPinned(remaining))
+            return ActionCatalog.GetPinned(restored).Count == 9
+                && ActionCatalog.GetPinned(restored).SequenceEqual(ActionCatalog.GetPinned(remaining))
                 && restored.Layout.Single(e => e.Id == action.Id).Placement == ActionPlacement.More;
         });
         check("restore retains hidden placement and does not resurrect removed recents", () =>
@@ -281,13 +287,14 @@ internal static class ActionCatalogTests
                 return !ActionCatalog.GetItems(reloaded).Any(a => a.Id == gmail.Id)
                     && ActionCatalog.GetMore(ActionCatalog.RestoreCustom(reloaded, undo), selection, "Gmail").Single().Custom == edited;
             });
-            check("action settings roundtrip preserves layout theme labels and recents", () =>
+            check("action settings roundtrip preserves nine pins, theme, labels and recents", () =>
             {
                 var store = new SettingsStore(path); var loaded = store.Load();
-                var actions = ActionCatalog.Remember(ActionCatalog.SetPlacement(settings, "cut", ActionPlacement.Hidden), action.Id) with { Theme = "Light", ShowLabels = false };
+                var actions = ActionCatalog.Remember(PinFiveMore(settings), action.Id) with { Theme = "Light", ShowLabels = false };
                 store.Save(loaded.Settings with { Actions = actions });
                 var roundtrip = new SettingsStore(path).Load();
                 return roundtrip.Warning == null && roundtrip.Settings.Actions.CustomActions.SequenceEqual(actions.CustomActions)
+                    && ActionCatalog.GetPinned(roundtrip.Settings.Actions).Count == 9
                     && roundtrip.Settings.Actions.Layout.SequenceEqual(actions.Layout) && roundtrip.Settings.Actions.RecentIds.SequenceEqual(actions.RecentIds)
                     && !roundtrip.Settings.Actions.ShowLabels && roundtrip.Settings.Actions.Theme == "Light";
             });

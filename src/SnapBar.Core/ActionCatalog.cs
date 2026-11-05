@@ -4,6 +4,7 @@ public sealed record DeletedCustomAction(CustomActionDefinition Action, ActionPl
 
 public static class ActionCatalog
 {
+    public const int BarActionLimit = 9;
     private const int CustomActionLimit = 32;
     private static readonly CustomActionDefinition GmailSearch = new(
         "custom-62bf87b962054dc7bacd6588e37c2843", "搜尋 Gmail", CustomActionKind.Url, "search",
@@ -49,7 +50,8 @@ public static class ActionCatalog
         }
         foreach (var id in BuiltIns.Select(a => a.Id).Concat(customs.Select(a => a.Id)))
             if (seen.Add(id)) layout.Add(new(id, id is "copy" or "cut" or "paste" or "search" ? ActionPlacement.Bar : ActionPlacement.More));
-        if (layout.Count(e => e.Placement == ActionPlacement.Bar) > 6) throw new ArgumentException("工具列最多可放六個動作。");
+        if (layout.Count(e => e.Placement == ActionPlacement.Bar) > BarActionLimit)
+            throw new ArgumentException($"動作列最多可釘選 {BarActionLimit} 個動作，請先移出一個。");
         if (settings.RecentIds.Any(id => id == null)) throw new ArgumentException("最近動作無效。");
         var visible = layout.Where(e => e.Placement != ActionPlacement.Hidden).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         return settings with { CustomActions = customs, Layout = layout.ToArray(), RecentIds = settings.RecentIds.Where(visible.Contains).Distinct(StringComparer.Ordinal).Take(5).ToArray() };
@@ -158,7 +160,7 @@ public static class ActionCatalog
         if (settings.CustomActions.Any(a => a.Id == deleted.Action.Id)) throw new ArgumentException("此動作已存在，無法復原。");
         if (!Enum.IsDefined(deleted.Placement) || deleted.PlacementIndex < 0) throw new ArgumentException("動作排列無效。");
         var placement = deleted.Placement;
-        if (placement == ActionPlacement.Bar && settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) >= 6)
+        if (placement == ActionPlacement.Bar && settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) >= BarActionLimit)
             placement = ActionPlacement.More;
         var layout = settings.Layout.ToList();
         var slots = Enumerable.Range(0, layout.Count).Where(i => layout[i].Placement == placement).ToArray();

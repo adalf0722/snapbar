@@ -193,6 +193,7 @@ public sealed class PopupWindow : Window
         searchPlaceholder.Visibility = query.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         menuRows.Children.Clear(); menuButtons.Clear();
         var barIds = ActionCatalog.GetBar(settings, snapshot).Select(a => a.Id).ToHashSet();
+        var barHasRoom = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < ActionCatalog.BarActionLimit;
         var items = ActionCatalog.GetMore(settings, snapshot, query).ToList();
         foreach (var button in row.Children.OfType<Button>().Where(b => b.Tag is ActionItem && b.Visibility == Visibility.Collapsed))
         {
@@ -211,9 +212,11 @@ public sealed class PopupWindow : Window
                 if (recent) recentShown = true; else allShown = true;
             }
             var line = new DockPanel(); var pin = ActionUi.Button("", () => Pin(item.Id), "pin");
-            pin.Focusable = false; pin.IsTabStop = false; pin.ToolTip = "釘選到動作列"; pin.BorderThickness = new(0); pin.Margin = new(0);
+            pin.Focusable = false; pin.IsTabStop = false; pin.BorderThickness = new(0); pin.Margin = new(0);
             pin.Background = surface; ActionUi.TintButton(pin, dark); AutomationProperties.SetName(pin, "釘選" + item.Name);
-            pin.IsEnabled = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < 6;
+            pin.IsEnabled = barHasRoom;
+            pin.ToolTip = barHasRoom ? "釘選到動作列" : $"動作列已釘選 {ActionCatalog.BarActionLimit} 個動作";
+            ToolTipService.SetShowOnDisabled(pin, true);
             DockPanel.SetDock(pin, Dock.Right); line.Children.Add(pin);
             var button = ActionUi.Button(item.Name, () => { if (ActionCatalog.IsApplicable(item, snapshot)) Dispatch(item); }, item.Icon); button.Focusable = false; button.IsTabStop = false;
             ActionUi.ReplaceCustomIcon(button, item);
