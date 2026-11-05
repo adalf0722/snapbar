@@ -1,8 +1,8 @@
 # SnapBar official website
 
-Open `index.html` locally to preview. The site uses HTML, CSS, a small playback script and actual product screenshots.
+Open `index.html` locally to preview. The site uses HTML, CSS, a small release lookup script and actual product screenshots.
 
-The walkthrough video is still pending. The homepage uses an animated illustration of the selection flow, a crop of the action settings screenshot and a rewrite example. Refresh the illustration and crop when the desktop UI changes.
+The homepage uses screenshots of the action bar and action settings, plus a rewrite example. The optional selection demo animates over the action bar screenshot. Update the overlay positions if the screenshot crop changes.
 
 ## Publish on GitHub Pages
 
@@ -11,4 +11,4 @@ The walkthrough video is still pending. The homepage uses an animated illustrati
 3. Open **Actions → Deploy SnapBar website → Run workflow** and select the default branch. The workflow uploads only `site/`. Run it again after a site update.
 4. Open the deployment URL. Check the Windows download link while signed out and verify that a published release includes the `SnapBar-*-win-x64.zip` asset.
 
-The website links to the Releases list so visitors can see prereleases. It does not need a website edit for each version.
+The download buttons link to a verified Windows ZIP and update to the newest matching release when the public GitHub Releases API is available. While the repository is private, visitors need GitHub access. Update both ZIP links, the release notes link, and the displayed version in `index.html` when refreshing the pinned preview.
