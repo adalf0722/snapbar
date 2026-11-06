@@ -37,6 +37,12 @@ internal sealed class TrayIcon : IDisposable
         icon.Text = automatic ? "SnapBar · 自動偵測已啟用" : "SnapBar · 僅使用快捷鍵";
     }
 
+    internal void AddOcr(Action capture)
+    {
+        var item = new Forms.ToolStripMenuItem("框選 OCR", null, (_, _) => dispatcher.BeginInvoke(capture));
+        menu.Items.Insert(2, item);
+    }
+
     public void NotifyHidden() => icon.ShowBalloonTip(4000, "SnapBar 在背景待命",
         "按系統匣圖示可開啟設定；右鍵選單可結束 SnapBar。", Forms.ToolTipIcon.Info);
 

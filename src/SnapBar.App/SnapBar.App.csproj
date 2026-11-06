@@ -8,6 +8,7 @@
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../SnapBar.Windows/SnapBar.Windows.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../SnapBar.Windows.Ocr/SnapBar.Windows.Ocr.csproj" /></ItemGroup>
   <ItemGroup><Using Remove="System.Drawing" /><Using Remove="System.Windows.Forms" /></ItemGroup>
   <ItemGroup>
     <Resource Include="Assets/Branding/*.ico" />

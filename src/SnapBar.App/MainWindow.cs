@@ -51,7 +51,7 @@ public sealed partial class MainWindow : Window
         BuildSettingsPages();
         SourceInitialized += (_, _) =>
         {
-            try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); }
+            try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); tray.AddOcr(StartOcr); }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
             { lifetimeHint.Text = "無法建立系統匣圖示；關閉視窗會完整結束 SnapBar。"; }
             try
@@ -59,7 +59,8 @@ public sealed partial class MainWindow : Window
                 var executable = Path.Combine(AppContext.BaseDirectory, "Probe", "SnapBar.Probe.exe");
                 controller = new(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), executable, initialHotkey: preferences.Hotkey,
                     initialSearchHotkey: preferences.SearchHotkey, initialCopyHotkey: preferences.CopyHotkey,
-                    initialTranslationHotkey: preferences.TranslationHotkey);
+                    initialTranslationHotkey: preferences.TranslationHotkey, initialOcrHotkey: preferences.OcrHotkey);
+                controller.OcrRequested += StartOcr;
                 controller.ConfigureTranslation(translation, ShowTranslationSettings);
                 controller.Status += AddStatus;
                 controller.HotkeyRecorded += generalPage.Record;
@@ -247,6 +248,7 @@ public sealed partial class MainWindow : Window
         }
         finally { exitResolutionInProgress = false; }
         IsEnabled = false;
+        StopOcr();
         controller?.BeginShutdown();
         foreach (var draft in aiPreferences.Drafts.ToArray()) draft.Discard();
         while (controller?.ClipboardReadPending == true) await Task.Delay(25);
@@ -257,6 +259,7 @@ public sealed partial class MainWindow : Window
     public void PrepareSessionEnd()
     {
         exitRequested = true;
+        StopOcr();
         controller?.BeginShutdown();
     }
 

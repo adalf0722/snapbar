@@ -44,6 +44,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | PathWorker / PathActions | `--path-worker-tests` / `--path-actions` | 路徑 worker 與動作 |
 | WebActions / Exclusions | `--web-actions` / `--app-exclusions` | 網址與排除政策 |
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
+| Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 
 `Release` = Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
 

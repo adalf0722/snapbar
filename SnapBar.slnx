@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="src/SnapBar.Core/SnapBar.Core.csproj" />
   <Project Path="src/SnapBar.Windows/SnapBar.Windows.csproj" />
+  <Project Path="src/SnapBar.Windows.Ocr/SnapBar.Windows.Ocr.csproj" />
   <Project Path="src/SnapBar.Probe/SnapBar.Probe.csproj" />
   <Folder Name="/src/" />
   <Folder Name="/tests/">

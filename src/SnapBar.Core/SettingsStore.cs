@@ -13,6 +13,10 @@ public sealed record ApplicationSettings(int SchemaVersion = 7, bool AutomaticDe
     public HotkeySettings? CopyHotkey { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public HotkeySettings? TranslationHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? OcrHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool OcrPreferEnglish { get; init; }
     public bool ClipboardCompatibilityEnabled { get; init; } = true;
     public bool? SublimeCompatibilityEnabled { get; init; }
     public ExcludedApplication[] ExcludedApplications { get; init; } = [];
@@ -95,6 +99,8 @@ public sealed class SettingsStore(string path)
             ? settings.CopyHotkey : null;
         var translation = settings.TranslationHotkey is { IsValid: true } && settings.TranslationHotkey != settings.Hotkey
             && settings.TranslationHotkey != search && settings.TranslationHotkey != copy ? settings.TranslationHotkey : null;
-        return settings with { SearchHotkey = search, CopyHotkey = copy, TranslationHotkey = translation };
+        var ocr = settings.OcrHotkey is { IsValid: true } && settings.OcrHotkey != settings.Hotkey
+            && settings.OcrHotkey != search && settings.OcrHotkey != copy && settings.OcrHotkey != translation ? settings.OcrHotkey : null;
+        return settings with { SearchHotkey = search, CopyHotkey = copy, TranslationHotkey = translation, OcrHotkey = ocr };
     }
 }

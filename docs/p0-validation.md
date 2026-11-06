@@ -1,5 +1,17 @@
 # P0 驗證紀錄
 
+## 2026-11-06 框選 OCR
+
+新增「OCR 語言優先順序」，預設繁中優先，也可選英文優先。使用者提供的投影片截圖在新建置的 OCR 組件中，繁中優先能辨識完整標題「第五章 CEO Checkpoint: Day 1 大檢核」，英文優先重現「第五章」誤讀。以隔離設定檔驗證切換到英文、重新開啟設定與切回繁中。標題窄裁切仍可能誤讀其他字。
+
+重建開發版後通過 Ocr 9／0、Lifecycle 75／0、Appearance 167／0 與 Preflight 1／0。OCR 語言選項與翻譯設定共用同一列，最小視窗的一般頁不需垂直捲動。報告見 `artifacts/checks/desktop/20261106T114814256Z-e7a0647e21e04419ad07a72e4a1bb704/report.json`。
+
+Ocr 9／0。用獨立桌面視窗驗證快捷鍵訊息啟動、Esc 取消、實體拖曳、繁中英文多行辨識，以及可編輯結果提供複製、搜尋與翻譯。Lifecycle 72／0、Appearance 167／0。報告見 `artifacts/checks/desktop/20261106T101857932Z-ee1ca8559a27492f9a5cf64109c0a679/report.json`。
+
+本機暫存 self-contained win-x64 ZIP 通過 App 啟動與 Probe 通訊檢查，OCR 引擎、模型和授權檔只隨 App 打包。從解壓目錄載入實際 OCR 組件，PNG 和無文字層 PDF 的渲染圖都讀對繁中與英文。這台機器已有 VC++ x64 執行階段。乾淨 Windows、混合 DPI 和真實掃描文件的完整框選流程仍待驗收。
+
+整合回歸另通過完整 Release 629／0、Ocr 9／0 與 Preflight 1／0。報告見 `artifacts/checks/desktop/20261106T102109080Z-37f081f135e946d298301e0aaa6b624f/report.json`。從暫存 ZIP 載入的 OCR 組件也讀對三份公開掃描 PDF 的英文裁切。
+
 ## 2026-11-06 原地翻譯
 
 WebActions 31／0，涵蓋獨立加密設定、翻譯快捷鍵、明確觸發後才傳送選字、語言參數、逾時、取消、唯讀結果與選取變更後拒絕替換。Appearance 167／0。報告見 `artifacts/checks/desktop/20261106T100617304Z-b2b4e61681594536ac2f2f134e2954bd/report.json`。同一功能的前一輪另通過 Keyboard 26／0、Lifecycle 72／0、AiRuntime 117／0、AiPanel 251／0。翻譯請求走模擬 HTTP，尚未使用真實 Azure 資源驗收，也未另測混合 DPI。

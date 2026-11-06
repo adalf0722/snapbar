@@ -197,8 +197,13 @@ internal static class GeneralSettingsTest
             Click(window.GeneralPage, "ResetShortcut");
             check("clear action shortcut preserves toolbar shortcut", new SettingsStore(path).Load().Settings is
                 { SearchHotkey: null } cleared && cleared.Hotkey == HotkeySettings.Default);
+            var ocrLanguage = Find<ComboBox>(window.GeneralPage, "OcrLanguagePriority");
+            check("OCR defaults to Traditional Chinese priority", ocrLanguage.SelectedIndex == 0);
+            ocrLanguage.SelectedIndex = 1;
+            check("choosing English priority persists OCR preference", new SettingsStore(path).Load().Settings.OcrPreferEnglish);
             window.PrepareSessionEnd(); window.Close();
             window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup);
+            check("OCR priority is restored in a new settings window", Find<ComboBox>(window.GeneralPage, "OcrLanguagePriority").SelectedIndex == 1);
             window.CreateTrayIcon = (_, _, _) => throw new InvalidOperationException("fixture tray unavailable");
             window.InitializeBackground();
             check("background startup reveals settings when tray initialization fails", window.IsVisible

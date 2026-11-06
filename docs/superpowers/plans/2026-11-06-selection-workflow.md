@@ -33,10 +33,10 @@
 - 補測三份公開掃描 PDF（`epson.pdf`、`ccitt.pdf`、`c03-29.pdf`）。確認測試頁無文字層，渲染後各裁切一至兩行英文，三個裁切均讀對。繁中仍只有合成圖證據。[OCRmyPDF 測試素材](https://github.com/ocrmypdf/OCRmyPDF/tree/main/tests/resources)
 - 暫存 ZIP 的 OCR 探針、模型與原生檔案合計約增加 6.6 MiB 壓縮資料。PE 匯入表與執行中的模組都確認需要 `MSVCP140.dll`、`VCRUNTIME140.dll` 和 `VCRUNTIME140_1.dll`。本機從 System32 載入這些 DLL，因此這輪只證明有既存 VC++ 執行階段的機器能跑。要維持解壓即用，下一道門檻是在乾淨 Windows 驗證隨包提供合規的 app-local DLL，或驗證不依賴系統 VC++ Redistributable 的建置。第三方聲明需涵蓋實際採用的 wrapper、Tesseract、Leptonica、模型與其隨附依賴。[Microsoft 部署文件](https://learn.microsoft.com/en-us/cpp/windows/deployment-in-visual-cpp) · [再分發條件](https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files)
 
-- [ ] 先驗證 Tesseract 與英文、繁中模型在乾淨 Windows 能隨 SnapBar x64 ZIP 解壓即用。核對原生執行階段依賴、再分發授權、授權聲明及 ZIP 增量，再接框選介面。
-- [ ] 從系統匣或使用者自訂快捷鍵啟動框選。首版支援在任一螢幕內框選，並處理混合 DPI。以實際掃描 PDF 和圖片驗證繁中、英文及多行辨識。
-- [ ] 擷取與辨識放在 Windows 層，框選與可編輯結果放在 App 層。以結果面板的文字作為動作來源，提供複製、搜尋、翻譯。OCR 來源沒有原始文字欄位，因此結果面板不提供寫回原畫面的操作。
-- [ ] 驗收取消框選、無辨識結果、語言不可用、混合 DPI、掃描 PDF 與圖片。擷取內容留在本機工作階段，使用者主動執行翻譯時才沿用第二階段的傳送流程。
+- [x] 從系統匣或自訂快捷鍵啟動框選。每個螢幕各自顯示框選層，拖曳範圍限制在起始螢幕內，擷取使用實體像素座標。
+- [x] 由獨立 Windows OCR 模組擷取與辨識，App 顯示可編輯結果，提供複製、搜尋與翻譯。擷取影像在本機記憶體處理；搜尋與翻譯僅傳送使用者主動操作的結果文字。
+- [x] 本機桌面專項驗收通過，包含 Esc 取消、實體拖曳與繁中英文多行辨識。暫存包包含語言模型、原生引擎與來源說明。
+- [ ] 驗證乾淨 Windows 上的 VC++ 執行階段佈署，以及不同 DPI、實際掃描素材的完整桌面操作。
 
 ## 共通驗收
 

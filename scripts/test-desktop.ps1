@@ -1,6 +1,6 @@
 param(
     [switch]$List,
-    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Exclusions', 'AiRuntime', 'AiPanel')]
+    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr')]
     [string[]]$Suite = @('Release')
 )
 $ErrorActionPreference = 'Stop'
@@ -12,6 +12,7 @@ $catalog = [ordered]@{
     ActionRunner = '--custom-action-runner'; Diagnostics = '--action-diagnostics'; Layout = '--action-layout'
     Keyboard = '--menu-keyboard'; PathWorker = '--path-worker-tests'; PathActions = '--path-actions'
     WebActions = '--web-actions'; Exclusions = '--app-exclusions'; AiRuntime = '--ai-runtime'; AiPanel = '--ai-panel'
+    Ocr = '--screen-ocr'
 }
 if ($List) {
     Write-Host 'Release = Lifecycle, Appearance, CompatibilitySlow, AiRuntime, AiPanel (includes a real 35-second script).'

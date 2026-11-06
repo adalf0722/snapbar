@@ -16,6 +16,7 @@ public sealed partial class MainWindow
         TextAction.Search => preferences.SearchHotkey,
         TextAction.Copy => preferences.CopyHotkey,
         TextAction.Translate => preferences.TranslationHotkey,
+        TextAction.Ocr => preferences.OcrHotkey,
         _ => preferences.Hotkey
     };
 
@@ -25,7 +26,8 @@ public sealed partial class MainWindow
         if (value != null && ((action != null && value == preferences.Hotkey)
             || (action != TextAction.Search && value == preferences.SearchHotkey)
             || (action != TextAction.Copy && value == preferences.CopyHotkey)
-            || (action != TextAction.Translate && value == preferences.TranslationHotkey)))
+            || (action != TextAction.Translate && value == preferences.TranslationHotkey)
+            || (action != TextAction.Ocr && value == preferences.OcrHotkey)))
             return "SnapBar 已使用這組快捷鍵，請換一組。";
         if (action == null) return SaveHotkey(value!);
         var updated = action switch
@@ -33,6 +35,7 @@ public sealed partial class MainWindow
             TextAction.Search => preferences with { SearchHotkey = value },
             TextAction.Copy => preferences with { CopyHotkey = value },
             TextAction.Translate => preferences with { TranslationHotkey = value },
+            TextAction.Ocr => preferences with { OcrHotkey = value },
             _ => throw new ArgumentOutOfRangeException(nameof(action))
         };
         try

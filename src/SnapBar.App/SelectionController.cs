@@ -48,6 +48,8 @@ public sealed partial class SelectionController : IDisposable
     public void SetHotkeyRecording(bool recording) { monitor.HotkeySuppressed = recording; Invalidate(); }
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
+    internal event Action? OcrRequested;
+    internal void CancelSelection() => Invalidate();
     internal SelectionSnapshot? ActiveSelection => selection;
     public string SearchUrlTemplate
     {
@@ -69,7 +71,7 @@ public sealed partial class SelectionController : IDisposable
         Func<IPathRevealSession>? createPathSession = null,
         Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null,
         HotkeySettings? initialHotkey = null, HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null,
-        HotkeySettings? initialTranslationHotkey = null)
+        HotkeySettings? initialTranslationHotkey = null, HotkeySettings? initialOcrHotkey = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
@@ -77,7 +79,7 @@ public sealed partial class SelectionController : IDisposable
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
-        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialTranslationHotkey);
+        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialTranslationHotkey, initialOcrHotkey);
         monitor.HotkeyRecorded += value => HotkeyRecorded?.Invoke(value);
         // Low-level hooks run on this installing UI thread. Invalidate immediately so a queued
         // click/key cannot leave an old selection valid during an async action continuation.
@@ -103,6 +105,7 @@ public sealed partial class SelectionController : IDisposable
         if (disposed || stopping) return;
         if (input.Kind == "key" && (popup.HasSearchForeground || aiWindow?.HasCaptureForeground == true)) return;
         if (input.Kind == "hotkey" && aiWindow?.HasCaptureForeground == true) return;
+        if (input.Action == TextAction.Ocr) { OcrRequested?.Invoke(); return; }
         if ((input.Kind is "click" or "selection" or "scroll")
             && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true || aiWindow?.ContainsCaptureSurface(input.X, input.Y) == true)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
@@ -190,7 +193,7 @@ public sealed partial class SelectionController : IDisposable
         popup.Dismiss();
         try
         {
-            if (!Enum.IsDefined(action)) { Report("invalid-action"); return; }
+            if (!Enum.IsDefined(action) || action == TextAction.Ocr) { Report("invalid-action"); return; }
             var compatibility = current.Source == "sublime-clipboard";
             var genericCompatibility = current.Source == ClipboardSelectionAdapter.Source;
             var writes = action is TextAction.Cut or TextAction.Paste;

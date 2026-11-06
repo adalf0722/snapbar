@@ -19,12 +19,12 @@ public sealed class InputMonitor : IDisposable
     public event Action<HotkeySettings>? HotkeyRecorded;
     public Func<uint, bool>? KeyFilter { get; set; }
     private readonly HashSet<uint> filteredKeys = [];
-    private readonly GlobalHotkey hotkey, searchHotkey, copyHotkey, translationHotkey;
+    private readonly GlobalHotkey hotkey, searchHotkey, copyHotkey, translationHotkey, ocrHotkey;
     public bool HotkeyRegistered => hotkey.Registered;
     public bool HotkeySuppressed
     {
         get => hotkey.Suppressed;
-        set => hotkey.Suppressed = searchHotkey.Suppressed = copyHotkey.Suppressed = translationHotkey.Suppressed = value;
+        set => hotkey.Suppressed = searchHotkey.Suppressed = copyHotkey.Suppressed = translationHotkey.Suppressed = ocrHotkey.Suppressed = value;
     }
     public bool TryChangeHotkey(HotkeySettings candidate, Action persist) => hotkey.TryChange(candidate, persist);
     public bool TryChangeActionHotkey(TextAction action, HotkeySettings? candidate, Action persist) =>
@@ -36,11 +36,13 @@ public sealed class InputMonitor : IDisposable
         TextAction.Search => searchHotkey,
         TextAction.Copy => copyHotkey,
         TextAction.Translate => translationHotkey,
+        TextAction.Ocr => ocrHotkey,
         _ => throw new ArgumentOutOfRangeException(nameof(action))
     };
 
     public InputMonitor(HwndSource source, HotkeySettings? initialHotkey = null,
-        HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null, HotkeySettings? initialTranslationHotkey = null)
+        HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null,
+        HotkeySettings? initialTranslationHotkey = null, HotkeySettings? initialOcrHotkey = null)
     {
         this.source = source;
         source.AddHook(WindowMessage);
@@ -48,6 +50,7 @@ public sealed class InputMonitor : IDisposable
         searchHotkey = new(source.Handle, initialSearchHotkey, firstId: 3);
         copyHotkey = new(source.Handle, initialCopyHotkey, firstId: 5);
         translationHotkey = new(source.Handle, initialTranslationHotkey, firstId: 7);
+        ocrHotkey = new(source.Handle, initialOcrHotkey, firstId: 9);
         mouseProc = MouseCallback; keyboardProc = KeyboardCallback;
         mouseHook = Native.SetWindowsHookEx(14, mouseProc, Native.GetModuleHandle(null), 0);
         keyboardHook = Native.SetWindowsHookEx(13, keyboardProc, Native.GetModuleHandle(null), 0);
@@ -65,6 +68,7 @@ public sealed class InputMonitor : IDisposable
             else if (searchHotkey.OwnsMessage(wParam)) Dispatch(searchHotkey, TextAction.Search);
             else if (copyHotkey.OwnsMessage(wParam)) Dispatch(copyHotkey, TextAction.Copy);
             else if (translationHotkey.OwnsMessage(wParam)) Dispatch(translationHotkey, TextAction.Translate);
+            else if (ocrHotkey.OwnsMessage(wParam)) Dispatch(ocrHotkey, TextAction.Ocr);
             else return 0;
             handled = true;
         }
@@ -141,6 +145,7 @@ public sealed class InputMonitor : IDisposable
         searchHotkey.Dispose();
         copyHotkey.Dispose();
         translationHotkey.Dispose();
+        ocrHotkey.Dispose();
         source.RemoveHook(WindowMessage);
     }
 }
