@@ -28,10 +28,16 @@ public sealed class AiSecretStore(string directory)
 
     public string? Get(AiProviderProfile profile)
     {
+        try { return ReadFile(FilePath(profile)); }
+        catch (ArgumentException) { return null; }
+    }
+
+    internal static string? ReadFile(string path)
+    {
         byte[]? clear = null;
         try
         {
-            using var stream = new FileStream(FilePath(profile), FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (stream.Length is <= 0 or > MaximumFile) return null;
             var encrypted = new byte[(int)stream.Length];
             stream.ReadExactly(encrypted);
@@ -44,10 +50,11 @@ public sealed class AiSecretStore(string directory)
         finally { if (clear != null) CryptographicOperations.ZeroMemory(clear); }
     }
 
-    public void Set(AiProviderProfile profile, string? value)
+    public void Set(AiProviderProfile profile, string? value) => WriteFile(FilePath(profile), value);
+
+    internal static void WriteFile(string path, string? value)
     {
         if (value?.Length > 8192) throw new ArgumentException("API key exceeds 8192 characters.");
-        var path = FilePath(profile);
         try
         {
             if (string.IsNullOrEmpty(value)) { File.Delete(path); return; }
@@ -56,6 +63,7 @@ public sealed class AiSecretStore(string directory)
             try { encrypted = Transform(clear, protect: true); }
             finally { CryptographicOperations.ZeroMemory(clear); }
             if (encrypted.Length > MaximumFile) throw new CryptographicException();
+            var directory = Path.GetDirectoryName(path)!;
             Directory.CreateDirectory(directory);
             var temporary = Path.Combine(directory, ".key-" + Guid.NewGuid().ToString("N") + ".tmp");
             try

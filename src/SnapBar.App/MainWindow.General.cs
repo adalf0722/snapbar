@@ -11,6 +11,41 @@ public sealed partial class MainWindow
     internal GeneralSettingsPage GeneralPage => generalPage;
     internal HotkeySettings CurrentHotkey => preferences.Hotkey;
 
+    private HotkeySettings? ReadShortcut(TextAction? action) => action switch
+    {
+        TextAction.Search => preferences.SearchHotkey,
+        TextAction.Copy => preferences.CopyHotkey,
+        TextAction.Translate => preferences.TranslationHotkey,
+        _ => preferences.Hotkey
+    };
+
+    private string? SaveShortcut(TextAction? action, HotkeySettings? value)
+    {
+        if (controller == null || exitRequested) return "輸入監聽尚未就緒，請重新啟動 SnapBar。";
+        if (value != null && ((action != null && value == preferences.Hotkey)
+            || (action != TextAction.Search && value == preferences.SearchHotkey)
+            || (action != TextAction.Copy && value == preferences.CopyHotkey)
+            || (action != TextAction.Translate && value == preferences.TranslationHotkey)))
+            return "SnapBar 已使用這組快捷鍵，請換一組。";
+        if (action == null) return SaveHotkey(value!);
+        var updated = action switch
+        {
+            TextAction.Search => preferences with { SearchHotkey = value },
+            TextAction.Copy => preferences with { CopyHotkey = value },
+            TextAction.Translate => preferences with { TranslationHotkey = value },
+            _ => throw new ArgumentOutOfRangeException(nameof(action))
+        };
+        try
+        {
+            if (!controller.TryChangeActionHotkey(action.Value, value, () => settingsStore.Save(updated)))
+                return "這組快捷鍵無法使用，請換一組。原設定已保留。";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
+        { return "無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。"; }
+        preferences = updated;
+        return null;
+    }
+
     private string? SaveHotkey(HotkeySettings value)
     {
         if (controller == null || exitRequested) return "輸入監聽尚未就緒，請重新啟動 SnapBar。";

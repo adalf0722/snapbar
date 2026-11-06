@@ -20,15 +20,22 @@ internal sealed class GeneralSettingsPage : ContentControl
     private readonly StackPanel keys;
     private readonly StackPanel shortcutDetails;
     private readonly Border capture;
-    private readonly Func<HotkeySettings, string?> saveHotkey;
+    private readonly Func<TextAction?, HotkeySettings?, string?> saveHotkey;
+    private readonly Func<TextAction?, HotkeySettings?> readHotkey;
+    private readonly Func<TextAction, bool> isActionRegistered;
+    private readonly ComboBox shortcutTarget;
     private readonly StartupRegistration startup;
-    private HotkeySettings current, draft;
+    private HotkeySettings? current, draft;
+    private TextAction? SelectedAction => shortcutTarget.SelectedIndex switch
+    { 1 => TextAction.Search, 2 => TextAction.Copy, 3 => TextAction.Translate, _ => null };
     private bool updatingStartup;
 
     internal GeneralSettingsPage(bool automatic, Action toggle, HotkeySettings hotkey,
-        Func<HotkeySettings, string?> saveHotkey, StartupRegistration startup)
+        Func<TextAction?, HotkeySettings?, string?> saveHotkey, Func<TextAction?, HotkeySettings?> readHotkey,
+        Func<TextAction, bool> isActionRegistered, StartupRegistration startup, Action openTranslation)
     {
-        this.saveHotkey = saveHotkey; this.startup = startup; current = draft = hotkey;
+        this.saveHotkey = saveHotkey; this.readHotkey = readHotkey; this.isActionRegistered = isActionRegistered;
+        this.startup = startup; current = draft = hotkey;
         ActionUi.LoadStyles(this);
         HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         var panel = new StackPanel();
@@ -56,12 +63,16 @@ internal sealed class GeneralSettingsPage : ContentControl
         title.Children.Add(Description("拖曳或雙擊選字後，顯示動作列。")); detection.Children.Add(title); AddCard(panel, detection);
 
         var shortcut = new StackPanel();
+        shortcutTarget = new ComboBox { ItemsSource = new[] { "叫出動作列", "直接搜尋選字", "直接複製選字", "直接翻譯選字" },
+            SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Left, Margin = new(0, 0, 0, 10) };
+        Identify(shortcutTarget, "ShortcutTarget", "選擇快捷鍵動作");
+        shortcut.Children.Add(shortcutTarget);
         var shortcutRow = new Grid();
         shortcutRow.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         shortcutRow.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var shortcutTitle = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new(0, 0, 20, 0) };
-        shortcutTitle.Children.Add(ActionUi.Heading("叫出動作列", 16));
-        shortcutTitle.Children.Add(Description("選取文字後，按快捷鍵顯示。")); shortcutRow.Children.Add(shortcutTitle);
+        shortcutTitle.Children.Add(ActionUi.Heading("選字快捷鍵", 16));
+        shortcutTitle.Children.Add(Description("選取文字後，按快捷鍵執行上方選擇的動作。")); shortcutRow.Children.Add(shortcutTitle);
         var shortcutControls = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(shortcutControls, 1); shortcutRow.Children.Add(shortcutControls); shortcut.Children.Add(shortcutRow);
         keys = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -77,7 +88,7 @@ internal sealed class GeneralSettingsPage : ContentControl
         change = MakeButton("更換", "ChangeShortcut", BeginRecording);
         save = MakeButton("儲存", "SaveShortcut", SaveRecording);
         cancel = MakeButton("取消", "CancelShortcut", CancelRecording);
-        reset = MakeButton("恢復預設", "ResetShortcut", () => Apply(HotkeySettings.Default));
+        reset = MakeButton("恢復預設", "ResetShortcut", () => Apply(SelectedAction == null ? HotkeySettings.Default : null));
         change.Margin = new(0); reset.Margin = new(8, 0, 0, 0);
         shortcutControls.Children.Add(change); shortcutControls.Children.Add(reset);
         foreach (var button in new[] { save, cancel }) { button.Margin = new(0, 10, 8, 0); buttons.Children.Add(button); }
@@ -86,9 +97,13 @@ internal sealed class GeneralSettingsPage : ContentControl
         shortcutMessage = Description("");
         Identify(shortcutMessage, "ShortcutStatus", "快捷鍵設定狀態"); shortcutDetails.Children.Add(shortcutMessage);
         shortcutDetails.Children.Add(buttons); shortcut.Children.Add(shortcutDetails); AddCard(panel, shortcut);
+        var translationButton = ActionUi.Button("翻譯服務設定", openTranslation, "translate");
+        translationButton.HorizontalAlignment = HorizontalAlignment.Left;
+        AddCard(panel, translationButton);
         scroll = new ScrollViewer { Content = panel, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         Identify(scroll, "GeneralSettingsContent", "一般設定內容"); Content = scroll;
         IsVisibleChanged += (_, _) => { if (!IsVisible) CancelRecording(); };
+        shortcutTarget.SelectionChanged += (_, _) => RefreshShortcut();
         PreviewKeyDown += (_, e) =>
         {
             if (IsRecording && e.Key == Key.Escape) { CancelRecording(); change.Focus(); e.Handled = true; }
@@ -175,13 +190,13 @@ internal sealed class GeneralSettingsPage : ContentControl
     }
 
     private void SaveRecording() { if (IsRecording && save.IsEnabled) Apply(draft); }
-    private void Apply(HotkeySettings candidate)
+    private void Apply(HotkeySettings? candidate)
     {
-        var error = saveHotkey(candidate);
+        var error = saveHotkey(SelectedAction, candidate);
         if (error != null) { Error(error); return; }
         current = candidate; CancelRecording(); RenderKeys(current); UpdateEditing();
         shortcutMessage.Text = ""; shortcutDetails.Visibility = Visibility.Collapsed;
-        AutomationProperties.SetHelpText(capture, "已儲存 · " + current.Display);
+        AutomationProperties.SetHelpText(capture, "已儲存 · " + (current?.Display ?? "未設定"));
         change.Focus();
     }
     internal void CancelRecording()
@@ -193,15 +208,30 @@ internal sealed class GeneralSettingsPage : ContentControl
     {
         change.Visibility = IsRecording ? Visibility.Collapsed : Visibility.Visible;
         save.Visibility = cancel.Visibility = IsRecording ? Visibility.Visible : Visibility.Collapsed;
-        reset.Visibility = IsRecording || current == HotkeySettings.Default ? Visibility.Collapsed : Visibility.Visible;
+        shortcutTarget.IsEnabled = !IsRecording;
+        reset.Content = SelectedAction == null ? "恢復預設" : "清除";
+        AutomationProperties.SetName(reset, (string)reset.Content);
+        reset.Visibility = IsRecording || current == null || (SelectedAction == null && current == HotkeySettings.Default)
+            ? Visibility.Collapsed : Visibility.Visible;
         capture.Focusable = IsRecording;
         shortcutDetails.Visibility = IsRecording ? Visibility.Visible : Visibility.Collapsed;
     }
     private void Error(string text)
     { shortcutMessage.Foreground = Brushes.Firebrick; shortcutMessage.Text = text; shortcutDetails.Visibility = Visibility.Visible; }
-    private void RenderKeys(HotkeySettings value)
+    internal void RefreshShortcut()
     {
-        keys.Children.Clear(); AutomationProperties.SetName(keys, value.Display);
+        if (IsRecording) return;
+        current = readHotkey(SelectedAction);
+        RenderKeys(current);
+        UpdateEditing();
+        if (current != null && SelectedAction is { } action && !isActionRegistered(action))
+            Error("這組快捷鍵目前無法使用，請更換或清除。");
+    }
+
+    private void RenderKeys(HotkeySettings? value)
+    {
+        keys.Children.Clear(); AutomationProperties.SetName(keys, value?.Display ?? "未設定");
+        if (value == null) { keys.Children.Add(Description("未設定")); return; }
         foreach (var key in value.Parts)
         {
             if (keys.Children.Count > 0) { var plus = ActionUi.Text("+", 12, ActionUi.Muted); plus.Margin = new(6, 0, 6, 0); keys.Children.Add(plus); }

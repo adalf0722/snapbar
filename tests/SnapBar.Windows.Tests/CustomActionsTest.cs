@@ -90,21 +90,29 @@ internal static class CustomActionsTest
                 await Capture(); popup = Popup();
                 var scrollAnchor = controller.ActiveSelection!.Bounds!;
                 var scrollX = (int)scrollAnchor.X + 5; var scrollY = (int)scrollAnchor.Y + 5;
-                SetCursorPos(scrollX, scrollY);
+                Check(SetCursorPos(scrollX, scrollY), "native scroll fixture moves the cursor");
                 // SetCursorPos posts native hover/leave work. Let WPF observe the move before injecting the wheel.
                 await Task.Delay(150);
                 deadline = DateTime.UtcNow.AddSeconds(2);
                 while (popup.IsMouseOver && DateTime.UtcNow < deadline) await Task.Delay(20);
-                Check(!popup.Contains(scrollX, scrollY) && !popup.IsMouseOver, "native scroll fixture first moves outside the current toolbar");
+                Check(Native.GetCursorPos(out var scrollPoint) && !popup.Contains(scrollPoint.X, scrollPoint.Y)
+                    && !popup.IsMouseOver, "native scroll fixture first moves outside the current toolbar");
                 mouse_event(0x0800, 0, 0, 120, 0);
                 deadline = DateTime.UtcNow.AddSeconds(2);
                 while ((popup.IsVisible || controller.ActiveSelection != null) && DateTime.UtcNow < deadline) await Task.Delay(20);
                 Check(!popup.IsVisible && controller.ActiveSelection == null, "native scroll outside toolbar dismisses the old selection session");
                 await Capture(); popup = Popup();
                 Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Check(popup.MenuOpen && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id, "More opens without stealing foreground");
-                Check(popup.HandleMenuKey(0x4A) && Children<Button>(popup).Any(b => AutomationProperties.GetAutomationId(b) == "MoreAction_" + script.Id), "More keyboard filter searches custom action name");
+                var openedSearch = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
+                Check(popup.MenuOpen && popup.HasSearchForeground && openedSearch.IsKeyboardFocused
+                    && controller.ActiveSelection is { } retained && retained.Target.ProcessId == fixture.Id,
+                    "More focuses search and retains the source selection");
+                openedSearch.Text = "J";
+                Check(Children<Button>(popup).Any(b => AutomationProperties.GetAutomationId(b) == "MoreAction_" + script.Id),
+                    "More search input filters custom action names");
                 popup.HandleMenuKey(0x1B); Check(popup.MenuOpen, "first Escape clears query"); popup.HandleMenuKey(0x1B); Check(!popup.MenuOpen, "second Escape closes More");
+                Check(Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
+                    "closing More restores the original foreground");
                 await controller.ExecuteCustomAsync(url.Id);
                 Check(launched.Count == 1 && Uri.UnescapeDataString(launched[0].Query[3..]) == FixtureWindow.SearchFixtureText, "custom URL revalidates and encodes full Unicode selection");
                 await Capture(); await controller.ExecuteCustomAsync(script.Id);

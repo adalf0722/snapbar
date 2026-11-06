@@ -81,7 +81,8 @@ public sealed partial class MainWindow
         notice = ActionUi.Text("", 12, Brushes.Firebrick); notice.Margin = new(0, 0, 0, 12); notice.Visibility = Visibility.Collapsed;
         AutomationProperties.SetAutomationId(notice, "SettingsNotice"); Grid.SetRow(notice, 1); workspace.Children.Add(notice);
         pageHost = new Grid(); Grid.SetRow(pageHost, 2); workspace.Children.Add(pageHost);
-        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic, preferences.Hotkey, SaveHotkey, startupRegistration);
+        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic, preferences.Hotkey,
+            SaveShortcut, ReadShortcut, action => controller?.IsActionHotkeyRegistered(action) == true, startupRegistration, ShowTranslationSettings);
         generalPage.RecordingChanged = recording => { if (controller != null) controller.SetHotkeyRecording(recording); };
         toggle = generalPage.AutomaticToggle;
         AddPage(SettingsCategory.General, generalPage);

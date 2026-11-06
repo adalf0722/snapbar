@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly SettingsStore settingsStore;
     private readonly StartupRegistration startupRegistration;
     private readonly AiPreferences aiPreferences;
+    private readonly TranslationService translation;
     private ApplicationSettings preferences;
     private bool exitRequested, exitResolutionInProgress, hiddenNoticeShown;
     private bool updatingCompatibility, updatingSublime;
@@ -42,6 +43,7 @@ public sealed partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
         var loaded = this.settingsStore.Load();
         aiPreferences = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
+        translation = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
         preferences = loaded.Settings;
         if (loaded.Warning != null && loaded.Warning != "hotkey-invalid") preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
@@ -55,7 +57,10 @@ public sealed partial class MainWindow : Window
             try
             {
                 var executable = Path.Combine(AppContext.BaseDirectory, "Probe", "SnapBar.Probe.exe");
-                controller = new(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), executable, initialHotkey: preferences.Hotkey);
+                controller = new(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), executable, initialHotkey: preferences.Hotkey,
+                    initialSearchHotkey: preferences.SearchHotkey, initialCopyHotkey: preferences.CopyHotkey,
+                    initialTranslationHotkey: preferences.TranslationHotkey);
+                controller.ConfigureTranslation(translation, ShowTranslationSettings);
                 controller.Status += AddStatus;
                 controller.HotkeyRecorded += generalPage.Record;
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
@@ -83,7 +88,7 @@ public sealed partial class MainWindow : Window
             }
             else if (loaded.Warning != null) ShowNotice("設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。");
         };
-        Activated += (_, _) => generalPage.RefreshStartup();
+        Activated += (_, _) => { generalPage.RefreshStartup(); generalPage.RefreshShortcut(); };
         Deactivated += (_, _) => generalPage.CancelRecording();
         Closing += (_, e) =>
         {

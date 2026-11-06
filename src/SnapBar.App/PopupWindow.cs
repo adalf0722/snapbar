@@ -25,6 +25,7 @@ public sealed class PopupWindow : Window
     private int pointerX, pointerY, menuIndex = -1;
     private (int X, int Y)? lastPointer;
     private bool searchMode, syncingQuery, composing;
+    private double unfilteredScrollOffset;
     public event Action<TextAction>? ActionRequested;
     public event Action<string>? CustomActionRequested;
     public event Action<ActionSettings>? SettingsChanged;
@@ -73,8 +74,7 @@ public sealed class PopupWindow : Window
         searchInput.TextChanged += (_, _) =>
         {
             if (syncingQuery) return;
-            query = searchInput.Text; menuIndex = -1; searchPlaceholder.Visibility = query.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-            if (MenuOpen) { RenderMenu(); Place(); }
+            UpdateQuery(searchInput.Text);
         };
         SourceInitialized += (_, _) =>
         {
@@ -147,7 +147,18 @@ public sealed class PopupWindow : Window
     { if (item.BuiltIn is { } action) ActionRequested?.Invoke(action); else CustomActionRequested?.Invoke(item.Id); }
     private void ToggleMore()
     {
-        if (MenuOpen) CloseMore(); else { more.Visibility = Visibility.Visible; query = ""; menuIndex = -1; RenderMenu(); Place(); }
+        if (MenuOpen)
+        {
+            CloseMore();
+            return;
+        }
+
+        more.Visibility = Visibility.Visible;
+        query = "";
+        menuIndex = -1;
+        RenderMenu();
+        Place();
+        BeginSearchInput();
     }
 
     internal bool BeginSearchInput()
@@ -181,6 +192,20 @@ public sealed class PopupWindow : Window
     {
         if (HasSearchForeground && !TryRestoreSourceFocus()) SessionAbandoned?.Invoke();
         EndSearchInput(); more.Visibility = Visibility.Collapsed; query = ""; menuIndex = -1; RenderMenu(); Place();
+    }
+
+    private void UpdateQuery(string value)
+    {
+        if (MenuOpen && query.Length == 0 && value.Length > 0)
+            unfilteredScrollOffset = menuScroll.VerticalOffset;
+        var restoreScroll = query.Length > 0 && value.Length == 0;
+
+        query = value;
+        menuIndex = -1;
+        if (!MenuOpen) return;
+        Place();
+
+        if (restoreScroll) menuScroll.ScrollToVerticalOffset(unfilteredScrollOffset);
     }
 
     private void RenderMenu()
@@ -264,16 +289,17 @@ public sealed class PopupWindow : Window
     {
         if (!IsVisible || !MenuOpen) return false;
         if (key is 0x10 or 0x11 or 0xA0 or 0xA1 or 0xA2 or 0xA3) return true;
-        if (key == 0x1B) { if (query.Length == 0) { CloseMore(); return true; } query = ""; menuIndex = -1; RenderMenu(); Place(); return true; }
+        if (key == 0x1B) { if (query.Length == 0) CloseMore(); else UpdateQuery(""); return true; }
         if (key is 0x26 or 0x28) { if (menuButtons.Count > 0) { menuIndex = (menuIndex + (key == 0x28 ? 1 : -1) + menuButtons.Count) % menuButtons.Count; RenderMenu(); } return true; }
         if (key == 0x0D) { if (menuButtons.Count > 0) menuButtons[Math.Max(0, menuIndex)].RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); return true; }
-        if (key == 0x08) { if (query.Length > 0) query = query[..^1]; }
+        var value = query;
+        if (key == 0x08) { if (value.Length > 0) value = value[..^1]; }
         else if (key == 0x56 && (Native.GetAsyncKeyState(0x11) & 0x8000) != 0)
-        { try { if (Clipboard.ContainsText()) { var text = Clipboard.GetText().Replace("\r", "").Replace("\n", " "); query = text[..Math.Min(128, text.Length)]; } } catch (System.Runtime.InteropServices.ExternalException) { } }
+        { try { if (Clipboard.ContainsText()) { var text = Clipboard.GetText().Replace("\r", "").Replace("\n", " "); value = text[..Math.Min(128, text.Length)]; } } catch (System.Runtime.InteropServices.ExternalException) { } }
         else if ((Native.GetAsyncKeyState(0x11) & 0x8000) != 0) return false;
-        else if (key is >= 0x41 and <= 0x5A or >= 0x30 and <= 0x39 || key == 0x20) { if (query.Length < 128) query += (char)key; }
+        else if (key is >= 0x41 and <= 0x5A or >= 0x30 and <= 0x39 || key == 0x20) { if (value.Length < 128) value += (char)key; }
         else return false;
-        menuIndex = -1; RenderMenu(); return true;
+        UpdateQuery(value); return true;
     }
 
     private void Place()
@@ -289,7 +315,13 @@ public sealed class PopupWindow : Window
             { if (row.DesiredSize.Width + 14 <= available) break; button.Visibility = Visibility.Collapsed; row.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); }
             Width = Math.Min(available, Math.Max(MenuOpen ? 320 : 0, row.DesiredSize.Width + 14));
             if (more.Child is FrameworkElement panel) panel.MaxWidth = Math.Max(1, Width - 14);
-            menuScroll.MaxHeight = Math.Max(20, Math.Min(260, area.Height / scale - 190)); if (MenuOpen) RenderMenu();
+            menuScroll.MaxHeight = Math.Max(20, Math.Min(260, area.Height / scale - 190));
+            if (MenuOpen)
+            {
+                RenderMenu();
+                // Let WPF propagate the new rows' desired size before sizing the native window.
+                root.UpdateLayout();
+            }
             root.Measure(new Size(Math.Max(1, Width - 14), double.PositiveInfinity)); Height = Math.Min(area.Height / scale, root.DesiredSize.Height + 14);
             var p = PopupPlacement.Place(anchor, area, Width * scale, Height * scale);
             Native.SetWindowPos(handle, new(-1), (int)p.X, (int)p.Y, (int)p.Width, (int)p.Height, 0x10);

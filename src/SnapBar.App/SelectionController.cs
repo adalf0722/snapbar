@@ -42,6 +42,9 @@ public sealed partial class SelectionController : IDisposable
     public bool HotkeyRegistered => monitor.HotkeyRegistered;
     public event Action<HotkeySettings>? HotkeyRecorded;
     public bool TryChangeHotkey(HotkeySettings candidate, Action persist) => monitor.TryChangeHotkey(candidate, persist);
+    internal bool TryChangeActionHotkey(TextAction action, HotkeySettings? candidate, Action persist) =>
+        monitor.TryChangeActionHotkey(action, candidate, persist);
+    internal bool IsActionHotkeyRegistered(TextAction action) => monitor.IsActionHotkeyRegistered(action);
     public void SetHotkeyRecording(bool recording) { monitor.HotkeySuppressed = recording; Invalidate(); }
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
@@ -65,7 +68,8 @@ public sealed partial class SelectionController : IDisposable
     public SelectionController(HwndSource source, string probeExecutable, Action<Uri>? launchWeb = null,
         Func<IPathRevealSession>? createPathSession = null,
         Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null,
-        HotkeySettings? initialHotkey = null)
+        HotkeySettings? initialHotkey = null, HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null,
+        HotkeySettings? initialTranslationHotkey = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
@@ -73,7 +77,7 @@ public sealed partial class SelectionController : IDisposable
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
-        monitor = new(source, initialHotkey);
+        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialTranslationHotkey);
         monitor.HotkeyRecorded += value => HotkeyRecorded?.Invoke(value);
         // Low-level hooks run on this installing UI thread. Invalidate immediately so a queued
         // click/key cannot leave an old selection valid during an async action continuation.
@@ -105,11 +109,11 @@ public sealed partial class SelectionController : IDisposable
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
         {
             if (executing) return;
-            _ = CaptureAsync(input.Kind == "selection", input.X, input.Y);
+            _ = CaptureAsync(input.Kind == "selection", input.X, input.Y, input.Action);
         }
     }
 
-    internal async Task CaptureAsync(bool pointer, int x, int y)
+    internal async Task CaptureAsync(bool pointer, int x, int y, TextAction? directAction = null)
     {
         if (disposed || stopping) return;
         Invalidate();
@@ -153,6 +157,11 @@ public sealed partial class SelectionController : IDisposable
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
             selection = result.Selection;
+            if (directAction is { } action)
+            {
+                await ExecuteAsync(action, direct: true);
+                return;
+            }
             popup.Present(selection, x, y, searchUrlTemplate, actions);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "不提供寫入")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
@@ -166,11 +175,15 @@ public sealed partial class SelectionController : IDisposable
         finally { if (readinessTicket == ticket) readinessTicket = null; }
     }
 
-    internal async Task ExecuteAsync(TextAction action)
+    internal async Task ExecuteAsync(TextAction action, bool direct = false)
     {
         if (action == TextAction.Ai) { await OpenAiAsync(); return; }
+        if (action == TextAction.Translate) { await TranslateAsync(direct); return; }
         if (executing || selection == null || disposed || stopping) return;
-        if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
+        var sourceFocused = direct
+            ? Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target
+            : popup.TryRestoreSourceFocus();
+        if (!sourceFocused) { Invalidate(); Report("target-changed"); return; }
         executing = true;
         var current = selection;
         var ticket = generation.Next();

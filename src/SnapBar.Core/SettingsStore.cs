@@ -1,11 +1,18 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SnapBar.Core;
 
 public sealed record ApplicationSettings(int SchemaVersion = 7, bool AutomaticDetectionEnabled = false)
 {
     public HotkeySettings Hotkey { get; init; } = HotkeySettings.Default;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? SearchHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? CopyHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? TranslationHotkey { get; init; }
     public bool ClipboardCompatibilityEnabled { get; init; } = true;
     public bool? SublimeCompatibilityEnabled { get; init; }
     public ExcludedApplication[] ExcludedApplications { get; init; } = [];
@@ -39,6 +46,7 @@ public sealed class SettingsStore(string path)
             backupBeforeSave = settings.Hotkey?.IsValid != true;
             settings = settings with { SchemaVersion = 7, Hotkey = backupBeforeSave ? HotkeySettings.Default : settings.Hotkey!,
                 ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
+            settings = NormalizeActionHotkeys(settings);
             writable = true;
             return new(settings, backupBeforeSave ? "hotkey-invalid" : null);
         }
@@ -57,6 +65,7 @@ public sealed class SettingsStore(string path)
         if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate))
             throw new InvalidOperationException("Invalid search template");
         if (settings.Hotkey?.IsValid != true) throw new InvalidOperationException("Invalid hotkey");
+        if (NormalizeActionHotkeys(settings) != settings) throw new InvalidOperationException("Invalid action hotkey");
         settings = settings with { ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, JsonOptions);
         if (bytes.Length > 64 * 1024) throw new InvalidOperationException("Settings exceed 64 KiB");
@@ -76,5 +85,16 @@ public sealed class SettingsStore(string path)
             backupBeforeSave = false;
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+
+    private static ApplicationSettings NormalizeActionHotkeys(ApplicationSettings settings)
+    {
+        var search = settings.SearchHotkey is { IsValid: true } && settings.SearchHotkey != settings.Hotkey
+            ? settings.SearchHotkey : null;
+        var copy = settings.CopyHotkey is { IsValid: true } && settings.CopyHotkey != settings.Hotkey && settings.CopyHotkey != search
+            ? settings.CopyHotkey : null;
+        var translation = settings.TranslationHotkey is { IsValid: true } && settings.TranslationHotkey != settings.Hotkey
+            && settings.TranslationHotkey != search && settings.TranslationHotkey != copy ? settings.TranslationHotkey : null;
+        return settings with { SearchHotkey = search, CopyHotkey = copy, TranslationHotkey = translation };
     }
 }

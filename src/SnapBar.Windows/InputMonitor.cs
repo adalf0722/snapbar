@@ -4,7 +4,7 @@ using SnapBar.Core;
 
 namespace SnapBar.Windows;
 
-public record InputEvent(string Kind, int X = 0, int Y = 0);
+public record InputEvent(string Kind, int X = 0, int Y = 0, TextAction? Action = null);
 
 public sealed class InputMonitor : IDisposable
 {
@@ -19,16 +19,35 @@ public sealed class InputMonitor : IDisposable
     public event Action<HotkeySettings>? HotkeyRecorded;
     public Func<uint, bool>? KeyFilter { get; set; }
     private readonly HashSet<uint> filteredKeys = [];
-    private readonly GlobalHotkey hotkey;
+    private readonly GlobalHotkey hotkey, searchHotkey, copyHotkey, translationHotkey;
     public bool HotkeyRegistered => hotkey.Registered;
-    public bool HotkeySuppressed { get => hotkey.Suppressed; set => hotkey.Suppressed = value; }
+    public bool HotkeySuppressed
+    {
+        get => hotkey.Suppressed;
+        set => hotkey.Suppressed = searchHotkey.Suppressed = copyHotkey.Suppressed = translationHotkey.Suppressed = value;
+    }
     public bool TryChangeHotkey(HotkeySettings candidate, Action persist) => hotkey.TryChange(candidate, persist);
+    public bool TryChangeActionHotkey(TextAction action, HotkeySettings? candidate, Action persist) =>
+        GetActionHotkey(action).TryChange(candidate, persist);
+    public bool IsActionHotkeyRegistered(TextAction action) => GetActionHotkey(action).Registered;
 
-    public InputMonitor(HwndSource source, HotkeySettings? initialHotkey = null)
+    private GlobalHotkey GetActionHotkey(TextAction action) => action switch
+    {
+        TextAction.Search => searchHotkey,
+        TextAction.Copy => copyHotkey,
+        TextAction.Translate => translationHotkey,
+        _ => throw new ArgumentOutOfRangeException(nameof(action))
+    };
+
+    public InputMonitor(HwndSource source, HotkeySettings? initialHotkey = null,
+        HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null, HotkeySettings? initialTranslationHotkey = null)
     {
         this.source = source;
         source.AddHook(WindowMessage);
         hotkey = new(source.Handle, initialHotkey ?? HotkeySettings.Default);
+        searchHotkey = new(source.Handle, initialSearchHotkey, firstId: 3);
+        copyHotkey = new(source.Handle, initialCopyHotkey, firstId: 5);
+        translationHotkey = new(source.Handle, initialTranslationHotkey, firstId: 7);
         mouseProc = MouseCallback; keyboardProc = KeyboardCallback;
         mouseHook = Native.SetWindowsHookEx(14, mouseProc, Native.GetModuleHandle(null), 0);
         keyboardHook = Native.SetWindowsHookEx(13, keyboardProc, Native.GetModuleHandle(null), 0);
@@ -40,13 +59,23 @@ public sealed class InputMonitor : IDisposable
 
     private nint WindowMessage(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
     {
-        if (message == Native.WM_HOTKEY && hotkey.OwnsMessage(wParam))
+        if (message == Native.WM_HOTKEY)
         {
-            if (hotkey.Suppressed && hotkey.Matches(wParam, lParam)) HotkeyRecorded?.Invoke(hotkey.Current);
-            else if (hotkey.ShouldTrigger(wParam, lParam)) Input?.Invoke(new("hotkey"));
+            if (hotkey.OwnsMessage(wParam)) Dispatch(hotkey, null);
+            else if (searchHotkey.OwnsMessage(wParam)) Dispatch(searchHotkey, TextAction.Search);
+            else if (copyHotkey.OwnsMessage(wParam)) Dispatch(copyHotkey, TextAction.Copy);
+            else if (translationHotkey.OwnsMessage(wParam)) Dispatch(translationHotkey, TextAction.Translate);
+            else return 0;
             handled = true;
         }
         return 0;
+
+        void Dispatch(GlobalHotkey binding, TextAction? action)
+        {
+            if (!binding.Matches(wParam, lParam)) return;
+            if (binding.Suppressed) HotkeyRecorded?.Invoke(binding.Current!);
+            else Input?.Invoke(new("hotkey", Action: action));
+        }
     }
 
     private nint MouseCallback(int code, nint wParam, nint lParam)
@@ -109,6 +138,9 @@ public sealed class InputMonitor : IDisposable
         if (mouseHook != 0) { Native.UnhookWindowsHookEx(mouseHook); mouseHook = 0; }
         if (keyboardHook != 0) { Native.UnhookWindowsHookEx(keyboardHook); keyboardHook = 0; }
         hotkey.Dispose();
+        searchHotkey.Dispose();
+        copyHotkey.Dispose();
+        translationHotkey.Dispose();
         source.RemoveHook(WindowMessage);
     }
 }

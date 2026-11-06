@@ -42,6 +42,19 @@ internal static class SettingsStoreTests
                 var store = new SettingsStore(path); store.Load(); store.Save(new());
                 return !new SettingsStore(path).Load().Settings.AutomaticDetectionEnabled;
             });
+            check("action shortcuts survive reload and can be cleared independently", () =>
+            {
+                var search = new HotkeySettings(3, 0x4A);
+                var copy = new HotkeySettings(3, 0x42);
+                var store = new SettingsStore(path); store.Load();
+                store.Save(new() { SearchHotkey = search, CopyHotkey = copy });
+                var reopened = new SettingsStore(path);
+                var settings = reopened.Load().Settings;
+                if (settings.SearchHotkey != search || settings.CopyHotkey != copy) return false;
+                reopened.Save(settings with { SearchHotkey = null });
+                var cleared = new SettingsStore(path).Load().Settings;
+                return cleared.SearchHotkey == null && cleared.CopyHotkey == copy && cleared.Hotkey == HotkeySettings.Default;
+            });
             foreach (var invalid in new[] { "{bad", "null", "{\"automaticDetectionEnabled\":\"yes\"}" })
                 check("invalid settings preserve original bytes: " + invalid, () =>
                 {

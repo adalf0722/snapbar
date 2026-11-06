@@ -79,16 +79,28 @@ internal static class GeneralSettingsTest
                 check("recording suppresses action without releasing ownership", !hotkey.ShouldTrigger(2, Combination(candidate)) && hotkey.Matches(2, Combination(candidate)));
             }
             using (var source = new HwndSource(new HwndSourceParameters("SnapBar recording messages") { WindowStyle = 0, Width = 1, Height = 1 }))
-            using (var monitor = new InputMonitor(source, new(3, 0x42)))
+            using (var monitor = new InputMonitor(source, new(3, 0x42), new(3, 0x4A)))
             {
                 var actions = 0; HotkeySettings? recorded = null;
-                monitor.Input += input => { if (input.Kind == "hotkey") actions++; }; monitor.HotkeyRecorded += value => recorded = value;
+                TextAction? action = null;
+                monitor.Input += input => { if (input.Kind == "hotkey") { actions++; action = input.Action; } };
+                monitor.HotkeyRecorded += value => recorded = value;
                 monitor.HotkeySuppressed = true; SendMessage(source.Handle, Native.WM_HOTKEY, 1, Combination(new(3, 0x42)));
                 check("old registered combination records without triggering toolbar", recorded == new HotkeySettings(3, 0x42) && actions == 0);
                 monitor.HotkeySuppressed = false; SendMessage(source.Handle, Native.WM_HOTKEY, 1, Combination(new(3, 0x42)));
                 check("ending recording restores hotkey action", actions == 1);
                 SendMessage(source.Handle, Native.WM_HOTKEY, 1, Combination(new(3, 0x4A)));
                 check("stale combination messages never trigger a new action", actions == 1);
+                monitor.HotkeySuppressed = true;
+                SendMessage(source.Handle, Native.WM_HOTKEY, 3, Combination(new(3, 0x4A)));
+                check("registered Search shortcut records without dispatching", recorded == new HotkeySettings(3, 0x4A) && actions == 1);
+                monitor.HotkeySuppressed = false;
+                SendMessage(source.Handle, Native.WM_HOTKEY, 3, Combination(new(3, 0x4A)));
+                check("Search shortcut dispatches Search independently of toolbar", actions == 2 && action == TextAction.Search);
+                check("Search shortcut can be cleared independently", monitor.TryChangeActionHotkey(TextAction.Search, null, () => { })
+                    && !monitor.IsActionHotkeyRegistered(TextAction.Search) && monitor.HotkeyRegistered);
+                SendMessage(source.Handle, Native.WM_HOTKEY, 3, Combination(new(3, 0x4A)));
+                check("cleared Search registration ignores queued messages", actions == 2);
             }
 
             window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup);
@@ -172,6 +184,19 @@ internal static class GeneralSettingsTest
             Click(window.GeneralPage, "ResetShortcut");
             check("restore default commits and saves default shortcut", window.CurrentHotkey == HotkeySettings.Default
                 && new SettingsStore(path).Load().Settings.Hotkey == HotkeySettings.Default);
+            var shortcuts = Find<ComboBox>(window.GeneralPage, "ShortcutTarget");
+            shortcuts.SelectedIndex = 1;
+            Click(window.GeneralPage, "ChangeShortcut"); window.GeneralPage.Record(HotkeySettings.Default);
+            Click(window.GeneralPage, "SaveShortcut");
+            check("Search shortcut rejects the existing toolbar combination", window.GeneralPage.IsRecording
+                && new SettingsStore(path).Load().Settings.SearchHotkey == null);
+            var searchBinding = new HotkeySettings(3, 0x4A);
+            window.GeneralPage.Record(searchBinding); Click(window.GeneralPage, "SaveShortcut");
+            check("Search shortcut saves separately from toolbar shortcut", !window.GeneralPage.IsRecording
+                && new SettingsStore(path).Load().Settings.SearchHotkey == searchBinding);
+            Click(window.GeneralPage, "ResetShortcut");
+            check("clear action shortcut preserves toolbar shortcut", new SettingsStore(path).Load().Settings is
+                { SearchHotkey: null } cleared && cleared.Hotkey == HotkeySettings.Default);
             window.PrepareSessionEnd(); window.Close();
             window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup);
             window.CreateTrayIcon = (_, _, _) => throw new InvalidOperationException("fixture tray unavailable");

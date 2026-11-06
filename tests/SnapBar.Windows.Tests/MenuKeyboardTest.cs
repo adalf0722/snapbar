@@ -65,25 +65,44 @@ internal static class MenuKeyboardTest
                 using var monitor = new InputMonitor(HwndSource.FromHwnd(handle));
                 monitor.KeyFilter = key => !popup.HasSearchForeground && popup.HandleMenuKey(key);
                 monitor.Input += e => { if (e.Kind == "key" && !popup.HasSearchForeground) { invalidations++; popup.Dismiss(); } };
+                var initialSearch = Children<TextBox>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActionSearch");
+                Check(initialSearch.IsKeyboardFocused && popup.HasSearchForeground, "opening More immediately focuses native search");
+                await Key(0x12, true); await Tap(0x10); await Key(0x12, false);
+                Check(popup.MenuOpen && initialSearch.IsKeyboardFocused && invalidations == 0, "input-language shortcut keeps native search open");
+                var scroll = Children<ScrollViewer>(popup).Single(s => s.Content is StackPanel);
+                string[] ActionIds() => Children<Button>(popup).Select(AutomationProperties.GetAutomationId)
+                    .Where(id => id.StartsWith("MoreAction_")).ToArray();
+                var originalActions = ActionIds();
+                scroll.ScrollToVerticalOffset(80);
+                popup.UpdateLayout();
+                var originalOffset = scroll.VerticalOffset;
+                var originalHeight = popup.ActualHeight;
+                Check(originalOffset > 0, "unfiltered list has a nonzero scroll position");
                 await Key(0x11, true); await Tap(0x56); await Key(0x11, false);
                 Check(popup.MenuOpen && Children<Button>(popup).Count(b => AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_")) == 1, "native Ctrl+V filters Unicode clipboard query");
+                Check(popup.ActualHeight < originalHeight, "popup shrinks to fit the filtered list");
                 Check(editor.Text == sourceText && editor.SelectionLength == sourceText.Length && invalidations == 0, "menu paste preserves source selection without invalidation");
-                Check(keyDowns.Count(k => k == 0x11) == 1 && keyUps.Count(k => k == 0x11) == 1 && !keyDowns.Contains(0x56) && !keyUps.Contains(0x56), "source receives balanced Control and no swallowed-key release");
-                await Tap(0x1B); Check(popup.MenuOpen, "Escape clears search first");
+                Check(!keyDowns.Contains(0x11) && !keyUps.Contains(0x11) && !keyDowns.Contains(0x56) && !keyUps.Contains(0x56), "search paste sends no keys to the source");
+                await Key(0x11, true); await Tap(0x41); await Key(0x11, false); await Tap(0x08);
+                Check(initialSearch.Text.Length == 0 && popup.MenuOpen && ActionIds().SequenceEqual(originalActions)
+                    && Math.Abs(scroll.VerticalOffset - originalOffset) < 1,
+                    "Backspace restores the original actions, order, and scroll position");
+                Check(Math.Abs(popup.ActualHeight - originalHeight) < 1, "popup returns to its unfiltered height");
                 var buttons = Children<Button>(popup).Where(b => b.IsEnabled && AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_")).ToArray();
                 for (var i = 0; i < buttons.Length; i++) await Tap(0x28);
                 var selected = Children<Button>(popup).Last(b => b.IsEnabled && AutomationProperties.GetAutomationId(b).StartsWith("MoreAction_"));
-                var scroll = Children<ScrollViewer>(popup).Single(s => s.Content is StackPanel);
                 var bounds = selected.TransformToAncestor(scroll).TransformBounds(new Rect(selected.RenderSize));
                 Check(scroll.VerticalOffset > 0 && bounds.Top >= -1 && bounds.Bottom <= scroll.ActualHeight + 1, "Down navigation scrolls final action fully into view");
                 string? dispatched = null; popup.CustomActionRequested += id => dispatched = id;
-                await Tap(0x0D); Check(dispatched == actions[^1].Id, "Enter dispatches visible final selection");
+                popup.ActionRequested += action => dispatched = ActionCatalog.GetItems(settings).Single(item => item.BuiltIn == action).Id;
+                var selectedId = AutomationProperties.GetAutomationId(selected)["MoreAction_".Length..];
+                await Tap(0x0D); Check(dispatched == selectedId, "Enter dispatches visible final selection");
                 await Tap(0x1B); Check(!popup.MenuOpen, "Escape closes empty search");
-                Check(!keyDowns.Contains(0x28) && !keyUps.Contains(0x28), "menu navigation consumes balanced key transitions");
+                Check(!keyDowns.Contains(0x28) && !keyUps.Contains(0x28), "menu navigation sends no keys to the source");
                 // A shortcut outside the menu must reach the editable source intact.
                 editor.Select(0, 0); editor.Focus(); await Key(0x11, true); await Tap(0x41); await Key(0x11, false);
                 Check(editor.SelectionLength == sourceText.Length && editor.Text == sourceText && keyUps.Contains(0x41)
-                    && keyDowns.Count(k => k == 0x11) == 2 && keyUps.Count(k => k == 0x11) == 2,
+                    && keyDowns.Count(k => k == 0x11) == 1 && keyUps.Count(k => k == 0x11) == 1,
                     "unrelated Control shortcut survives menu closure with balanced modifiers");
                 popup.Present(snapshot, 40, 260, actionSettings: settings);
                 Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -119,6 +138,8 @@ internal static class MenuKeyboardTest
             finally
             {
                 keybd_event(0x11, 0, 2, 0);
+                keybd_event(0x10, 0, 2, 0);
+                keybd_event(0x12, 0, 2, 0);
                 try { if (captured) Locked(() => { if (!backup.Restore()) throw new InvalidOperationException("Clipboard restore failed"); }); }
                 catch (Exception error) { result = 1; Console.WriteLine("FAIL " + error.Message); }
                 popup.Close(); source.Close(); Console.WriteLine($"{passed} passed, {(result == 0 ? 0 : 1)} failed; clipboard restored"); app.Shutdown();
