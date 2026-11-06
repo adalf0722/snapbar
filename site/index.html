@@ -19,27 +19,44 @@
 </header>
 <main id="main">
   <section class="hero wrap" aria-labelledby="headline">
-    <p class="eyebrow">SNAPBAR FOR WINDOWS</p>
-    <h1 id="headline">選取文字，動作就在手邊。</h1>
-    <p class="lead">選一段文字，從旁邊的動作列直接複製、搜尋或改寫。</p>
+    <div class="hero-copy">
+      <p class="eyebrow">WINDOWS 選字工具列</p>
+      <h1 id="headline">選一段文字。<br><span>動作就在旁邊。</span></h1>
+      <p class="lead">在原本的視窗叫出工具列，直接複製、搜尋，或用 AI 改寫。</p>
+      <div class="hero-actions">
+        <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
+        <button class="play-bubble" type="button" aria-controls="selection-preview" hidden>
+          <span aria-hidden="true" class="play-icon">▶</span>
+          <span class="play-label">看 4 秒示範</span>
+        </button>
+      </div>
+      <p class="small">Windows x64 · 免登入下載 · ZIP 解壓即用 · 未簽章預覽版</p>
+      <span class="play-status" role="status"></span>
+    </div>
     <figure class="hero-figure">
-      <div class="selection-preview">
-        <img src="assets/selection-detail.png" width="360" height="112" alt="一段文字反白後，旁邊顯示 SnapBar 動作列，可複製、剪下、貼上或搜尋。">
-        <div class="selection-overlay" aria-hidden="true">
-          <span class="selection-unmarked">這個部分我們可能需要再做一些確認。</span>
-          <span class="selection-caret"></span>
-          <span class="selection-cover"></span>
+      <div class="demo-window">
+        <div class="demo-titlebar" aria-hidden="true">
+          <span class="demo-tab">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="3" y="2" width="10" height="12" rx="2" fill="currentColor"/>
+              <path d="M5 6h6M5 9h6M5 12h4" stroke="#17243c" stroke-linecap="round"/>
+            </svg>
+            記事本
+          </span>
+          <span class="demo-window-controls">─ □ ×</span>
+        </div>
+        <p class="demo-line" aria-hidden="true">回覆草稿</p>
+        <div class="selection-preview" id="selection-preview">
+          <img src="assets/selection-detail.png" width="360" height="112" alt="反白選取「這個部分我們可能需要再做一些確認」後，SnapBar 動作列顯示複製、剪下、貼上及搜尋。">
+          <div class="selection-overlay" aria-hidden="true">
+            <span class="selection-unmarked">這個部分我們可能需要再做一些確認。</span>
+            <span class="selection-caret"></span>
+            <span class="selection-cover"></span>
+          </div>
         </div>
       </div>
-      <button class="play-bubble" type="button" hidden>
-        <span aria-hidden="true" class="play-icon">▶</span>
-        <span class="play-label">看選字示範 · 4 秒</span>
-      </button>
-      <span class="play-status" role="status"></span>
-      <figcaption>SnapBar 實機畫面 · 動作列出現在選取文字旁</figcaption>
+      <figcaption>記事本情境示意 · 工具列為 SnapBar 實機截圖</figcaption>
     </figure>
-    <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">下載 Windows 預覽版（x64）</a><a class="blue" href="#download">查看試用步驟 ↓</a></div>
-    <p class="small">未簽章預覽版 · 目前需以有專案存取權的 GitHub 帳號登入</p>
   </section>
   <section id="experience" class="experience section" aria-labelledby="experience-title">
     <div class="wrap">
@@ -72,20 +89,22 @@
     </div>
   </section>
   <section id="download" class="download section wrap" aria-labelledby="download-title">
-    <div class="section-heading">
-      <h2 id="download-title">下載，選一句，試試看。</h2>
-      <div class="download-actions">
-        <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">下載 Windows 預覽版（x64）</a>
-        <a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases/tag/v0.1.0-rc.8">版本說明 ↗</a>
+    <div class="download-panel">
+      <div class="section-heading">
+        <h2 id="download-title">下載，選一句，試試看。</h2>
+        <div class="download-actions">
+          <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
+          <a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases/tag/v0.1.0-rc.8">版本說明 ↗</a>
+        </div>
+        <p>Windows x64 · 內含 .NET 執行環境 · 套件尚未簽章</p>
+        <p class="small"><span id="download-version">v0.1.0-rc.8</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">所有版本 ↗</a></p>
       </div>
-      <p>Windows x64 · 內含 .NET 執行環境 · 套件尚未簽章</p>
-      <p class="small"><span id="download-version">v0.1.0-rc.8</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">所有版本 ↗</a></p>
+      <ol class="steps">
+        <li><span class="step-number" aria-hidden="true">1</span><h3>解壓縮</h3><p>把 ZIP 裡的檔案完整解壓縮到同一個資料夾。</p></li>
+        <li><span class="step-number" aria-hidden="true">2</span><h3>開啟 SnapBar</h3><p>執行 <code>SnapBar.App.exe</code>，再到記事本選一句文字。</p></li>
+        <li><span class="step-number" aria-hidden="true">3</span><h3>按 <kbd>Ctrl+Alt+V</kbd></h3><p>用預設快捷鍵叫出工具列，試著複製或搜尋這句話。</p></li>
+      </ol>
     </div>
-    <ol class="steps">
-      <li><span class="step-number">1</span><h3>解壓縮</h3><p>把 ZIP 裡的檔案完整解壓縮到同一個資料夾。</p></li>
-      <li><span class="step-number">2</span><h3>開啟 SnapBar</h3><p>在解壓縮後的資料夾執行 <code>SnapBar.App.exe</code>。</p></li>
-      <li><span class="step-number">3</span><h3>選一句，叫出動作列</h3><p>在記事本選一句文字，按預設快捷鍵 <kbd>Ctrl+Alt+V</kbd>。</p></li>
-    </ol>
     <p class="update-note"><strong>已在使用 SnapBar？</strong> 先從系統匣完整結束舊版，再解壓縮並開啟新版。同一台電腦、同一個 Windows 帳號會沿用已儲存的動作列、自訂動作與 AI 金鑰。</p>
     <div class="questions">
       <details><summary>怎麼讓動作列自動出現？</summary><p>在「一般」設定開啟「自動顯示動作列」，之後拖曳或雙擊選字即可試用。</p></details>
