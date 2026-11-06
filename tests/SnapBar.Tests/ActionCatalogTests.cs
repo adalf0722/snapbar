@@ -244,15 +244,24 @@ internal static class ActionCatalogTests
         var path = Path.Combine(directory, "settings.json");
         try
         {
+            check("retired translation entries preserve saved action placements", () =>
+            {
+                File.WriteAllText(path, """
+                    {"schemaVersion":7,"actions":{"layout":[{"id":"translate","placement":0},{"id":"dictionary","placement":0},{"id":"search","placement":2}]}}
+                    """);
+                var loaded = new SettingsStore(path).Load();
+                return loaded.Warning == null
+                    && loaded.Settings.Actions.Layout.Single(entry => entry.Id == "search").Placement == ActionPlacement.Hidden
+                    && !loaded.Settings.Actions.Layout.Any(entry => entry.Id is "translate" or "dictionary");
+            });
             foreach (var version in new[] { 1, 2, 3, 4, 5, 6, 7 })
                 check("action settings migration from v" + version, () =>
                 {
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 10
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 9
                         && loaded.Settings.Actions.Layout.Single(e => e.Id == "ai").Placement == ActionPlacement.More
-                        && loaded.Settings.Actions.Layout.Single(e => e.Id == "translate").Placement == ActionPlacement.More
                         && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "Gmail").Count == 1
                         && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "取得公網 IP").Count == 1
                         && before.SequenceEqual(File.ReadAllBytes(path));

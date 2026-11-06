@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
@@ -237,85 +235,6 @@ internal static class WebActionsTest
                 emptySelection.Dispose();
                 pattern.DocumentRange.Select();
 
-                var temp = Path.Combine(Path.GetTempPath(), "SnapBar-translation-" + Guid.NewGuid().ToString("N"));
-                using var handler = new TranslatorFixture();
-                using var http = new HttpClient(handler);
-                var translator = new TranslationService(temp, http);
-                var translateHotkey = new HotkeySettings(3, 0x4B);
-                try
-                {
-                    using var translated = new SelectionController(owner, probe, initialTranslationHotkey: translateHotkey);
-                    var settingsOpened = 0;
-                    translated.ConfigureTranslation(translator, () => settingsOpened++);
-                    await translated.CaptureAsync(false, 0, 0);
-                    await translated.ExecuteAsync(TextAction.Translate);
-                    Require(settingsOpened == 1 && handler.Requests == 0, "missing translation credentials opens settings without sending text");
-                    translator.Save(new("FixtureKey123", "eastus", "zh-Hant"));
-                    Require(translator.Load() is { Target: "zh-Hant", Key: "FixtureKey123" }
-                        && !File.ReadAllText(Path.Combine(temp, "translator.key")).Contains("FixtureKey123", StringComparison.Ordinal),
-                        "translation settings roundtrip without storing the credential in plaintext");
-                    Require(translated.IsActionHotkeyRegistered(TextAction.Translate), "translation shortcut registers independently");
-                    SendMessage(owner.Handle, Native.WM_HOTKEY, 7, (translateHotkey.Key << 16) | translateHotkey.Modifiers);
-                    var translationDeadline = DateTime.UtcNow.AddSeconds(4);
-                    while (!app.Windows.OfType<ActionResultWindow>().Any(window => window.IsVisible) && DateTime.UtcNow < translationDeadline)
-                        await Task.Delay(25);
-                    var translationWindow = app.Windows.OfType<ActionResultWindow>().Single(window => window.IsVisible);
-                    Require(handler.Requests == 1 && handler.Source == FixtureWindow.LinkFixtureText
-                        && handler.Query == "?api-version=3.0&to=zh-Hant" && handler.Region == "eastus",
-                        "direct translation sends selected text to the fixed API with target language and automatic source detection");
-                    Require(((DockPanel)translationWindow.Content).Children.OfType<TextBox>().Single().Text == "測試譯文"
-                        && !((DockPanel)translationWindow.Content).Children.OfType<StackPanel>().Last().Children
-                            .OfType<StackPanel>().First().Children.OfType<Button>()
-                            .Single(button => AutomationProperties.GetName(button) == "套用至原文").IsEnabled,
-                        "independent translation displays the result and disables replacement for readonly selection");
-                    translationWindow.Close();
-                    await translated.CaptureAsync(false, 0, 0);
-                    Require(handler.Requests == 1, "opening toolbar does not send selected text for translation");
-                    handler.Block = true;
-                    var pending = translated.ExecuteAsync(TextAction.Translate);
-                    await handler.Started.Task.WaitAsync(TimeSpan.FromSeconds(4));
-                    translated.Automatic = false;
-                    await pending.WaitAsync(TimeSpan.FromSeconds(4));
-                    Require(!app.Windows.OfType<ActionResultWindow>().Any(window => window.IsVisible),
-                        "invalidating an in-flight translation cancels the request and suppresses stale results");
-                    handler.Block = false;
-                    handler.Code = HttpStatusCode.RequestTimeout;
-                    await translated.CaptureAsync(false, 0, 0);
-                    await translated.ExecuteAsync(TextAction.Translate);
-                    var timeoutWindow = app.Windows.OfType<ActionResultWindow>().Single(window => window.IsVisible);
-                    Require(((DockPanel)timeoutWindow.Content).Children.OfType<TextBox>().Single().Text.Contains("逾時"),
-                        "translation timeout displays a message beside the selection");
-                    timeoutWindow.Close();
-                    handler.Code = HttpStatusCode.OK;
-                    await StartFixture("editable");
-                    await translated.CaptureAsync(false, 0, 0);
-                    await translated.ExecuteAsync(TextAction.Translate);
-                    var editableWindow = app.Windows.OfType<ActionResultWindow>().Single(window => window.IsVisible);
-                    var apply = ((DockPanel)editableWindow.Content).Children.OfType<StackPanel>().Last().Children
-                        .OfType<StackPanel>().First().Children.OfType<Button>()
-                        .Single(button => AutomationProperties.GetName(button) == "套用至原文");
-                    Require(apply.IsEnabled, "translation offers replacement for the original editable selection");
-                    var editableSource = AutomationElement.FromHandle(child!.MainWindowHandle).FindFirst(TreeScope.Descendants,
-                        new PropertyCondition(AutomationElement.AutomationIdProperty, "EditableSample"));
-                    var editablePattern = (TextPattern)editableSource.GetCurrentPattern(TextPattern.Pattern);
-                    var changed = editablePattern.GetSelection().Single().Clone();
-                    changed.MoveEndpointByUnit(TextPatternRangeEndpoint.End, TextUnit.Character, -1);
-                    changed.Select();
-                    var originalValue = ((ValuePattern)editableSource.GetCurrentPattern(ValuePattern.Pattern)).Current.Value;
-                    var applySequence = Native.GetClipboardSequenceNumber();
-                    var applyResult = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    translated.Status += status => applyResult.TrySetResult(status);
-                    apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    Require((await applyResult.Task.WaitAsync(TimeSpan.FromSeconds(4))).Contains("已變更")
-                        && ((ValuePattern)editableSource.GetCurrentPattern(ValuePattern.Pattern)).Current.Value == originalValue
-                        && Native.GetClipboardSequenceNumber() == applySequence,
-                        "replacing a changed translation source leaves the document and clipboard intact");
-                }
-                finally
-                {
-                    translator.Save(null);
-                    if (Directory.Exists(temp)) Directory.Delete(temp);
-                }
                 result = 0;
             }
             catch (Exception e) { Console.WriteLine("FAIL " + e.Message); }
@@ -328,32 +247,5 @@ internal static class WebActionsTest
         };
         app.Run();
         return result;
-    }
-
-    private sealed class TranslatorFixture : HttpMessageHandler
-    {
-        public int Requests { get; private set; }
-        public string? Source { get; private set; }
-        public string? Query { get; private set; }
-        public string? Region { get; private set; }
-        public bool Block { get; set; }
-        public HttpStatusCode Code { get; set; } = HttpStatusCode.OK;
-        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
-        {
-            Requests++;
-            Query = request.RequestUri!.Query;
-            Region = request.Headers.GetValues("Ocp-Apim-Subscription-Region").Single();
-            using var json = System.Text.Json.JsonDocument.Parse(await request.Content!.ReadAsStringAsync(token));
-            Source = json.RootElement[0].GetProperty("text").GetString();
-            if (Block)
-            {
-                Started.TrySetResult();
-                await Task.Delay(Timeout.InfiniteTimeSpan, token);
-            }
-            return new(Code)
-            { Content = new StringContent("""[{"translations":[{"text":"測試譯文","to":"zh-Hant"}]}]""") };
-        }
     }
 }

@@ -27,12 +27,12 @@ internal sealed class GeneralSettingsPage : ContentControl
     private readonly StartupRegistration startup;
     private HotkeySettings? current, draft;
     private TextAction? SelectedAction => shortcutTarget.SelectedIndex switch
-    { 1 => TextAction.Search, 2 => TextAction.Copy, 3 => TextAction.Translate, 4 => TextAction.Ocr, _ => null };
+    { 1 => TextAction.Search, 2 => TextAction.Copy, 3 => TextAction.Ocr, _ => null };
     private bool updatingStartup;
 
     internal GeneralSettingsPage(bool automatic, Action toggle, HotkeySettings hotkey,
         Func<TextAction?, HotkeySettings?, string?> saveHotkey, Func<TextAction?, HotkeySettings?> readHotkey,
-        Func<TextAction, bool> isActionRegistered, StartupRegistration startup, Action openTranslation,
+        Func<TextAction, bool> isActionRegistered, StartupRegistration startup,
         bool ocrPreferEnglish, Action<bool> setOcrLanguagePriority)
     {
         this.saveHotkey = saveHotkey; this.readHotkey = readHotkey; this.isActionRegistered = isActionRegistered;
@@ -64,7 +64,7 @@ internal sealed class GeneralSettingsPage : ContentControl
         title.Children.Add(Description("拖曳或雙擊選字後，顯示動作列。")); detection.Children.Add(title); AddCard(panel, detection);
 
         var shortcut = new StackPanel();
-        shortcutTarget = new ComboBox { ItemsSource = new[] { "叫出動作列", "直接搜尋選字", "直接複製選字", "直接翻譯選字", "框選 OCR" },
+        shortcutTarget = new ComboBox { ItemsSource = new[] { "叫出動作列", "直接搜尋選字", "直接複製選字", "框選 OCR" },
             SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Left, Margin = new(0, 0, 0, 10) };
         Identify(shortcutTarget, "ShortcutTarget", "選擇快捷鍵動作");
         shortcut.Children.Add(shortcutTarget);
@@ -98,11 +98,7 @@ internal sealed class GeneralSettingsPage : ContentControl
         shortcutMessage = Description("");
         Identify(shortcutMessage, "ShortcutStatus", "快捷鍵設定狀態"); shortcutDetails.Children.Add(shortcutMessage);
         shortcutDetails.Children.Add(buttons); shortcut.Children.Add(shortcutDetails); AddCard(panel, shortcut);
-        var translationButton = ActionUi.Button("翻譯服務設定", openTranslation, "translate");
         var ocr = new DockPanel();
-        translationButton.Margin = new(12, 0, 0, 0);
-        DockPanel.SetDock(translationButton, Dock.Right);
-        ocr.Children.Add(translationButton);
         var ocrLanguage = new ComboBox { ItemsSource = new[] { "繁體中文優先", "英文優先" },
             SelectedIndex = ocrPreferEnglish ? 1 : 0, VerticalAlignment = VerticalAlignment.Center,
             ToolTip = "繁中與英文都會辨識。以框內主要語言優先。" };

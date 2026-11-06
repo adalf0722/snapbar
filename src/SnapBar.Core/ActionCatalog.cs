@@ -22,7 +22,7 @@ public static class ActionCatalog
         new("copy", "複製", "copy", TextAction.Copy), new("cut", "剪下", "cut", TextAction.Cut),
         new("paste", "貼上", "paste", TextAction.Paste), new("search", "搜尋", "search", TextAction.Search),
         new("link", "開啟連結", "link", TextAction.OpenLink), new("path", "檔案位置", "folder", TextAction.RevealPath),
-        new("ai", "AI 改寫", "spark", TextAction.Ai), new("translate", "翻譯", "translate", TextAction.Translate)];
+        new("ai", "AI 改寫", "spark", TextAction.Ai)];
 
     public static ActionSettings Normalize(ActionSettings settings)
     {
@@ -45,6 +45,7 @@ public static class ActionCatalog
         var layout = new List<ActionLayoutEntry>();
         foreach (var entry in settings.Layout)
         {
+            if (entry?.Id is "translate" or "dictionary") continue;
             if (entry == null || entry.Id == null || !ids.Contains(entry.Id) || !seen.Add(entry.Id) || !Enum.IsDefined(entry.Placement)) throw new ArgumentException("動作排列無效。");
             layout.Add(entry);
         }

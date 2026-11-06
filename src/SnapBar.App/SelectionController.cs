@@ -71,7 +71,7 @@ public sealed partial class SelectionController : IDisposable
         Func<IPathRevealSession>? createPathSession = null,
         Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null,
         HotkeySettings? initialHotkey = null, HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null,
-        HotkeySettings? initialTranslationHotkey = null, HotkeySettings? initialOcrHotkey = null)
+        HotkeySettings? initialOcrHotkey = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
@@ -79,7 +79,7 @@ public sealed partial class SelectionController : IDisposable
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
-        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialTranslationHotkey, initialOcrHotkey);
+        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialOcrHotkey);
         monitor.HotkeyRecorded += value => HotkeyRecorded?.Invoke(value);
         // Low-level hooks run on this installing UI thread. Invalidate immediately so a queued
         // click/key cannot leave an old selection valid during an async action continuation.
@@ -181,7 +181,6 @@ public sealed partial class SelectionController : IDisposable
     internal async Task ExecuteAsync(TextAction action, bool direct = false)
     {
         if (action == TextAction.Ai) { await OpenAiAsync(); return; }
-        if (action == TextAction.Translate) { await TranslateAsync(direct); return; }
         if (executing || selection == null || disposed || stopping) return;
         var sourceFocused = direct
             ? Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target

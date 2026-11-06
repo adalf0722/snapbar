@@ -99,7 +99,7 @@ internal static class ScreenOcrTest
                 Check(!editor.IsReadOnly, "recognized text can be corrected without modifying the source");
                 var buttons = body.Children.OfType<WrapPanel>().Single().Children.OfType<Button>()
                     .Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
-                Check(buttons.SequenceEqual(new[] { "複製", "搜尋", "翻譯", "關閉" }),
+                Check(buttons.SequenceEqual(new[] { "複製", "搜尋", "關閉" }),
                     "OCR result offers text actions without a write-back action");
                 result.Close();
                 exit = 0;

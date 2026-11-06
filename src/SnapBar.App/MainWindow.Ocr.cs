@@ -81,12 +81,9 @@ public sealed partial class MainWindow
         ActionUi.Setup(window, "框選 OCR · SnapBar", 560, 410);
         window.MinHeight = 300;
         ocrResultWindow = window;
-        var lifetime = new CancellationTokenSource();
         window.Closed += (_, _) =>
         {
             ocrResultWindow = null;
-            lifetime.Cancel();
-            lifetime.Dispose();
         };
         var body = new DockPanel { Margin = new(18) };
         window.Content = body;
@@ -127,32 +124,6 @@ public sealed partial class MainWindow
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
                 { status.Text = "無法開啟預設瀏覽器。"; }
             }, "search"));
-            Button translateButton = null!;
-            translateButton = ActionUi.Button("翻譯", async () =>
-            {
-                var settings = translation.Load();
-                if (settings == null) { ShowTranslationSettings(); return; }
-                var selected = SelectedText();
-                if (string.IsNullOrWhiteSpace(selected)) return;
-                var token = lifetime.Token;
-                translateButton.IsEnabled = false;
-                status.Text = "正在使用 Azure Translator 翻譯…";
-                try
-                {
-                    var translated = await translation.TranslateAsync(settings, selected, token);
-                    if (token.IsCancellationRequested) return;
-                    status.Text = translated.Text == null ? "翻譯未完成，請檢查文字長度、網路及翻譯設定。" : "譯文已顯示。";
-                    if (translated.Text is { } output)
-                    {
-                        var resultWindow = new ActionResultWindow("Azure Translator · 譯文", output, false, false, compact: true)
-                        { Owner = window };
-                        resultWindow.Show();
-                    }
-                }
-                catch (OperationCanceledException) { }
-                finally { if (!token.IsCancellationRequested) translateButton.IsEnabled = true; }
-            }, "translate");
-            buttons.Children.Add(translateButton);
         }
         buttons.Children.Add(ActionUi.Button("關閉", window.Close));
         window.Show();
