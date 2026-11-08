@@ -2,7 +2,7 @@
 
 Open `index.html` locally to preview. The site uses HTML, CSS, a small release lookup script and actual product screenshots.
 
-`en/index.html` provides the English download and quick-start page; each page links to the other language. Both share `download.js` and `style.css`. English examples identify screenshots that are still in Traditional Chinese. Keep local asset URLs relative to the page's directory.
+`en/index.html` provides the English download and quick-start page; each page links to the other language. Both share `download.js` and `style.css`. The English hero combines illustrative selected text with the actual toolbar capture `assets/selection-toolbar-en.png`. Keep local asset URLs relative to the page's directory.
 
 The homepage uses screenshots of the action bar and action settings, plus a rewrite example. The optional selection demo animates over the action bar screenshot. Update the overlay positions if the screenshot crop changes.
 

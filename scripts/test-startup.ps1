@@ -1,7 +1,10 @@
-param([Parameter(Mandatory)][string]$Executable)
+param(
+    [Parameter(Mandatory)][string]$Executable,
+    [ValidateSet('Startup', 'LanguageResources')][string]$Check = 'Startup'
+)
 $ErrorActionPreference = 'Stop'
 $start = [Diagnostics.ProcessStartInfo]::new([IO.Path]::GetFullPath($Executable))
-$start.ArgumentList.Add('--startup-check')
+$start.ArgumentList.Add($(if ($Check -eq 'LanguageResources') { '--language-resources-check' } else { '--startup-check' }))
 $start.UseShellExecute = $false
 $start.CreateNoWindow = $true
 $start.RedirectStandardError = $true
@@ -17,10 +20,13 @@ try {
     $outputText = $process.StandardOutput.ReadToEndAsync()
     if (-not $process.WaitForExit(10000)) { throw 'Standalone startup check timed out' }
     if ($process.ExitCode -ne 0) { throw "Standalone startup failed ($($process.ExitCode)): $($errorText.GetAwaiter().GetResult())" }
-    Write-Output 'PASS app starts without DOTNET_ROOT, development runtime overrides or the repository working directory'
+    if ($Check -eq 'LanguageResources') {
+        Write-Output 'PASS English and Traditional Chinese resources load from the package without settings or UI side effects'
+    }
+    else { Write-Output 'PASS app starts without DOTNET_ROOT, development runtime overrides or the repository working directory' }
 }
 finally {
-    # This process runs only the side-effect-free --startup-check entry point.
+    # This process runs only a side-effect-free startup or language-resource check entry point.
     if (-not $process.HasExited) { $process.Kill(); $process.WaitForExit(1000) | Out-Null }
     $process.Dispose()
 }

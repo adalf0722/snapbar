@@ -42,6 +42,8 @@ try {
         $results.Add($result); Assert-SnapBarCommand $result
         $result = Invoke-SnapBarCommand 'StartupSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-startup.ps1'), '-Executable', (Join-Path $stage 'SnapBar.App.exe')) $run
         $results.Add($result); Assert-SnapBarCommand $result
+        $result = Invoke-SnapBarCommand 'LanguageSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-startup.ps1'), '-Executable', (Join-Path $stage 'SnapBar.App.exe'), '-Check', 'LanguageResources') $run
+        $results.Add($result); Assert-SnapBarCommand $result
         Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $stage 'README.md')
         Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.en.md') -Destination (Join-Path $stage 'README.en.md')
         Copy-Item -LiteralPath (Join-Path $repo 'docs/p0-validation.md') -Destination (Join-Path $stage 'VALIDATION.md')

@@ -51,6 +51,10 @@ nav a:hover, .blue:hover, footer a:hover { text-decoration: underline; text-unde
 .demo-window-controls { letter-spacing: .24em; white-space: nowrap; }
 .demo-line { margin: clamp(16px, 4vw, 32px) 4.1% 0; color: #c5cbd7; font-size: clamp(13px, 2.4vw, 18px); }
 .hero-figure img { width: 100%; }
+.selection-example { padding-inline: 4.1%; }
+.selection-example .demo-line { margin-inline: 0; }
+.selection-example mark { color: #f4f4f4; background: #1367a0; }
+.selection-example img { margin-top: 14px; }
 .selection-preview { position: relative; container-type: inline-size; }
 .selection-overlay { display: none; position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .is-playing .selection-overlay { display: block; }

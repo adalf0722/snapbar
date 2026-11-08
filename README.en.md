@@ -21,7 +21,7 @@ Changing language updates settings and the tray immediately. Editor and result w
 
 ## What you can do
 
-- **Copy, cut, paste and search.** Read-only sources can still support Copy and Search. Select a complete HTTP/HTTPS URL or an absolute file path to use **Open link** or **File location** from **⋯**.
+- **Copy, cut, paste and search.** Read-only sources can still support Copy and Search. Select a complete HTTP/HTTPS URL or an absolute file path to use **Open link** or **Show in folder** from **⋯**.
 - **Arrange your toolbar.** Pin up to nine actions, change their order, hide unused actions, or switch between icons and labels. Actions that do not fit move into **⋯**. You can also customize the search URL.
 - **Create actions.** URL actions insert URL-encoded selected text at `***`. PowerShell and JavaScript actions receive text through `POPCLIP_TEXT` and run with your Windows user permissions. JavaScript actions require Node.js; ordinary Copy and Search do not.
 - **Rewrite with AI.** Configure your provider endpoint, model and any required API key under **AI services**. Then choose **AI rewrite** from **⋯**. Review or copy the result; replacement is offered only when the source is editable and revalidation succeeds. Provider charges may apply. Local compatible services can work without a key.
@@ -30,7 +30,7 @@ Changing language updates settings and the tray immediately. Editor and result w
 
 ## If the toolbar does not appear
 
-1. Click the SnapBar tray icon to open settings. Under **About & support**, expand diagnostics and open the test window. Select some test text and press the shortcut.
+1. Click the SnapBar tray icon to open settings. Under **About and support**, expand diagnostics and open the test window. Select some test text and press the shortcut.
 2. Check the toolbar shortcut under **General**. If another app has reserved it, choose a different combination.
 3. If only one app is affected, check selection compatibility under **Compatibility**. Sublime Text support needs explicit first-time setup of guarded key bindings; the choice is saved.
 

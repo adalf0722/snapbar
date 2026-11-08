@@ -916,3 +916,21 @@ Repository checks 通過工具契約 12、Core 420 與 Release 建置；完整 R
 桌面 `Lookup,Appearance` 最終通過 Preflight 1、Lookup 16、Appearance 174，全部零失敗。報告：`artifacts/checks/desktop/20261107T120144549Z-cd02fc5b470f4c61a0db0341245364f8/report.json`。第一輪在切換焦點 fixture 時被 Windows 拒絕前景切換；專用 fixture 改為僅在自己持有前景時續授 runner 原有的切換權限，重跑通過釘住、失焦關閉與過期結果取消。
 
 已目視檢查 `artifacts/ui-polish/settings-multiple-dictionaries.png` 與 `artifacts/ui-polish/lookup-multiple-dictionaries.png`，名稱、詞條數、啟用狀態、移除按鈕及來源分組均完整可見。本輪使用隔離資料與同機 WPF fixture，未新增第三方 App 或混合 DPI 人工驗證；沒有更新發布套件。
+
+## 2026-11-08 繁中與英文介面
+
+新增跟隨系統、繁體中文與 English，使用 868 組對應資源。新安裝跟隨獨立讀取的 Windows 顯示語言，未支援文化回退英文；既有設定升級至 schema 8 後保留繁中與其他偏好。設定及系統匣立即更新，已開啟的編輯／結果視窗保留開啟時語言。隨附動作及 AI 命令僅在原名未修改時本地化顯示，不改寫使用者內容、AI 指令或 OCR 語言優先順序。
+
+獨立審查修正舊編輯器儲存回呼影響主設定頁語言、詞典完成訊息遺失翻譯來源，以及進階展開控制項的輔助名稱。雙語桌面 48 項涵蓋資源鍵與格式參數、系統語言回復、保存失敗回復、控制器與草稿保留、隨附名稱及搜尋、舊視窗後續提示、詞典訊息與輔助名稱切換。外部腳本、詞典釋義、OCR 結果及 AI 內容保持原文。
+
+最終 `scripts/check.ps1` 通過 actionlint、工具契約 22、push 契約 10、自動發布契約 18、Core 510 及 Release 建置。建置報告：`artifacts/checks/build/20261108T074013602Z-a5ae3eca81094dccbc9239cc8f0ff9b8/report.json`。
+
+最終完整 Release 通過 Preflight 1、Lifecycle 75、Appearance 174、CompatibilitySlow 22、AiRuntime 117、AiPanel 251、Lookup 16、Language 48，全部零失敗。報告：`artifacts/checks/desktop/20261108T074029566Z-0b52b626b1b1452192b848559128466d/report.json`；來源指紋 `A3C692F8B99EDF3419B7F65728584D1FB84CF9421AC4D20252E52B5E22E9895D`。Language 已納入發布與推送證據的必要套件，未弱化既有檢查。
+
+初輪曾出現空行標記的剪貼簿復原檢查失敗、另輪查詞複製檢查失敗；重跑期間亦遇到背景執行的下載版 rc.9 與測試視窗未取得前景。使用者正常結束舊版後，以 computer-use 啟用專用 fixture，查詞單獨 16 項及最終完整 Release 均通過。剪貼簿／選取安全邏輯及失敗斷言未更動；初輪剪貼簿失敗原因未確認，失敗報告不作為發布通過證據。
+
+已目視檢查同機 96 DPI 的 `artifacts/ui-polish/language-settings-en.png`、`language-settings-zh-Hant.png`、`language-editor-en.png`、`language-editor-zh-Hant.png`、`language-toolbar-en.png`、`language-toolbar-zh-Hant.png`、`language-more-en.png`、`language-ai-result-en.png` 與 `language-ocr-en.png`。英文側欄裁切已修正。英文網站以 1280 與 390 CSS px 檢查圖片、語言入口、頁內連結與下載解析，未見水平溢出；網站使用實際英文工具列截圖。未新增第三方 App、混合 DPI 或不同 Windows 顯示語言環境的人工驗證，文化分支以隔離注入測試。
+
+已經正式 staging 流程更新本機 `artifacts/p0`，舊套件保留於 `artifacts/publish/a96611a7f6dd4d23a57b7b5e940ec001/previous`。發布報告：`artifacts/checks/build/20261108T074205274Z-c91e28b3e3c246f6868fca245d83513c/report.json`，Probe smoke 10、獨立啟動及雙語資源 smoke 各 1 項通過。
+
+本機驗證 ZIP：`artifacts/releases/1f00aaa76b5347839f63c78bea15fb81/SnapBar-v0.0.0-validation-win-x64.zip`，SHA-256 為 `3a15e1ff23294ce9b99723c3f5b8bca7aaf44be294bc8a6213610ad103f81174`。實際解壓後確認英文 README、獨立啟動及兩種資源載入；暫移繁中 satellite 時檢查拒絕通過，還原後再次通過。結果存於同目錄 `verification.json`。此為本機驗證版本，未推送或公開發布。
