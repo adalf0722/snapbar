@@ -2,6 +2,8 @@
 
 Open `index.html` locally to preview. The site uses HTML, CSS, a small release lookup script and actual product screenshots.
 
+`en/index.html` provides the English download and quick-start page; each page links to the other language. Both share `download.js` and `style.css`. English examples identify screenshots that are still in Traditional Chinese. Keep local asset URLs relative to the page's directory.
+
 The homepage uses screenshots of the action bar and action settings, plus a rewrite example. The optional selection demo animates over the action bar screenshot. Update the overlay positions if the screenshot crop changes.
 
 ## Publish on GitHub Pages
@@ -11,4 +13,4 @@ The homepage uses screenshots of the action bar and action settings, plus a rewr
 3. Open **Actions → Deploy SnapBar website → Run workflow** and select the default branch. The workflow uploads only `site/`. Run it again after a site update.
 4. Open the deployment URL. Check the Windows download link while signed out and verify that a published release includes the `SnapBar-*-win-x64.zip` asset.
 
-The download buttons link to a verified Windows ZIP and update to the newest matching release when the public GitHub Releases API is available. While the repository is private, visitors need GitHub access. Update both ZIP links, the release notes link, and the displayed version in `index.html` when refreshing the pinned preview.
+The download buttons link to a verified Windows ZIP and update to the newest matching release when the public GitHub Releases API is available. While the repository is private, visitors need GitHub access. Update both ZIP links, the release notes link, and the displayed version in both `index.html` and `en/index.html` when refreshing the pinned preview. Language switching requires a bilingual desktop build; the English page directs visitors to check the downloaded version's release notes.

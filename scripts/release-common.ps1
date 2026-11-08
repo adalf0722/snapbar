@@ -11,6 +11,7 @@ function New-SnapBarReleaseArchive {
     $required = @(
         'SnapBar.App.exe', 'SnapBar.App.dll', 'SnapBar.App.deps.json', 'SnapBar.App.runtimeconfig.json',
         'coreclr.dll', 'hostfxr.dll', 'wpfgfx_cor3.dll', 'README.md', 'VALIDATION.md', 'CLIPBOARD-RECOVERY.md',
+        'README.en.md', 'zh-Hant/SnapBar.App.resources.dll',
         'Probe/SnapBar.Probe.exe', 'Probe/SnapBar.Probe.dll', 'Probe/SnapBar.Probe.deps.json',
         'Probe/SnapBar.Probe.runtimeconfig.json', 'Probe/coreclr.dll', 'Probe/hostfxr.dll'
     )

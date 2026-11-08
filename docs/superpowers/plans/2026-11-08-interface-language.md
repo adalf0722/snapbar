@@ -10,7 +10,7 @@
 
 **Approved specification:** `docs/superpowers/specs/2026-11-08-interface-language-design.md` (including the approved review changes).
 
-**Global constraints:** Reuse this clean checkout. Do not modify selection safety, clipboard leases, action permissions, user text, scripts, credentials, OCR priorities, or AI instructions. Do not launch a user's installed app, kill their running instance, push, or publish a release. Maintain UTF-8 without BOM. Keep AutomationId values and test fixture contracts stable. Work serially on implementation tasks; review each task before proceeding.
+**Global constraints:** Reuse this checkout. Do not modify selection safety, clipboard leases, action permissions, user text, scripts, credentials, OCR priorities, or AI instructions. Do not launch a user's installed app, kill their running instance, push, or publish a release. Maintain UTF-8 without BOM. Keep AutomationId values and test fixture contracts stable. Assign one owner per file; parent delivery work may proceed independently of the desktop implementer. Builds and desktop tests run serially; review desktop behavior before integrated verification.
 
 ## Task 1: Desktop bilingual behavior
 

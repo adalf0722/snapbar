@@ -1,6 +1,6 @@
 param(
     [switch]$List,
-    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr')]
+    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr', 'Language')]
     [string[]]$Suite = @('Release')
 )
 $ErrorActionPreference = 'Stop'
@@ -13,6 +13,7 @@ $catalog = [ordered]@{
     Keyboard = '--menu-keyboard'; PathWorker = '--path-worker-tests'; PathActions = '--path-actions'
     WebActions = '--web-actions'; Lookup = '--lookup'; Exclusions = '--app-exclusions'; AiRuntime = '--ai-runtime'; AiPanel = '--ai-panel'
     Ocr = '--screen-ocr'
+    Language = '--interface-language'
 }
 if ($List) {
     Write-Host "Release = $($script:SnapBarReleaseSuites -join ', ') (includes a real 35-second script)."

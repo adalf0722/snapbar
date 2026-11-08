@@ -47,7 +47,7 @@ $run = New-SnapBarRun 'desktop'
 $report = @{
     schema = 1; sourceFingerprint = Get-SnapBarFingerprint; success = $true
     startedUtc = [DateTime]::UtcNow.ToString('o'); finishedUtc = [DateTime]::UtcNow.ToString('o')
-    results = @('Build', 'Preflight', 'Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup') | ForEach-Object {
+    results = (@('Build', 'Preflight') + $script:SnapBarReleaseSuites) | ForEach-Object {
         @{ name = $_; success = $true; exitCode = 0; passed = $(if ($_ -eq 'Build') { 0 } else { 1 }); failed = 0; seconds = 0; log = 'private-local-path' }
     }
 }

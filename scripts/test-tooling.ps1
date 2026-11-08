@@ -53,7 +53,7 @@ Check-Tooling 'Release build detects App and Probe output locks before MSBuild' 
     Expect-ToolingFailure { Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path $probeOutput 'SnapBar.Probe.exe'; ProcessName = 'SnapBar.Probe'; Id = 124 }) }
     Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path "$appOutput-other" 'SnapBar.App.exe'; ProcessName = 'SnapBar.App'; Id = 125 })
 }
-$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup') | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
+$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @($script:SnapBarReleaseSuites) | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
 Check-Tooling 'publish accepts complete current desktop evidence' {
     Write-SnapBarJson $evidence $valid
     Assert-SnapBarDesktopReport $evidence 'current'
@@ -66,6 +66,11 @@ Check-Tooling 'publish rejects missing stale failed or incomplete evidence' {
     $valid.success = $false; Write-SnapBarJson $evidence $valid
     Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
     $valid.success = $true; $valid.results = @($valid.results | Where-Object { $_.name -ne 'Lookup' }); Write-SnapBarJson $evidence $valid
+    Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
+}
+Check-Tooling 'publish rejects evidence without bilingual desktop validation' {
+    $withoutLanguage = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @($script:SnapBarReleaseSuites | Where-Object { $_ -ne 'Language' }) | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
+    Write-SnapBarJson $evidence $withoutLanguage
     Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
 }
 Check-Tooling 'artifact move guard rejects paths outside artifacts' {
@@ -126,9 +131,11 @@ Check-Tooling 'staged checks inspect index blobs even when working files are rep
 }
 $releaseFixture = Join-Path $run 'release-fixture'
 [IO.Directory]::CreateDirectory((Join-Path $releaseFixture 'Probe')) | Out-Null
+[IO.Directory]::CreateDirectory((Join-Path $releaseFixture 'zh-Hant')) | Out-Null
 $releaseFiles = @(
     'SnapBar.App.exe', 'SnapBar.App.dll', 'SnapBar.App.deps.json', 'SnapBar.App.runtimeconfig.json',
     'coreclr.dll', 'hostfxr.dll', 'wpfgfx_cor3.dll', 'README.md', 'VALIDATION.md', 'CLIPBOARD-RECOVERY.md',
+    'README.en.md', 'zh-Hant/SnapBar.App.resources.dll',
     'Probe/SnapBar.Probe.exe', 'Probe/SnapBar.Probe.dll', 'Probe/SnapBar.Probe.deps.json',
     'Probe/SnapBar.Probe.runtimeconfig.json', 'Probe/coreclr.dll', 'Probe/hostfxr.dll'
 )
@@ -143,7 +150,7 @@ Check-Tooling 'release archive rejects unsafe version names before creating outp
     Assert-Tooling (-not (Test-Path -LiteralPath $output))
 }
 Check-Tooling 'release archive refuses incomplete self-contained App and Probe packages' {
-    foreach ($file in @('SnapBar.App.exe', 'coreclr.dll', 'Probe/SnapBar.Probe.exe', 'Probe/coreclr.dll', 'README.md')) {
+    foreach ($file in @('SnapBar.App.exe', 'coreclr.dll', 'Probe/SnapBar.Probe.exe', 'Probe/coreclr.dll', 'README.md', 'README.en.md', 'zh-Hant/SnapBar.App.resources.dll')) {
         $path = Join-Path $releaseFixture $file
         $bytes = [IO.File]::ReadAllBytes($path)
         try {

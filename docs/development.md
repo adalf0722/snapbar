@@ -55,6 +55,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | PathWorker / PathActions | `--path-worker-tests` / `--path-actions` | 路徑 worker 與動作 |
 | WebActions / Exclusions | `--web-actions` / `--app-exclusions` | 網址與排除政策 |
 | Lookup | `--lookup` | 多詞典分組查詢、停用來源、複製來源與釋義、重複詞頭、釘住與焦點變更。畫面存於 `artifacts/ui-polish/lookup-*.png` |
+| Language | `--interface-language` | 雙語資源、語言切換與保存、系統語言回復、隨附項目名稱、工作內容與視窗語言保留。納入 Release 必要證據 |
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 

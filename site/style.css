@@ -202,8 +202,9 @@ footer > span { margin-left: auto; font-size: 12px; color: #758093; }
 }
 @media (max-width: 760px) {
   .wrap { width: calc(100% - 40px); }
-  .nav { height: 72px; }
-  nav { gap: 16px; font-size: 12px; }
+  .nav { min-height: 72px; height: auto; gap: 20px; padding-block: 16px; }
+  .nav .brand { flex-shrink: 0; }
+  nav { gap: 4px 16px; font-size: 12px; flex-wrap: wrap; justify-content: flex-end; }
   .section { padding-block: 64px; }
   .section-heading { margin-bottom: 40px; }
   .story, .reverse { grid-template-columns: 1fr; gap: 28px; }

@@ -28,6 +28,7 @@ try {
     [IO.Directory]::CreateDirectory($probeDestination) | Out-Null
     Copy-Item -Path (Join-Path $probeOutput '*') -Destination $probeDestination -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $appOutput 'README.md') -Force
+    Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.en.md') -Destination (Join-Path $appOutput 'README.en.md') -Force
     if ($Publish) {
         $stagingRoot = Join-Path $repo ('artifacts/publish/' + [guid]::NewGuid().ToString('N'))
         $stage = Assert-SnapBarArtifactPath (Join-Path $stagingRoot 'package')
@@ -42,6 +43,7 @@ try {
         $result = Invoke-SnapBarCommand 'StartupSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-startup.ps1'), '-Executable', (Join-Path $stage 'SnapBar.App.exe')) $run
         $results.Add($result); Assert-SnapBarCommand $result
         Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.md') -Destination (Join-Path $stage 'README.md')
+        Copy-Item -LiteralPath (Join-Path $repo 'packaging/README.en.md') -Destination (Join-Path $stage 'README.en.md')
         Copy-Item -LiteralPath (Join-Path $repo 'docs/p0-validation.md') -Destination (Join-Path $stage 'VALIDATION.md')
         Copy-Item -LiteralPath (Join-Path $repo 'docs/2026-10-26-clipboard-backup-recovery.md') -Destination (Join-Path $stage 'CLIPBOARD-RECOVERY.md')
         if ($fingerprint -ne (Get-SnapBarFingerprint)) { throw 'Source changed during publishing; previous package preserved.' }

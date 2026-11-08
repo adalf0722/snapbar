@@ -99,7 +99,7 @@ function Assert-SnapBarCommand($Result) {
     if (-not $Result.success) { throw "$($Result.name) failed. See $($Result.log)" }
 }
 
-$script:SnapBarReleaseSuites = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup')
+$script:SnapBarReleaseSuites = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup', 'Language')
 
 function Test-SnapBarInstanceRunning {
     $instance = $null
