@@ -99,16 +99,46 @@ function Assert-SnapBarCommand($Result) {
     if (-not $Result.success) { throw "$($Result.name) failed. See $($Result.log)" }
 }
 
+$script:SnapBarReleaseSuites = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup')
+
+function Test-SnapBarInstanceRunning {
+    $instance = $null
+    if (-not [Threading.Mutex]::TryOpenExisting('Local\SnapBar.P0', [ref]$instance)) { return $false }
+    $instance.Dispose()
+    return $true
+}
+
+function Find-SnapBarOutputProcess([string[]]$Directories, [object[]]$Processes) {
+    $prefixes = @($Directories | ForEach-Object { [IO.Path]::TrimEndingDirectorySeparator([IO.Path]::GetFullPath($_)) + [IO.Path]::DirectorySeparatorChar })
+    foreach ($process in $Processes) {
+        try { $path = $process.Path } catch { $path = $null }
+        if (-not $path) { return $process }
+        foreach ($prefix in $prefixes) {
+            if ([IO.Path]::GetFullPath($path).StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) { return $process }
+        }
+    }
+}
+
+function Assert-SnapBarBuildIdle([object[]]$Processes = @()) {
+    if (-not $PSBoundParameters.ContainsKey('Processes')) {
+        $Processes = @(Get-Process -Name SnapBar.App, SnapBar.Probe -ErrorAction SilentlyContinue)
+    }
+    $directories = @('SnapBar.App', 'SnapBar.Probe') | ForEach-Object {
+        Join-Path $script:SnapBarRepo "src/$_/bin/Release/net10.0-windows"
+    }
+    $process = Find-SnapBarOutputProcess $directories $Processes
+    if ($process) {
+        throw "Build blocked: $($process.ProcessName) (PID $($process.Id)) is running from the Release output or its path cannot be inspected. Exit SnapBar from its tray/settings and retry."
+    }
+}
+
 function Assert-SnapBarPublishIdle([string]$Package, [object[]]$Processes = @()) {
     if (-not $PSBoundParameters.ContainsKey('Processes')) {
         $Processes = @(Get-Process -Name SnapBar.App, SnapBar.Probe -ErrorAction SilentlyContinue)
     }
-    $prefix = [IO.Path]::GetFullPath($Package).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-    foreach ($process in $Processes) {
-        try { $path = $process.Path } catch { $path = $null }
-        if (-not $path -or [IO.Path]::GetFullPath($path).StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
-            throw "Publish blocked: $($process.ProcessName) (PID $($process.Id)) is running from the package or its path cannot be inspected. Exit SnapBar from its tray/settings and retry. No package files were replaced."
-        }
+    $process = Find-SnapBarOutputProcess @($Package) $Processes
+    if ($process) {
+        throw "Publish blocked: $($process.ProcessName) (PID $($process.Id)) is running from the package or its path cannot be inspected. Exit SnapBar from its tray/settings and retry. No package files were replaced."
     }
 }
 
@@ -118,7 +148,7 @@ function Assert-SnapBarDesktopReport([string]$Path, [string]$Fingerprint) {
     if ($report.schema -ne 1 -or $report.success -isnot [bool] -or -not $report.success -or $report.sourceFingerprint -ne $Fingerprint) {
         throw 'Desktop evidence failed or is stale. Run scripts/test-desktop.ps1 -Suite Release against the current source.'
     }
-    foreach ($suite in @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel')) {
+    foreach ($suite in $script:SnapBarReleaseSuites) {
         $results = @($report.results | Where-Object { $_.name -eq $suite })
         if ($results.Count -ne 1 -or $results[0].success -isnot [bool] -or -not $results[0].success -or $results[0].exitCode -ne 0) { throw "Desktop evidence is missing a successful $suite suite." }
     }

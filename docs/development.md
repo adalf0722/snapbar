@@ -21,6 +21,17 @@ pre-push 在每次推送 branch／tag 前執行完整 Release 桌面測試。先
 
 ## 桌面測試
 
+手動試用開發版時，先從系統匣結束 SnapBar，再在 PowerShell 7 執行：
+
+```powershell
+./scripts/build.ps1
+./scripts/run-dev.ps1
+```
+
+`run-dev.ps1` 會確認 App 和 Probe 都在、設定子程序所需的 `DOTNET_ROOT`，並印出實際啟動路徑。若已有 SnapBar 執行中，腳本會提示先正常結束。若要開啟已備妥的隔離輸出，可用 `-AppDirectory` 指定同時包含 App 執行檔和 `Probe` 資料夾的目錄。
+
+Release 開發版建置後，也可在檔案總管雙擊專案根目錄的 `Start-SnapBar.cmd`。啟動失敗時，視窗會保留錯誤訊息。
+
 ```powershell
 pwsh -NoProfile -File scripts/test-desktop.ps1 -List
 pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Compatibility
@@ -29,7 +40,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 ./scripts/test-desktop.ps1 -Suite Clipboard,Diagnostics,Actions
 ```
 
-入口每次先重新建置，再確認目前是可操作的輸入桌面且 Ctrl+Alt+V 可註冊。請先從系統匣或設定正常結束 SnapBar。測試會暫時使用剪貼簿與前景視窗；執行期間不要輸入或複製內容。入口以互斥鎖拒絕並行桌面測試。需要切到 fixture 的案例會印出 `WAITING` 提示。沒有互動式桌面時應明確失敗，不能當作通過。相容性測試若失去 fixture 前景，會拒絕對其他 App 發起新 capture；輸入干擾日誌只記錄事件種類，不記錄按鍵或文字。
+入口先確認 Release 輸出未被 App 或 Probe 占用，且 SnapBar 已正常結束，再重新建置並檢查輸入桌面及 Ctrl+Alt+V。測試會暫時使用剪貼簿與前景視窗；執行期間不要輸入或複製內容。入口以互斥鎖拒絕並行桌面測試。需要切到 fixture 的案例會印出 `WAITING` 提示。沒有互動式桌面時應明確失敗，不能當作通過。相容性測試若失去 fixture 前景，會拒絕對其他 App 發起新 capture；輸入干擾日誌只記錄事件種類，不記錄按鍵或文字。
 
 | 套件 | 原生旗標 | 範圍 |
 | --- | --- | --- |
@@ -43,10 +54,11 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | Layout / Keyboard | `--action-layout` / `--menu-keyboard` | 動作列與鍵盤 |
 | PathWorker / PathActions | `--path-worker-tests` / `--path-actions` | 路徑 worker 與動作 |
 | WebActions / Exclusions | `--web-actions` / `--app-exclusions` | 網址與排除政策 |
+| Lookup | `--lookup` | 多詞典分組查詢、停用來源、複製來源與釋義、重複詞頭、釘住與焦點變更。畫面存於 `artifacts/ui-polish/lookup-*.png` |
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 
-`Release` = Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+`Release` = Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel + Lookup。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
 
 原生 runner 可以用以下命令列舉所有旗標；未知或多個測試旗標回傳非零。
 

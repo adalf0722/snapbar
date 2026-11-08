@@ -6,6 +6,7 @@ $sdk = Get-SnapBarSdk
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 $package = Join-Path $repo 'artifacts/p0'
+Assert-SnapBarBuildIdle
 if (-not $DesktopReport) { $DesktopReport = Join-Path $repo 'artifacts/checks/desktop/latest.json' }
 $fingerprint = Get-SnapBarFingerprint
 if ($Publish) {

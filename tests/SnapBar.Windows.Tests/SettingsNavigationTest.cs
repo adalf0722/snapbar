@@ -122,6 +122,49 @@ internal static class SettingsNavigationTest
             Find<Button>(main, "BackToActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
         }
 
+        main.NavigateTo(SettingsCategory.General); await Layout(main);
+        check(!Children<Button>(main.GeneralPage).Any(button => AutomationProperties.GetAutomationId(button) == "OfflineDictionarySettings"),
+            "settings keeps dictionary management out of the OCR controls");
+        main.NavigateTo(SettingsCategory.Actions); await Layout(main);
+        Find<RadioButton>(main.ActionPanel, "ActionPlacementTab_More").IsChecked = true; await Layout(main);
+        check(Find<TextBlock>(main.ActionPanel, "DictionaryActionStatus").Text == "尚未匯入",
+            "settings lookup row shows its dictionary status");
+        Find<Button>(main.ActionPanel, "ManageLookupDictionary").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        check(Find<DockPanel>(main, "DictionaryEditor").IsVisible && !main.ActionPanel.IsVisible
+            && Find<Button>(main, "ImportLookupDictionary").IsVisible,
+            "settings lookup management opens inline under actions");
+        UiAppearanceTest.Snapshot(main, "settings-lookup-dictionary-editor.png");
+        var firstDictionary = main.DictionaryLibrary.Import(LookupTest.WriteDictionary(directory, "general", "通用英漢詞典", "起飛"));
+        var secondDictionary = main.DictionaryLibrary.Import(LookupTest.WriteDictionary(directory, "aviation", "航空專業詞典", "離地起飛；開始飛行"));
+        main.ShowDictionarySettings(); await Layout(main);
+        check(Children<Grid>(main).Count(row => AutomationProperties.GetAutomationId(row).StartsWith("DictionaryRow_")) == 2
+            && Children<TextBlock>(main).Any(text => text.Text == "通用英漢詞典")
+            && Children<TextBlock>(main).Count(text => text.Text == "1 詞條 · 已啟用") == 2,
+            "settings dictionary library shows each source name and usable entry count");
+        var enabledDictionary = Find<CheckBox>(main, "EnableDictionary_" + secondDictionary.Id);
+        enabledDictionary.IsChecked = false;
+        enabledDictionary.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        var dictionaryDeadline = DateTime.UtcNow.AddSeconds(4);
+        while (!Find<Button>(main, "ImportLookupDictionary").IsEnabled && DateTime.UtcNow < dictionaryDeadline) await Task.Delay(20);
+        await Layout(main);
+        check(!main.DictionaryLibrary.Dictionaries[1].Enabled
+            && Find<TextBlock>(main, "DictionaryLibraryStatus").Text.Contains("已啟用 1 本")
+            && Find<Button>(main, "RemoveDictionary_" + firstDictionary.Id).IsVisible,
+            "settings dictionary toggle persists the preference and retains independent removal controls");
+        UiAppearanceTest.Snapshot(main, "settings-multiple-dictionaries.png");
+        main.DictionaryLibrary.Remove(firstDictionary.Id);
+        main.DictionaryLibrary.Remove(secondDictionary.Id);
+        main.ShowDictionarySettings(); await Layout(main);
+        Find<Button>(main, "BackFromDictionary").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
+        check(main.ActionPanel.IsVisible && !Find<DockPanel>(main, "DictionaryEditor").IsVisible
+            && ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement, Find<Button>(main.ActionPanel, "ManageLookupDictionary")),
+            "settings returns from dictionary management to the lookup row");
+        main.ActionPanel.ShowDictionaryStatus(true);
+        check(Find<TextBlock>(main.ActionPanel, "DictionaryActionStatus").Text == "已匯入",
+            "settings updates dictionary status in the existing lookup row");
+        main.ActionPanel.ShowDictionaryStatus(false);
+        Find<RadioButton>(main.ActionPanel, "ActionPlacementTab_Bar").IsChecked = true;
+
         main.NavigateTo(SettingsCategory.AiCommands); await Layout(main);
         var configureService = Find<Button>(main.AiCommandsPanel, "ConfigureAiServiceFromCommands");
         check(configureService.IsVisible && Find<Button>(main.AiCommandsPanel, "AddAiCommand").IsEnabled,

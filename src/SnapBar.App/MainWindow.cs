@@ -42,6 +42,7 @@ public sealed partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
         var loaded = this.settingsStore.Load();
         aiPreferences = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
+        offlineDictionary = new(Path.Combine(Path.GetDirectoryName(this.settingsStore.FilePath)!, "offline-dictionary.bin"));
         preferences = loaded.Settings;
         if (loaded.Warning != null && loaded.Warning != "hotkey-invalid") preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
@@ -66,6 +67,8 @@ public sealed partial class MainWindow : Window
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
                 controller.ConfigureActions(preferences.Actions);
                 controller.ConfigureAi(aiPreferences);
+                controller.Dictionary = offlineDictionary;
+                controller.OpenDictionarySettings = ShowDictionarySettings;
                 ApplyClipboardCompatibility();
                 controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; actionSettingsPanel.ShowSettings(value); SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;

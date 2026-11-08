@@ -1,6 +1,6 @@
 param(
     [switch]$List,
-    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr')]
+    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr')]
     [string[]]$Suite = @('Release')
 )
 $ErrorActionPreference = 'Stop'
@@ -11,11 +11,11 @@ $catalog = [ordered]@{
     UiaReadiness = '--uia-readiness'; UiaDeepTree = '--uia-deep-tree'; Actions = '--custom-actions'
     ActionRunner = '--custom-action-runner'; Diagnostics = '--action-diagnostics'; Layout = '--action-layout'
     Keyboard = '--menu-keyboard'; PathWorker = '--path-worker-tests'; PathActions = '--path-actions'
-    WebActions = '--web-actions'; Exclusions = '--app-exclusions'; AiRuntime = '--ai-runtime'; AiPanel = '--ai-panel'
+    WebActions = '--web-actions'; Lookup = '--lookup'; Exclusions = '--app-exclusions'; AiRuntime = '--ai-runtime'; AiPanel = '--ai-panel'
     Ocr = '--screen-ocr'
 }
 if ($List) {
-    Write-Host 'Release = Lifecycle, Appearance, CompatibilitySlow, AiRuntime, AiPanel (includes a real 35-second script).'
+    Write-Host "Release = $($script:SnapBarReleaseSuites -join ', ') (includes a real 35-second script)."
     Write-Host 'All = every isolated suite below, except redundant fast Compatibility. Tests run serially.'
     $catalog.GetEnumerator() | Format-Table Key, Value -AutoSize
     Write-Host 'External Sublime/browser/Explorer smoke tests: test runner --list-tests; see docs/development.md.'
@@ -24,7 +24,7 @@ if ($List) {
 $selected = [Collections.Generic.List[string]]::new()
 foreach ($name in $Suite) {
     $expanded = switch ($name) {
-        'Release' { @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel') }
+        'Release' { $script:SnapBarReleaseSuites }
         'All' { @($catalog.Keys | Where-Object { $_ -ne 'Compatibility' }) }
         default { @($name) }
     }
@@ -42,6 +42,8 @@ Push-Location $script:SnapBarRepo
 try {
     try { $ownsMutex = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $ownsMutex = $true }
     if (-not $ownsMutex) { throw 'Another desktop test run is active. Clipboard suites must run serially.' }
+    Assert-SnapBarBuildIdle
+    if (Test-SnapBarInstanceRunning) { throw 'Desktop tests require SnapBar to be closed. Exit it from the system tray or settings, then retry.' }
     $build = Invoke-SnapBarCommand 'Build' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'build.ps1')) $run
     $results.Add($build); Assert-SnapBarCommand $build
     $runner = Join-Path $script:SnapBarRepo 'tests/SnapBar.Windows.Tests/bin/Release/net10.0-windows/SnapBar.Windows.Tests.dll'

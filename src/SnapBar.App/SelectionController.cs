@@ -181,6 +181,7 @@ public sealed partial class SelectionController : IDisposable
     internal async Task ExecuteAsync(TextAction action, bool direct = false)
     {
         if (action == TextAction.Ai) { await OpenAiAsync(); return; }
+        if (action == TextAction.Lookup) { await LookupAsync(direct); return; }
         if (executing || selection == null || disposed || stopping) return;
         var sourceFocused = direct
             ? Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target
@@ -322,7 +323,11 @@ public sealed partial class SelectionController : IDisposable
     {
         aiWindow?.InvalidateTarget();
         customAction?.Cancel();
-        resultWindow?.InvalidateTarget();
+        if (lookupResult)
+        {
+            if (resultWindow is { IsLookupPinned: false }) resultWindow.Close();
+        }
+        else resultWindow?.InvalidateTarget();
         pathAction?.Cancel();
         generation.Next(); delay?.Cancel(); delay?.Dispose(); delay = null;
         selection = null; popup.Dismiss();

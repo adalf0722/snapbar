@@ -46,7 +46,14 @@ Check-Tooling 'package process blocks publishing even without a visible window' 
     Assert-SnapBarPublishIdle $package -Processes @([pscustomobject]@{ Path = Join-Path $run 'other/SnapBar.App.exe'; ProcessName = 'SnapBar.App'; Id = 126 })
 }
 $evidence = Join-Path $run 'desktop.json'
-$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel') | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
+Check-Tooling 'Release build detects App and Probe output locks before MSBuild' {
+    $appOutput = Join-Path $script:SnapBarRepo 'src/SnapBar.App/bin/Release/net10.0-windows'
+    $probeOutput = Join-Path $script:SnapBarRepo 'src/SnapBar.Probe/bin/Release/net10.0-windows'
+    Expect-ToolingFailure { Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path $appOutput 'SnapBar.App.exe'; ProcessName = 'SnapBar.App'; Id = 123 }) }
+    Expect-ToolingFailure { Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path $probeOutput 'SnapBar.Probe.exe'; ProcessName = 'SnapBar.Probe'; Id = 124 }) }
+    Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path "$appOutput-other" 'SnapBar.App.exe'; ProcessName = 'SnapBar.App'; Id = 125 })
+}
+$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup') | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
 Check-Tooling 'publish accepts complete current desktop evidence' {
     Write-SnapBarJson $evidence $valid
     Assert-SnapBarDesktopReport $evidence 'current'
@@ -58,7 +65,7 @@ Check-Tooling 'publish rejects missing stale failed or incomplete evidence' {
     Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
     $valid.success = $false; Write-SnapBarJson $evidence $valid
     Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
-    $valid.success = $true; $valid.results = @($valid.results | Where-Object { $_.name -ne 'CompatibilitySlow' }); Write-SnapBarJson $evidence $valid
+    $valid.success = $true; $valid.results = @($valid.results | Where-Object { $_.name -ne 'Lookup' }); Write-SnapBarJson $evidence $valid
     Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
 }
 Check-Tooling 'artifact move guard rejects paths outside artifacts' {

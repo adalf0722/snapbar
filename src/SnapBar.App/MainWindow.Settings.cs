@@ -87,7 +87,8 @@ public sealed partial class MainWindow
         generalPage.RecordingChanged = recording => { if (controller != null) controller.SetHotkeyRecording(recording); };
         toggle = generalPage.AutomaticToggle;
         AddPage(SettingsCategory.General, generalPage);
-        actionSettingsPanel = new(preferences.Actions, SaveActionSettings, ShowSearchSettings);
+        actionSettingsPanel = new(preferences.Actions, SaveActionSettings, ShowSearchSettings,
+            ShowDictionarySettings, offlineDictionary.IsInstalled);
         searchSettingsPanel = new(); searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
         searchSettingsPanel.SaveTemplate = SetSearchUrlTemplate;
         searchSettingsPanel.RevealRequested = () => { ShowSettings(); ShowSearchSettings(); };
@@ -122,12 +123,16 @@ public sealed partial class MainWindow
         AutomationProperties.SetAutomationId(back, "BackToActions");
         back.HorizontalAlignment = HorizontalAlignment.Left; back.Margin = new(0, 0, 0, 16);
         DockPanel.SetDock(back, Dock.Top); editor.Children.Add(back); editor.Children.Add(searchSettingsPanel);
-        searchEditor = editor; searchEditor.Visibility = Visibility.Collapsed; host.Children.Add(editor); return host;
+        searchEditor = editor; searchEditor.Visibility = Visibility.Collapsed; host.Children.Add(editor);
+        dictionaryEditor = BuildDictionaryEditor();
+        dictionaryEditor.Visibility = Visibility.Collapsed;
+        host.Children.Add(dictionaryEditor);
+        return host;
     }
 
     private void ShowActionList(bool returnFocus = false)
     {
-        searchEditor.Visibility = Visibility.Collapsed; actionSettingsPanel.Visibility = Visibility.Visible;
+        searchEditor.Visibility = dictionaryEditor.Visibility = Visibility.Collapsed; actionSettingsPanel.Visibility = Visibility.Visible;
         pageHeading.Text = CategoryName(SettingsCategory.Actions);
         if (returnFocus && !actionSettingsPanel.FocusSearchEditor()) navigation[SettingsCategory.Actions].Focus();
     }

@@ -260,8 +260,9 @@ internal static class ActionCatalogTests
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 9
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 10
                         && loaded.Settings.Actions.Layout.Single(e => e.Id == "ai").Placement == ActionPlacement.More
+                        && loaded.Settings.Actions.Layout.Single(e => e.Id == "lookup").Placement == ActionPlacement.More
                         && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "Gmail").Count == 1
                         && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "取得公網 IP").Count == 1
                         && before.SequenceEqual(File.ReadAllBytes(path));

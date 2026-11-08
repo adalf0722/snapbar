@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -7,10 +8,27 @@ namespace SnapBar.App;
 
 public sealed class FixtureWindow : Window
 {
+    [DllImport("user32.dll")] private static extern bool AllowSetForegroundWindow(int processId);
     public const string SearchFixtureText = "SnapBar 中文 & + # ? 😀";
     public const string LinkFixtureText = "https://example.com/snapbar?first=1&second=two#part";
+    public const string LookupFixtureText = "take off";
     public FixtureWindow(bool delayedUia = false, bool deepUia = false, string? webActionMode = null, string? pathFixture = null)
     {
+        if (webActionMode == "lookup"
+            && int.TryParse(Environment.GetEnvironmentVariable("SNAPBAR_LOOKUP_TEST_RUNNER_PID"), out var runnerPid) && runnerPid > 0)
+        {
+            Activated += (_, _) => AllowSetForegroundWindow(runnerPid);
+            // Automation input can consume the one-time foreground grant after activation.
+            // Renew it only while this disposable fixture actually owns the foreground.
+            var foregroundGrant = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            foregroundGrant.Tick += (_, _) =>
+            {
+                if (SnapBar.Windows.Native.GetForegroundWindow() == new System.Windows.Interop.WindowInteropHelper(this).Handle)
+                    AllowSetForegroundWindow(runnerPid);
+            };
+            Loaded += (_, _) => foregroundGrant.Start();
+            Closed += (_, _) => foregroundGrant.Stop();
+        }
         Title = delayedUia ? "SnapBar P0 — Delayed UIA Fixture"
             : deepUia ? "SnapBar P0 — Deep UIA Fixture" : "SnapBar P0 — Test Fixture";
         Width = 720; Height = 530;
@@ -23,7 +41,7 @@ public sealed class FixtureWindow : Window
         edit.Text = "SnapBar Windows — 測試選取文字。\nSelect this sentence to test Copy, Cut and Paste.\n第二行保留原文，確認只取代選取範圍。";
         if (webActionMode != null)
         {
-            edit.Text = webActionMode == "link" ? LinkFixtureText : SearchFixtureText;
+            edit.Text = webActionMode switch { "link" => LinkFixtureText, "lookup" => LookupFixtureText, _ => SearchFixtureText };
             edit.IsReadOnly = true;
         }
         edit.AcceptsReturn = true; edit.Height = 130; edit.Padding = new(12);

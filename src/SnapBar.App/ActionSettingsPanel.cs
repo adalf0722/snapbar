@@ -15,6 +15,10 @@ internal sealed class ActionSettingsPanel : ContentControl
     private ActionSettings settings;
     private readonly Func<ActionSettings, bool> save;
     private readonly Action? editSearch;
+    private readonly Action? manageDictionary;
+    private bool dictionaryInstalled;
+    private Button? dictionaryEdit;
+    private TextBlock? dictionaryStatus;
     private bool searchHasDraft;
     private Button? searchEdit;
     private TextBlock? searchDraftStatus;
@@ -28,9 +32,12 @@ internal sealed class ActionSettingsPanel : ContentControl
     private readonly ScrollViewer listScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private ActionPlacement selectedPlacement = ActionPlacement.Bar;
 
-    public ActionSettingsPanel(ActionSettings initial, Func<ActionSettings, bool> save, Action? editSearch = null)
+    public ActionSettingsPanel(ActionSettings initial, Func<ActionSettings, bool> save, Action? editSearch = null,
+        Action? manageDictionary = null, bool dictionaryInstalled = false)
     {
         this.save = save; this.editSearch = editSearch; settings = ActionCatalog.Normalize(initial);
+        this.manageDictionary = manageDictionary;
+        this.dictionaryInstalled = dictionaryInstalled;
         HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         ActionUi.LoadStyles(this);
         System.Windows.Automation.AutomationProperties.SetAutomationId(this, "ActionSettingsPanel");
@@ -121,6 +128,18 @@ internal sealed class ActionSettingsPanel : ContentControl
 
     internal void ShowSettings(ActionSettings value) { settings = ActionCatalog.Normalize(value); Render(); }
     internal bool FocusSearchEditor() => searchEdit?.Focus() == true;
+    internal void FocusDictionaryEditor()
+    {
+        var placement = settings.Layout.Single(entry => entry.Id == "lookup").Placement;
+        tabs[placement].IsChecked = true;
+        dictionaryEdit?.BringIntoView();
+        dictionaryEdit?.Focus();
+    }
+    internal void ShowDictionaryStatus(bool installed)
+    {
+        dictionaryInstalled = installed;
+        if (dictionaryStatus != null) dictionaryStatus.Text = installed ? "已匯入" : "尚未匯入";
+    }
     internal void ShowSearchDraft(bool dirty)
     {
         searchHasDraft = dirty;
@@ -136,6 +155,7 @@ internal sealed class ActionSettingsPanel : ContentControl
     private void Render()
     {
         searchEdit = null; searchDraftStatus = null;
+        dictionaryEdit = null; dictionaryStatus = null;
         deletionNotice.Visibility = undo == null ? Visibility.Collapsed : Visibility.Visible;
         deletionText.Text = undo == null ? "" : $"已刪除「{undo.Action.Name}」";
         if (selectedPlacement == ActionPlacement.Hidden && !settings.Layout.Any(e => e.Placement == ActionPlacement.Hidden))
@@ -187,6 +207,13 @@ internal sealed class ActionSettingsPanel : ContentControl
                 var image = ActionUi.ItemIcon(item, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
                 var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(item.Name, 14));
                 if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind.ToString(), 12, ActionUi.Muted));
+                if (item.BuiltIn == TextAction.Lookup && manageDictionary != null)
+                {
+                    dictionaryStatus = ActionUi.Text("", 12, ActionUi.Muted);
+                    AutomationProperties.SetAutomationId(dictionaryStatus, "DictionaryActionStatus");
+                    ShowDictionaryStatus(dictionaryInstalled);
+                    name.Children.Add(dictionaryStatus);
+                }
                 if (item.BuiltIn == TextAction.Search && editSearch != null)
                 {
                     searchDraftStatus = ActionUi.Text("尚未儲存", 12, ActionUi.Muted);
@@ -218,6 +245,12 @@ internal sealed class ActionSettingsPanel : ContentControl
                 {
                     searchEdit = ActionUi.Button("編輯", editSearch); searchEdit.Padding = new(7); searchEdit.ToolTip = "設定搜尋引擎與網址";
                     AutomationProperties.SetName(searchEdit, "編輯搜尋動作"); AutomationProperties.SetAutomationId(searchEdit, "EditSearchAction"); buttons.Children.Add(searchEdit);
+                }
+                if (item.BuiltIn == TextAction.Lookup && manageDictionary != null)
+                {
+                    dictionaryEdit = ActionUi.Button("管理詞典", manageDictionary);
+                    AutomationProperties.SetAutomationId(dictionaryEdit, "ManageLookupDictionary");
+                    buttons.Children.Add(dictionaryEdit);
                 }
                 if (item.Custom is { } custom)
                 {

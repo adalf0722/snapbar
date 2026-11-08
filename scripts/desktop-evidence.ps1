@@ -40,7 +40,7 @@ function Assert-SnapBarDesktopReceipt($Receipt, [string]$Commit, [string]$Tree) 
         $report.sourceFingerprint -notmatch '^[0-9A-Fa-f]{64}$' -or -not $report.startedUtc -or -not $report.finishedUtc) {
         throw 'Desktop receipt is incomplete or failed.'
     }
-    foreach ($name in @('Build', 'Preflight', 'Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel')) {
+    foreach ($name in (@('Build', 'Preflight') + $script:SnapBarReleaseSuites)) {
         $results = @($report.results | Where-Object { $_.name -eq $name })
         if ($results.Count -ne 1 -or $results[0].success -isnot [bool] -or -not $results[0].success -or
             ($results[0].exitCode -isnot [long] -and $results[0].exitCode -isnot [int]) -or $results[0].exitCode -ne 0 -or

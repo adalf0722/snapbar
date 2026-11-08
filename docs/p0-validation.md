@@ -1,5 +1,19 @@
 # P0 驗證紀錄
 
+## 2026-11-07 離線查詞
+
+Core 471／0、WebActions 28／0、Appearance 167／0、Preflight 1／0。桌面測試透過唯讀文字選取觸發「查詞」，驗證未匯入時的設定入口、結果小窗、複製釋義、保留來源焦點，以及查詢中切換焦點會抑制過時結果。報告見 `artifacts/checks/desktop/20261106T233828224Z-c50d0dfedff244c8a23a3f7bb97e5b09/report.json`。
+
+用實際的 XDICT 修正版測量單次 Release 模式的詞典處理時間。匯入 94 毫秒，寫入本機副本 8,260,104 bytes，新建詞典物件首次查詢 54.32 毫秒，載入後查詢 0.030 毫秒。數字只包含詞典處理。桌面測試使用合成詞典，混合 DPI 與檔案選擇器的完整操作尚未驗收。
+
+小窗排版調整後，以當前已匯入的詞典做獨立 WPF 渲染。查詢 `screenshot` 時，確認「詞典未收錄。」可完整顯示。短詞條 `take off` 高 221 DIP，較長的 `running` 高 329 DIP，可讀到完整相關詞組。詞典驗收樣本包含 `screenshot` 的收錄情況和 `clipboard` 是否採台灣常用的「剪貼簿」。Release 重建後通過 Core 471／0、WebActions 30／0、Appearance 167／0、Preflight 1／0。桌面報告見 `artifacts/checks/desktop/20261107T000407788Z-23df3a10c7524cfab41c08c3a6adefeb/report.json`。
+
+## 2026-11-07 rc.9 發佈套件 OCR 回測
+
+從本機已下載的 rc.9 套件複製到隔離目錄，App 啟動 1／0、Probe 通訊 10／0。直接載入發佈版 OCR 組件，以預設繁中優先辨識，六項通過。涵蓋使用者投影片的完整「第五章」標題、無文字層的雙語 PDF 渲染圖、三份掃描 PDF 的英文裁切，以及空白圖回傳無文字。測試使用本機影像輸入，未經桌面框選。
+
+目前只有一台啟用中的螢幕，本機已有 VC++ x64 執行階段。混合 DPI、乾淨 Windows 及真實 Azure 資源仍待驗收。最近的完整 Release 桌面報告另有 632／0（另 Preflight 1／0），見 `artifacts/checks/desktop/20261106T130624103Z-019f1f6fe02245819ec8f4f0ffbd782b/report.json`。
+
 ## 2026-11-06 框選 OCR
 
 新增「OCR 語言優先順序」，預設繁中優先，也可選英文優先。使用者提供的投影片截圖在新建置的 OCR 組件中，繁中優先能辨識完整標題「第五章 CEO Checkpoint: Day 1 大檢核」，英文優先重現「第五章」誤讀。以隔離設定檔驗證切換到英文、重新開啟設定與切回繁中。標題窄裁切仍可能誤讀其他字。
@@ -890,3 +904,15 @@ Repository checks 通過工具契約 12、Core 420 與 Release 建置；完整 R
 本輪使用隔離設定與受控 AI 回應，不呼叫真實付費 AI 服務；測試前已從舊版設定頁正常結束 App，未強制終止程序。既有 AiPanelWindow nullability 與桌面測試未 await 的建置警告不在本次範圍。本輪僅提供本機建置，未更新發佈套件。
 
 最終 `scripts/check.ps1` 通過 actionlint、工具契約 20、Core 437 與 Release 建置。建置報告：`artifacts/checks/build/20261103T113830873Z-852c8e1e626d4ff5b727fcd99241b2e7/report.json`；修改後的中文 Markdown 已以嚴格 UTF-8 無 BOM 重新讀取確認，差異空白檢查通過。
+
+## 2026-11-07 多本離線詞典管理
+
+管理頁改為每本詞典獨立一列，持續顯示名稱、實際可查詢的去重詞條數與啟用狀態，提供啟用／停用及移除。新增詞典不覆蓋其他來源；同名匯入先詢問更新，更新保留原有識別、順序及啟用偏好。既有單本快照自動遷入詞典清單並保留原檔備份；移除後不會因備份而自動恢復。清單以原子替換方式保存，匯入或保存失敗保留原有資料。
+
+查詞先搜尋所有已啟用來源的精確詞條，無精確結果才嘗試英文詞形。結果依來源分組，複製包含來源名稱與各本釋義；停用來源不參與查詢，全部停用時提供管理入口，缺少或損毀的來源不妨礙其他詞典。原有前景／焦點重驗證、過期結果取消與釘住行為保持。
+
+最終 `scripts/check.ps1` 通過 actionlint、工具契約 21、push 契約 10、自動發布契約 11、Core 485 及 Release 建置。建置報告：`artifacts/checks/build/20261107T120124606Z-c6866936a481474b997be8f8df1527d7/report.json`。新增案例涵蓋多來源、詞條去重、停用後重載、同名更新、失敗替換、缺少／損毀來源、清單寫入失敗、路徑驗證與舊資料遷移。
+
+桌面 `Lookup,Appearance` 最終通過 Preflight 1、Lookup 16、Appearance 174，全部零失敗。報告：`artifacts/checks/desktop/20261107T120144549Z-cd02fc5b470f4c61a0db0341245364f8/report.json`。第一輪在切換焦點 fixture 時被 Windows 拒絕前景切換；專用 fixture 改為僅在自己持有前景時續授 runner 原有的切換權限，重跑通過釘住、失焦關閉與過期結果取消。
+
+已目視檢查 `artifacts/ui-polish/settings-multiple-dictionaries.png` 與 `artifacts/ui-polish/lookup-multiple-dictionaries.png`，名稱、詞條數、啟用狀態、移除按鈕及來源分組均完整可見。本輪使用隔離資料與同機 WPF fixture，未新增第三方 App 或混合 DPI 人工驗證；沒有更新發布套件。
