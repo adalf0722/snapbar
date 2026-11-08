@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "kind": "snapbar-desktop",
+  "commit": "83e2f029c1e3240156ee6bb6329e66a3edff6c18",
+  "tree": "c33d3654daf031b01d14f229436cbd32f3c2c6c6",
+  "report": {
+    "schema": 1,
+    "success": true,
+    "sourceFingerprint": "EE5710661A1EA1C5C1DB3DE210CB172AC0EDB2808C6E0B5D8FC9EA8232A42814",
+    "startedUtc": "2026-11-08T01:17:25.9797896Z",
+    "finishedUtc": "2026-11-08T01:19:07.7685898Z",
+    "results": [
+      {
+        "name": "Build",
+        "success": true,
+        "exitCode": 0,
+        "passed": 0,
+        "failed": 0,
+        "seconds": 8.405
+      },
+      {
+        "name": "Preflight",
+        "success": true,
+        "exitCode": 0,
+        "passed": 1,
+        "failed": 0,
+        "seconds": 0.203
+      },
+      {
+        "name": "Lifecycle",
+        "success": true,
+        "exitCode": 0,
+        "passed": 75,
+        "failed": 0,
+        "seconds": 10.91
+      },
+      {
+        "name": "Appearance",
+        "success": true,
+        "exitCode": 0,
+        "passed": 174,
+        "failed": 0,
+        "seconds": 5.369
+      },
+      {
+        "name": "CompatibilitySlow",
+        "success": true,
+        "exitCode": 0,
+        "passed": 22,
+        "failed": 0,
+        "seconds": 60.727
+      },
+      {
+        "name": "AiRuntime",
+        "success": true,
+        "exitCode": 0,
+        "passed": 117,
+        "failed": 0,
+        "seconds": 0.218
+      },
+      {
+        "name": "AiPanel",
+        "success": true,
+        "exitCode": 0,
+        "passed": 251,
+        "failed": 0,
+        "seconds": 8.46
+      },
+      {
+        "name": "Lookup",
+        "success": true,
+        "exitCode": 0,
+        "passed": 16,
+        "failed": 0,
+        "seconds": 7.319
+      }
+    ]
+  }
+}
