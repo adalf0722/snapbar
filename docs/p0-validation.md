@@ -1,5 +1,13 @@
 # P0 驗證紀錄
 
+## 2026-11-09 OCR 共用動作
+
+針對開發版的個別桌面套件，Ocr 36／0、OcrActions 30／0（`artifacts/checks/desktop/20261108T132519551Z-dbbc22c2497141548fc7fa287cb4f64c/report.json`）；AiPanel 251／0、Language 50／0（`artifacts/checks/desktop/20261108T132556475Z-9ae35d62c37a45b48a480f9ed2f4d0dc/report.json`）；Appearance 174／0（`artifacts/checks/desktop/20261108T132645229Z-a5ec6822015f4798bd604ce362ec92a2/report.json`）。最新 OcrActions 36／0（`artifacts/checks/desktop/20261108T220929813Z-81b02dd7809148bf8bb865e34133e2f9/report.json`），涵蓋校正文字及反白、自訂網址、隱藏舊選單、無輸入動作、非同步取消、替換與復原，以及受控 AI 回應。這些結果來自不同次執行，並非同一次完整 Release 驗證。
+
+最終 `scripts/check.ps1` 通過，Core 529／0；標準桌面執行 Compatibility 21／0、OcrActions 36／0，見 `artifacts/checks/desktop/20261108T221329718Z-36110741d7084d008ecb117b09d7f4fc/report.json`。先前組合執行的 AiPanel 有一次原生替換範圍失敗，之後獨立重跑通過；Compatibility 曾有剪貼簿序號檢查失敗（`artifacts/checks/desktop/20261108T220754750Z-c2b6fa4931304ad2bc56f019c76c6f41/report.json`），原因未確認，後續基準版及目前版本分別重跑通過。
+
+以拋棄式文字的 WPF 視覺輸出檢查繁中及英文卡片和獨立的更多選單，另檢查繁中搜尋無結果、停用項目、執行中及套用後狀態，圖檔在 `artifacts/ocr-shared-actions/`。這些是個別視覺元素的渲染，並非完整桌面截圖；受限工作區、混合 DPI 和多螢幕環境尚未驗證。
+
 ## 2026-11-07 離線查詞
 
 Core 471／0、WebActions 28／0、Appearance 167／0、Preflight 1／0。桌面測試透過唯讀文字選取觸發「查詞」，驗證未匯入時的設定入口、結果小窗、複製釋義、保留來源焦點，以及查詢中切換焦點會抑制過時結果。報告見 `artifacts/checks/desktop/20261106T233828224Z-c50d0dfedff244c8a23a3f7bb97e5b09/report.json`。

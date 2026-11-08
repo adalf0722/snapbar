@@ -83,7 +83,8 @@ internal sealed partial class OcrResultWindow
             if (e.Key == Key.Escape) { e.Handled = true; menu.IsOpen = false; editor.Focus(); }
             else if (e.Key is Key.Down or Key.Enter)
             {
-                var first = menu.Items.OfType<MenuItem>().FirstOrDefault(item => item != searchItem && item.IsEnabled);
+                var first = menu.Items.OfType<MenuItem>().FirstOrDefault(item => item != searchItem && item.IsEnabled
+                    && AutomationProperties.GetAutomationId(item) != "OcrManageActions");
                 if (first != null) { e.Handled = true; if (e.Key == Key.Enter) first.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); else first.Focus(); }
             }
         };
