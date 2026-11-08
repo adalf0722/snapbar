@@ -23,7 +23,7 @@ internal sealed class ActionResultWindow : Window
     public ActionResultWindow(string name, string text, bool markdown, bool canApply, Action? apply = null, bool hud = false,
         ScriptDiagnostic? diagnostic = null, bool diagnosticOnly = false, bool lookup = false, bool messageOnly = false,
         Action? openSettings = null, string? openSettingsLabel = null,
-        IReadOnlyList<DictionaryMatch>? lookupMatches = null, string? lookupWarning = null)
+        IReadOnlyList<DictionaryMatch>? lookupMatches = null, string? lookupWarning = null, string? applyLabel = null)
     {
         this.diagnosticOnly = diagnosticOnly;
         if (diagnostic != null) hud = false;
@@ -63,7 +63,7 @@ internal sealed class ActionResultWindow : Window
             { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); } }, "copy"));
             if (!lookup)
             {
-                applyButton = ActionUi.Button(language.Get("ActionResultWindow_009"), () => { applyButton!.IsEnabled = false; apply?.Invoke(); });
+                applyButton = ActionUi.Button(applyLabel ?? language.Get("ActionResultWindow_009"), () => { applyButton!.IsEnabled = false; apply?.Invoke(); });
                 applyButton.IsEnabled = canApply;
                 buttons.Children.Add(applyButton);
             }

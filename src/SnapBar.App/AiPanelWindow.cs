@@ -19,7 +19,8 @@ internal sealed partial class AiPanelWindow : Window
     private readonly IAiTextClient client;
     private readonly bool ownsClient;
     private readonly Func<string, Task<bool>>? apply;
-    private readonly SelectionSnapshot selection;
+    private readonly SelectionSnapshot? selection;
+    private readonly Func<bool>? localCanApply;
     private readonly TextBox input = null!, original;
     private readonly TextBlock basis, hint, count, status, version, execution, placeholder, modelLabel;
     private readonly Button direct, stop, restart, resume, originalTab, resultTab, previous, next, copy, replace, model;
@@ -45,9 +46,16 @@ internal sealed partial class AiPanelWindow : Window
     internal bool TargetValid => targetValid;
 
     internal AiPanelWindow(SelectionSnapshot selection, AiPreferences preferences, Func<string, Task<bool>>? apply = null, IAiTextClient? client = null)
+        : this(selection.Text, preferences, selection, null, apply, client) { }
+
+    internal AiPanelWindow(string text, AiPreferences preferences, Func<bool> canApply, Func<string, Task<bool>> apply, IAiTextClient? client = null)
+        : this(text, preferences, null, canApply, apply, client) { }
+
+    private AiPanelWindow(string text, AiPreferences preferences, SelectionSnapshot? selection, Func<bool>? localCanApply,
+        Func<string, Task<bool>>? apply, IAiTextClient? client)
     {
-        this.selection = selection; this.preferences = preferences; this.apply = apply; ownsClient = client == null;
-        this.client = client ?? new AiHttpClient(); lastProfile = preferences.SelectedProfile; Session = new(selection.Text);
+        this.selection = selection; this.localCanApply = localCanApply; this.preferences = preferences; this.apply = apply; ownsClient = client == null;
+        this.client = client ?? new AiHttpClient(); lastProfile = preferences.SelectedProfile; Session = new(text);
         ActionUi.Setup(this, language.Get("AiPanelWindow_000"), 800, 650); MinWidth = 680; MinHeight = 500; Topmost = true;
         var root = new DockPanel { Margin = new(24, 18, 24, 20) }; var header = new DockPanel { Margin = new(0, 0, 0, 20) };
         model = QuietButton("", ShowSettings, "settings"); model.HorizontalAlignment = HorizontalAlignment.Right;
@@ -110,7 +118,7 @@ internal sealed partial class AiPanelWindow : Window
         AutomationProperties.SetAutomationId(readerArea, "AiReaderArea"); Grid.SetColumn(readerArea, 2); main.Children.Add(readerArea);
         var footer = new DockPanel { Margin = new(0, 16, 0, 0) };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new(12, 0, 0, 0) };
-        copy = ActionUi.Button(language.Get("AiPanelWindow_019"), Copy); replace = ActionUi.Button(language.Get("AiPanelWindow_020"), () => _ = ApplyAsync(), primary: true);
+        copy = ActionUi.Button(language.Get("AiPanelWindow_019"), Copy); replace = ActionUi.Button(language.Get(selection == null ? "Ocr_Apply" : "AiPanelWindow_020"), () => _ = ApplyAsync(), primary: true);
         AutomationProperties.SetAutomationId(copy, "AiCopy"); AutomationProperties.SetAutomationId(replace, "AiReplace");
         copy.Margin = new(0); replace.Margin = new(8, 0, 0, 0);
         actions.Children.Add(copy); actions.Children.Add(replace); DockPanel.SetDock(actions, Dock.Right); footer.Children.Add(actions);
@@ -127,7 +135,7 @@ internal sealed partial class AiPanelWindow : Window
         AutomationProperties.SetAutomationId(originalTab, "AiOriginalTab"); AutomationProperties.SetAutomationId(resultTab, "AiResultTab");
         tabs.Children.Add(originalTab); tabs.Children.Add(resultTab); DockPanel.SetDock(tabs, Dock.Top); body.Children.Add(tabs);
         hint = ActionUi.Text("", 12, ActionUi.Muted); hint.Margin = new(0, 10, 0, 0); DockPanel.SetDock(hint, Dock.Bottom); body.Children.Add(hint);
-        original = AiMarkdownView.Plain(selection.Text); AutomationProperties.SetAutomationId(original, "AiOriginalText");
+        original = AiMarkdownView.Plain(text); AutomationProperties.SetAutomationId(original, "AiOriginalText");
         var resultBody = new DockPanel(); var resultHeader = new DockPanel { Margin = new(20, 8, 12, 0) };
         var history = new StackPanel { Orientation = Orientation.Horizontal };
         previous = QuietButton("‹", () => { Session.MoveHistory(-1); Refresh(); }); previous.ToolTip = language.Get("AiPanelWindow_025");
@@ -195,7 +203,7 @@ internal sealed partial class AiPanelWindow : Window
     }
     private void PlaceNearSelection()
     {
-        var handle = new WindowInteropHelper(this).Handle; var anchor = selection.Bounds;
+        var handle = new WindowInteropHelper(this).Handle; var anchor = selection?.Bounds;
         Native.GetCursorPos(out var cursor); var x = (int)(anchor?.X ?? cursor.X); var y = (int)(anchor?.Bottom ?? cursor.Y);
         var work = Native.WorkArea(x, y); var dpi = Math.Max(96, Native.GetDpiForWindow(handle)) / 96d;
         var width = Math.Min(800 * dpi, work.Width); var height = Math.Min(650 * dpi, work.Height);
@@ -262,7 +270,7 @@ internal sealed partial class AiPanelWindow : Window
             if (renderedText != current.Text) { renderedText = current.Text; resultContent.Content = language.Run(() => AiMarkdownView.Create(current.Text)); }
         }
         copy.Content = Session.ViewingOriginal ? language.Get("AiPanelWindow_047") : language.Get("AiPanelWindow_048");
-        var writable = targetValid && SessionPolicy.CanWrite(selection, selection.Target) && apply != null;
+        var writable = targetValid && CanApplyTarget() && apply != null;
         replace.Visibility = !Session.ViewingOriginal && writable ? Visibility.Visible : Visibility.Collapsed; replace.IsEnabled = !Session.Busy && !applying;
         var primaryCopy = !Session.ViewingOriginal && !writable;
         copy.Background = copy.BorderBrush = primaryCopy ? ActionUi.Accent : Brushes.White;
@@ -272,7 +280,7 @@ internal sealed partial class AiPanelWindow : Window
         copy.Resources["ControlPressed"] = primaryCopy ? ActionUi.Brush("#24489F") : ActionUi.Brush("#E2E7F0");
         status.Text = !targetValid
             ? Session.ViewingOriginal ? language.Get("AiPanelWindow_049") : language.Get("AiPanelWindow_050")
-            : !SessionPolicy.CanWrite(selection, selection.Target)
+            : !CanApplyTarget()
                 ? Session.ViewingOriginal ? language.Get("AiPanelWindow_051") : language.Get("AiPanelWindow_052")
                 : Session.ViewingOriginal ? language.Get("AiPanelWindow_053") : language.Get("AiPanelWindow_054");
         RenderCommands();
@@ -320,11 +328,14 @@ internal sealed partial class AiPanelWindow : Window
     internal async Task ApplyAsync()
     {
         if (closed || applying || Session.Busy || !targetValid || apply == null || Session.Current == null || Session.ViewingOriginal
-            || !SessionPolicy.CanWrite(selection, selection.Target)) return;
+            || !CanApplyTarget()) return;
         applying = true; Refresh();
         try { if (await apply(Session.Current.Text)) Close(); else { targetValid = false; hint.Text = language.Get("AiPanelWindow_066"); } }
         finally { applying = false; Refresh(); }
     }
+    private bool CanApplyTarget() => selection != null
+        ? SessionPolicy.CanWrite(selection, selection.Target)
+        : localCanApply?.Invoke() == true;
     private void Copy()
     { try { Clipboard.SetText(Session.ViewingOriginal ? Session.Original : Session.Current?.Text ?? ""); hint.Text = language.Get("AiPanelWindow_067"); } catch (ExternalException) { hint.Text = language.Get("AiPanelWindow_068"); } }
     private void TogglePin(AiPrompt prompt)

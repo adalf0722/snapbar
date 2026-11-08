@@ -2644,4 +2644,20 @@ Its enabled state will be preserved.</value>
   <data name="Ocr_CaptureError" xml:space="preserve"><value>Could not capture the screen. Please try again.</value></data>
   <data name="Ocr_WorkerError" xml:space="preserve"><value>Could not start the recognition worker. Please try again.</value></data>
   <data name="Ocr_ProtocolError" xml:space="preserve"><value>Could not read the recognition response. Please try again.</value></data>
+  <data name="Ocr_Apply" xml:space="preserve"><value>Apply to recognized text</value></data>
+  <data name="Ocr_More" xml:space="preserve"><value>More</value></data>
+  <data name="Ocr_ActionSearch" xml:space="preserve"><value>Search actions</value></data>
+  <data name="Ocr_ActionUnavailable" xml:space="preserve"><value>Action unavailable for this text.</value></data>
+  <data name="Ocr_ActionChanged" xml:space="preserve"><value>Action changed. Open More and select it again.</value></data>
+  <data name="Ocr_ManageActions" xml:space="preserve"><value>Manage actions</value></data>
+  <data name="Ocr_ActionRunning" xml:space="preserve"><value>Running action…</value></data>
+  <data name="Ocr_ActionComplete" xml:space="preserve"><value>Action completed.</value></data>
+  <data name="Ocr_ActionSaveFailed" xml:space="preserve"><value>Could not save recent action.</value></data>
+  <data name="Ocr_ActionCancel" xml:space="preserve"><value>Cancel action</value></data>
+  <data name="Ocr_InvalidLink" xml:space="preserve"><value>Select a valid web link.</value></data>
+  <data name="Ocr_InvalidPath" xml:space="preserve"><value>Select a valid file path.</value></data>
+  <data name="Ocr_InvalidLookup" xml:space="preserve"><value>Select a word to look up.</value></data>
+  <data name="Ocr_ActionFailed" xml:space="preserve"><value>Could not run this action.</value></data>
+  <data name="Ocr_ActionCancelled" xml:space="preserve"><value>Action cancelled.</value></data>
+  <data name="Ocr_ActionTargetChanged" xml:space="preserve"><value>Recognized text or action changed; result was discarded.</value></data>
 </root>

@@ -2644,4 +2644,20 @@
   <data name="Ocr_CaptureError" xml:space="preserve"><value>無法擷取螢幕，請重新框選。</value></data>
   <data name="Ocr_WorkerError" xml:space="preserve"><value>無法啟動辨識工作程序，請重新框選。</value></data>
   <data name="Ocr_ProtocolError" xml:space="preserve"><value>無法讀取辨識回應，請重新框選。</value></data>
+  <data name="Ocr_Apply" xml:space="preserve"><value>套用到辨識文字</value></data>
+  <data name="Ocr_More" xml:space="preserve"><value>更多</value></data>
+  <data name="Ocr_ActionSearch" xml:space="preserve"><value>搜尋動作</value></data>
+  <data name="Ocr_ActionUnavailable" xml:space="preserve"><value>此文字不適用這個動作。</value></data>
+  <data name="Ocr_ActionChanged" xml:space="preserve"><value>動作已變更，請重新開啟更多並選擇。</value></data>
+  <data name="Ocr_ManageActions" xml:space="preserve"><value>管理動作</value></data>
+  <data name="Ocr_ActionRunning" xml:space="preserve"><value>正在執行動作…</value></data>
+  <data name="Ocr_ActionComplete" xml:space="preserve"><value>動作已完成。</value></data>
+  <data name="Ocr_ActionSaveFailed" xml:space="preserve"><value>無法儲存最近使用的動作。</value></data>
+  <data name="Ocr_ActionCancel" xml:space="preserve"><value>取消動作</value></data>
+  <data name="Ocr_InvalidLink" xml:space="preserve"><value>請選擇有效的網頁連結。</value></data>
+  <data name="Ocr_InvalidPath" xml:space="preserve"><value>請選擇有效的檔案路徑。</value></data>
+  <data name="Ocr_InvalidLookup" xml:space="preserve"><value>請選擇要查詢的單字。</value></data>
+  <data name="Ocr_ActionFailed" xml:space="preserve"><value>無法執行此動作。</value></data>
+  <data name="Ocr_ActionCancelled" xml:space="preserve"><value>已取消動作。</value></data>
+  <data name="Ocr_ActionTargetChanged" xml:space="preserve"><value>辨識文字或動作已變更，結果已捨棄。</value></data>
 </root>

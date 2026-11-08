@@ -219,10 +219,15 @@ internal static class InterfaceLanguageTest
                 UiText.SetLanguage("zh-Hant"); UiText.Refresh(identity);
                 Check("user text and adopted sample names are never translated", userLabel.Text == "Copy" && productLabel.Text == "複製" && customLabel.Text == "Copy");
                 Children<TextBox>(ocrWindow).Single().Text = "";
-                Check("empty OCR disables search", !Children<Button>(ocrWindow).Single(button => AutomationProperties.GetName(button) == "Search").IsEnabled);
+                var ocrMore = Children<Button>(ocrWindow).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
+                ocrMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var ocrMenu = ocrMore.ContextMenu;
+                Check("empty OCR disables search", !ocrMenu.Items.OfType<MenuItem>().Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").IsEnabled);
+                ocrMenu.IsOpen = false;
                 Children<TextBox>(ocrWindow).Single().Text = new string('x', 20000);
-                Children<Button>(ocrWindow).Single(button => AutomationProperties.GetName(button) == "Search").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Check("OCR result callbacks retain opening-language guidance", Children<TextBlock>(ocrWindow).Any(text => text.Text.StartsWith("Could not search", StringComparison.Ordinal)));
+                ocrMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                ocrMore.ContextMenu.Items.OfType<MenuItem>().Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                Check("OCR result callbacks retain opening-language guidance", Children<TextBlock>(ocrWindow).Any(text => text.Text == "Action unavailable for this text."));
                 ocrWindow.Close();
                 client.Completion.SetResult(new AiTextResult(true, "Generated 原文 content remains unchanged."));
                 for (int attempt = 0; aiPanel.Session.Busy && attempt < 50; attempt++) await Task.Delay(10);

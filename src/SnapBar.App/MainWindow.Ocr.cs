@@ -113,7 +113,7 @@ public sealed partial class MainWindow
     }
     private OcrResultWindow ShowSessionCard(OcrSession session, ScreenRect? region)
     {
-        var window = new OcrResultWindow(preferences.SearchUrlTemplate, region);
+        var window = new OcrResultWindow(preferences.SearchUrlTemplate, region, OcrActions());
         ocrResultWindow = window;
         window.Closed += (_, _) =>
         {
@@ -147,10 +147,13 @@ public sealed partial class MainWindow
     }
     private void ShowOcrResult(OcrResult result)
     {
-        var window = new OcrResultWindow(preferences.SearchUrlTemplate, null);
+        var window = new OcrResultWindow(preferences.SearchUrlTemplate, null, OcrActions());
         ocrResultWindow = window;
         window.Closed += (_, _) => { if (ReferenceEquals(ocrResultWindow, window)) ocrResultWindow = null; };
         window.Reselect += () => { window.Close(); StartOcr(); };
         window.SetResult(result); window.Show();
     }
+    private OcrActionDependencies OcrActions() => new(() => preferences.Actions, () => preferences.SearchUrlTemplate,
+        value => { var saved = SaveActionSettings(value); actionSettingsPanel.ShowSettings(value); return saved; }, ShowActionSettings, aiPreferences,
+        offlineDictionary, ShowDictionarySettings);
 }

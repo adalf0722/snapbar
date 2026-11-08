@@ -11,14 +11,14 @@ using SnapBar.Windows.Ocr;
 
 namespace SnapBar.App;
 
-internal sealed class OcrResultWindow : Window
+internal sealed partial class OcrResultWindow : Window
 {
     internal static TimeSpan ProgressDelay { get; set; } = TimeSpan.FromMilliseconds(300);
     internal static TimeSpan CopyConfirmationDuration { get; set; } = TimeSpan.FromSeconds(1.5);
     private readonly UiLanguage language = UiText.Capture();
     private readonly TextBlock status;
     private readonly TextBox editor;
-    private readonly Button copy, search, reselect, cancel;
+    private readonly Button copy, more, reselect, cancel;
     private readonly ProgressBar progress;
     private readonly DispatcherTimer progressTimer, copyTimer;
     private readonly ScreenRect? region;
@@ -26,9 +26,10 @@ internal sealed class OcrResultWindow : Window
     internal event Action? Reselect;
     internal bool IsProcessing => !completed;
 
-    internal OcrResultWindow(string searchTemplate, ScreenRect? region)
+    internal OcrResultWindow(string searchTemplate, ScreenRect? region, OcrActionDependencies? actionDependencies = null)
     {
         this.region = region;
+        InitializeActions(actionDependencies ?? OcrActionDependencies.Default(searchTemplate));
         ActionUi.Setup(this, language.Get("MainWindow_Ocr_000"), 420, 180);
         MinWidth = 320; MinHeight = 120; Topmost = true; ResizeMode = ResizeMode.NoResize;
         var body = new DockPanel { Margin = new(18) }; Content = body;
@@ -59,16 +60,9 @@ internal sealed class OcrResultWindow : Window
             catch (ExternalException) { copied = false; status.Text = language.Get("MainWindow_Ocr_009"); UpdateActions(); }
         }, 1);
         reselect = AddButton("Ocr_Reselect", "OcrReselect", () => Reselect?.Invoke(), 2);
-        search = AddButton("MainWindow_Ocr_010", "OcrSearch", () =>
-        {
-            var destination = WebActionPolicy.Search(SelectedText(), searchTemplate);
-            if (!destination.Success) { status.Text = language.Get("MainWindow_Ocr_011"); return; }
-            try { BrowserLauncher.Open(destination.Uri!); }
-            catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
-            { status.Text = language.Get("MainWindow_Ocr_012"); }
-        }, 3);
+        more = AddButton("Ocr_More", "OcrMore", OpenActions, 3);
         cancel = AddButton("Ocr_Cancel", "OcrCancel", Close, 4);
-        copy.Visibility = reselect.Visibility = search.Visibility = Visibility.Collapsed;
+        copy.Visibility = reselect.Visibility = more.Visibility = Visibility.Collapsed;
         editor.TextChanged += (_, _) => EditorChanged();
         editor.SelectionChanged += (_, _) => EditorChanged();
         progressTimer = new DispatcherTimer { Interval = ProgressDelay };
@@ -84,8 +78,8 @@ internal sealed class OcrResultWindow : Window
                 return 0;
             });
         };
-        Closed += (_, _) => { progressTimer.Stop(); copyTimer.Stop(); editor.Clear(); };
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; Close(); } };
+        Closed += (_, _) => { DisposeActions(); progressTimer.Stop(); copyTimer.Stop(); editor.Clear(); };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; if (!CloseActions()) Close(); } };
 
         Button AddButton(string key, string id, Action action, int tab)
         {
@@ -97,6 +91,7 @@ internal sealed class OcrResultWindow : Window
     private string SelectedText() => editor.SelectionLength > 0 ? editor.SelectedText : editor.Text;
     private void EditorChanged()
     {
+        ActionEditorChanged();
         copied = false; copyTimer?.Stop(); UpdateActions();
     }
     private static void SetLabel(Button button, string label)
@@ -106,8 +101,8 @@ internal sealed class OcrResultWindow : Window
     }
     private void UpdateActions()
     {
-        if (copy == null || search == null) return;
-        copy.IsEnabled = search.IsEnabled = !string.IsNullOrWhiteSpace(SelectedText());
+        if (copy == null || more == null) return;
+        copy.IsEnabled = !string.IsNullOrWhiteSpace(SelectedText());
         SetLabel(copy, language.Get(copied ? "Ocr_Copied" : editor.SelectionLength > 0 ? "Ocr_CopySelected" : "Ocr_Copy"));
     }
     internal void SetResult(OcrResult result)
@@ -121,11 +116,11 @@ internal sealed class OcrResultWindow : Window
             "capture" => "Ocr_CaptureError", "worker" => "Ocr_WorkerError", "protocol" => "Ocr_ProtocolError",
             _ => "MainWindow_Ocr_006"
         });
-        if (result.Text != null)
+        if (result.Status == "ok" && result.Text != null)
         {
             MinHeight = 220; Height = 300; ResizeMode = ResizeMode.CanResize;
             editor.Text = result.Text; editor.Visibility = Visibility.Visible;
-            copy.Visibility = search.Visibility = Visibility.Visible;
+            copy.Visibility = more.Visibility = Visibility.Visible;
             UpdateActions(); editor.Focus();
         }
         WindowWorkArea.Attach(this);
