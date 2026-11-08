@@ -17,15 +17,18 @@ internal sealed class ActionResultWindow : Window
     private readonly Button? applyButton;
     private readonly TextBlock? hint;
     private readonly bool diagnosticOnly;
+    private readonly string? staleApplyHint;
     private nint handle;
     private readonly DispatcherTimer? timer;
     internal bool IsLookupPinned { get; private set; }
     public ActionResultWindow(string name, string text, bool markdown, bool canApply, Action? apply = null, bool hud = false,
         ScriptDiagnostic? diagnostic = null, bool diagnosticOnly = false, bool lookup = false, bool messageOnly = false,
         Action? openSettings = null, string? openSettingsLabel = null,
-        IReadOnlyList<DictionaryMatch>? lookupMatches = null, string? lookupWarning = null, string? applyLabel = null)
+        IReadOnlyList<DictionaryMatch>? lookupMatches = null, string? lookupWarning = null, string? applyLabel = null,
+        string? applyHint = null, string? staleApplyHint = null)
     {
         this.diagnosticOnly = diagnosticOnly;
+        this.staleApplyHint = staleApplyHint;
         if (diagnostic != null) hud = false;
         ActionUi.Setup(this, UiText.Join(name, (diagnosticOnly ? language.Get("ActionResultWindow_001") : language.Get("ActionResultWindow_002"))),
             hud || lookup ? 420 : 650, hud ? 180 : 520);
@@ -58,7 +61,7 @@ internal sealed class ActionResultWindow : Window
         if (!diagnosticOnly)
         {
             var footer = new StackPanel { Margin = new(0, 12, 0, 0) }; var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            hint = ActionUi.Text(canApply ? language.Get("ActionResultWindow_004") : language.Get("ActionResultWindow_005"), 11, ActionUi.Muted);
+            hint = ActionUi.Text(canApply ? applyHint ?? language.Get("ActionResultWindow_004") : staleApplyHint ?? language.Get("ActionResultWindow_005"), 11, ActionUi.Muted);
             if (!messageOnly) buttons.Children.Add(ActionUi.Button(language.Get("ActionResultWindow_006"), () =>
             { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); } }, "copy"));
             if (!lookup)
@@ -108,7 +111,7 @@ internal sealed class ActionResultWindow : Window
     {
         if (diagnosticOnly) return;
         if (applyButton != null) applyButton.IsEnabled = false;
-        if (hint != null) hint.Text = language.Get("ActionResultWindow_016");
+        if (hint != null) hint.Text = staleApplyHint ?? language.Get("ActionResultWindow_016");
     }
     public bool Contains(int x, int y) => IsVisible && Native.GetWindowRect(handle, out var r) && x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom;
     internal void PlaceNear(ScreenRect? bounds)

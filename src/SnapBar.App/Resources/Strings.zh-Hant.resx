@@ -264,6 +264,8 @@
   <data name="ActionEditorWindow_078" xml:space="preserve">
     <value>以 Markdown 排版顯示結果，可自行複製或套用。</value>
   </data>
+  <data name="Ocr_ApplyHint" xml:space="preserve"><value>套用會替換辨識文字中原先的範圍。文字或選取範圍變更後無法替換，剪貼簿不受影響。</value></data>
+  <data name="Ocr_ApplyStaleHint" xml:space="preserve"><value>辨識文字的套用目標已無法使用，仍可複製輸出。</value></data>
   <data name="ActionResultWindow_000" xml:space="preserve">
     <value>管理詞典</value>
   </data>

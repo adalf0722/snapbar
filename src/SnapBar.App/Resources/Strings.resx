@@ -264,6 +264,8 @@ Results appear here after running.</value>
   <data name="ActionEditorWindow_078" xml:space="preserve">
     <value>Show a formatted Markdown result where you can copy or apply it.</value>
   </data>
+  <data name="Ocr_ApplyHint" xml:space="preserve"><value>Apply replaces the captured range in recognized text. Changed text or selection cannot be replaced; the clipboard is unchanged.</value></data>
+  <data name="Ocr_ApplyStaleHint" xml:space="preserve"><value>The recognized text target is no longer available. You can still copy the output.</value></data>
   <data name="ActionResultWindow_000" xml:space="preserve">
     <value>Manage dictionaries</value>
   </data>

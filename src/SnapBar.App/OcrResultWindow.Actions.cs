@@ -117,7 +117,7 @@ internal sealed partial class OcrResultWindow
             actionResult?.Close();
             var result = new ActionResultWindow(UiNames.Action(item, language), text, item.Custom?.Output == ActionOutput.Markdown,
                 allowApply && Strict(), () => { if (!Replace(text)) actionResult?.InvalidateTarget(); }, item.Custom?.Output == ActionOutput.Hud, diagnostic,
-                applyLabel: language.Get("Ocr_Apply"));
+                applyLabel: language.Get("Ocr_Apply"), applyHint: language.Get("Ocr_ApplyHint"), staleApplyHint: language.Get("Ocr_ApplyStaleHint"));
             actionResult = result; result.Show();
         }
         using var cancellation = new CancellationTokenSource(); actionCancellation = cancellation;

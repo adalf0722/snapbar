@@ -960,3 +960,9 @@ OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像�
 已目視檢查 `artifacts/ui-polish/ocr-frozen-overlay.png`、`ocr-selection.png`、`ocr-processing-card.png`、`ocr-result-card.png`、`ocr-empty-card.png`、`ocr-timeout-card.png`、`ocr-runtime-card.png` 與 `ocr-result-restricted.png`。全螢幕證據先以拋棄式白色視窗遮住使用者桌面，僅保留 fixture；拖曳時框內原亮度、框外暗幕與細選框清楚可見，固定提示已隱藏。處理、空結果與成功卡的文字／按鈕完整，成功編輯器有焦點框，受限 360 × 240 DIP 工作區仍可操作。實際卡片位置另由螢幕工作區邊界約束；受限工作區使用現有注入 seam，不等同第二台實體顯示器。
 
 4K／8K、150% DPI、混合 DPI、負座標與多螢幕實機未量測；負座標裁切由 backend 隔離案例驗證。未新增外部 App 人工相容性驗證，未發布、推送、安裝或替換 `artifacts/p0`。新增更新說明 `release-notes/2026-11-08-ocr-capture-experience.json`。
+
+## 2026-11-09 OCR 共用動作補充驗證
+
+針對 OCR 動作輸出與生命週期，桌面 `OcrActions` 60 項通過，報告為 `artifacts/checks/desktop/20261108T222402508Z-43b6982f1f624fddacf80b241efef3d0/report.json`；`Language` 50 項通過，報告為 `artifacts/checks/desktop/20261108T222031433Z-438697e41eda4353b362625dfbbf2cb4/report.json`。涵蓋剪貼簿成功與占用時保留輸出、無輸入工作在編輯後完成、關閉後晚到輸出、AI 重選後舊目標、路徑準備後重新驗證、兩個暫存詞典的分組查詢，以及同一自訂網址經原生選字與 OCR 執行。剪貼簿測試使用既有備份／復原機制。OCR 結果視窗的套用提示改為說明本機文字範圍，並保留原選字提示。`scripts/check.ps1` 通過，Core 529 項通過；建置報告 `artifacts/checks/build/20261108T222444977Z-e9766ff076724d07a8f611bf7e8165c6/report.json`。
+
+已檢查 `artifacts/ocr-shared-actions/` 的英文執行中、套用後、空搜尋與受限工作區影像；受限案例使用模擬 360 × 240 DIP 工作區，不代表混合 DPI 或多螢幕實機。三次 `Actions` 均在既有的原生捲動關閉檢查失敗（各 9 項通過、1 項失敗）；隔離的整合前基準 `42cfc23` 也在相同檢查得到 9 通過、1 失敗，記錄於 `artifacts/ocr-actions-baseline-42cfc23-native-actions.log`。原因未確認，未修改原測試或原生政策，亦不宣稱完整 Release 驗證通過。
