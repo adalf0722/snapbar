@@ -37,6 +37,20 @@ internal static class ActionCatalogTests
                 && !selected.TryReplace(card, 1, "corrected text", 0, 0, "word", out _)
                 && !selected.TryReplace(Guid.NewGuid(), 1, "corrected text", 10, 4, "word", out _);
         });
+        check("local full text ticket replaces the entire editor", () =>
+        {
+            var card = Guid.NewGuid();
+            var ticket = LocalActionTicket.Create(card, 4, "corrected text", 3, 0, true);
+            return ticket.TryReplace(card, 4, "corrected text", 3, 0, "replacement", out var changed)
+                && changed == "replacement";
+        });
+        check("local ticket rejects changed text even if the revision is unchanged", () =>
+        {
+            var card = Guid.NewGuid();
+            var ticket = LocalActionTicket.Create(card, 4, "corrected text", 0, 4, true);
+            return !ticket.IsCurrent(card, 4, "different text", 0, 4)
+                && !ticket.TryReplace(card, 4, "different text", 0, 4, "replacement", out _);
+        });
         bool Reject(Action test) { try { test(); return false; } catch (ArgumentException) { return true; } }
         ActionSettings PinFiveMore(ActionSettings value) => ActionCatalog.GetMore(value, selection)
             .Where(item => item.Id != action.Id).Take(5)
