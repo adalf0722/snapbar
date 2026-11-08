@@ -21,7 +21,7 @@ internal static class HotkeySettingsTests
                 {
                     Seed("{\"schemaVersion\":" + schema + ",\"automaticDetectionEnabled\":true,\"clipboardCompatibilityEnabled\":false,\"sublimeCompatibilityEnabled\":false}");
                     var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Hotkey == HotkeySettings.Default
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 8 && loaded.Settings.Hotkey == HotkeySettings.Default
                         && loaded.Settings.AutomaticDetectionEnabled && !loaded.Settings.ClipboardCompatibilityEnabled
                         && loaded.Settings.SublimeCompatibilityEnabled == false && before.SequenceEqual(File.ReadAllBytes(path));
                 });

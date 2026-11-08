@@ -9,6 +9,18 @@ internal static class Program
     {
         // A side-effect-free launch check: no settings, tray, input hooks or single-instance signal.
         if (args.SequenceEqual(["--startup-check"])) return;
+        if (args.SequenceEqual(["--language-resources-check"]))
+        {
+            try
+            {
+                var english = UiText.Get(System.Globalization.CultureInfo.GetCultureInfo("en"), "Action_copy");
+                var chinese = UiText.Get(System.Globalization.CultureInfo.GetCultureInfo("zh-Hant"), "Action_copy");
+                Environment.ExitCode = english == "Copy" && chinese == "複製"
+                    && System.IO.File.Exists(System.IO.Path.Combine(AppContext.BaseDirectory, "zh-Hant", "SnapBar.App.resources.dll")) ? 0 : 1;
+            }
+            catch (Exception error) when (error is System.Resources.MissingManifestResourceException or System.IO.IOException) { Environment.ExitCode = 1; }
+            return;
+        }
         bool fixture = args.Contains("--fixture");
         if (fixture)
         {

@@ -17,7 +17,7 @@ public static class AiPromptCatalog
     {
         settings = AiPolicy.Normalize(settings);
         var index = Array.FindIndex(settings.Prompts, prompt => prompt.Id == id);
-        if (index < 0) throw new ArgumentException("找不到這個 AI 命令，請重新選取。");
+        if (index < 0) throw new ProductValidationException("ai-prompt-not-found");
         deletion = new(settings.Prompts[index], index, Array.IndexOf(settings.PinnedIds, id));
         return AiPolicy.Normalize(settings with { Prompts = settings.Prompts.Where(prompt => prompt.Id != id).ToArray() });
     }
@@ -28,9 +28,9 @@ public static class AiPromptCatalog
         ArgumentNullException.ThrowIfNull(deletion);
         ArgumentNullException.ThrowIfNull(deletion.Prompt);
         if (settings.Prompts.Any(prompt => prompt.Id == deletion.Prompt.Id))
-            throw new ArgumentException("已有相同識別碼的 AI 命令，無法復原。");
+            throw new ProductValidationException("ai-prompt-duplicate");
         if (settings.Prompts.Length >= 128)
-            throw new ArgumentException("AI 命令已達 128 筆，請先移除不需要的命令再復原。");
+            throw new ProductValidationException("ai-prompt-limit", 128);
         var prompts = settings.Prompts.ToList();
         prompts.Insert(Math.Clamp(deletion.Index, 0, prompts.Count), deletion.Prompt);
         var pins = settings.PinnedIds.ToList();

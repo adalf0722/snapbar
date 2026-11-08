@@ -4,8 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace SnapBar.Core;
 
-public sealed record ApplicationSettings(int SchemaVersion = 7, bool AutomaticDetectionEnabled = false)
+public sealed record ApplicationSettings(int SchemaVersion = 8, bool AutomaticDetectionEnabled = false)
 {
+    public string InterfaceLanguage { get; init; } = global::SnapBar.Core.InterfaceLanguage.System;
     public HotkeySettings Hotkey { get; init; } = HotkeySettings.Default;
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public HotkeySettings? SearchHotkey { get; init; }
@@ -41,12 +42,16 @@ public sealed class SettingsStore(string path)
             using var stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (stream.Length > 64 * 1024) return new(new(), "settings-too-large");
             using var reader = new StreamReader(stream, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: false);
-            var settings = JsonSerializer.Deserialize<ApplicationSettings>(reader.ReadToEnd(), JsonOptions);
+            using var document = JsonDocument.Parse(reader.ReadToEnd());
+            var settings = document.RootElement.Deserialize<ApplicationSettings>(JsonOptions);
             if (settings == null) return new(new(), "settings-invalid");
-            if (settings.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6 or 7)) return new(new(), "settings-version");
+            if (settings.SchemaVersion is not (1 or 2 or 3 or 4 or 5 or 6 or 7 or 8)) return new(new(), "settings-version");
             if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate)) return new(new(), "settings-invalid");
             backupBeforeSave = settings.Hotkey?.IsValid != true;
-            settings = settings with { SchemaVersion = 7, Hotkey = backupBeforeSave ? HotkeySettings.Default : settings.Hotkey!,
+            var language = !document.RootElement.TryGetProperty("interfaceLanguage", out _)
+                && (settings.SchemaVersion < 8 || !document.RootElement.TryGetProperty("schemaVersion", out _))
+                ? global::SnapBar.Core.InterfaceLanguage.TraditionalChinese : global::SnapBar.Core.InterfaceLanguage.Normalize(settings.InterfaceLanguage);
+            settings = settings with { SchemaVersion = 8, InterfaceLanguage = language, Hotkey = backupBeforeSave ? HotkeySettings.Default : settings.Hotkey!,
                 ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
             settings = NormalizeActionHotkeys(settings);
             writable = true;
@@ -62,13 +67,13 @@ public sealed class SettingsStore(string path)
 
     public void Save(ApplicationSettings settings)
     {
-        if (!writable || settings.SchemaVersion != 7)
+        if (!writable || settings.SchemaVersion != 8)
             throw new InvalidOperationException("Existing settings must be preserved");
         if (!WebActionPolicy.IsValidSearchTemplate(settings.SearchUrlTemplate))
             throw new InvalidOperationException("Invalid search template");
         if (settings.Hotkey?.IsValid != true) throw new InvalidOperationException("Invalid hotkey");
         if (NormalizeActionHotkeys(settings) != settings) throw new InvalidOperationException("Invalid action hotkey");
-        settings = settings with { ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
+        settings = settings with { InterfaceLanguage = global::SnapBar.Core.InterfaceLanguage.Normalize(settings.InterfaceLanguage), ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, JsonOptions);
         if (bytes.Length > 64 * 1024) throw new InvalidOperationException("Settings exceed 64 KiB");
         var directory = Path.GetDirectoryName(FilePath)!;

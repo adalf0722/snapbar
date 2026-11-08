@@ -55,7 +55,7 @@ internal static class AiMarkdownView
     private static void AddCode(FlowDocument document, string text)
     {
         var panel = new DockPanel { Background = ActionUi.Canvas, Margin = new(0, 6, 0, 12) };
-        var copy = ActionUi.Button("複製程式碼", () => { try { Clipboard.SetText(text); } catch (System.Runtime.InteropServices.ExternalException) { } });
+        var copy = ActionUi.Button(UiText.Get("AiMarkdownView_000"), () => { try { Clipboard.SetText(text); } catch (System.Runtime.InteropServices.ExternalException) { } });
         copy.HorizontalAlignment = HorizontalAlignment.Right; DockPanel.SetDock(copy, Dock.Top); panel.Children.Add(copy);
         var code = Plain(text); code.FontFamily = new("Consolas"); code.TextWrapping = TextWrapping.NoWrap; code.Background = ActionUi.Canvas;
         code.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto; code.MaxHeight = 320; panel.Children.Add(code);

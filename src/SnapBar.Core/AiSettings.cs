@@ -35,15 +35,15 @@ public static class AiPolicy
     public static string? ValidateProfile(AiProviderProfile profile, bool requireModel = true)
     {
         if (profile == null || !Text(profile.Id, 1, 64) || !Text(profile.Name, 1, 64) || !Enum.IsDefined(profile.Protocol))
-            return "Invalid provider profile.";
+            return "ai-profile-invalid";
         if (!Text(profile.Endpoint, 1, 2048) || profile.Endpoint.Any(char.IsWhiteSpace) || profile.Endpoint.Contains('\\')
             || !Uri.TryCreate(profile.Endpoint, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttps && !(uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback))
             || uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0
             || profile.Endpoint.Contains('?') || profile.Endpoint.Contains('#') || string.IsNullOrEmpty(uri.Host))
-            return "Use a full HTTPS endpoint or loopback HTTP endpoint without credentials, query, or fragment.";
+            return "ai-endpoint-invalid";
         if (!Text(profile.Model, 0, 128) || (requireModel && string.IsNullOrWhiteSpace(profile.Model)))
-            return "Enter a model name (up to 128 characters).";
+            return "ai-model-invalid";
         return null;
     }
 
@@ -51,16 +51,16 @@ public static class AiPolicy
     {
         if (settings == null || settings.SchemaVersion != 1 || settings.Profiles == null || settings.Profiles.Length is < 1 or > 32
             || settings.Prompts == null || settings.Prompts.Length > 128)
-            throw new ArgumentException("Invalid AI settings.");
+            throw new ProductValidationException("ai-settings-invalid");
         var profileIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var profile in settings.Profiles)
-            if (ValidateProfile(profile, false) != null || !profileIds.Add(profile.Id)) throw new ArgumentException("Invalid provider profile.");
-        if (settings.SelectedProfileId == null || !profileIds.Contains(settings.SelectedProfileId)) throw new ArgumentException("Unknown provider profile.");
+            if (ValidateProfile(profile, false) != null || !profileIds.Add(profile.Id)) throw new ProductValidationException("ai-profile-invalid");
+        if (settings.SelectedProfileId == null || !profileIds.Contains(settings.SelectedProfileId)) throw new ProductValidationException("ai-profile-unknown");
         var promptIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var prompt in settings.Prompts)
             if (prompt == null || !Text(prompt.Id, 1, 64) || !promptIds.Add(prompt.Id) || !Text(prompt.Name, 1, 64)
                 || !Text(prompt.Instruction, 1, 8192) || !Text(prompt.Category, 0, 32) || !Text(prompt.Keywords, 0, 256)
-                || !Text(prompt.Icon, 1, 64)) throw new ArgumentException("Invalid AI prompt.");
+                || !Text(prompt.Icon, 1, 64)) throw new ProductValidationException("ai-prompt-invalid");
         string[] Filter(string[]? ids, int maximum) => (ids ?? []).Where(id => id != null && promptIds.Contains(id)).Distinct(StringComparer.Ordinal).Take(maximum).ToArray();
         return settings with { Profiles = [.. settings.Profiles], Prompts = [.. settings.Prompts], PinnedIds = Filter(settings.PinnedIds, 128), RecentIds = Filter(settings.RecentIds, 10) };
     }

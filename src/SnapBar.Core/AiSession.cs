@@ -1,6 +1,9 @@
 namespace SnapBar.Core;
 
-public sealed record AiVersion(long Id, string Text, string Instruction, string BasisLabel);
+public sealed record AiVersion(long Id, string Text, string Instruction, string BasisLabel)
+{
+    public long? BasisId { get; init; }
+}
 public sealed record AiRequestTicket(long Id, string SourceText, string Instruction, long? BasisId, int HistoryIndex, long DraftRevision, long ViewRevision);
 
 public sealed class AiSession
@@ -53,7 +56,7 @@ public sealed class AiSession
         var branchIndex = ticket.BasisId == null ? ticket.HistoryIndex : versions.FindIndex(v => v.Id == ticket.BasisId);
         // A detached basis is older than the retained branch; preserve its snapshot, begin a new branch.
         if (branchIndex + 1 < versions.Count) versions.RemoveRange(branchIndex + 1, versions.Count - branchIndex - 1);
-        var version = new AiVersion(++versionId, text, ticket.Instruction, ticket.BasisId is { } id ? $"第 {id} 版" : "原文");
+        var version = new AiVersion(++versionId, text, ticket.Instruction, ticket.BasisId is { } id ? $"第 {id} 版" : "原文") { BasisId = ticket.BasisId };
         versions.Add(version);
         if (versions.Count > 20) versions.RemoveRange(0, versions.Count - 20);
         Index = versions.Count - 1;

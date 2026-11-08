@@ -35,14 +35,14 @@ public static class CustomActionPolicy
 
     public static string? Validate(CustomActionDefinition action)
     {
-        if (action == null || !ValidId(action.Id)) return "動作識別碼無效。";
-        if (string.IsNullOrWhiteSpace(action.Name) || action.Name.Length > 32 || action.Name.Any(char.IsControl)) return "名稱須為 1 至 32 個字元，且不可包含控制字元。";
-        if (!Enum.IsDefined(action.Kind) || !Enum.IsDefined(action.Output)) return "動作類型或輸出方式無效。";
-        if (action.TimeoutSeconds is < 1 or > 300) return "逾時須為 1 至 300 秒。";
-        if (string.IsNullOrWhiteSpace(action.Content) || action.Content.Length > 32768) return "內容須為 1 至 32768 個字元。";
-        if (action.InterpreterPath != null && (action.InterpreterPath.Length > 32768 || action.InterpreterPath.Any(char.IsControl))) return "解譯器路徑無效。";
-        if (action.Kind == CustomActionKind.Url && !action.UseSelection) return "網址動作必須使用選取文字。";
-        if (action.Kind == CustomActionKind.Url && !ValidTemplate(action.Content)) return "網址須使用 HTTP 或 HTTPS，並在路徑、查詢或片段包含一次 ***。";
+        if (action == null || !ValidId(action.Id)) return "action-id-invalid";
+        if (string.IsNullOrWhiteSpace(action.Name) || action.Name.Length > 32 || action.Name.Any(char.IsControl)) return "action-name-invalid";
+        if (!Enum.IsDefined(action.Kind) || !Enum.IsDefined(action.Output)) return "action-kind-invalid";
+        if (action.TimeoutSeconds is < 1 or > 300) return "action-timeout-invalid";
+        if (string.IsNullOrWhiteSpace(action.Content) || action.Content.Length > 32768) return "action-content-invalid";
+        if (action.InterpreterPath != null && (action.InterpreterPath.Length > 32768 || action.InterpreterPath.Any(char.IsControl))) return "action-interpreter-invalid";
+        if (action.Kind == CustomActionKind.Url && !action.UseSelection) return "action-selection-required";
+        if (action.Kind == CustomActionKind.Url && !ValidTemplate(action.Content)) return "action-template-invalid";
         return null;
     }
 
@@ -69,24 +69,24 @@ public static class CustomActionPolicy
 
     public static string Export(CustomActionDefinition action)
     {
-        if (Validate(action) is { } error) throw new ArgumentException(error, nameof(action));
+        if (Validate(action) is { } error) throw new ProductValidationException(error);
         return JsonSerializer.Serialize(new Envelope(2, action with { Icon = NormalizeIcon(action.Icon) }), JsonOptions);
     }
 
     public static CustomActionDefinition Import(string json)
     {
-        if (json == null || Encoding.UTF8.GetByteCount(json) > 256 * 1024) throw new ArgumentException("匯入檔案過大。", nameof(json));
+        if (json == null || Encoding.UTF8.GetByteCount(json) > 256 * 1024) throw new ProductValidationException("action-import-too-large");
         try
         {
             using var document = JsonDocument.Parse(json);
             RejectDuplicates(document.RootElement);
             var envelope = JsonSerializer.Deserialize<Envelope>(json, JsonOptions);
             if (envelope?.Version is not (1 or 2) || envelope.Action == null || (envelope.Version == 1 && !envelope.Action.UseSelection))
-                throw new ArgumentException("不支援的動作檔案版本。", nameof(json));
-            if (Validate(envelope.Action) is { } error) throw new ArgumentException(error, nameof(json));
+                throw new ProductValidationException("action-import-version");
+            if (Validate(envelope.Action) is { } error) throw new ProductValidationException(error);
             return envelope.Action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Icon = NormalizeIcon(envelope.Action.Icon) };
         }
-        catch (JsonException error) { throw new ArgumentException("動作檔案格式無效。", nameof(json), error); }
+        catch (JsonException) { throw new ProductValidationException("action-import-invalid"); }
     }
 
     private static void RejectDuplicates(JsonElement element)
@@ -96,7 +96,7 @@ public static class CustomActionPolicy
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var property in element.EnumerateObject())
             {
-                if (!names.Add(property.Name)) throw new ArgumentException("動作檔案包含重複欄位。");
+                if (!names.Add(property.Name)) throw new ProductValidationException("action-import-duplicate-field");
                 RejectDuplicates(property.Value);
             }
         }

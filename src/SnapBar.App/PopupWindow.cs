@@ -47,8 +47,8 @@ public sealed class PopupWindow : Window
         searchInput = new TextBox { MaxLength = 128, FontSize = 13, BorderThickness = new(0), Background = Brushes.Transparent,
             Foreground = ActionUi.Ink, CaretBrush = ActionUi.Ink, Padding = new(2, 5, 2, 5), Cursor = Cursors.IBeam,
             VerticalContentAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetAutomationId(searchInput, "MoreActionSearch"); AutomationProperties.SetName(searchInput, "搜尋動作");
-        searchPlaceholder = ActionUi.Text("搜尋動作…", 13, ActionUi.Muted); searchPlaceholder.IsHitTestVisible = false; searchPlaceholder.Margin = new(3, 0, 0, 0);
+        AutomationProperties.SetAutomationId(searchInput, "MoreActionSearch"); AutomationProperties.SetName(searchInput, UiText.Get("PopupWindow_000"));
+        searchPlaceholder = ActionUi.Text(UiText.Get("PopupWindow_001"), 13, ActionUi.Muted); searchPlaceholder.IsHitTestVisible = false; searchPlaceholder.Margin = new(3, 0, 0, 0);
         var searchContent = new Grid(); searchContent.Children.Add(searchInput); searchContent.Children.Add(searchPlaceholder);
         searchBox = new Border { Background = Brushes.White, BorderBrush = ActionUi.Line, BorderThickness = new(1),
             CornerRadius = new(6), Padding = new(9, 3, 9, 3), Child = searchContent, Cursor = Cursors.IBeam };
@@ -67,7 +67,7 @@ public sealed class PopupWindow : Window
         menuScroll = new ScrollViewer { Content = menuRows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxHeight = 260, Margin = new(0, 5, 0, 4), Focusable = false };
         menu.Children.Add(menuScroll); count = ActionUi.Text("", 10, ActionUi.Muted); count.Margin = new(8, 7, 0, 8); menu.Children.Add(count);
-        var manage = ActionUi.Button("管理／新增動作", () => { Dismiss(); ManageRequested?.Invoke(); }, "settings");
+        var manage = ActionUi.Button(UiText.Get("PopupWindow_002"), () => { Dismiss(); ManageRequested?.Invoke(); }, "settings");
         manage.Focusable = false; manage.IsTabStop = false; menu.Children.Add(manage);
         more = new Border { Child = menu, Background = Brushes.White, CornerRadius = new(8), Visibility = Visibility.Collapsed };
         root.Children.Add(more); Content = shell;
@@ -97,6 +97,7 @@ public sealed class PopupWindow : Window
         ActionSettings? actionSettings = null)
     {
         snapshot = selection; pointerX = x; pointerY = y; this.searchTemplate = searchTemplate;
+        UiText.Refresh(this);
         settings = ActionCatalog.Normalize(actionSettings ?? new()); EndSearchInput(); query = ""; menuIndex = -1; more.Visibility = Visibility.Collapsed;
         RenderBar(); Place(); Show(); Place();
         lastPointer = Native.GetCursorPos(out var cursor) ? (cursor.X, cursor.Y) : null;
@@ -121,12 +122,12 @@ public sealed class PopupWindow : Window
         var shown = chosen.Select(a => a.Id).ToHashSet();
         foreach (var item in chosen.Concat(ActionCatalog.GetItems(settings).Where(a => !shown.Contains(a.Id))))
         {
-            var button = ActionUi.Button(settings.ShowLabels ? item.Name : "", () => Dispatch(item), item.Icon);
+            var button = ActionUi.Button(settings.ShowLabels ? UiNames.Action(item) : "", () => Dispatch(item), item.Icon);
             ActionUi.ReplaceCustomIcon(button, item);
             button.Tag = item; button.Height = 36; button.Margin = new(1); button.Padding = new(9, 6, 9, 6); button.BorderThickness = new(0);
             button.Background = Brushes.Transparent; button.Focusable = false; button.IsTabStop = false;
             ActionUi.TintButton(button, dark);
-            button.ToolTip = item.Name; AutomationProperties.SetName(button, item.Name);
+            button.ToolTip = UiNames.Action(item); AutomationProperties.SetName(button, UiNames.Action(item));
             button.Visibility = shown.Contains(item.Id) ? Visibility.Visible : Visibility.Collapsed; button.IsEnabled = ActionCatalog.IsApplicable(item, snapshot);
             if (item.BuiltIn is { } action)
             {
@@ -138,9 +139,9 @@ public sealed class PopupWindow : Window
         }
         var dots = ActionUi.Button("", ToggleMore, "more"); dots.Height = 36; dots.Margin = new(2, 1, 0, 1);
         dots.Padding = new(10, 6, 10, 6); dots.Background = Brushes.Transparent; dots.BorderThickness = new(0);
-        dots.ToolTip = "更多動作 · 輸入名稱、上下選擇、Enter 執行、Esc 關閉"; dots.Focusable = false; dots.IsTabStop = false;
+        dots.ToolTip = UiText.Get("PopupWindow_003"); dots.Focusable = false; dots.IsTabStop = false;
         ((System.Windows.Shapes.Path)((Viewbox)((StackPanel)dots.Content).Children[0]).Child).Stroke = fg;
-        AutomationProperties.SetName(dots, "更多動作"); AutomationProperties.SetAutomationId(dots, "MoreActions"); row.Children.Add(dots);
+        AutomationProperties.SetName(dots, UiText.Get("PopupWindow_004")); AutomationProperties.SetAutomationId(dots, "MoreActions"); row.Children.Add(dots);
     }
 
     private void Dispatch(ActionItem item)
@@ -219,12 +220,12 @@ public sealed class PopupWindow : Window
         menuRows.Children.Clear(); menuButtons.Clear();
         var barIds = ActionCatalog.GetBar(settings, snapshot).Select(a => a.Id).ToHashSet();
         var barHasRoom = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < ActionCatalog.BarActionLimit;
-        var items = ActionCatalog.GetMore(settings, snapshot, query).ToList();
+        var items = UiNames.More(settings, snapshot, query).ToList();
         foreach (var button in row.Children.OfType<Button>().Where(b => b.Tag is ActionItem && b.Visibility == Visibility.Collapsed))
         {
             var item = (ActionItem)button.Tag;
             if (barIds.Contains(item.Id) && ActionCatalog.IsApplicable(item, snapshot)
-                && (query.Length == 0 || item.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || item.Id.Contains(query, StringComparison.OrdinalIgnoreCase))) items.Add(item);
+                && (query.Length == 0 || UiNames.Action(item).Contains(query, StringComparison.OrdinalIgnoreCase) || item.Id.Contains(query, StringComparison.OrdinalIgnoreCase))) items.Add(item);
         }
         var recentShown = false; var allShown = false;
         foreach (var item in items.DistinctBy(a => a.Id))
@@ -232,18 +233,18 @@ public sealed class PopupWindow : Window
             var recent = query.Length == 0 && settings.RecentIds.Contains(item.Id);
             if (recent && !recentShown || !recent && !allShown)
             {
-                var heading = ActionUi.Text(recent ? "最近使用" : query.Length == 0 ? "所有動作" : "搜尋結果", 12, muted);
+                var heading = ActionUi.Text(recent ? UiText.Get("PopupWindow_005") : query.Length == 0 ? UiText.Get("PopupWindow_006") : UiText.Get("PopupWindow_007"), 12, muted);
                 heading.Margin = new(10, 8, 0, 4); menuRows.Children.Add(heading);
                 if (recent) recentShown = true; else allShown = true;
             }
             var line = new DockPanel(); var pin = ActionUi.Button("", () => Pin(item.Id), "pin");
             pin.Focusable = false; pin.IsTabStop = false; pin.BorderThickness = new(0); pin.Margin = new(0);
-            pin.Background = surface; ActionUi.TintButton(pin, dark); AutomationProperties.SetName(pin, "釘選" + item.Name);
+            pin.Background = surface; ActionUi.TintButton(pin, dark); AutomationProperties.SetName(pin, UiText.Join(UiText.Get("PopupWindow_008"), UiNames.Action(item)));
             pin.IsEnabled = barHasRoom;
-            pin.ToolTip = barHasRoom ? "釘選到動作列" : $"動作列已釘選 {ActionCatalog.BarActionLimit} 個動作";
+            pin.ToolTip = barHasRoom ? UiText.Get("PopupWindow_009") : UiText.Get("PopupWindow_010",(ActionCatalog.BarActionLimit));
             ToolTipService.SetShowOnDisabled(pin, true);
             DockPanel.SetDock(pin, Dock.Right); line.Children.Add(pin);
-            var button = ActionUi.Button(item.Name, () => { if (ActionCatalog.IsApplicable(item, snapshot)) Dispatch(item); }, item.Icon); button.Focusable = false; button.IsTabStop = false;
+            var button = ActionUi.Button(UiNames.Action(item), () => { if (ActionCatalog.IsApplicable(item, snapshot)) Dispatch(item); }, item.Icon); button.Focusable = false; button.IsTabStop = false;
             ActionUi.ReplaceCustomIcon(button, item);
             button.BorderThickness = new(0); button.Margin = new(0); AutomationProperties.SetAutomationId(button, "MoreAction_" + item.Id);
             button.Background = surface; button.HorizontalContentAlignment = HorizontalAlignment.Left; ActionUi.TintButton(button, dark);
@@ -251,12 +252,12 @@ public sealed class PopupWindow : Window
                 && (item.BuiltIn != TextAction.Search || WebActionPolicy.Search(snapshot.Text, searchTemplate).Success);
             var reason = item.BuiltIn switch
             {
-                TextAction.RevealPath => "請選取完整的檔案或資料夾路徑",
-                TextAction.OpenLink => "請選取完整的 HTTP／HTTPS 網址",
-                TextAction.Search => "選取文字過長或搜尋設定無效",
-                _ => "來源未確認可編輯，無法寫入"
+                TextAction.RevealPath => UiText.Get("PopupWindow_011"),
+                TextAction.OpenLink => UiText.Get("PopupWindow_012"),
+                TextAction.Search => UiText.Get("PopupWindow_013"),
+                _ => UiText.Get("PopupWindow_014")
             };
-            button.ToolTip = button.IsEnabled ? item.Name : reason; ToolTipService.SetShowOnDisabled(button, true);
+            button.ToolTip = button.IsEnabled ? UiNames.Action(item) : reason; ToolTipService.SetShowOnDisabled(button, true);
             if (button.IsEnabled) menuButtons.Add(button);
             var actionContent = new StackPanel(); actionContent.Children.Add(button);
             if (!button.IsEnabled)
@@ -266,8 +267,8 @@ public sealed class PopupWindow : Window
             }
             line.Children.Add(actionContent); menuRows.Children.Add(line);
         }
-        if (items.Count == 0) { var empty = ActionUi.Text(query.Length == 0 ? "沒有更多動作，請到「管理動作」設定顯示位置。" : "找不到符合名稱的動作，請試試其他搜尋。", 12, muted); empty.Margin = new(10, 18, 10, 18); menuRows.Children.Add(empty); }
-        count.Text = $"{snapshot.CharacterCount} 字 · 來源選取仍保留";
+        if (items.Count == 0) { var empty = ActionUi.Text(query.Length == 0 ? UiText.Get("PopupWindow_015") : UiText.Get("PopupWindow_016"), 12, muted); empty.Margin = new(10, 18, 10, 18); menuRows.Children.Add(empty); }
+        count.Text = UiText.Get("PopupWindow_017",(snapshot.CharacterCount));
         for (var i = 0; i < menuButtons.Count; i++) menuButtons[i].Background = i == menuIndex ? dark ? ActionUi.DarkHover : ActionUi.Pale : surface;
         if (menuIndex >= 0 && menuIndex < menuButtons.Count)
         {

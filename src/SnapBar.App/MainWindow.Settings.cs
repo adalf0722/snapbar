@@ -31,14 +31,14 @@ public sealed partial class MainWindow
 
     private static string CategoryName(SettingsCategory category) => category switch
     {
-        SettingsCategory.General => "一般", SettingsCategory.Actions => "動作列", SettingsCategory.AiCommands => "AI 命令",
-        SettingsCategory.AiServices => "AI 服務", SettingsCategory.Compatibility => "相容性", _ => "關於與支援"
+        SettingsCategory.General => UiText.Get("MainWindow_Settings_000"), SettingsCategory.Actions => UiText.Get("MainWindow_Settings_001"), SettingsCategory.AiCommands => UiText.Get("MainWindow_Settings_002"),
+        SettingsCategory.AiServices => UiText.Get("MainWindow_Settings_003"), SettingsCategory.Compatibility => UiText.Get("MainWindow_Settings_004"), _ => UiText.Get("MainWindow_Settings_005")
     };
     private void BuildSettingsPages()
     {
-        ActionUi.Setup(this, "SnapBar · 設定", 980, 720); MinWidth = 860; MinHeight = 600;
+        ActionUi.Setup(this, UiText.Get("MainWindow_Settings_006"), 980, 720); MinWidth = 860; MinHeight = 600;
         WindowWorkArea.Attach(this);
-        var shell = new Grid(); shell.ColumnDefinitions.Add(new() { Width = new(180) }); shell.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        var shell = new Grid(); shell.ColumnDefinitions.Add(new() { Width = new(210) }); shell.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         AutomationProperties.SetAutomationId(shell, "SettingsShell");
         var sidebar = new DockPanel { Margin = new(14, 24, 12, 16) };
         var product = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(12, 0, 0, 26) };
@@ -75,9 +75,9 @@ public sealed partial class MainWindow
         for (var row = 0; row < 4; row++) workspace.RowDefinitions.Add(new() { Height = row == 2 ? new(1, GridUnitType.Star) : GridLength.Auto });
         Grid.SetColumn(workspace, 1); shell.Children.Add(workspace);
         var heading = new DockPanel { Margin = new(0, 0, 0, 18) };
-        mode = ActionUi.Text("正在啟動", 12, ActionUi.Muted);
+        mode = ActionUi.Text(UiText.Get("MainWindow_Settings_007"), 12, ActionUi.Muted);
         AutomationProperties.SetAutomationId(mode, "SettingsMode");
-        DockPanel.SetDock(mode, Dock.Right); heading.Children.Add(mode); pageHeading = ActionUi.Heading("一般", 24); heading.Children.Add(pageHeading); workspace.Children.Add(heading);
+        DockPanel.SetDock(mode, Dock.Right); heading.Children.Add(mode); pageHeading = ActionUi.Heading(UiText.Get("MainWindow_Settings_008"), 24); heading.Children.Add(pageHeading); workspace.Children.Add(heading);
         notice = ActionUi.Text("", 12, Brushes.Firebrick); notice.Margin = new(0, 0, 0, 12); notice.Visibility = Visibility.Collapsed;
         AutomationProperties.SetAutomationId(notice, "SettingsNotice"); Grid.SetRow(notice, 1); workspace.Children.Add(notice);
         pageHost = new Grid(); Grid.SetRow(pageHost, 2); workspace.Children.Add(pageHost);
@@ -98,7 +98,7 @@ public sealed partial class MainWindow
         aiSettingsPanel = new(aiPreferences); aiSettingsPanel.RevealRequested = () => ShowCategory(SettingsCategory.AiServices); AddPage(SettingsCategory.AiServices, aiSettingsPanel);
         AddPage(SettingsCategory.Compatibility, BuildCompatibilityPage());
         var support = new SettingsSupportPage(() => _ = ExitAsync()); status = support.Status; events = support.Events; AddPage(SettingsCategory.About, support);
-        lifetimeHint = ActionUi.Text("關閉設定後，SnapBar 會繼續在背景執行。", 13, ActionUi.Brush("#4F5968")); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
+        lifetimeHint = ActionUi.Text(UiText.Get("MainWindow_Settings_009"), 13, ActionUi.Brush("#4F5968")); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
         Content = shell;
         aiPreferences.SettingsHost = this;
         aiPreferences.SettingsRequested += ShowCategory;
@@ -119,7 +119,7 @@ public sealed partial class MainWindow
     {
         var host = new Grid(); host.Children.Add(actionSettingsPanel);
         var editor = new DockPanel();
-        var back = ActionUi.Button("← 返回動作列", () => ShowActionList(returnFocus: true));
+        var back = ActionUi.Button(UiText.Get("MainWindow_Settings_010"), () => ShowActionList(returnFocus: true));
         AutomationProperties.SetAutomationId(back, "BackToActions");
         back.HorizontalAlignment = HorizontalAlignment.Left; back.Margin = new(0, 0, 0, 16);
         DockPanel.SetDock(back, Dock.Top); editor.Children.Add(back); editor.Children.Add(searchSettingsPanel);
@@ -140,7 +140,7 @@ public sealed partial class MainWindow
     {
         NavigateTo(SettingsCategory.Actions);
         actionSettingsPanel.Visibility = Visibility.Collapsed; searchEditor.Visibility = Visibility.Visible;
-        pageHeading.Text = "編輯搜尋動作"; searchSettingsPanel.FocusEditor();
+        pageHeading.Text = UiText.Get("MainWindow_Settings_011"); searchSettingsPanel.FocusEditor();
     }
     internal void NavigateTo(SettingsCategory category)
     {
@@ -161,16 +161,16 @@ public sealed partial class MainWindow
         preferences = preferences with { Actions = value }; controller?.ConfigureActions(value);
         try { settingsStore.Save(preferences); return true; }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-        { ShowNotice("本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。"); return false; }
+        { ShowNotice(UiText.Get("MainWindow_Settings_012")); return false; }
     }
 
     private FrameworkElement BuildCompatibilityPage()
     {
         var page = new DockPanel(); var content = new StackPanel { Margin = new(0, 0, 0, 16) };
-        compatibilityToggle = new CheckBox { Content = "選字相容模式", IsChecked = preferences.ClipboardCompatibilityEnabled, Margin = new(0, 0, 0, 0) };
+        compatibilityToggle = new CheckBox { Content = UiText.Get("MainWindow_Settings_013"), IsChecked = preferences.ClipboardCompatibilityEnabled, Margin = new(0, 0, 0, 0) };
         compatibilityToggle.Style = (Style)FindResource("Switch");
         AutomationProperties.SetAutomationId(compatibilityToggle, "ClipboardCompatibilityToggle");
-        AutomationProperties.SetName(compatibilityToggle, "選字相容模式");
+        AutomationProperties.SetName(compatibilityToggle, UiText.Get("MainWindow_Settings_014"));
         compatibilityToggle.Checked += (_, _) => SetClipboardCompatibility(true); compatibilityToggle.Unchecked += (_, _) => SetClipboardCompatibility(false);
         Border SettingRow(string title, string help, CheckBox control)
         {
@@ -180,13 +180,13 @@ public sealed partial class MainWindow
             var description = ActionUi.Text(help, 12, ActionUi.Muted); description.Margin = new(0, 5, 0, 0); text.Children.Add(description); row.Children.Add(text);
             return ActionUi.Card(row, new Thickness(16, 12, 16, 12));
         }
-        var compatibilityRow = SettingRow("選字相容模式", "原生讀取不足時，暫借剪貼簿取得文字。相容讀取可能出現在剪貼簿歷程。", compatibilityToggle);
+        var compatibilityRow = SettingRow(UiText.Get("MainWindow_Settings_015"), UiText.Get("MainWindow_Settings_016"), compatibilityToggle);
         compatibilityRow.Margin = new(0, 0, 0, 8); content.Children.Add(compatibilityRow);
-        sublimeToggle = new CheckBox { Content = "Sublime 支援", IsChecked = preferences.SublimeCompatibilityEnabled, IsEnabled = preferences.ClipboardCompatibilityEnabled,
+        sublimeToggle = new CheckBox { Content = UiText.Get("MainWindow_Settings_017"), IsChecked = preferences.SublimeCompatibilityEnabled, IsEnabled = preferences.ClipboardCompatibilityEnabled,
             Style = (Style)FindResource("Switch") };
         AutomationProperties.SetAutomationId(sublimeToggle, "SublimeCompatibilityToggle"); sublimeToggle.Checked += (_, _) => SetSublimeCompatibility(true); sublimeToggle.Unchecked += (_, _) => SetSublimeCompatibility(false);
-        AutomationProperties.SetName(sublimeToggle, "Sublime 支援");
-        content.Children.Add(SettingRow("Sublime 支援", "需先啟用選字相容模式。首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。", sublimeToggle));
+        AutomationProperties.SetName(sublimeToggle, UiText.Get("MainWindow_Settings_018"));
+        content.Children.Add(SettingRow(UiText.Get("MainWindow_Settings_019"), UiText.Get("MainWindow_Settings_020"), sublimeToggle));
         DockPanel.SetDock(content, Dock.Top); page.Children.Add(content);
         excludedAppsPanel = new(); excludedAppsPanel.ShowApplications(preferences.ExcludedApplications);
         excludedAppsPanel.AddRequested += entry => AddExcludedApplication(entry.ExecutablePath, entry.DisplayName);

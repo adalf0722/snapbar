@@ -18,33 +18,39 @@ internal sealed class TrayIcon : IDisposable
 
     public TrayIcon(Action showSettings, Action toggleAutomatic, Action exit)
     {
-        menu.Items.Add("開啟設定", null, (_, _) => showSettings());
-        toggle = new Forms.ToolStripMenuItem("啟用自動偵測", null, (_, _) => toggleAutomatic());
+        menu.Items.Add(UiText.Get("TrayIcon_000"), null, (_, _) => showSettings());
+        toggle = new Forms.ToolStripMenuItem(UiText.Get("TrayIcon_001"), null, (_, _) => toggleAutomatic());
         menu.Items.Add(toggle);
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add("結束 SnapBar", null, (_, _) => exit());
-        icon = new Forms.NotifyIcon { Icon = ManualIcon(), Text = "SnapBar · 僅使用快捷鍵", ContextMenuStrip = menu, Visible = true };
+        menu.Items.Add(UiText.Get("TrayIcon_002"), null, (_, _) => exit());
+        icon = new Forms.NotifyIcon { Icon = ManualIcon(), Text = UiText.Get("TrayIcon_003"), ContextMenuStrip = menu, Visible = true };
         icon.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) showSettings(); };
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
     public void Update(bool automatic, bool enabled)
     {
-        toggle.Text = automatic ? "暫停自動偵測" : "啟用自動偵測";
+        toggle.Text = automatic ? UiText.Get("TrayIcon_004") : UiText.Get("TrayIcon_005");
         toggle.Enabled = enabled;
         this.automatic = automatic;
         icon.Icon = automatic ? automaticIcon : ManualIcon();
-        icon.Text = automatic ? "SnapBar · 自動偵測已啟用" : "SnapBar · 僅使用快捷鍵";
+        icon.Text = automatic ? UiText.Get("TrayIcon_006") : UiText.Get("TrayIcon_007");
+    }
+
+    internal void RefreshLanguage()
+    {
+        foreach (Forms.ToolStripItem item in menu.Items) item.Text = UiText.Current(item.Text ?? "");
+        Update(automatic, toggle.Enabled);
     }
 
     internal void AddOcr(Action capture)
     {
-        var item = new Forms.ToolStripMenuItem("框選 OCR", null, (_, _) => dispatcher.BeginInvoke(capture));
+        var item = new Forms.ToolStripMenuItem(UiText.Get("TrayIcon_008"), null, (_, _) => dispatcher.BeginInvoke(capture));
         menu.Items.Insert(2, item);
     }
 
-    public void NotifyHidden() => icon.ShowBalloonTip(4000, "SnapBar 在背景待命",
-        "按系統匣圖示可開啟設定；右鍵選單可結束 SnapBar。", Forms.ToolTipIcon.Info);
+    public void NotifyHidden() => icon.ShowBalloonTip(4000, UiText.Get("TrayIcon_009"),
+        UiText.Get("TrayIcon_010"), Forms.ToolTipIcon.Info);
 
     private static Drawing.Icon LoadIcon(string name)
     {

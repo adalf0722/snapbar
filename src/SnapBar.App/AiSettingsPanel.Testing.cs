@@ -19,15 +19,15 @@ internal sealed partial class AiSettingsPanel
     {
         testController = new(client ?? (ownedTestClient = new AiHttpClient()));
         var buttons = new WrapPanel { Margin = new(0, 16, 0, 0) };
-        testService = ActionUi.Button("測試連線", async () => await RunTestAsync());
+        testService = ActionUi.Button(Text("AiSettingsPanel_Testing_000"), async () => await RunTestAsync());
         AutomationProperties.SetAutomationId(testService, "AiTestService"); buttons.Children.Add(testService);
-        cancelServiceTest = ActionUi.Button("取消測試", () => testController.Cancel());
+        cancelServiceTest = ActionUi.Button(Text("AiSettingsPanel_Testing_001"), () => testController.Cancel());
         AutomationProperties.SetAutomationId(cancelServiceTest, "AiCancelServiceTest"); buttons.Children.Add(cancelServiceTest);
         testStatus = ActionUi.Text("", 12, ActionUi.Muted);
         testStatus.Margin = new(6, 8, 0, 8);
         AutomationProperties.SetAutomationId(testStatus, "AiServiceTestStatus"); buttons.Children.Add(testStatus);
         fields.Children.Add(buttons);
-        var cost = ActionUi.Text("測試會傳送少量文字，可能產生費用。", 12, ActionUi.Muted);
+        var cost = ActionUi.Text(Text("AiSettingsPanel_Testing_002"), 12, ActionUi.Muted);
         cost.Margin = new(0, 6, 0, 0); fields.Children.Add(cost);
         testController.Changed += RenderTestStatus;
         RenderTestStatus();
@@ -46,13 +46,13 @@ internal sealed partial class AiSettingsPanel
         if (testingDisposed || testController.Busy) return;
         var profile = CurrentDraft();
         if (AiPolicy.ValidateProfile(profile) is { } validation)
-        { ResetTest(); testStatus.Text = validation; return; }
+        { ResetTest(); testStatus.Text = ValidationMessages.Describe(validation, language); return; }
         string effectiveKey;
         try { effectiveKey = EffectiveTestKey(profile); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException
             or System.Security.Cryptography.CryptographicException or ArgumentException
             or InvalidOperationException or System.ComponentModel.Win32Exception)
-        { ResetTest(); testStatus.Text = "無法讀取金鑰，請重新輸入後測試。"; return; }
+        { ResetTest(); testStatus.Text = Text("AiSettingsPanel_Testing_003"); return; }
         await testController.StartAsync(profile, effectiveKey);
     }
 
@@ -67,9 +67,9 @@ internal sealed partial class AiSettingsPanel
             : testController.Status is "testing" or "untested" ? ActionUi.Muted : System.Windows.Media.Brushes.Firebrick;
         testStatus.Text = testController.Status switch
         {
-            "testing" => "測試中…", "success" => "✓ 連線成功",
-            "untested" => "尚未測試",
-            _ => "測試失敗：" + AiErrorMessages.Describe(testController.Status)
+            "testing" => Text("AiSettingsPanel_Testing_004"), "success" => Text("AiSettingsPanel_Testing_005"),
+            "untested" => Text("AiSettingsPanel_Testing_006"),
+            _ => UiText.Join(Text("AiSettingsPanel_Testing_007"), UiText.Current(AiErrorMessages.Describe(testController.Status), language?.Culture))
         };
     }
 

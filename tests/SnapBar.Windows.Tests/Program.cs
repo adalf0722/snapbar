@@ -71,11 +71,19 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (!args.Contains("--interface-language"))
+        {
+            var legacyCulture = System.Globalization.CultureInfo.GetCultureInfo("zh-Hant");
+            System.Globalization.CultureInfo.CurrentUICulture = legacyCulture;
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = legacyCulture;
+            SnapBar.App.UiText.SetLanguage("zh-Hant");
+            SnapBar.App.UiText.SystemLanguageSource = () => "zh-TW";
+        }
         string[] tests = ["--ai-runtime", "--clipboard-compatibility", "--clipboard-compatibility-long", "--ui-appearance", "--ui-preview",
             "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics", "--ai-panel", "--ai-preview",
             "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--lookup", "--screen-ocr", "--browser-launch-smoke",
             "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
-            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight"];
+            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language"];
         if (args.SequenceEqual(["--list-tests"])) { foreach (var test in tests) Console.WriteLine(test); return 0; }
         var worker = args.Any(a => a is "--clipboard-compatibility-fixture" or "--path-worker" or "--clipboard-race-writer");
         if (!worker && (args.Count(a => tests.Contains(a)) != 1
@@ -85,6 +93,7 @@ internal static class Program
             return 2;
         }
         if (args.Contains("--ai-runtime")) return AiRuntimeTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--interface-language")) return InterfaceLanguageTest.Run();
         if (args.Contains("--desktop-preflight")) return DesktopPreflight.Run();
         if (args.Contains("--clipboard-compatibility-long")) return ClipboardCompatibilityTest.Run(includeLong: true);
         if (args.Contains("--clipboard-compatibility-fixture")) return ClipboardCompatibilityTest.RunFixture();

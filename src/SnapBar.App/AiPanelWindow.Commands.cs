@@ -18,13 +18,13 @@ internal sealed partial class AiPanelWindow
             ? FindPromptId(focused) : null;
         direct.Visibility = string.IsNullOrWhiteSpace(input.Text) ? Visibility.Collapsed : Visibility.Visible;
         direct.IsEnabled = !Session.Busy; placeholder.Visibility = input.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        placeholder.Text = Session.BasisId == null ? "搜尋指令，或說明怎麼處理原文…" : "接著怎麼改？也能搜尋指令…";
+        placeholder.Text = Session.BasisId == null ? language.Get("AiPanelWindow_Commands_000") : language.Get("AiPanelWindow_Commands_001");
         direct.ToolTip = input.Text;
         commandRows.Children.Clear(); commandRows.RowDefinitions.Clear(); commandButtons.Clear();
-        var settings = preferences.Settings; var chosen = (string?)category.SelectedItem;
+        var settings = preferences.Settings; var chosen = categoryValues.ElementAtOrDefault(category.SelectedIndex) ?? "";
         deletionNotice.Visibility = preferences.LastDeletion == null ? Visibility.Collapsed : Visibility.Visible;
-        deletionText.Text = preferences.LastDeletion is { } deleted ? $"已刪除「{deleted.Prompt.Name}」" : "";
-        var items = AiPolicy.Search(settings, input.Text, chosen == "全部分類" ? "" : chosen ?? "");
+        deletionText.Text = preferences.LastDeletion is { } deleted ? language.Get("AiPanelWindow_Commands_002",(UiNames.Prompt(deleted.Prompt, language))): "";
+        var items = UiNames.SearchPrompts(settings, input.Text, chosen, recentFirst: true, language: language);
         for (var index = 0; index < items.Count; index++)
         {
             var prompt = items[index];
@@ -32,17 +32,17 @@ internal sealed partial class AiPanelWindow
             var tile = new Border { Style = (Style)FindResource("AiPromptRow"), Margin = new(0, 0, 0, 8), Tag = prompt.Id };
             Grid.SetRow(tile, index / 2); Grid.SetColumn(tile, index % 2 * 2);
             var surface = new Grid(); tile.Child = surface;
-            var button = ActionUi.Button(prompt.Name, () => _ = SubmitAsync(prompt.Instruction, prompt.Id));
+            var button = ActionUi.Button(UiNames.Prompt(prompt, language), () => _ = SubmitAsync(prompt.Instruction, prompt.Id));
             button.BorderThickness = new(0); button.Margin = new(0); button.IsEnabled = !Session.Busy;
             button.Background = Brushes.Transparent; button.Padding = new(7, 9, 7, 8); button.MinHeight = 76;
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             var content = new Grid(); content.RowDefinitions.Add(new() { Height = new(18) }); content.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
             var icon = new AiIconPresenter { IconId = AiIconCatalog.ForPrompt(prompt), Width = 16, Height = 16, HorizontalAlignment = HorizontalAlignment.Center }; content.Children.Add(icon);
-            var title = ActionUi.Text(Session.Busy && runningPromptId == prompt.Id ? "處理中…" : prompt.Name, 13);
+            var title = ActionUi.Text(Session.Busy && runningPromptId == prompt.Id ? language.Get("AiPanelWindow_Commands_004") : UiNames.Prompt(prompt, language), 13);
             title.TextAlignment = TextAlignment.Center; title.TextTrimming = TextTrimming.CharacterEllipsis;
             title.LineHeight = 18; title.MaxHeight = 36; title.Margin = new(0, 5, 0, 0); Grid.SetRow(title, 1); content.Children.Add(title); button.Content = content;
-            button.ToolTip = prompt.Name; button.Tag = prompt.Id; AutomationProperties.SetAutomationId(button, "AiPrompt_" + prompt.Id);
-            AutomationProperties.SetHelpText(button, "方向鍵選擇指令，Enter 執行，Esc 返回輸入。");
+            button.ToolTip = UiNames.Prompt(prompt, language); button.Tag = prompt.Id; AutomationProperties.SetAutomationId(button, "AiPrompt_" + prompt.Id);
+            AutomationProperties.SetHelpText(button, language.Get("AiPanelWindow_Commands_005"));
             button.PreviewKeyDown += CommandKey;
             button.GotKeyboardFocus += (_, _) => button.BringIntoView();
             commandButtons.Add(button); surface.Children.Add(button);
@@ -55,23 +55,23 @@ internal sealed partial class AiPanelWindow
             }
             var pinned = settings.PinnedIds.Contains(prompt.Id);
             var pin = Tool("pin", () => TogglePin(prompt), HorizontalAlignment.Left);
-            pin.Tag = pinned ? "Pinned" : null; pin.ToolTip = pinned ? "取消釘選" : "釘選";
-            AutomationProperties.SetAutomationId(pin, "AiPin_" + prompt.Id); AutomationProperties.SetName(pin, pin.ToolTip + " " + prompt.Name);
+            pin.Tag = pinned ? "Pinned" : null; pin.ToolTip = pinned ? language.Get("AiPanelWindow_Commands_006") : language.Get("AiPanelWindow_Commands_007");
+            AutomationProperties.SetAutomationId(pin, "AiPin_" + prompt.Id); AutomationProperties.SetName(pin, UiText.Join(pin.ToolTip + " ", UiNames.Prompt(prompt, language)));
             surface.Children.Add(pin);
-            var options = Tool("more", () => { }, HorizontalAlignment.Right); options.ToolTip = "指令選項";
-            AutomationProperties.SetAutomationId(options, "AiOptions_" + prompt.Id); AutomationProperties.SetName(options, "指令選項 " + prompt.Name);
-            var menu = new ContextMenu(); var edit = new MenuItem { Header = "編輯指令" }; edit.Click += (_, _) => EditPrompt(prompt);
-            var delete = new MenuItem { Header = "刪除指令" }; delete.Click += (_, _) => DeletePrompt(prompt);
+            var options = Tool("more", () => { }, HorizontalAlignment.Right); options.ToolTip = language.Get("AiPanelWindow_Commands_008");
+            AutomationProperties.SetAutomationId(options, "AiOptions_" + prompt.Id); AutomationProperties.SetName(options, UiText.Join(language.Get("AiPanelWindow_Commands_009"), UiNames.Prompt(prompt, language)));
+            var menu = new ContextMenu(); var edit = new MenuItem { Header = language.Get("AiPanelWindow_Commands_010") }; edit.Click += (_, _) => EditPrompt(prompt);
+            var delete = new MenuItem { Header = language.Get("AiPanelWindow_Commands_011") }; delete.Click += (_, _) => DeletePrompt(prompt);
             menu.Items.Add(edit); menu.Items.Add(delete); options.ContextMenu = menu;
             options.Click += (_, _) => { menu.PlacementTarget = options; menu.IsOpen = true; }; surface.Children.Add(options);
             commandRows.Children.Add(tile);
         }
         if (items.Count == 0)
         {
-            var empty = ActionUi.Text(input.Text.Length > 0 ? "沒有符合的已存指令，仍可直接執行輸入內容。" : "這個分類尚無指令。", 12, ActionUi.Muted);
+            var empty = ActionUi.Text(input.Text.Length > 0 ? language.Get("AiPanelWindow_Commands_012") : language.Get("AiPanelWindow_Commands_013"), 12, ActionUi.Muted);
             Grid.SetColumnSpan(empty, 3); commandRows.Children.Add(empty);
         }
-        count.Text = (input.Text.Trim().Length > 0 ? "搜尋全部 · " : "") + $"{items.Count} / {settings.Prompts.Length} 個指令";
+        count.Text = UiText.Join((input.Text.Trim().Length > 0 ? language.Get("AiPanelWindow_Commands_014") : ""), language.Get("AiPanelWindow_Commands_015",(items.Count),(settings.Prompts.Length)));
         if (focusedId != null && !Session.Busy)
         {
             var restore = commandButtons.FirstOrDefault(b => (string)b.Tag == focusedId);

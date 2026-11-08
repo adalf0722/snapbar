@@ -30,7 +30,7 @@ internal sealed class AiPreferences
     {
         try { value = AiPolicy.Normalize(value); store.Save(value); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
-        { error = "AI 設定無法保存，請檢查設定格式、檔案權限或大小。原有設定已保留。"; return false; }
+        { error = UiText.Get("AiPreferences_000"); return false; }
         Settings = value; error = null; Changed?.Invoke(); return true;
     }
 
@@ -48,9 +48,9 @@ internal sealed class AiPreferences
     public bool TrySavePrompt(AiPrompt prompt, bool isNew, out string? error)
     {
         if (!isNew && !Settings.Prompts.Any(p => p.Id == prompt.Id))
-        { error = "此命令已被刪除；草稿仍保留。"; return false; }
+        { error = UiText.Get("AiPreferences_001"); return false; }
         if (isNew && Settings.Prompts.Any(p => p.Id == prompt.Id))
-        { error = "此命令 ID 已存在。"; return false; }
+        { error = UiText.Get("AiPreferences_002"); return false; }
         var prompts = isNew ? Settings.Prompts.Append(prompt).ToArray()
             : Settings.Prompts.Select(p => p.Id == prompt.Id ? prompt : p).ToArray();
         return TrySave(Settings with { Prompts = prompts }, out error);
@@ -71,19 +71,19 @@ internal sealed class AiPreferences
             if (!TrySave(updated, out error)) return false;
             LastDeletion = deletion; UndoChanged?.Invoke(); return true;
         }
-        catch (ArgumentException) { error = "無法刪除：找不到此命令。"; return false; }
+        catch (ArgumentException) { error = UiText.Get("AiPreferences_003"); return false; }
     }
 
     public bool TryRestoreDeleted(out string? error)
     {
-        if (LastDeletion == null) { error = "沒有可復原的命令。"; return false; }
+        if (LastDeletion == null) { error = UiText.Get("AiPreferences_004"); return false; }
         try
         {
             var updated = AiPromptCatalog.Restore(Settings, LastDeletion);
             if (!TrySave(updated, out error)) return false;
             LastDeletion = null; UndoChanged?.Invoke(); return true;
         }
-        catch (ArgumentException) { error = "無法復原：命令 ID 已存在或已達 128 筆上限。"; return false; }
+        catch (ArgumentException) { error = UiText.Get("AiPreferences_005"); return false; }
     }
 
     internal AiPromptEditorWindow OpenEditor(System.Windows.Window? owner, AiPrompt? prompt)

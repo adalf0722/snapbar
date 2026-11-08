@@ -77,8 +77,9 @@ public sealed partial class MainWindow
 
     private void ShowOcrResult(OcrResult result)
     {
+        var language = UiText.Capture();
         var window = new Window();
-        ActionUi.Setup(window, "框選 OCR · SnapBar", 560, 410);
+        ActionUi.Setup(window, language.Get("MainWindow_Ocr_000"), 560, 410);
         window.MinHeight = 300;
         ocrResultWindow = window;
         window.Closed += (_, _) =>
@@ -89,12 +90,12 @@ public sealed partial class MainWindow
         window.Content = body;
         var status = ActionUi.Text(result.Status switch
         {
-            "ok" => "可校正辨識文字，或反白其中一部分再執行動作。",
-            "empty" => "沒有辨識到文字。請重新框選清楚的文字。",
-            "runtime" => "OCR 引擎無法載入。請確認 Microsoft Visual C++ x64 執行階段已安裝。",
-            "models" => "找不到 OCR 語言模型。請重新解壓完整套件。",
-            "region" => "框選區域太大或超出螢幕。請在同一螢幕內重新框選。",
-            _ => "無法辨識此區域，請重新框選。"
+            "ok" => language.Get("MainWindow_Ocr_001"),
+            "empty" => language.Get("MainWindow_Ocr_002"),
+            "runtime" => language.Get("MainWindow_Ocr_003"),
+            "models" => language.Get("MainWindow_Ocr_004"),
+            "region" => language.Get("MainWindow_Ocr_005"),
+            _ => language.Get("MainWindow_Ocr_006")
         }, 13, ActionUi.Muted);
         status.TextWrapping = TextWrapping.Wrap;
         status.Margin = new(0, 0, 0, 10);
@@ -109,23 +110,23 @@ public sealed partial class MainWindow
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new(8) };
             body.Children.Add(editor);
             string SelectedText() => editor.SelectionLength > 0 ? editor.SelectedText : editor.Text;
-            buttons.Children.Add(ActionUi.Button("複製", () =>
+            buttons.Children.Add(ActionUi.Button(language.Get("MainWindow_Ocr_007"), () =>
             {
                 var selected = SelectedText();
                 if (string.IsNullOrWhiteSpace(selected)) return;
-                try { Clipboard.SetText(selected); status.Text = "已複製。"; }
-                catch (System.Runtime.InteropServices.ExternalException) { status.Text = "剪貼簿忙碌，請稍後再試。"; }
+                try { Clipboard.SetText(selected); status.Text = language.Get("MainWindow_Ocr_008"); }
+                catch (System.Runtime.InteropServices.ExternalException) { status.Text = language.Get("MainWindow_Ocr_009"); }
             }, "copy"));
-            buttons.Children.Add(ActionUi.Button("搜尋", () =>
+            buttons.Children.Add(ActionUi.Button(language.Get("MainWindow_Ocr_010"), () =>
             {
                 var destination = WebActionPolicy.Search(SelectedText(), preferences.SearchUrlTemplate);
-                if (!destination.Success) { status.Text = "無法搜尋這段文字，請縮短內容後再試。"; return; }
+                if (!destination.Success) { status.Text = language.Get("MainWindow_Ocr_011"); return; }
                 try { BrowserLauncher.Open(destination.Uri!); }
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
-                { status.Text = "無法開啟預設瀏覽器。"; }
+                { status.Text = language.Get("MainWindow_Ocr_012"); }
             }, "search"));
         }
-        buttons.Children.Add(ActionUi.Button("關閉", window.Close));
+        buttons.Children.Add(ActionUi.Button(language.Get("MainWindow_Ocr_013"), window.Close));
         window.Show();
     }
 }

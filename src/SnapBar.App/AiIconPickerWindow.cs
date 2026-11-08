@@ -8,6 +8,7 @@ namespace SnapBar.App;
 
 internal sealed class AiIconPickerWindow : Window
 {
+    private readonly UiLanguage language = UiText.Capture();
     internal sealed record IconRow(AiIconInfo[] Icons);
     private sealed class SelectCommand(Action<string> select) : ICommand
     {
@@ -28,19 +29,19 @@ internal sealed class AiIconPickerWindow : Window
 
     internal AiIconPickerWindow(string current)
     {
-        ActionUi.Setup(this, "選擇圖示", 710, 600); MinWidth = 580; MinHeight = 440;
+        ActionUi.Setup(this, language.Get("AiIconPickerWindow_000"), 710, 600); MinWidth = 580; MinHeight = 440;
         WindowWorkArea.Attach(this);
         ChooseIcon = new SelectCommand(id => { SelectedId = id; Close(); });
         var root = new DockPanel { Margin = new(20) };
         var header = new StackPanel(); var title = new DockPanel();
         var currentIcon = new AiIconPresenter { IconId = current, Width = 24, Height = 24, Margin = new(10, 0, 0, 0) };
-        DockPanel.SetDock(currentIcon, Dock.Right); title.Children.Add(currentIcon); title.Children.Add(ActionUi.Heading("選擇圖示", 22)); header.Children.Add(title);
-        var description = ActionUi.Text("搜尋中文、英文名稱，或貼上完整圖示名稱。", 12, ActionUi.Muted); description.Margin = new(0, 6, 0, 12); header.Children.Add(description);
-        var search = new DockPanel(); category = new ComboBox { Width = 108, Margin = new(10, 0, 0, 0), ItemsSource = new[] { "常用", "全部圖示", "寫作", "翻譯", "閱讀", "程式", "溝通", "工作", "影像", "其他", "原有圖示" }, SelectedIndex = 0 };
+        DockPanel.SetDock(currentIcon, Dock.Right); title.Children.Add(currentIcon); title.Children.Add(ActionUi.Heading(language.Get("AiIconPickerWindow_001"), 22)); header.Children.Add(title);
+        var description = ActionUi.Text(language.Get("AiIconPickerWindow_002"), 12, ActionUi.Muted); description.Margin = new(0, 6, 0, 12); header.Children.Add(description);
+        var search = new DockPanel(); category = new ComboBox { Width = 108, Margin = new(10, 0, 0, 0), ItemsSource = new[] { language.Get("AiIconPickerWindow_003"), language.Get("AiIconPickerWindow_004"), language.Get("AiIconPickerWindow_005"), language.Get("AiIconPickerWindow_006"), language.Get("AiIconPickerWindow_007"), language.Get("AiIconPickerWindow_008"), language.Get("AiIconPickerWindow_009"), language.Get("AiIconPickerWindow_010"), language.Get("AiIconPickerWindow_011"), language.Get("AiIconPickerWindow_012"), language.Get("AiIconPickerWindow_013") }, SelectedIndex = 0 };
         AutomationProperties.SetAutomationId(category, "AiIconCategory"); DockPanel.SetDock(category, Dock.Right); search.Children.Add(category);
-        query = ActionUi.Input("", 128); AutomationProperties.SetAutomationId(query, "AiIconSearch"); AutomationProperties.SetName(query, "搜尋圖示或輸入完整名稱"); search.Children.Add(query); header.Children.Add(search);
+        query = ActionUi.Input("", 128); AutomationProperties.SetAutomationId(query, "AiIconSearch"); AutomationProperties.SetName(query, language.Get("AiIconPickerWindow_014")); search.Children.Add(query); header.Children.Add(search);
         header.Margin = new(0, 0, 0, 12); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
-        var footer = new DockPanel { Margin = new(0, 12, 0, 0) }; var cancel = ActionUi.Button("取消", Close);
+        var footer = new DockPanel { Margin = new(0, 12, 0, 0) }; var cancel = ActionUi.Button(language.Get("AiIconPickerWindow_015"), Close);
         AutomationProperties.SetAutomationId(cancel, "AiIconCancel"); cancel.Margin = new(0); DockPanel.SetDock(cancel, Dock.Right); footer.Children.Add(cancel);
         count = ActionUi.Text("", 12, ActionUi.Muted); footer.Children.Add(count); DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
         grid = new ListBox { Background = Brushes.Transparent, BorderThickness = new(0), HorizontalContentAlignment = HorizontalAlignment.Stretch,
@@ -62,9 +63,9 @@ internal sealed class AiIconPickerWindow : Window
     private static bool IsComposing(KeyEventArgs e) => e.Key == Key.ImeProcessed || Keyboard.Modifiers != ModifierKeys.None;
     private void Filter()
     {
-        filtered = AiIconCatalog.Search(query.Text, (string?)category.SelectedItem ?? "全部圖示").ToArray();
+        filtered = AiIconCatalog.Search(query.Text, (string?)category.SelectedItem ?? language.Get("AiIconPickerWindow_016"), language).ToArray();
         grid.ItemsSource = filtered.Chunk(6).Select(items => new IconRow(items)).ToArray();
-        count.Text = filtered.Length == 0 ? "沒有符合的圖示，請試其他名稱。" : $"{filtered.Length} 個圖示 · 方向鍵選擇 · Enter 套用";
+        count.Text = filtered.Length == 0 ? language.Get("AiIconPickerWindow_017") : language.Get("AiIconPickerWindow_018",(filtered.Length));
     }
     private void Navigate(object sender, KeyEventArgs e)
     {

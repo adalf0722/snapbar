@@ -31,7 +31,7 @@ public sealed partial class SelectionController
             var installed = dictionary.IsInstalled;
             if (!installed)
             {
-                message = "請先匯入一份 StarDict 詞典。";
+                message = UiText.Get("SelectionController_Dictionary_000");
                 offerSettings = true;
             }
             else
@@ -41,18 +41,18 @@ public sealed partial class SelectionController
                     result = await Task.Run(() => dictionary.Lookup(current.Text));
                     if (!dictionary.Dictionaries.Any(item => item.Enabled))
                     {
-                        message = "尚未啟用詞典，請在管理詞典中勾選要使用的來源。";
+                        message = UiText.Get("SelectionController_Dictionary_001");
                         offerSettings = true;
                     }
                     else if (result.UnavailableSources.Count > 0)
                     {
-                        message = "部分詞典無法讀取，請在管理詞典中重新匯入。";
+                        message = UiText.Get("SelectionController_Dictionary_002");
                         offerSettings = true;
                     }
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException)
                 {
-                    message = "無法讀取離線詞典，請重新匯入。";
+                    message = UiText.Get("SelectionController_Dictionary_003");
                     offerSettings = true;
                 }
             }
@@ -63,10 +63,10 @@ public sealed partial class SelectionController
             var matches = result?.Matches ?? [];
             var found = matches.Count > 0;
             var text = found ? string.Join("\n\n", matches.Select(match => $"【{match.DictionaryName}】\n{match.Text}"))
-                : message ?? "詞典未收錄。";
-            var window = new ActionResultWindow(found ? matches[0].Headword : "查詞", text,
+                : message ?? UiText.Get("SelectionController_Dictionary_004");
+            var window = new ActionResultWindow(found ? matches[0].Headword : UiText.Get("SelectionController_Dictionary_005"), text,
                 false, false, lookup: true, messageOnly: !found, openSettings: OpenDictionarySettings,
-                openSettingsLabel: installed ? "管理詞典" : "匯入詞典", lookupMatches: matches,
+                openSettingsLabel: installed ? UiText.Get("SelectionController_Dictionary_006") : UiText.Get("SelectionController_Dictionary_007"), lookupMatches: matches,
                 lookupWarning: found && offerSettings ? message : null);
             resultWindow = window;
             lookupResult = true;

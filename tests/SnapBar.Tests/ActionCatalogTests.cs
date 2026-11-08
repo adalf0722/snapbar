@@ -260,7 +260,7 @@ internal static class ActionCatalogTests
                     File.WriteAllText(path, "{\"schemaVersion\":" + version + "}", new UTF8Encoding(false));
                     var before = File.ReadAllBytes(path);
                     var loaded = new SettingsStore(path).Load();
-                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.Layout.Length == 10
+                    return loaded.Warning == null && loaded.Settings.SchemaVersion == 8 && loaded.Settings.Actions.Layout.Length == 10
                         && loaded.Settings.Actions.Layout.Single(e => e.Id == "ai").Placement == ActionPlacement.More
                         && loaded.Settings.Actions.Layout.Single(e => e.Id == "lookup").Placement == ActionPlacement.More
                         && ActionCatalog.GetMore(loaded.Settings.Actions, selection, "Gmail").Count == 1
@@ -272,7 +272,7 @@ internal static class ActionCatalogTests
                 var actionJson = System.Text.Json.JsonSerializer.Serialize(action, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
                 File.WriteAllText(path, "{\"schemaVersion\":4,\"actions\":{\"customActions\":[" + actionJson.Replace(",\"useSelection\":true", "") + "]}}", new UTF8Encoding(false));
                 var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
-                return loaded.Warning == null && loaded.Settings.SchemaVersion == 7 && loaded.Settings.Actions.CustomActions.Single(a => a.Id == action.Id).UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
+                return loaded.Warning == null && loaded.Settings.SchemaVersion == 8 && loaded.Settings.Actions.CustomActions.Single(a => a.Id == action.Id).UseSelection && before.SequenceEqual(File.ReadAllBytes(path));
             });
             check("current schema preserves explicit disabled selection on disk", () =>
             {

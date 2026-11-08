@@ -16,7 +16,7 @@ public sealed partial class SelectionController
     private async Task OpenAiAsync()
     {
         if (executing || selection == null || disposed || stopping) return;
-        if (aiPreferences == null) { Status?.Invoke("AI 服務尚未初始化。"); return; }
+        if (aiPreferences == null) { Status?.Invoke(UiText.Get("SelectionController_Ai_000")); return; }
         if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
         executing = true; var current = selection; var ticket = generation.Next(); popup.Dismiss();
         try
@@ -35,7 +35,7 @@ public sealed partial class SelectionController
                 if (selection?.Id == current.Id) Invalidate();
             };
             RememberBuiltIn(TextAction.Ai); window.Show(); window.Activate();
-            Status?.Invoke("AI 面板已開啟，選擇指令後才傳送文字。");
+            Status?.Invoke(UiText.Get("SelectionController_Ai_001"));
         }
         catch (ExternalException) { Report("clipboard-busy"); }
         finally { executing = false; }

@@ -20,7 +20,7 @@ internal sealed class SearchSettingsPanel : ContentControl, ISettingsDraft
     public event Action<string>? SaveRequested;
     public event Action? ResetRequested;
     internal event Action? Changed;
-    public string DraftName => "搜尋設定";
+    public string DraftName => UiText.Get("SearchSettingsPanel_000");
     public bool IsDirty => DraftTemplate != baseline || (provider.SelectedIndex != 2 && customDraft != BaselineCustom);
     private string BaselineCustom => baseline == WebActionPolicy.DefaultSearchTemplate || baseline == BingTemplate ? WebActionPolicy.DefaultSearchTemplate : baseline;
     internal string DraftTemplate => provider.SelectedIndex switch { 0 => WebActionPolicy.DefaultSearchTemplate, 1 => BingTemplate, _ => template.Text };
@@ -36,28 +36,28 @@ internal sealed class SearchSettingsPanel : ContentControl, ISettingsDraft
         error = ActionUi.Text("", 12, System.Windows.Media.Brushes.Firebrick); footer.Children.Add(error);
         AutomationProperties.SetAutomationId(error, "SearchSettingsError");
         var buttons = new WrapPanel { Margin = new(0, 8, 0, 0) };
-        var save = ActionUi.Button("儲存搜尋設定", () => TrySave(), primary: true);
+        var save = ActionUi.Button(UiText.Get("SearchSettingsPanel_001"), () => TrySave(), primary: true);
         AutomationProperties.SetAutomationId(save, "SaveSearchTemplate"); buttons.Children.Add(save);
-        var discard = ActionUi.Button("捨棄變更", Discard); AutomationProperties.SetAutomationId(discard, "DiscardSearchTemplate"); buttons.Children.Add(discard);
-        var reset = ActionUi.Button("恢復 Google 預設", () =>
+        var discard = ActionUi.Button(UiText.Get("SearchSettingsPanel_002"), Discard); AutomationProperties.SetAutomationId(discard, "DiscardSearchTemplate"); buttons.Children.Add(discard);
+        var reset = ActionUi.Button(UiText.Get("SearchSettingsPanel_003"), () =>
         {
             ShowTemplate(WebActionPolicy.DefaultSearchTemplate, setBaseline: false);
             if (SaveTemplate != null) TrySave(); else ResetRequested?.Invoke();
         });
         AutomationProperties.SetAutomationId(reset, "ResetSearchTemplate"); buttons.Children.Add(reset);
         footer.Children.Add(buttons); DockPanel.SetDock(footer, Dock.Bottom); panel.Children.Add(footer);
-        var fields = new StackPanel(); fields.Children.Add(ActionUi.Heading("搜尋引擎", 14));
-        provider = new ComboBox { ItemsSource = new[] { "Google", "Bing", "自訂" }, SelectedIndex = 0, Margin = new(0, 6, 0, 12) };
-        AutomationProperties.SetAutomationId(provider, "SearchProvider"); AutomationProperties.SetName(provider, "搜尋引擎"); fields.Children.Add(provider);
+        var fields = new StackPanel(); fields.Children.Add(ActionUi.Heading(UiText.Get("SearchSettingsPanel_004"), 14));
+        provider = new ComboBox { ItemsSource = new[] { "Google", "Bing", UiText.Get("SearchSettingsPanel_005") }, SelectedIndex = 0, Margin = new(0, 6, 0, 12) };
+        AutomationProperties.SetAutomationId(provider, "SearchProvider"); AutomationProperties.SetName(provider, UiText.Get("SearchSettingsPanel_006")); fields.Children.Add(provider);
         customFields = new StackPanel { Visibility = Visibility.Collapsed };
-        customFields.Children.Add(ActionUi.Heading("搜尋網址", 14));
-        var note = ActionUi.Text("將 {query} 放在網址參數值中，選取文字會自動編碼。", 12, ActionUi.Muted); note.Margin = new(0, 5, 0, 8); customFields.Children.Add(note);
+        customFields.Children.Add(ActionUi.Heading(UiText.Get("SearchSettingsPanel_007"), 14));
+        var note = ActionUi.Text(UiText.Get("SearchSettingsPanel_008"), 12, ActionUi.Muted); note.Margin = new(0, 5, 0, 8); customFields.Children.Add(note);
         template = ActionUi.Input(max: 2048); template.Margin = new(0, 0, 0, 12);
-        AutomationProperties.SetAutomationId(template, "SearchUrlTemplate"); AutomationProperties.SetName(template, "搜尋網址範本");
+        AutomationProperties.SetAutomationId(template, "SearchUrlTemplate"); AutomationProperties.SetName(template, UiText.Get("SearchSettingsPanel_009"));
         customFields.Children.Add(template); fields.Children.Add(customFields);
         provider.SelectionChanged += (_, _) =>
         {
-            if (syncing) return;
+            if (syncing || UiText.IsRefreshing) return;
             customFields.Visibility = provider.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
             if (provider.SelectedIndex == 2) template.Text = customDraft;
             UpdateState();
@@ -80,14 +80,14 @@ internal sealed class SearchSettingsPanel : ContentControl, ISettingsDraft
         finally { syncing = false; }
         UpdateState();
     }
-    private void UpdateState() { state.Text = IsDirty ? "尚未儲存" : ""; Changed?.Invoke(); }
+    private void UpdateState() { state.Text = IsDirty ? UiText.Get("SearchSettingsPanel_010") : ""; Changed?.Invoke(); }
     internal void FocusEditor() => provider.Focus();
     public bool TrySave()
     {
-        if (!WebActionPolicy.IsValidSearchTemplate(DraftTemplate)) { error.Text = "搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。"; return false; }
+        if (!WebActionPolicy.IsValidSearchTemplate(DraftTemplate)) { error.Text = UiText.Get("SearchSettingsPanel_011"); return false; }
         var value = DraftTemplate;
-        if (SaveTemplate != null && !SaveTemplate(value)) { error.Text = "搜尋設定無法保存；變更仍保留，請檢查檔案權限或設定大小。"; return false; }
-        SaveRequested?.Invoke(value); ShowTemplate(value); error.Text = ""; state.Text = "已儲存"; return true;
+        if (SaveTemplate != null && !SaveTemplate(value)) { error.Text = UiText.Get("SearchSettingsPanel_012"); return false; }
+        SaveRequested?.Invoke(value); ShowTemplate(value); error.Text = ""; state.Text = UiText.Get("SearchSettingsPanel_013"); return true;
     }
     public void Discard() { ShowTemplate(baseline); error.Text = ""; }
     public void Reveal() => RevealRequested?.Invoke();

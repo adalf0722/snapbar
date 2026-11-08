@@ -147,7 +147,7 @@ public sealed partial class SelectionController : IDisposable
                 remaining => probe.RequestAsync(new("capture", (long)window, x, y, UsePointer: pointer,
                     PrepareProvider: !sublime && nativeRequests++ == 0), remaining),
                 Current, retryUnsupported: !sublime, token,
-                () => { readinessTicket = ticket; Status?.Invoke("正在等候 App 的選字介面就緒…"); });
+                () => { readinessTicket = ticket; Status?.Invoke(UiText.Get("SelectionController_000")); });
             var result = native.Response;
             if (SelectionRoutingPolicy.UseClipboardFallback(result, SublimeClipboardEnabled, sublime))
                 result = await clipboardReader.CaptureAsync(target,
@@ -167,10 +167,8 @@ public sealed partial class SelectionController : IDisposable
             }
             popup.Present(selection, x, y, searchUrlTemplate, actions);
             Status?.Invoke(selection.Source == "sublime-clipboard"
-                ? $"Sublime 相容模式 · {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : "不提供寫入")} · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
-                : selection.Source == ClipboardSelectionAdapter.Source
-                    ? $"選字相容模式 · {selection.CharacterCount} 字 · 不提供寫入 · 剪貼簿已還原 · {watch.Elapsed.TotalMilliseconds:F0} ms"
-                    : $"已取得 {selection.CharacterCount} 字 · {(selection.Editable == true ? "可編輯" : selection.Editable == false ? "唯讀" : "編輯狀態未知")} · {watch.Elapsed.TotalMilliseconds:F0} ms（UIA {native.ProbeElapsedMs:F0} ms{(native.Attempts > 1 ? $"／{native.Attempts} 次查詢" : "")}）");
+                ? UiText.Get("SelectionController_001",(selection.CharacterCount),((selection.Editable == true ? UiText.Get("SelectionController_047") : UiText.Get("SelectionController_048"))),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture))                : selection.Source == ClipboardSelectionAdapter.Source
+                    ? UiText.Get("SelectionController_002",(selection.CharacterCount),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture))                    : UiText.Get("SelectionController_003",(selection.CharacterCount),((selection.Editable == true ? UiText.Get("SelectionController_049") : selection.Editable == false ? UiText.Get("SelectionController_050") : UiText.Get("SelectionController_051"))),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture),(native.ProbeElapsedMs).ToString("F0", System.Globalization.CultureInfo.InvariantCulture),((native.Attempts > 1 ? UiText.Get("Selection_Attempts", native.Attempts) : ""))));
         }
         catch (OperationCanceledException) { }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
@@ -217,7 +215,7 @@ public sealed partial class SelectionController : IDisposable
             if (action == TextAction.Copy)
             {
                 Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
-                Status?.Invoke($"已複製 {current.CharacterCount} 字");
+                Status?.Invoke(UiText.Get("SelectionController_004",(current.CharacterCount)));
                 RememberBuiltIn(action);
             }
             else if (action == TextAction.RevealPath)
@@ -238,7 +236,7 @@ public sealed partial class SelectionController : IDisposable
                 { Report(finalValidation.Success ? "target-changed" : finalValidation.Status); return; }
                 var result = await session.RevealAsync(current.Target, cancellation.Token);
                 // Explorer may become foreground before its acknowledgement arrives.
-                if (result == "ok") { Status?.Invoke("已交由檔案總管顯示項目。"); RememberBuiltIn(action); }
+                if (result == "ok") { Status?.Invoke(UiText.Get("SelectionController_005")); RememberBuiltIn(action); }
                 else if (generation.IsCurrent(ticket)) Report(result);
             }
             else if (action is TextAction.Search or TextAction.OpenLink)
@@ -251,7 +249,7 @@ public sealed partial class SelectionController : IDisposable
                 try
                 {
                     launchWeb(destination.Uri!);
-                    Status?.Invoke(action == TextAction.Search ? "已交由預設瀏覽器搜尋。" : "已交由預設瀏覽器開啟連結。");
+                    Status?.Invoke(action == TextAction.Search ? UiText.Get("SelectionController_006") : UiText.Get("SelectionController_007"));
                     RememberBuiltIn(action);
                 }
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
@@ -271,7 +269,7 @@ public sealed partial class SelectionController : IDisposable
                 var sent = compatibility ? SublimeSelectionAdapter.SendAction(action, current.Target)
                     : Native.SendControlKey(action == TextAction.Cut ? (ushort)0x58 : (ushort)0x56);
                 if (!sent) { Report("input-blocked"); return; }
-                Status?.Invoke(action == TextAction.Cut ? "已送出剪下指令（請確認原 App 結果）" : "已送出貼上指令（請確認原 App 結果）");
+                Status?.Invoke(action == TextAction.Cut ? UiText.Get("SelectionController_008") : UiText.Get("SelectionController_009"));
                 RememberBuiltIn(action);
             }
         }
@@ -281,43 +279,42 @@ public sealed partial class SelectionController : IDisposable
 
     private void Report(string status) => Status?.Invoke(status switch
     {
-        "no-selection" => "未取得選取文字；請選取後再試。",
-        "unsupported" => "目前未取得此控制項的選字介面；可能尚未就緒，請稍候重新選字。",
-        "password" => "密碼欄位不提供選字動作。",
-        "timeout" => "選字讀取逾時，已停止此次讀取；請重新選字。",
-        "target-changed" or "focus-changed" or "selection-changed" or "expired" => "目標或選取已變更，已取消動作。",
-        "not-editable" => "無法確認可編輯，已取消寫入。",
-        "invalid-action" => "不支援此動作，已取消。",
-        "invalid-link" => "選取內容不是完整的 HTTP／HTTPS 網址。",
-        "invalid-search-template" => "搜尋網址設定無效，請至設定修正或恢復預設。",
-        "web-address-too-long" => "搜尋或連結網址過長，請縮短選取內容後再試。",
-        "browser-unavailable" => "無法開啟預設瀏覽器，請檢查 Windows 的預設瀏覽器設定。",
-        "invalid-path" => "選取內容不是支援的完整檔案路徑。",
-        "path-unavailable" => "找不到項目或無法存取，未開啟檔案總管。",
-        "path-not-prepared" or "explorer-unavailable" => "無法在檔案總管顯示項目，請稍後再試。",
-        "path-timeout" => "路徑查詢逾時，已停止此次操作。",
-        "cancelled" => "操作已取消。",
-        "modifier-held" => "請先放開 Ctrl、Alt、Shift 等修飾鍵。",
-        "input-blocked" => "輸入指令未完整送出，請確認目標權限。",
-        "clipboard-no-text" => "P0 貼上目前只接受含文字的剪貼簿。",
-        "clipboard-busy" => "剪貼簿正被其他程式使用，請稍後再試。",
-        "sublime-disabled" => "Sublime 尚未啟用相容讀取；請至設定啟用「選字相容模式」與「Sublime 支援」。",
-        "compatibility-disabled" => "選字相容模式已關閉，請至設定啟用。",
-        "clipboard-unavailable" or "clipboard-selection-unverified" => "無法確認此控制項的選取，未執行動作。",
-        "compatibility-setup-required" => "相容快捷鍵設定不存在或已變更；請重新勾選相容模式。",
-        "sublime-no-selection" => "Sublime 未回傳單段選取；請選取文字，確認設定已載入且快捷鍵無衝突。",
-        "clipboard-format-unsupported" => "剪貼簿含尚未支援備份的特殊格式，未觸發複製。",
-        "clipboard-format-unavailable" => "目前剪貼簿無法完整備份，自動重試後仍未就緒；已保留原內容，未讀取選字。",
-        "clipboard-backup-failed" => "剪貼簿備份失敗，未觸發複製。",
-        "clipboard-backup-too-large" => "剪貼簿備份超過 64 MB，未觸發複製。",
-        "clipboard-changed" => "剪貼簿在讀取期間再次變動，已取消並保留目前內容。",
-        "clipboard-other-owner" => "剪貼簿已由其他程序接手，已取消並保留新內容。",
-        "clipboard-input-changed" => "讀取期間收到新的操作，已取消此次選字。",
-        "clipboard-restore-failed" => "剪貼簿還原失敗；請確認目前剪貼簿內容。",
-        "too-large" => "選取超過原型的 32,768 字元／16 段限制。",
-        "busy" => "上一筆讀取尚未完成，請重新選字。",
-        _ => $"操作未完成（{status}），未寫入原 App。"
-    });
+        "no-selection" => UiText.Get("SelectionController_010"),
+        "unsupported" => UiText.Get("SelectionController_011"),
+        "password" => UiText.Get("SelectionController_012"),
+        "timeout" => UiText.Get("SelectionController_013"),
+        "target-changed" or "focus-changed" or "selection-changed" or "expired" => UiText.Get("SelectionController_014"),
+        "not-editable" => UiText.Get("SelectionController_015"),
+        "invalid-action" => UiText.Get("SelectionController_016"),
+        "invalid-link" => UiText.Get("SelectionController_017"),
+        "invalid-search-template" => UiText.Get("SelectionController_018"),
+        "web-address-too-long" => UiText.Get("SelectionController_019"),
+        "browser-unavailable" => UiText.Get("SelectionController_020"),
+        "invalid-path" => UiText.Get("SelectionController_021"),
+        "path-unavailable" => UiText.Get("SelectionController_022"),
+        "path-not-prepared" or "explorer-unavailable" => UiText.Get("SelectionController_023"),
+        "path-timeout" => UiText.Get("SelectionController_024"),
+        "cancelled" => UiText.Get("SelectionController_025"),
+        "modifier-held" => UiText.Get("SelectionController_026"),
+        "input-blocked" => UiText.Get("SelectionController_027"),
+        "clipboard-no-text" => UiText.Get("SelectionController_028"),
+        "clipboard-busy" => UiText.Get("SelectionController_029"),
+        "sublime-disabled" => UiText.Get("SelectionController_030"),
+        "compatibility-disabled" => UiText.Get("SelectionController_031"),
+        "clipboard-unavailable" or "clipboard-selection-unverified" => UiText.Get("SelectionController_032"),
+        "compatibility-setup-required" => UiText.Get("SelectionController_033"),
+        "sublime-no-selection" => UiText.Get("SelectionController_034"),
+        "clipboard-format-unsupported" => UiText.Get("SelectionController_035"),
+        "clipboard-format-unavailable" => UiText.Get("SelectionController_036"),
+        "clipboard-backup-failed" => UiText.Get("SelectionController_037"),
+        "clipboard-backup-too-large" => UiText.Get("SelectionController_038"),
+        "clipboard-changed" => UiText.Get("SelectionController_039"),
+        "clipboard-other-owner" => UiText.Get("SelectionController_040"),
+        "clipboard-input-changed" => UiText.Get("SelectionController_041"),
+        "clipboard-restore-failed" => UiText.Get("SelectionController_042"),
+        "too-large" => UiText.Get("SelectionController_043"),
+        "busy" => UiText.Get("SelectionController_044"),
+        _ => UiText.Get("SelectionController_045",(status))    });
 
     private void Invalidate()
     {
@@ -332,7 +329,7 @@ public sealed partial class SelectionController : IDisposable
         generation.Next(); delay?.Cancel(); delay?.Dispose(); delay = null;
         selection = null; popup.Dismiss();
         if (readinessTicket != null)
-        { readinessTicket = null; Status?.Invoke("選字等待已取消，請重新選字。"); }
+        { readinessTicket = null; Status?.Invoke(UiText.Get("SelectionController_046")); }
     }
 
     public void BeginShutdown()

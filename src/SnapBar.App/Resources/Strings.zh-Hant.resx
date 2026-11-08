@@ -1,0 +1,2623 @@
+
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ActionDiagnosticView_000" xml:space="preserve">
+    <value>詳細資訊</value>
+  </data>
+  <data name="ActionDiagnosticView_001" xml:space="preserve">
+    <value>複製詳細資訊</value>
+  </data>
+  <data name="ActionDiagnosticView_002" xml:space="preserve">
+    <value>已複製詳細資訊。</value>
+  </data>
+  <data name="ActionDiagnosticView_003" xml:space="preserve">
+    <value>剪貼簿忙碌，請稍後再試。</value>
+  </data>
+  <data name="ActionEditorWindow_000" xml:space="preserve">
+    <value>使用選取文字</value>
+  </data>
+  <data name="ActionEditorWindow_001" xml:space="preserve">
+    <value>關閉時以空字串執行腳本；仍從選字工具列啟動並驗證來源。</value>
+  </data>
+  <data name="ActionEditorWindow_002" xml:space="preserve">
+    <value>顯示空白符號</value>
+  </data>
+  <data name="ActionEditorWindow_003" xml:space="preserve">
+    <value>· 空格   ⇥ Tab   ␍ CR   ↵ 換行
+只切換顯示方式，不修改實際輸出。</value>
+  </data>
+  <data name="ActionEditorWindow_004" xml:space="preserve">
+    <value>執行結果</value>
+  </data>
+  <data name="ActionEditorWindow_005" xml:space="preserve">
+    <value>腳本內容</value>
+  </data>
+  <data name="ActionEditorWindow_006" xml:space="preserve">
+    <value>不處理輸出</value>
+  </data>
+  <data name="ActionEditorWindow_007" xml:space="preserve">
+    <value>複製到剪貼簿</value>
+  </data>
+  <data name="ActionEditorWindow_008" xml:space="preserve">
+    <value>替換原文</value>
+  </data>
+  <data name="ActionEditorWindow_009" xml:space="preserve">
+    <value>短暫提示</value>
+  </data>
+  <data name="ActionEditorWindow_010" xml:space="preserve">
+    <value>顯示結果視窗</value>
+  </data>
+  <data name="ActionEditorWindow_011" xml:space="preserve">
+    <value>顯示 Markdown 視窗</value>
+  </data>
+  <data name="ActionEditorWindow_012" xml:space="preserve">
+    <value>新增自訂動作 · SnapBar</value>
+  </data>
+  <data name="ActionEditorWindow_013" xml:space="preserve">
+    <value>編輯自訂動作 · SnapBar</value>
+  </data>
+  <data name="ActionEditorWindow_014" xml:space="preserve">
+    <value>新增動作</value>
+  </data>
+  <data name="ActionEditorWindow_015" xml:space="preserve">
+    <value>編輯動作</value>
+  </data>
+  <data name="ActionEditorWindow_016" xml:space="preserve">
+    <value>設定一次，選字後就能使用。</value>
+  </data>
+  <data name="ActionEditorWindow_017" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ActionEditorWindow_018" xml:space="preserve">
+    <value>儲存動作</value>
+  </data>
+  <data name="ActionEditorWindow_019" xml:space="preserve">
+    <value>儲存不會執行動作。</value>
+  </data>
+  <data name="ActionEditorWindow_020" xml:space="preserve">
+    <value>動作設定</value>
+  </data>
+  <data name="ActionEditorWindow_021" xml:space="preserve">
+    <value>網址</value>
+  </data>
+  <data name="ActionEditorWindow_022" xml:space="preserve">
+    <value>動作類型</value>
+  </data>
+  <data name="ActionEditorWindow_023" xml:space="preserve">
+    <value>動作類型</value>
+  </data>
+  <data name="ActionEditorWindow_024" xml:space="preserve">
+    <value>更換圖示</value>
+  </data>
+  <data name="ActionEditorWindow_025" xml:space="preserve">
+    <value>更換圖示</value>
+  </data>
+  <data name="ActionEditorWindow_026" xml:space="preserve">
+    <value>圖示</value>
+  </data>
+  <data name="ActionEditorWindow_027" xml:space="preserve">
+    <value>名稱</value>
+  </data>
+  <data name="ActionEditorWindow_028" xml:space="preserve">
+    <value>動作名稱</value>
+  </data>
+  <data name="ActionEditorWindow_029" xml:space="preserve">
+    <value>插入選取文字</value>
+  </data>
+  <data name="ActionEditorWindow_030" xml:space="preserve">
+    <value>拖曳調整高度；上下鍵調整，Home 還原。</value>
+  </data>
+  <data name="ActionEditorWindow_031" xml:space="preserve">
+    <value>調整內容編輯區高度</value>
+  </data>
+  <data name="ActionEditorWindow_032" xml:space="preserve">
+    <value>完成後，如何處理結果？</value>
+  </data>
+  <data name="ActionEditorWindow_033" xml:space="preserve">
+    <value>結果處理方式</value>
+  </data>
+  <data name="ActionEditorWindow_034" xml:space="preserve">
+    <value>執行環境完整路徑（留空使用預設）</value>
+  </data>
+  <data name="ActionEditorWindow_035" xml:space="preserve">
+    <value>逾時秒數 · 1–300</value>
+  </data>
+  <data name="ActionEditorWindow_036" xml:space="preserve">
+    <value>執行環境完整路徑</value>
+  </data>
+  <data name="ActionEditorWindow_037" xml:space="preserve">
+    <value>逾時秒數</value>
+  </data>
+  <data name="ActionEditorWindow_038" xml:space="preserve">
+    <value>進階設定</value>
+  </data>
+  <data name="ActionEditorWindow_039" xml:space="preserve">
+    <value>測試</value>
+  </data>
+  <data name="ActionEditorWindow_040" xml:space="preserve">
+    <value>範例輸入</value>
+  </data>
+  <data name="ActionEditorWindow_041" xml:space="preserve">
+    <value>範例輸入</value>
+  </data>
+  <data name="ActionEditorWindow_042" xml:space="preserve">
+    <value>顯示空白符號</value>
+  </data>
+  <data name="ActionEditorWindow_043" xml:space="preserve">
+    <value>執行結果或網址預覽</value>
+  </data>
+  <data name="ActionEditorWindow_044" xml:space="preserve">
+    <value>執行測試</value>
+  </data>
+  <data name="ActionEditorWindow_045" xml:space="preserve">
+    <value>停止測試</value>
+  </data>
+  <data name="ActionEditorWindow_046" xml:space="preserve">
+    <value>儲存不會執行動作。網址只預覽；腳本在點擊測試後會以你的使用者權限實際執行。</value>
+  </data>
+  <data name="ActionEditorWindow_047" xml:space="preserve">
+    <value>翻譯成繁體中文</value>
+  </data>
+  <data name="ActionEditorWindow_048" xml:space="preserve">
+    <value>清理多餘空白</value>
+  </data>
+  <data name="ActionEditorWindow_049" xml:space="preserve">
+    <value>格式化 JSON</value>
+  </data>
+  <data name="ActionEditorWindow_050" xml:space="preserve">
+    <value>逾時秒數須為 1–300 的整數。</value>
+  </data>
+  <data name="ActionEditorWindow_051" xml:space="preserve">
+    <value>*** 會換成完整編碼的選取文字；儲存不會開啟網址。</value>
+  </data>
+  <data name="ActionEditorWindow_052" xml:space="preserve">
+    <value>不傳入選取文字；POPCLIP_TEXT 會是空字串。</value>
+  </data>
+  <data name="ActionEditorWindow_053" xml:space="preserve">
+    <value>從 $env:POPCLIP_TEXT 讀取選取文字，不拼入指令。</value>
+  </data>
+  <data name="ActionEditorWindow_054" xml:space="preserve">
+    <value>從 process.env.POPCLIP_TEXT 讀取選取文字。需要 Node.js。</value>
+  </data>
+  <data name="ActionEditorWindow_055" xml:space="preserve">
+    <value>預覽網址</value>
+  </data>
+  <data name="ActionEditorWindow_056" xml:space="preserve">
+    <value>執行測試</value>
+  </data>
+  <data name="ActionEditorWindow_057" xml:space="preserve">
+    <value>網址預覽</value>
+  </data>
+  <data name="ActionEditorWindow_058" xml:space="preserve">
+    <value>執行結果</value>
+  </data>
+  <data name="ActionEditorWindow_059" xml:space="preserve">
+    <value>網址範本</value>
+  </data>
+  <data name="ActionEditorWindow_060" xml:space="preserve">
+    <value>腳本內容</value>
+  </data>
+  <data name="ActionEditorWindow_061" xml:space="preserve">
+    <value>目的地 · </value>
+  </data>
+  <data name="ActionEditorWindow_062" xml:space="preserve">
+    <value>等待有效的 HTTP／HTTPS 網址</value>
+  </data>
+  <data name="ActionEditorWindow_063" xml:space="preserve">
+    <value>請在路徑、參數值或片段中放入一個 ***。</value>
+  </data>
+  <data name="ActionEditorWindow_064" xml:space="preserve">
+    <value>尚未測試
+執行後可查看原始結果與輸入／輸出比較。</value>
+  </data>
+  <data name="ActionEditorWindow_065" xml:space="preserve">
+    <value>尚未測試
+執行後可在此查看結果。</value>
+  </data>
+  <data name="ActionEditorWindow_066" xml:space="preserve">
+    <value>請等待或取消測試後再儲存。</value>
+  </data>
+  <data name="ActionEditorWindow_067" xml:space="preserve">
+    <value>網址已預覽；未開啟瀏覽器。</value>
+  </data>
+  <data name="ActionEditorWindow_068" xml:space="preserve">
+    <value>正在執行範例…</value>
+  </data>
+  <data name="ActionEditorWindow_069" xml:space="preserve">
+    <value>設定或範例已變更，請重新測試。</value>
+  </data>
+  <data name="ActionEditorWindow_070" xml:space="preserve">
+    <value>範例已完成；未複製或套用至其他 App。</value>
+  </data>
+  <data name="ActionEditorWindow_071" xml:space="preserve">
+    <value>程序已結束；請查看診斷訊息。未複製或套用至其他 App。</value>
+  </data>
+  <data name="ActionEditorWindow_072" xml:space="preserve">
+    <value>範例未完成；請查看上方原因與詳細資訊。</value>
+  </data>
+  <data name="ActionEditorWindow_073" xml:space="preserve">
+    <value>完成後不顯示或複製輸出，不修改原文。</value>
+  </data>
+  <data name="ActionEditorWindow_074" xml:space="preserve">
+    <value>將結果複製到剪貼簿，不修改原文。</value>
+  </data>
+  <data name="ActionEditorWindow_075" xml:space="preserve">
+    <value>重新驗證原選取後，以結果取代；結果也會放入剪貼簿。</value>
+  </data>
+  <data name="ActionEditorWindow_076" xml:space="preserve">
+    <value>短暫顯示結果，不修改原文或剪貼簿。</value>
+  </data>
+  <data name="ActionEditorWindow_077" xml:space="preserve">
+    <value>在文字結果視窗中顯示，可自行複製或套用。</value>
+  </data>
+  <data name="ActionEditorWindow_078" xml:space="preserve">
+    <value>以 Markdown 排版顯示結果，可自行複製或套用。</value>
+  </data>
+  <data name="ActionResultWindow_000" xml:space="preserve">
+    <value>管理詞典</value>
+  </data>
+  <data name="ActionResultWindow_001" xml:space="preserve">
+    <value> · SnapBar 執行診斷</value>
+  </data>
+  <data name="ActionResultWindow_002" xml:space="preserve">
+    <value> · SnapBar 結果</value>
+  </data>
+  <data name="ActionResultWindow_003" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="ActionResultWindow_004" xml:space="preserve">
+    <value>套用前會重新驗證原視窗、焦點及選取；結果也會放入剪貼簿。</value>
+  </data>
+  <data name="ActionResultWindow_005" xml:space="preserve">
+    <value>來源不可寫入或已變更；可以複製結果。</value>
+  </data>
+  <data name="ActionResultWindow_006" xml:space="preserve">
+    <value>複製結果</value>
+  </data>
+  <data name="ActionResultWindow_007" xml:space="preserve">
+    <value>已複製結果。</value>
+  </data>
+  <data name="ActionResultWindow_008" xml:space="preserve">
+    <value>剪貼簿忙碌，請稍後再試。</value>
+  </data>
+  <data name="ActionResultWindow_009" xml:space="preserve">
+    <value>套用至原文</value>
+  </data>
+  <data name="ActionResultWindow_010" xml:space="preserve">
+    <value>釘住</value>
+  </data>
+  <data name="ActionResultWindow_011" xml:space="preserve">
+    <value>釘住查詞小窗，切換視窗或截圖時保持顯示</value>
+  </data>
+  <data name="ActionResultWindow_012" xml:space="preserve">
+    <value>取消釘住</value>
+  </data>
+  <data name="ActionResultWindow_013" xml:space="preserve">
+    <value>釘住</value>
+  </data>
+  <data name="ActionResultWindow_014" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="ActionResultWindow_015" xml:space="preserve">
+    <value>離線詞典</value>
+  </data>
+  <data name="ActionResultWindow_016" xml:space="preserve">
+    <value>原選取已失效；請複製結果後自行貼上。</value>
+  </data>
+  <data name="ActionSettingsPanel_000" xml:space="preserve">
+    <value>新增動作</value>
+  </data>
+  <data name="ActionSettingsPanel_001" xml:space="preserve">
+    <value>匯入…</value>
+  </data>
+  <data name="ActionSettingsPanel_002" xml:space="preserve">
+    <value>動作列預覽</value>
+  </data>
+  <data name="ActionSettingsPanel_003" xml:space="preserve">
+    <value>完整顯示釘選順序；實際動作列依選取情境顯示，寬度不足時將尾端收進「⋯」。此預覽不執行動作。</value>
+  </data>
+  <data name="ActionSettingsPanel_004" xml:space="preserve">
+    <value>深色</value>
+  </data>
+  <data name="ActionSettingsPanel_005" xml:space="preserve">
+    <value>淺色</value>
+  </data>
+  <data name="ActionSettingsPanel_006" xml:space="preserve">
+    <value>動作列主題</value>
+  </data>
+  <data name="ActionSettingsPanel_007" xml:space="preserve">
+    <value>圖示與文字</value>
+  </data>
+  <data name="ActionSettingsPanel_008" xml:space="preserve">
+    <value>外觀</value>
+  </data>
+  <data name="ActionSettingsPanel_009" xml:space="preserve">
+    <value>預覽</value>
+  </data>
+  <data name="ActionSettingsPanel_010" xml:space="preserve">
+    <value>預覽</value>
+  </data>
+  <data name="ActionSettingsPanel_011" xml:space="preserve">
+    <value>顯示位置</value>
+  </data>
+  <data name="ActionSettingsPanel_012" xml:space="preserve">
+    <value>復原</value>
+  </data>
+  <data name="ActionSettingsPanel_013" xml:space="preserve">
+    <value>已匯入</value>
+  </data>
+  <data name="ActionSettingsPanel_014" xml:space="preserve">
+    <value>尚未匯入</value>
+  </data>
+  <data name="ActionSettingsPanel_015" xml:space="preserve">
+    <value>已保存；新增動作預設放在更多選單。</value>
+  </data>
+  <data name="ActionSettingsPanel_016" xml:space="preserve">
+    <value>本次已生效，但無法保存；請檢查檔案權限或設定大小（64 KiB 上限）。</value>
+  </data>
+  <data name="ActionSettingsPanel_017" xml:space="preserve">
+    <value>已刪除「{0}」</value>
+  </data>
+  <data name="ActionSettingsPanel_018" xml:space="preserve">
+    <value>動作列 · {0}／{1}</value>
+  </data>
+  <data name="ActionSettingsPanel_019" xml:space="preserve">
+    <value>更多 · {0}</value>
+  </data>
+  <data name="ActionSettingsPanel_020" xml:space="preserve">
+    <value>隱藏 · {0}</value>
+  </data>
+  <data name="ActionSettingsPanel_021" xml:space="preserve">
+    <value>僅選取完整網址時顯示</value>
+  </data>
+  <data name="ActionSettingsPanel_022" xml:space="preserve">
+    <value>僅選取完整路徑時顯示</value>
+  </data>
+  <data name="ActionSettingsPanel_023" xml:space="preserve">
+    <value>僅可編輯來源時顯示</value>
+  </data>
+  <data name="ActionSettingsPanel_024" xml:space="preserve">
+    <value>動作列中的動作</value>
+  </data>
+  <data name="ActionSettingsPanel_025" xml:space="preserve">
+    <value>更多選單中的動作</value>
+  </data>
+  <data name="ActionSettingsPanel_026" xml:space="preserve">
+    <value>隱藏的動作</value>
+  </data>
+  <data name="ActionSettingsPanel_027" xml:space="preserve">
+    <value>目前沒有更多動作。新增動作會出現在這裡。</value>
+  </data>
+  <data name="ActionSettingsPanel_028" xml:space="preserve">
+    <value>目前沒有固定動作。請從「更多」選擇要放在動作列的項目。</value>
+  </data>
+  <data name="ActionSettingsPanel_029" xml:space="preserve">
+    <value>尚未儲存</value>
+  </data>
+  <data name="ActionSettingsPanel_030" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="ActionSettingsPanel_031" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="ActionSettingsPanel_032" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="ActionSettingsPanel_033" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="ActionSettingsPanel_034" xml:space="preserve">
+    <value>拖曳排序</value>
+  </data>
+  <data name="ActionSettingsPanel_035" xml:space="preserve">
+    <value>編輯</value>
+  </data>
+  <data name="ActionSettingsPanel_036" xml:space="preserve">
+    <value>設定搜尋引擎與網址</value>
+  </data>
+  <data name="ActionSettingsPanel_037" xml:space="preserve">
+    <value>編輯搜尋動作</value>
+  </data>
+  <data name="ActionSettingsPanel_038" xml:space="preserve">
+    <value>管理詞典</value>
+  </data>
+  <data name="ActionSettingsPanel_039" xml:space="preserve">
+    <value>編輯</value>
+  </data>
+  <data name="ActionSettingsPanel_040" xml:space="preserve">
+    <value>動作列</value>
+  </data>
+  <data name="ActionSettingsPanel_041" xml:space="preserve">
+    <value>更多選單</value>
+  </data>
+  <data name="ActionSettingsPanel_042" xml:space="preserve">
+    <value>隱藏</value>
+  </data>
+  <data name="ActionSettingsPanel_043" xml:space="preserve">
+    <value>顯示位置</value>
+  </data>
+  <data name="ActionSettingsPanel_044" xml:space="preserve">
+    <value>拖曳排序；也可使用右側上下移按鈕。</value>
+  </data>
+  <data name="ActionSettingsPanel_045" xml:space="preserve">
+    <value>複製為新動作</value>
+  </data>
+  <data name="ActionSettingsPanel_046" xml:space="preserve">
+    <value> 副本</value>
+  </data>
+  <data name="ActionSettingsPanel_047" xml:space="preserve">
+    <value> 副本</value>
+  </data>
+  <data name="ActionSettingsPanel_048" xml:space="preserve">
+    <value>匯出…</value>
+  </data>
+  <data name="ActionSettingsPanel_049" xml:space="preserve">
+    <value>刪除動作</value>
+  </data>
+  <data name="ActionSettingsPanel_050" xml:space="preserve">
+    <value>已保存。</value>
+  </data>
+  <data name="ActionSettingsPanel_051" xml:space="preserve">
+    <value>動作已復原；動作列已滿，已放入更多選單。</value>
+  </data>
+  <data name="ActionSettingsPanel_052" xml:space="preserve">
+    <value>動作已復原。</value>
+  </data>
+  <data name="ActionSettingsPanel_053" xml:space="preserve">
+    <value>SnapBar 動作|*.snapbaraction|JSON|*.json</value>
+  </data>
+  <data name="ActionSettingsPanel_054" xml:space="preserve">
+    <value>動作檔案超過 256 KiB。</value>
+  </data>
+  <data name="ActionSettingsPanel_055" xml:space="preserve">
+    <value>匯入前預覽</value>
+  </data>
+  <data name="ActionSettingsPanel_056" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ActionSettingsPanel_057" xml:space="preserve">
+    <value>加入更多選單</value>
+  </data>
+  <data name="ActionSettingsPanel_058" xml:space="preserve">
+    <value>請確認名稱、類型、完整內容與結果處理方式。匯入不會執行；腳本之後會以你的使用者權限執行。</value>
+  </data>
+  <data name="ActionSettingsPanel_059" xml:space="preserve">
+    <value>無法匯入：檔案格式、動作數量、大小或權限不符合要求。</value>
+  </data>
+  <data name="ActionSettingsPanel_060" xml:space="preserve">
+    <value>SnapBar 動作|*.snapbaraction</value>
+  </data>
+  <data name="ActionSettingsPanel_061" xml:space="preserve">
+    <value>已匯出動作；檔案包含腳本或網址範本，分享前請確認內容。</value>
+  </data>
+  <data name="ActionSettingsPanel_062" xml:space="preserve">
+    <value>無法匯出，請檢查位置與檔案權限。</value>
+  </data>
+  <data name="ActionSettingsWindow_000" xml:space="preserve">
+    <value>我的動作 · SnapBar</value>
+  </data>
+  <data name="ActionTestComparisonView_000" xml:space="preserve">
+    <value>· 空格   ⇥ Tab   ␍ CR   ↵ 換行</value>
+  </data>
+  <data name="ActionTestComparisonView_001" xml:space="preserve">
+    <value>輸入</value>
+  </data>
+  <data name="ActionTestComparisonView_002" xml:space="preserve">
+    <value>輸出</value>
+  </data>
+  <data name="ActionTestComparisonView_003" xml:space="preserve">
+    <value>輸入／輸出比較</value>
+  </data>
+  <data name="ActionTestComparisonView_004" xml:space="preserve">
+    <value>沒有文字輸出</value>
+  </data>
+  <data name="ActionTestComparisonView_005" xml:space="preserve">
+    <value>內容相同</value>
+  </data>
+  <data name="ActionTestComparisonView_006" xml:space="preserve">
+    <value>內容已變更</value>
+  </data>
+  <data name="ActionTestComparisonView_007" xml:space="preserve">
+    <value>輸入 {0} 字元 → 輸出 {1} 字元 · {2}</value>
+  </data>
+  <data name="ActionTestComparisonView_008" xml:space="preserve">
+    <value>輸入的空白與換行</value>
+  </data>
+  <data name="ActionTestComparisonView_009" xml:space="preserve">
+    <value>輸出的空白與換行</value>
+  </data>
+  <data name="ActionUi_000" xml:space="preserve">
+    <value>動作</value>
+  </data>
+  <data name="AiCommandsPanel_000" xml:space="preserve">
+    <value>新增命令</value>
+  </data>
+  <data name="AiCommandsPanel_001" xml:space="preserve">
+    <value>設定 AI 服務後即可使用</value>
+  </data>
+  <data name="AiCommandsPanel_002" xml:space="preserve">
+    <value>設定服務…</value>
+  </data>
+  <data name="AiCommandsPanel_003" xml:space="preserve">
+    <value>設定 AI 服務</value>
+  </data>
+  <data name="AiCommandsPanel_004" xml:space="preserve">
+    <value>搜尋名稱、指示與關鍵字</value>
+  </data>
+  <data name="AiCommandsPanel_005" xml:space="preserve">
+    <value>搜尋名稱、指示與關鍵字</value>
+  </data>
+  <data name="AiCommandsPanel_006" xml:space="preserve">
+    <value>搜尋 AI 命令</value>
+  </data>
+  <data name="AiCommandsPanel_007" xml:space="preserve">
+    <value>命令分類</value>
+  </data>
+  <data name="AiCommandsPanel_008" xml:space="preserve">
+    <value>復原</value>
+  </data>
+  <data name="AiCommandsPanel_009" xml:space="preserve">
+    <value>全部分類</value>
+  </data>
+  <data name="AiCommandsPanel_010" xml:space="preserve">
+    <value>未分類</value>
+  </data>
+  <data name="AiCommandsPanel_011" xml:space="preserve">
+    <value>找到 {0} 個，共 {1} 個</value>
+  </data>
+  <data name="AiCommandsPanel_012" xml:space="preserve">
+    <value>{0} 個命令</value>
+  </data>
+  <data name="AiCommandsPanel_013" xml:space="preserve">
+    <value> · 已達 128 筆上限</value>
+  </data>
+  <data name="AiCommandsPanel_014" xml:space="preserve">
+    <value>已刪除「{0}」</value>
+  </data>
+  <data name="AiCommandsPanel_015" xml:space="preserve">
+    <value>選擇圖示 </value>
+  </data>
+  <data name="AiCommandsPanel_016" xml:space="preserve">
+    <value>未分類</value>
+  </data>
+  <data name="AiCommandsPanel_017" xml:space="preserve">
+    <value>取消釘選 </value>
+  </data>
+  <data name="AiCommandsPanel_018" xml:space="preserve">
+    <value>釘選 </value>
+  </data>
+  <data name="AiCommandsPanel_019" xml:space="preserve">
+    <value>編輯</value>
+  </data>
+  <data name="AiCommandsPanel_020" xml:space="preserve">
+    <value>命令選項 </value>
+  </data>
+  <data name="AiCommandsPanel_021" xml:space="preserve">
+    <value>刪除命令</value>
+  </data>
+  <data name="AiCommandsPanel_022" xml:space="preserve">
+    <value>尚無命令，請新增第一個 AI 命令。</value>
+  </data>
+  <data name="AiCommandsPanel_023" xml:space="preserve">
+    <value>沒有符合搜尋與分類的命令。</value>
+  </data>
+  <data name="AiCommandsPanel_024" xml:space="preserve">
+    <value>已復原；目前篩選未顯示</value>
+  </data>
+  <data name="AiCommandsPanel_025" xml:space="preserve">
+    <value>命令已復原。</value>
+  </data>
+  <data name="AiCommandsPanel_026" xml:space="preserve">
+    <value>此命令已被刪除。</value>
+  </data>
+  <data name="AiErrorMessages_000" xml:space="preserve">
+    <value>API Key 未設定，請開啟服務設定。</value>
+  </data>
+  <data name="AiErrorMessages_001" xml:space="preserve">
+    <value>API Key 無效或權限不足，請檢查金鑰與服務權限。</value>
+  </data>
+  <data name="AiErrorMessages_002" xml:space="preserve">
+    <value>模型不存在或目前金鑰無權限，請確認模型 ID 與官方模型清單。</value>
+  </data>
+  <data name="AiErrorMessages_003" xml:space="preserve">
+    <value>請檢查服務網址與模型 ID。</value>
+  </data>
+  <data name="AiErrorMessages_004" xml:space="preserve">
+    <value>服務目前限制請求，請檢查配額或稍後再試。</value>
+  </data>
+  <data name="AiErrorMessages_005" xml:space="preserve">
+    <value>服務回應逾時。</value>
+  </data>
+  <data name="AiErrorMessages_006" xml:space="preserve">
+    <value>無法連上 AI 服務，請檢查連線及網址。</value>
+  </data>
+  <data name="AiErrorMessages_007" xml:space="preserve">
+    <value>文字或回應超過限制。</value>
+  </data>
+  <data name="AiErrorMessages_008" xml:space="preserve">
+    <value>服務回傳的結果不完整。</value>
+  </data>
+  <data name="AiErrorMessages_009" xml:space="preserve">
+    <value>服務未提供可用結果。</value>
+  </data>
+  <data name="AiErrorMessages_010" xml:space="preserve">
+    <value>服務回應格式無效。</value>
+  </data>
+  <data name="AiIconCatalog_000" xml:space="preserve">
+    <value>改善寫作</value>
+  </data>
+  <data name="AiIconCatalog_001" xml:space="preserve">
+    <value>縮短文字</value>
+  </data>
+  <data name="AiIconCatalog_002" xml:space="preserve">
+    <value>翻譯</value>
+  </data>
+  <data name="AiIconCatalog_003" xml:space="preserve">
+    <value>文法拼字檢查</value>
+  </data>
+  <data name="AiIconCatalog_004" xml:space="preserve">
+    <value>重點清單／摘要</value>
+  </data>
+  <data name="AiIconCatalog_005" xml:space="preserve">
+    <value>智慧摘要</value>
+  </data>
+  <data name="AiIconCatalog_006" xml:space="preserve">
+    <value>潤飾文字</value>
+  </data>
+  <data name="AiIconCatalog_007" xml:space="preserve">
+    <value>魔法棒</value>
+  </data>
+  <data name="AiIconCatalog_008" xml:space="preserve">
+    <value>星光</value>
+  </data>
+  <data name="AiIconCatalog_009" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="AiIconCatalog_010" xml:space="preserve">
+    <value>文字文件</value>
+  </data>
+  <data name="AiIconCatalog_011" xml:space="preserve">
+    <value>閱讀</value>
+  </data>
+  <data name="AiIconCatalog_012" xml:space="preserve">
+    <value>程式碼</value>
+  </data>
+  <data name="AiIconCatalog_013" xml:space="preserve">
+    <value>程式碼區塊</value>
+  </data>
+  <data name="AiIconCatalog_014" xml:space="preserve">
+    <value>終端機</value>
+  </data>
+  <data name="AiIconCatalog_015" xml:space="preserve">
+    <value>大括號</value>
+  </data>
+  <data name="AiIconCatalog_016" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="AiIconCatalog_017" xml:space="preserve">
+    <value>郵件</value>
+  </data>
+  <data name="AiIconCatalog_018" xml:space="preserve">
+    <value>對話</value>
+  </data>
+  <data name="AiIconCatalog_019" xml:space="preserve">
+    <value>智慧對話</value>
+  </data>
+  <data name="AiIconCatalog_020" xml:space="preserve">
+    <value>註解</value>
+  </data>
+  <data name="AiIconCatalog_021" xml:space="preserve">
+    <value>提問</value>
+  </data>
+  <data name="AiIconCatalog_022" xml:space="preserve">
+    <value>靈感</value>
+  </data>
+  <data name="AiIconCatalog_023" xml:space="preserve">
+    <value>思考分析</value>
+  </data>
+  <data name="AiIconCatalog_024" xml:space="preserve">
+    <value>檢查完成</value>
+  </data>
+  <data name="AiIconCatalog_025" xml:space="preserve">
+    <value>編輯</value>
+  </data>
+  <data name="AiIconCatalog_026" xml:space="preserve">
+    <value>書寫</value>
+  </data>
+  <data name="AiIconCatalog_027" xml:space="preserve">
+    <value>剪貼簿文字</value>
+  </data>
+  <data name="AiIconCatalog_028" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="AiIconCatalog_029" xml:space="preserve">
+    <value>剪下</value>
+  </data>
+  <data name="AiIconCatalog_030" xml:space="preserve">
+    <value>貼上</value>
+  </data>
+  <data name="AiIconCatalog_031" xml:space="preserve">
+    <value>連結</value>
+  </data>
+  <data name="AiIconCatalog_032" xml:space="preserve">
+    <value>資料夾</value>
+  </data>
+  <data name="AiIconCatalog_033" xml:space="preserve">
+    <value>網頁／語言</value>
+  </data>
+  <data name="AiIconCatalog_034" xml:space="preserve">
+    <value>行事曆</value>
+  </data>
+  <data name="AiIconCatalog_035" xml:space="preserve">
+    <value>待辦清單</value>
+  </data>
+  <data name="AiIconCatalog_036" xml:space="preserve">
+    <value>表格</value>
+  </data>
+  <data name="AiIconCatalog_037" xml:space="preserve">
+    <value>長條圖</value>
+  </data>
+  <data name="AiIconCatalog_038" xml:space="preserve">
+    <value>排序</value>
+  </data>
+  <data name="AiIconCatalog_039" xml:space="preserve">
+    <value>同步轉換</value>
+  </data>
+  <data name="AiIconCatalog_040" xml:space="preserve">
+    <value>圖片</value>
+  </data>
+  <data name="AiIconCatalog_041" xml:space="preserve">
+    <value>相機</value>
+  </data>
+  <data name="AiIconCatalog_042" xml:space="preserve">
+    <value>畫筆</value>
+  </data>
+  <data name="AiIconCatalog_043" xml:space="preserve">
+    <value>色彩</value>
+  </data>
+  <data name="AiIconCatalog_044" xml:space="preserve">
+    <value>音樂</value>
+  </data>
+  <data name="AiIconCatalog_045" xml:space="preserve">
+    <value>語音</value>
+  </data>
+  <data name="AiIconCatalog_046" xml:space="preserve">
+    <value>影片</value>
+  </data>
+  <data name="AiIconCatalog_047" xml:space="preserve">
+    <value>人員</value>
+  </data>
+  <data name="AiIconCatalog_048" xml:space="preserve">
+    <value>個人</value>
+  </data>
+  <data name="AiIconCatalog_049" xml:space="preserve">
+    <value>星號</value>
+  </data>
+  <data name="AiIconCatalog_050" xml:space="preserve">
+    <value>愛心</value>
+  </data>
+  <data name="AiIconCatalog_051" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="AiIconCatalog_052" xml:space="preserve">
+    <value>安全檢查</value>
+  </data>
+  <data name="AiIconCatalog_053" xml:space="preserve">
+    <value>提醒</value>
+  </data>
+  <data name="AiIconCatalog_054" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="AiIconCatalog_055" xml:space="preserve">
+    <value>旗標</value>
+  </data>
+  <data name="AiIconCatalog_056" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="AiIconCatalog_057" xml:space="preserve">
+    <value>剪下</value>
+  </data>
+  <data name="AiIconCatalog_058" xml:space="preserve">
+    <value>貼上</value>
+  </data>
+  <data name="AiIconCatalog_059" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="AiIconCatalog_060" xml:space="preserve">
+    <value>連結</value>
+  </data>
+  <data name="AiIconCatalog_061" xml:space="preserve">
+    <value>資料夾</value>
+  </data>
+  <data name="AiIconCatalog_062" xml:space="preserve">
+    <value>網頁</value>
+  </data>
+  <data name="AiIconCatalog_063" xml:space="preserve">
+    <value>翻譯</value>
+  </data>
+  <data name="AiIconCatalog_064" xml:space="preserve">
+    <value>程式碼</value>
+  </data>
+  <data name="AiIconCatalog_065" xml:space="preserve">
+    <value>終端機</value>
+  </data>
+  <data name="AiIconCatalog_066" xml:space="preserve">
+    <value>星芒</value>
+  </data>
+  <data name="AiIconCatalog_067" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="AiIconCatalog_068" xml:space="preserve">
+    <value>清理文字</value>
+  </data>
+  <data name="AiIconCatalog_069" xml:space="preserve">
+    <value>原有圖示</value>
+  </data>
+  <data name="AiIconCatalog_070" xml:space="preserve">
+    <value>全部圖示</value>
+  </data>
+  <data name="AiIconCatalog_071" xml:space="preserve">
+    <value>常用</value>
+  </data>
+  <data name="AiIconCatalog_072" xml:space="preserve">
+    <value> 文字 寫作 格式</value>
+  </data>
+  <data name="AiIconCatalog_073" xml:space="preserve">
+    <value> 勾選 檢查 校正</value>
+  </data>
+  <data name="AiIconCatalog_074" xml:space="preserve">
+    <value> 智慧 AI 魔法 改善 潤飾</value>
+  </data>
+  <data name="AiIconCatalog_075" xml:space="preserve">
+    <value>寫作</value>
+  </data>
+  <data name="AiIconCatalog_076" xml:space="preserve">
+    <value>翻譯</value>
+  </data>
+  <data name="AiIconCatalog_077" xml:space="preserve">
+    <value>閱讀</value>
+  </data>
+  <data name="AiIconCatalog_078" xml:space="preserve">
+    <value>程式</value>
+  </data>
+  <data name="AiIconCatalog_079" xml:space="preserve">
+    <value>溝通</value>
+  </data>
+  <data name="AiIconCatalog_080" xml:space="preserve">
+    <value>工作</value>
+  </data>
+  <data name="AiIconCatalog_081" xml:space="preserve">
+    <value>影像</value>
+  </data>
+  <data name="AiIconCatalog_082" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="AiIconPickerWindow_000" xml:space="preserve">
+    <value>選擇圖示</value>
+  </data>
+  <data name="AiIconPickerWindow_001" xml:space="preserve">
+    <value>選擇圖示</value>
+  </data>
+  <data name="AiIconPickerWindow_002" xml:space="preserve">
+    <value>搜尋中文、英文名稱，或貼上完整圖示名稱。</value>
+  </data>
+  <data name="AiIconPickerWindow_003" xml:space="preserve">
+    <value>常用</value>
+  </data>
+  <data name="AiIconPickerWindow_004" xml:space="preserve">
+    <value>全部圖示</value>
+  </data>
+  <data name="AiIconPickerWindow_005" xml:space="preserve">
+    <value>寫作</value>
+  </data>
+  <data name="AiIconPickerWindow_006" xml:space="preserve">
+    <value>翻譯</value>
+  </data>
+  <data name="AiIconPickerWindow_007" xml:space="preserve">
+    <value>閱讀</value>
+  </data>
+  <data name="AiIconPickerWindow_008" xml:space="preserve">
+    <value>程式</value>
+  </data>
+  <data name="AiIconPickerWindow_009" xml:space="preserve">
+    <value>溝通</value>
+  </data>
+  <data name="AiIconPickerWindow_010" xml:space="preserve">
+    <value>工作</value>
+  </data>
+  <data name="AiIconPickerWindow_011" xml:space="preserve">
+    <value>影像</value>
+  </data>
+  <data name="AiIconPickerWindow_012" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="AiIconPickerWindow_013" xml:space="preserve">
+    <value>原有圖示</value>
+  </data>
+  <data name="AiIconPickerWindow_014" xml:space="preserve">
+    <value>搜尋圖示或輸入完整名稱</value>
+  </data>
+  <data name="AiIconPickerWindow_015" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="AiIconPickerWindow_016" xml:space="preserve">
+    <value>全部圖示</value>
+  </data>
+  <data name="AiIconPickerWindow_017" xml:space="preserve">
+    <value>沒有符合的圖示，請試其他名稱。</value>
+  </data>
+  <data name="AiIconPickerWindow_018" xml:space="preserve">
+    <value>{0} 個圖示 · 方向鍵選擇 · Enter 套用</value>
+  </data>
+  <data name="AiMarkdownView_000" xml:space="preserve">
+    <value>複製程式碼</value>
+  </data>
+  <data name="AiPanelWindow_Commands_000" xml:space="preserve">
+    <value>搜尋指令，或說明怎麼處理原文…</value>
+  </data>
+  <data name="AiPanelWindow_Commands_001" xml:space="preserve">
+    <value>接著怎麼改？也能搜尋指令…</value>
+  </data>
+  <data name="AiPanelWindow_Commands_002" xml:space="preserve">
+    <value>已刪除「{0}」</value>
+  </data>
+  <data name="AiPanelWindow_Commands_003" xml:space="preserve">
+    <value>全部分類</value>
+  </data>
+  <data name="AiPanelWindow_Commands_004" xml:space="preserve">
+    <value>處理中…</value>
+  </data>
+  <data name="AiPanelWindow_Commands_005" xml:space="preserve">
+    <value>方向鍵選擇指令，Enter 執行，Esc 返回輸入。</value>
+  </data>
+  <data name="AiPanelWindow_Commands_006" xml:space="preserve">
+    <value>取消釘選</value>
+  </data>
+  <data name="AiPanelWindow_Commands_007" xml:space="preserve">
+    <value>釘選</value>
+  </data>
+  <data name="AiPanelWindow_Commands_008" xml:space="preserve">
+    <value>指令選項</value>
+  </data>
+  <data name="AiPanelWindow_Commands_009" xml:space="preserve">
+    <value>指令選項 </value>
+  </data>
+  <data name="AiPanelWindow_Commands_010" xml:space="preserve">
+    <value>編輯指令</value>
+  </data>
+  <data name="AiPanelWindow_Commands_011" xml:space="preserve">
+    <value>刪除指令</value>
+  </data>
+  <data name="AiPanelWindow_Commands_012" xml:space="preserve">
+    <value>沒有符合的已存指令，仍可直接執行輸入內容。</value>
+  </data>
+  <data name="AiPanelWindow_Commands_013" xml:space="preserve">
+    <value>這個分類尚無指令。</value>
+  </data>
+  <data name="AiPanelWindow_Commands_014" xml:space="preserve">
+    <value>搜尋全部 · </value>
+  </data>
+  <data name="AiPanelWindow_Commands_015" xml:space="preserve">
+    <value>{0} / {1} 個指令</value>
+  </data>
+  <data name="AiPanelWindow_000" xml:space="preserve">
+    <value>SnapBar · AI 改寫</value>
+  </data>
+  <data name="AiPanelWindow_001" xml:space="preserve">
+    <value>AI 設定</value>
+  </data>
+  <data name="AiPanelWindow_002" xml:space="preserve">
+    <value>AI 改寫</value>
+  </data>
+  <data name="AiPanelWindow_003" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="AiPanelWindow_004" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="AiPanelWindow_005" xml:space="preserve">
+    <value>管理 AI 命令</value>
+  </data>
+  <data name="AiPanelWindow_006" xml:space="preserve">
+    <value>管理 AI 命令</value>
+  </data>
+  <data name="AiPanelWindow_007" xml:space="preserve">
+    <value>AI 指令</value>
+  </data>
+  <data name="AiPanelWindow_008" xml:space="preserve">
+    <value>改用原文</value>
+  </data>
+  <data name="AiPanelWindow_009" xml:space="preserve">
+    <value>改用這一版</value>
+  </data>
+  <data name="AiPanelWindow_010" xml:space="preserve">
+    <value>下次改寫：原文</value>
+  </data>
+  <data name="AiPanelWindow_011" xml:space="preserve">
+    <value>搜尋指令或輸入自己的要求</value>
+  </data>
+  <data name="AiPanelWindow_012" xml:space="preserve">
+    <value>搜尋指令，或說明怎麼處理原文…</value>
+  </data>
+  <data name="AiPanelWindow_013" xml:space="preserve">
+    <value>Enter 執行 · ↓ 選指令</value>
+  </data>
+  <data name="AiPanelWindow_014" xml:space="preserve">
+    <value>Shift+Enter 換行 · 指令格內用方向鍵選擇、Enter 執行、Esc 返回輸入</value>
+  </data>
+  <data name="AiPanelWindow_015" xml:space="preserve">
+    <value>Enter 執行 · ↓ 選指令 · Shift+Enter 換行</value>
+  </data>
+  <data name="AiPanelWindow_016" xml:space="preserve">
+    <value>直接執行這段指令 ↵</value>
+  </data>
+  <data name="AiPanelWindow_017" xml:space="preserve">
+    <value>分類篩選</value>
+  </data>
+  <data name="AiPanelWindow_018" xml:space="preserve">
+    <value>復原</value>
+  </data>
+  <data name="AiPanelWindow_019" xml:space="preserve">
+    <value>複製結果</value>
+  </data>
+  <data name="AiPanelWindow_020" xml:space="preserve">
+    <value>替換原文</value>
+  </data>
+  <data name="AiPanelWindow_021" xml:space="preserve">
+    <value>原文</value>
+  </data>
+  <data name="AiPanelWindow_022" xml:space="preserve">
+    <value>結果</value>
+  </data>
+  <data name="AiPanelWindow_023" xml:space="preserve">
+    <value>原文</value>
+  </data>
+  <data name="AiPanelWindow_024" xml:space="preserve">
+    <value>結果</value>
+  </data>
+  <data name="AiPanelWindow_025" xml:space="preserve">
+    <value>上一版</value>
+  </data>
+  <data name="AiPanelWindow_026" xml:space="preserve">
+    <value>下一版</value>
+  </data>
+  <data name="AiPanelWindow_027" xml:space="preserve">
+    <value>指令詳情</value>
+  </data>
+  <data name="AiPanelWindow_028" xml:space="preserve">
+    <value>查看完整指令</value>
+  </data>
+  <data name="AiPanelWindow_029" xml:space="preserve">
+    <value>查看完整指令</value>
+  </data>
+  <data name="AiPanelWindow_030" xml:space="preserve">
+    <value>AI 設定無法讀取，本次使用預設值並保留原檔。</value>
+  </data>
+  <data name="AiPanelWindow_031" xml:space="preserve">
+    <value>SnapBar · 第 {0} 版指令</value>
+  </data>
+  <data name="AiPanelWindow_032" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="AiPanelWindow_033" xml:space="preserve">
+    <value>基於</value>
+  </data>
+  <data name="AiPanelWindow_034" xml:space="preserve">
+    <value>全部分類</value>
+  </data>
+  <data name="AiPanelWindow_035" xml:space="preserve">
+    <value>全部分類</value>
+  </data>
+  <data name="AiPanelWindow_036" xml:space="preserve">
+    <value>全部分類</value>
+  </data>
+  <data name="AiPanelWindow_037" xml:space="preserve">
+    <value>下次改寫：</value>
+  </data>
+  <data name="AiPanelWindow_038" xml:space="preserve">
+    <value>設定 AI 服務</value>
+  </data>
+  <data name="AiPanelWindow_039" xml:space="preserve">
+    <value>AI 服務與模型設定</value>
+  </data>
+  <data name="AiPanelWindow_040" xml:space="preserve">
+    <value>改用第 {0} 版</value>
+  </data>
+  <data name="AiPanelWindow_041" xml:space="preserve">
+    <value>改用這一版</value>
+  </data>
+  <data name="AiPanelWindow_042" xml:space="preserve">
+    <value>結果 · 新</value>
+  </data>
+  <data name="AiPanelWindow_043" xml:space="preserve">
+    <value>結果 · 產生中</value>
+  </data>
+  <data name="AiPanelWindow_044" xml:space="preserve">
+    <value>結果</value>
+  </data>
+  <data name="AiPanelWindow_045" xml:space="preserve">
+    <value>第 {0} 版</value>
+  </data>
+  <data name="AiPanelWindow_046" xml:space="preserve">
+    <value>自訂指令</value>
+  </data>
+  <data name="AiPanelWindow_047" xml:space="preserve">
+    <value>複製原文</value>
+  </data>
+  <data name="AiPanelWindow_048" xml:space="preserve">
+    <value>複製結果</value>
+  </data>
+  <data name="AiPanelWindow_049" xml:space="preserve">
+    <value>原選取已失效，仍可複製原文。</value>
+  </data>
+  <data name="AiPanelWindow_050" xml:space="preserve">
+    <value>原選取已失效，請複製結果後自行貼上。</value>
+  </data>
+  <data name="AiPanelWindow_051" xml:space="preserve">
+    <value>此處無法直接替換，可複製原文。</value>
+  </data>
+  <data name="AiPanelWindow_052" xml:space="preserve">
+    <value>此處無法直接替換，請複製結果。</value>
+  </data>
+  <data name="AiPanelWindow_053" xml:space="preserve">
+    <value>選擇指令後才傳送文字。</value>
+  </data>
+  <data name="AiPanelWindow_054" xml:space="preserve">
+    <value>替換時也會複製結果。</value>
+  </data>
+  <data name="AiPanelWindow_055" xml:space="preserve">
+    <value>自訂指令</value>
+  </data>
+  <data name="AiPanelWindow_056" xml:space="preserve">
+    <value>請先設定 AI 服務網址與模型 ID。</value>
+  </data>
+  <data name="AiPanelWindow_057" xml:space="preserve">
+    <value>尚未設定 API Key，請開啟上方服務／模型設定。</value>
+  </data>
+  <data name="AiPanelWindow_058" xml:space="preserve">
+    <value>指令或來源文字超過可處理的長度。</value>
+  </data>
+  <data name="AiPanelWindow_059" xml:space="preserve">
+    <value>正在處理，可按停止取消。</value>
+  </data>
+  <data name="AiPanelWindow_060" xml:space="preserve">
+    <value>沒有可用的新結果，上一版已保留。</value>
+  </data>
+  <data name="AiPanelWindow_061" xml:space="preserve">
+    <value>結果已完成，但最近使用無法保存。</value>
+  </data>
+  <data name="AiPanelWindow_062" xml:space="preserve">
+    <value>已停止，上一版已保留。</value>
+  </data>
+  <data name="AiPanelWindow_063" xml:space="preserve">
+    <value>AI 請求未完成，上一版已保留。</value>
+  </data>
+  <data name="AiPanelWindow_064" xml:space="preserve">
+    <value>上一版已保留。</value>
+  </data>
+  <data name="AiPanelWindow_065" xml:space="preserve">
+    <value>來源已變更，結果仍可複製。</value>
+  </data>
+  <data name="AiPanelWindow_066" xml:space="preserve">
+    <value>無法替換原文，請複製結果後自行貼上。</value>
+  </data>
+  <data name="AiPanelWindow_067" xml:space="preserve">
+    <value>已複製。</value>
+  </data>
+  <data name="AiPanelWindow_068" xml:space="preserve">
+    <value>剪貼簿忙碌，請稍後再試。</value>
+  </data>
+  <data name="AiPreferences_000" xml:space="preserve">
+    <value>AI 設定無法保存，請檢查設定格式、檔案權限或大小。原有設定已保留。</value>
+  </data>
+  <data name="AiPreferences_001" xml:space="preserve">
+    <value>此命令已被刪除；草稿仍保留。</value>
+  </data>
+  <data name="AiPreferences_002" xml:space="preserve">
+    <value>此命令 ID 已存在。</value>
+  </data>
+  <data name="AiPreferences_003" xml:space="preserve">
+    <value>無法刪除：找不到此命令。</value>
+  </data>
+  <data name="AiPreferences_004" xml:space="preserve">
+    <value>沒有可復原的命令。</value>
+  </data>
+  <data name="AiPreferences_005" xml:space="preserve">
+    <value>無法復原：命令 ID 已存在或已達 128 筆上限。</value>
+  </data>
+  <data name="AiPromptEditorWindow_000" xml:space="preserve">
+    <value>AI 命令編輯</value>
+  </data>
+  <data name="AiPromptEditorWindow_001" xml:space="preserve">
+    <value>新增 AI 指令</value>
+  </data>
+  <data name="AiPromptEditorWindow_002" xml:space="preserve">
+    <value>編輯 AI 指令</value>
+  </data>
+  <data name="AiPromptEditorWindow_003" xml:space="preserve">
+    <value>新增指令</value>
+  </data>
+  <data name="AiPromptEditorWindow_004" xml:space="preserve">
+    <value>編輯指令</value>
+  </data>
+  <data name="AiPromptEditorWindow_005" xml:space="preserve">
+    <value>自訂</value>
+  </data>
+  <data name="AiPromptEditorWindow_006" xml:space="preserve">
+    <value>指令名稱</value>
+  </data>
+  <data name="AiPromptEditorWindow_007" xml:space="preserve">
+    <value>指令內容</value>
+  </data>
+  <data name="AiPromptEditorWindow_008" xml:space="preserve">
+    <value>分類（選填）</value>
+  </data>
+  <data name="AiPromptEditorWindow_009" xml:space="preserve">
+    <value>搜尋關鍵字（選填）</value>
+  </data>
+  <data name="AiPromptEditorWindow_010" xml:space="preserve">
+    <value>圖示名稱</value>
+  </data>
+  <data name="AiPromptEditorWindow_011" xml:space="preserve">
+    <value>可輸入 translate 或 translate_20_regular，也可按選擇圖示。</value>
+  </data>
+  <data name="AiPromptEditorWindow_012" xml:space="preserve">
+    <value>選擇圖示</value>
+  </data>
+  <data name="AiPromptEditorWindow_013" xml:space="preserve">
+    <value>保留目前圖示；可選擇新的圖示。</value>
+  </data>
+  <data name="AiPromptEditorWindow_014" xml:space="preserve">
+    <value>找不到圖示，請檢查名稱或從圖庫選擇。</value>
+  </data>
+  <data name="AiPromptEditorWindow_015" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="AiPromptEditorWindow_016" xml:space="preserve">
+    <value>請填寫指令名稱。</value>
+  </data>
+  <data name="AiPromptEditorWindow_017" xml:space="preserve">
+    <value>請填寫指令內容。</value>
+  </data>
+  <data name="AiPromptEditorWindow_018" xml:space="preserve">
+    <value>找不到這個圖示，請檢查名稱或選擇圖示。</value>
+  </data>
+  <data name="AiPromptEditorWindow_019" xml:space="preserve">
+    <value>自訂</value>
+  </data>
+  <data name="AiPromptEditorWindow_020" xml:space="preserve">
+    <value>尚未儲存</value>
+  </data>
+  <data name="AiPromptEditorWindow_021" xml:space="preserve">
+    <value>儲存指令</value>
+  </data>
+  <data name="AiPromptEditorWindow_022" xml:space="preserve">
+    <value>名稱</value>
+  </data>
+  <data name="AiPromptEditorWindow_023" xml:space="preserve">
+    <value>指令內容</value>
+  </data>
+  <data name="AiPromptEditorWindow_024" xml:space="preserve">
+    <value>直接描述處理方式，選取文字會自動帶入。</value>
+  </data>
+  <data name="AiPromptEditorWindow_025" xml:space="preserve">
+    <value>分類（選填）</value>
+  </data>
+  <data name="AiPromptEditorWindow_026" xml:space="preserve">
+    <value>搜尋關鍵字（選填）</value>
+  </data>
+  <data name="AiPromptEditorWindow_027" xml:space="preserve">
+    <value>圖示</value>
+  </data>
+  <data name="AiPromptEditorWindow_028" xml:space="preserve">
+    <value>更多設定（選填）</value>
+  </data>
+  <data name="AiSettingsPanel_000" xml:space="preserve">
+    <value>AI 服務（包含金鑰變更）</value>
+  </data>
+  <data name="AiSettingsPanel_001" xml:space="preserve">
+    <value>AI 服務</value>
+  </data>
+  <data name="AiSettingsPanel_002" xml:space="preserve">
+    <value>使用 Responses 協定與完整 /responses 網址。</value>
+  </data>
+  <data name="AiSettingsPanel_003" xml:space="preserve">
+    <value>使用 Messages 協定與完整 /messages 網址。</value>
+  </data>
+  <data name="AiSettingsPanel_004" xml:space="preserve">
+    <value>使用 Chat Completions 協定與完整 /chat/completions 網址。</value>
+  </data>
+  <data name="AiSettingsPanel_005" xml:space="preserve">
+    <value>尚未儲存</value>
+  </data>
+  <data name="AiSettingsPanel_006" xml:space="preserve">
+    <value>已儲存</value>
+  </data>
+  <data name="AiSettingsPanel_007" xml:space="preserve">
+    <value>服務設定已保存，但金鑰無法保存。請檢查權限後重試。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_000" xml:space="preserve">
+    <value>捨棄變更</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_001" xml:space="preserve">
+    <value>儲存設定</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_002" xml:space="preserve">
+    <value>選字只在執行指令後傳送至你設定的服務。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_003" xml:space="preserve">
+    <value>服務</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_004" xml:space="preserve">
+    <value>AI 服務</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_005" xml:space="preserve">
+    <value>取得金鑰 ↗</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_006" xml:space="preserve">
+    <value>貼上 API Key</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_007" xml:space="preserve">
+    <value>貼上 API Key；留白會保留此網址已儲存的金鑰。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_008" xml:space="preserve">
+    <value>貼上 API Key</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_009" xml:space="preserve">
+    <value>更換</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_010" xml:space="preserve">
+    <value>查看模型 ↗</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_011" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_012" xml:space="preserve">
+    <value>模型 ID</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_013" xml:space="preserve">
+    <value>選擇或輸入模型 ID</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_014" xml:space="preserve">
+    <value>使用自訂網址</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_015" xml:space="preserve">
+    <value>進階設定</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_016" xml:space="preserve">
+    <value>完整 API 網址</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_017" xml:space="preserve">
+    <value>完整 API 網址</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_018" xml:space="preserve">
+    <value>移除此網址已保存的 API Key</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_019" xml:space="preserve">
+    <value>移除此網址已保存的 API Key</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_020" xml:space="preserve">
+    <value>無法開啟官方頁面，請稍後再試。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_021" xml:space="preserve">
+    <value>金鑰將在儲存後移除</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_022" xml:space="preserve">
+    <value>新金鑰尚未儲存</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_023" xml:space="preserve">
+    <value>無法讀取金鑰，請重新輸入後儲存。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_024" xml:space="preserve">
+    <value>✓ 已儲存金鑰</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_025" xml:space="preserve">
+    <value>尚未設定金鑰</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_026" xml:space="preserve">
+    <value>儲存前仍可取消勾選，保留原有金鑰。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_027" xml:space="preserve">
+    <value>金鑰已加密儲存在此電腦。留白會保留原有金鑰。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_028" xml:space="preserve">
+    <value>金鑰將加密儲存在此電腦；本機相容服務可不填。</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_029" xml:space="preserve">
+    <value>金鑰將加密儲存在此電腦。</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_000" xml:space="preserve">
+    <value>測試連線</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_001" xml:space="preserve">
+    <value>取消測試</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_002" xml:space="preserve">
+    <value>測試會傳送少量文字，可能產生費用。</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_003" xml:space="preserve">
+    <value>無法讀取金鑰，請重新輸入後測試。</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_004" xml:space="preserve">
+    <value>測試中…</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_005" xml:space="preserve">
+    <value>✓ 連線成功</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_006" xml:space="preserve">
+    <value>尚未測試</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_007" xml:space="preserve">
+    <value>測試失敗：</value>
+  </data>
+  <data name="AiSettingsWindow_000" xml:space="preserve">
+    <value>SnapBar · AI 設定</value>
+  </data>
+  <data name="AiSettingsWindow_001" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ExcludedAppsPanel_000" xml:space="preserve">
+    <value>排除 App（0）</value>
+  </data>
+  <data name="ExcludedAppsPanel_001" xml:space="preserve">
+    <value>在這些 App 不會自動彈出；手動快捷鍵仍可使用。</value>
+  </data>
+  <data name="ExcludedAppsPanel_002" xml:space="preserve">
+    <value>加入 App…</value>
+  </data>
+  <data name="ExcludedAppsPanel_003" xml:space="preserve">
+    <value>選擇要排除的 App</value>
+  </data>
+  <data name="ExcludedAppsPanel_004" xml:space="preserve">
+    <value>應用程式 (*.exe)|*.exe</value>
+  </data>
+  <data name="ExcludedAppsPanel_005" xml:space="preserve">
+    <value>請選擇有效的 .exe 程式檔案，排除清單未變更。</value>
+  </data>
+  <data name="ExcludedAppsPanel_006" xml:space="preserve">
+    <value>移除選取項目</value>
+  </data>
+  <data name="ExcludedAppsPanel_007" xml:space="preserve">
+    <value>尚未排除任何 App。</value>
+  </data>
+  <data name="ExcludedAppsPanel_008" xml:space="preserve">
+    <value>尚未排除任何 App</value>
+  </data>
+  <data name="ExcludedAppsPanel_009" xml:space="preserve">
+    <value>按「加入 App…」選擇不需要自動顯示動作列的程式。</value>
+  </data>
+  <data name="ExcludedAppsPanel_010" xml:space="preserve">
+    <value>排除 App（{0}）</value>
+  </data>
+  <data name="GeneralSettingsPage_000" xml:space="preserve">
+    <value>登入 Windows 後自動啟動</value>
+  </data>
+  <data name="GeneralSettingsPage_001" xml:space="preserve">
+    <value>登入 Windows 後自動啟動</value>
+  </data>
+  <data name="GeneralSettingsPage_002" xml:space="preserve">
+    <value>登入後在系統匣待命。</value>
+  </data>
+  <data name="GeneralSettingsPage_003" xml:space="preserve">
+    <value>登入啟動狀態</value>
+  </data>
+  <data name="GeneralSettingsPage_004" xml:space="preserve">
+    <value>開啟 Windows 設定</value>
+  </data>
+  <data name="GeneralSettingsPage_005" xml:space="preserve">
+    <value>開啟 Windows 啟動設定</value>
+  </data>
+  <data name="GeneralSettingsPage_006" xml:space="preserve">
+    <value>重試</value>
+  </data>
+  <data name="GeneralSettingsPage_007" xml:space="preserve">
+    <value>重新讀取登入啟動狀態</value>
+  </data>
+  <data name="GeneralSettingsPage_008" xml:space="preserve">
+    <value>自動偵測選取文字</value>
+  </data>
+  <data name="GeneralSettingsPage_009" xml:space="preserve">
+    <value>自動偵測選取文字</value>
+  </data>
+  <data name="GeneralSettingsPage_010" xml:space="preserve">
+    <value>自動顯示動作列</value>
+  </data>
+  <data name="GeneralSettingsPage_011" xml:space="preserve">
+    <value>拖曳或雙擊選字後，顯示動作列。</value>
+  </data>
+  <data name="GeneralSettingsPage_012" xml:space="preserve">
+    <value>叫出動作列</value>
+  </data>
+  <data name="GeneralSettingsPage_013" xml:space="preserve">
+    <value>直接搜尋選字</value>
+  </data>
+  <data name="GeneralSettingsPage_014" xml:space="preserve">
+    <value>直接複製選字</value>
+  </data>
+  <data name="GeneralSettingsPage_015" xml:space="preserve">
+    <value>框選 OCR</value>
+  </data>
+  <data name="GeneralSettingsPage_016" xml:space="preserve">
+    <value>選擇快捷鍵動作</value>
+  </data>
+  <data name="GeneralSettingsPage_017" xml:space="preserve">
+    <value>選字快捷鍵</value>
+  </data>
+  <data name="GeneralSettingsPage_018" xml:space="preserve">
+    <value>按快捷鍵執行所選動作。框選 OCR 可直接啟動。</value>
+  </data>
+  <data name="GeneralSettingsPage_019" xml:space="preserve">
+    <value>快捷鍵組合；更換時在此按下新組合</value>
+  </data>
+  <data name="GeneralSettingsPage_020" xml:space="preserve">
+    <value>更換</value>
+  </data>
+  <data name="GeneralSettingsPage_021" xml:space="preserve">
+    <value>儲存</value>
+  </data>
+  <data name="GeneralSettingsPage_022" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="GeneralSettingsPage_023" xml:space="preserve">
+    <value>恢復預設</value>
+  </data>
+  <data name="GeneralSettingsPage_024" xml:space="preserve">
+    <value>快捷鍵編輯</value>
+  </data>
+  <data name="GeneralSettingsPage_025" xml:space="preserve">
+    <value>快捷鍵設定狀態</value>
+  </data>
+  <data name="GeneralSettingsPage_026" xml:space="preserve">
+    <value>繁體中文優先</value>
+  </data>
+  <data name="GeneralSettingsPage_027" xml:space="preserve">
+    <value>英文優先</value>
+  </data>
+  <data name="GeneralSettingsPage_028" xml:space="preserve">
+    <value>繁中與英文都會辨識。以框內主要語言優先。</value>
+  </data>
+  <data name="GeneralSettingsPage_029" xml:space="preserve">
+    <value>OCR 語言優先順序</value>
+  </data>
+  <data name="GeneralSettingsPage_030" xml:space="preserve">
+    <value>OCR 語言優先順序</value>
+  </data>
+  <data name="GeneralSettingsPage_031" xml:space="preserve">
+    <value>一般設定內容</value>
+  </data>
+  <data name="GeneralSettingsPage_032" xml:space="preserve">
+    <value>登入後在系統匣待命。</value>
+  </data>
+  <data name="GeneralSettingsPage_033" xml:space="preserve">
+    <value>已由 Windows 停用，請到 Windows 設定開啟。</value>
+  </data>
+  <data name="GeneralSettingsPage_034" xml:space="preserve">
+    <value>無法讀取登入啟動狀態，請重試。</value>
+  </data>
+  <data name="GeneralSettingsPage_035" xml:space="preserve">
+    <value>程式位置已變更，開啟以更新登入啟動位置。</value>
+  </data>
+  <data name="GeneralSettingsPage_036" xml:space="preserve">
+    <value>登入後在系統匣待命。</value>
+  </data>
+  <data name="GeneralSettingsPage_037" xml:space="preserve">
+    <value>未能確認登入啟動已開啟，請重試。</value>
+  </data>
+  <data name="GeneralSettingsPage_038" xml:space="preserve">
+    <value>此版本無法在登入時獨立啟動，請改用包含執行環境的完整套件。</value>
+  </data>
+  <data name="GeneralSettingsPage_039" xml:space="preserve">
+    <value>無法變更登入啟動設定，請檢查權限後重試。</value>
+  </data>
+  <data name="GeneralSettingsPage_040" xml:space="preserve">
+    <value>無法開啟 Windows 設定，請手動開啟「應用程式 → 啟動」。</value>
+  </data>
+  <data name="GeneralSettingsPage_041" xml:space="preserve">
+    <value>按下新組合（Ctrl 或 Alt 加字母、數字、F1–F11），再按儲存。Esc 可取消。</value>
+  </data>
+  <data name="GeneralSettingsPage_042" xml:space="preserve">
+    <value>請使用 Ctrl 或 Alt 加字母、數字或 F1–F11，避開編輯與系統保留快捷鍵。</value>
+  </data>
+  <data name="GeneralSettingsPage_043" xml:space="preserve">
+    <value>按儲存套用，或繼續按下其他組合。</value>
+  </data>
+  <data name="GeneralSettingsPage_044" xml:space="preserve">
+    <value>已儲存 · </value>
+  </data>
+  <data name="GeneralSettingsPage_045" xml:space="preserve">
+    <value>未設定</value>
+  </data>
+  <data name="GeneralSettingsPage_046" xml:space="preserve">
+    <value>恢復預設</value>
+  </data>
+  <data name="GeneralSettingsPage_047" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="GeneralSettingsPage_048" xml:space="preserve">
+    <value>這組快捷鍵目前無法使用，請更換或清除。</value>
+  </data>
+  <data name="GeneralSettingsPage_049" xml:space="preserve">
+    <value>未設定</value>
+  </data>
+  <data name="GeneralSettingsPage_050" xml:space="preserve">
+    <value>未設定</value>
+  </data>
+  <data name="MainWindow_000" xml:space="preserve">
+    <value>無法建立系統匣圖示；關閉視窗會完整結束 SnapBar。</value>
+  </data>
+  <data name="MainWindow_001" xml:space="preserve">
+    <value>準備完成 · </value>
+  </data>
+  <data name="MainWindow_002" xml:space="preserve">
+    <value> 無法使用；請到一般設定更換，仍可啟用自動偵測。</value>
+  </data>
+  <data name="MainWindow_003" xml:space="preserve">
+    <value>● 啟動失敗</value>
+  </data>
+  <data name="MainWindow_004" xml:space="preserve">
+    <value>無法初始化輸入監聽，請結束後重新啟動。</value>
+  </data>
+  <data name="MainWindow_005" xml:space="preserve">
+    <value>快捷鍵設定損壞，暫用 Ctrl + Alt + V；其他偏好已保留。下次儲存會先備份原檔。</value>
+  </data>
+  <data name="MainWindow_006" xml:space="preserve">
+    <value>目前預設快捷鍵也無法使用，請到一般設定更換。</value>
+  </data>
+  <data name="MainWindow_007" xml:space="preserve">
+    <value>設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。</value>
+  </data>
+  <data name="MainWindow_008" xml:space="preserve">
+    <value>無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用 Sublime 支援。</value>
+  </data>
+  <data name="MainWindow_009" xml:space="preserve">
+    <value>Sublime 快捷鍵設定不存在或已變更；請關閉再啟用 Sublime 支援以重新設定。</value>
+  </data>
+  <data name="MainWindow_010" xml:space="preserve">
+    <value>此 App 已在排除清單中。</value>
+  </data>
+  <data name="MainWindow_011" xml:space="preserve">
+    <value>排除清單已達 128 項，請先移除不需要的項目。</value>
+  </data>
+  <data name="MainWindow_012" xml:space="preserve">
+    <value>已加入排除 App；手動快捷鍵仍可使用。</value>
+  </data>
+  <data name="MainWindow_013" xml:space="preserve">
+    <value>已移除排除 App；啟用自動偵測時將恢復正常觸發。</value>
+  </data>
+  <data name="MainWindow_014" xml:space="preserve">
+    <value>本次設定已生效，但無法保存；下次啟動將使用原設定。</value>
+  </data>
+  <data name="MainWindow_015" xml:space="preserve">
+    <value>搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。</value>
+  </data>
+  <data name="MainWindow_016" xml:space="preserve">
+    <value>搜尋設定無法保存；草稿仍保留，請檢查檔案權限或設定大小。</value>
+  </data>
+  <data name="MainWindow_017" xml:space="preserve">
+    <value>● 選字偵測：快捷鍵不可用</value>
+  </data>
+  <data name="MainWindow_018" xml:space="preserve">
+    <value>● 選字偵測：自動</value>
+  </data>
+  <data name="MainWindow_019" xml:space="preserve">
+    <value>● 選字偵測：快捷鍵待命</value>
+  </data>
+  <data name="MainWindow_Dictionary_000" xml:space="preserve">
+    <value>管理離線詞典</value>
+  </data>
+  <data name="MainWindow_Dictionary_001" xml:space="preserve">
+    <value>← 返回動作列</value>
+  </data>
+  <data name="MainWindow_Dictionary_002" xml:space="preserve">
+    <value>匯入多本詞典，查詞時會一起搜尋已啟用的來源。請將 .ifo、.idx 與 .dict 或 .dict.dz 放在同一資料夾。</value>
+  </data>
+  <data name="MainWindow_Dictionary_003" xml:space="preserve">
+    <value>匯入詞典</value>
+  </data>
+  <data name="MainWindow_Dictionary_004" xml:space="preserve">
+    <value>StarDict 詞典 (*.ifo)|*.ifo</value>
+  </data>
+  <data name="MainWindow_Dictionary_005" xml:space="preserve">
+    <value>「{0}」已匯入（{1} 詞條）。要以這份檔案更新嗎？
+啟用狀態會保留。</value>
+  </data>
+  <data name="MainWindow_Dictionary_006" xml:space="preserve">
+    <value>更新詞典</value>
+  </data>
+  <data name="MainWindow_Dictionary_007" xml:space="preserve">
+    <value>已保留原有詞典。</value>
+  </data>
+  <data name="MainWindow_Dictionary_008" xml:space="preserve">
+    <value>已匯入「{0}」，{1} 詞條。</value>
+  </data>
+  <data name="MainWindow_Dictionary_009" xml:space="preserve">
+    <value>尚未匯入詞典。</value>
+  </data>
+  <data name="MainWindow_Dictionary_010" xml:space="preserve">
+    <value>已匯入 {0} 本詞典，已啟用 {1} 本。</value>
+  </data>
+  <data name="MainWindow_Dictionary_011" xml:space="preserve">
+    <value>啟用「</value>
+  </data>
+  <data name="MainWindow_Dictionary_012" xml:space="preserve">
+    <value>已啟用詞典。</value>
+  </data>
+  <data name="MainWindow_Dictionary_013" xml:space="preserve">
+    <value>已停用詞典，檔案仍會保留。</value>
+  </data>
+  <data name="MainWindow_Dictionary_014" xml:space="preserve">
+    <value>{0} 詞條 · {1}</value>
+  </data>
+  <data name="MainWindow_Dictionary_015" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="MainWindow_Dictionary_016" xml:space="preserve">
+    <value>移除「</value>
+  </data>
+  <data name="MainWindow_Dictionary_017" xml:space="preserve">
+    <value>要移除「{0}」嗎？原始詞典檔案會保留。</value>
+  </data>
+  <data name="MainWindow_Dictionary_018" xml:space="preserve">
+    <value>移除詞典</value>
+  </data>
+  <data name="MainWindow_Dictionary_019" xml:space="preserve">
+    <value>已移除詞典。</value>
+  </data>
+  <data name="MainWindow_Dictionary_020" xml:space="preserve">
+    <value>無法讀取詞典清單，請檢查檔案或還原備份。</value>
+  </data>
+  <data name="MainWindow_Dictionary_021" xml:space="preserve">
+    <value>正在處理詞典…</value>
+  </data>
+  <data name="MainWindow_Dictionary_022" xml:space="preserve">
+    <value>詞典文字必須使用 UTF-8。</value>
+  </data>
+  <data name="MainWindow_Dictionary_023" xml:space="preserve">
+    <value>無法讀取或儲存詞典，請檢查配套檔案與存取權限。</value>
+  </data>
+  <data name="MainWindow_Exit_000" xml:space="preserve">
+    <value>結束 SnapBar</value>
+  </data>
+  <data name="MainWindow_Exit_001" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="MainWindow_Exit_002" xml:space="preserve">
+    <value>捨棄並結束</value>
+  </data>
+  <data name="MainWindow_Exit_003" xml:space="preserve">
+    <value>儲存後結束</value>
+  </data>
+  <data name="MainWindow_Exit_004" xml:space="preserve">
+    <value>有尚未儲存的變更</value>
+  </data>
+  <data name="MainWindow_Exit_005" xml:space="preserve">
+    <value>儲存後結束將依序提交下列表單；任一項失敗會停止結束，已儲存項目會保留。</value>
+  </data>
+  <data name="MainWindow_General_000" xml:space="preserve">
+    <value>輸入監聽尚未就緒，請重新啟動 SnapBar。</value>
+  </data>
+  <data name="MainWindow_General_001" xml:space="preserve">
+    <value>SnapBar 已使用這組快捷鍵，請換一組。</value>
+  </data>
+  <data name="MainWindow_General_002" xml:space="preserve">
+    <value>這組快捷鍵無法使用，請換一組。原設定已保留。</value>
+  </data>
+  <data name="MainWindow_General_003" xml:space="preserve">
+    <value>無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。</value>
+  </data>
+  <data name="MainWindow_General_004" xml:space="preserve">
+    <value>輸入監聽尚未就緒，請重新啟動 SnapBar。</value>
+  </data>
+  <data name="MainWindow_General_005" xml:space="preserve">
+    <value>這組快捷鍵不支援，請換一組。</value>
+  </data>
+  <data name="MainWindow_General_006" xml:space="preserve">
+    <value>這組快捷鍵無法使用，請換一組。原快捷鍵仍有效。</value>
+  </data>
+  <data name="MainWindow_General_007" xml:space="preserve">
+    <value>這組快捷鍵無法使用，請換一組。目前快捷鍵仍不可用。</value>
+  </data>
+  <data name="MainWindow_General_008" xml:space="preserve">
+    <value>無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。</value>
+  </data>
+  <data name="MainWindow_General_009" xml:space="preserve">
+    <value>快捷鍵已設定 · </value>
+  </data>
+  <data name="MainWindow_Ocr_000" xml:space="preserve">
+    <value>框選 OCR · SnapBar</value>
+  </data>
+  <data name="MainWindow_Ocr_001" xml:space="preserve">
+    <value>可校正辨識文字，或反白其中一部分再執行動作。</value>
+  </data>
+  <data name="MainWindow_Ocr_002" xml:space="preserve">
+    <value>沒有辨識到文字。請重新框選清楚的文字。</value>
+  </data>
+  <data name="MainWindow_Ocr_003" xml:space="preserve">
+    <value>OCR 引擎無法載入。請確認 Microsoft Visual C++ x64 執行階段已安裝。</value>
+  </data>
+  <data name="MainWindow_Ocr_004" xml:space="preserve">
+    <value>找不到 OCR 語言模型。請重新解壓完整套件。</value>
+  </data>
+  <data name="MainWindow_Ocr_005" xml:space="preserve">
+    <value>框選區域太大或超出螢幕。請在同一螢幕內重新框選。</value>
+  </data>
+  <data name="MainWindow_Ocr_006" xml:space="preserve">
+    <value>無法辨識此區域，請重新框選。</value>
+  </data>
+  <data name="MainWindow_Ocr_007" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="MainWindow_Ocr_008" xml:space="preserve">
+    <value>已複製。</value>
+  </data>
+  <data name="MainWindow_Ocr_009" xml:space="preserve">
+    <value>剪貼簿忙碌，請稍後再試。</value>
+  </data>
+  <data name="MainWindow_Ocr_010" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="MainWindow_Ocr_011" xml:space="preserve">
+    <value>無法搜尋這段文字，請縮短內容後再試。</value>
+  </data>
+  <data name="MainWindow_Ocr_012" xml:space="preserve">
+    <value>無法開啟預設瀏覽器。</value>
+  </data>
+  <data name="MainWindow_Ocr_013" xml:space="preserve">
+    <value>關閉</value>
+  </data>
+  <data name="MainWindow_Settings_000" xml:space="preserve">
+    <value>一般</value>
+  </data>
+  <data name="MainWindow_Settings_001" xml:space="preserve">
+    <value>動作列</value>
+  </data>
+  <data name="MainWindow_Settings_002" xml:space="preserve">
+    <value>AI 命令</value>
+  </data>
+  <data name="MainWindow_Settings_003" xml:space="preserve">
+    <value>AI 服務</value>
+  </data>
+  <data name="MainWindow_Settings_004" xml:space="preserve">
+    <value>相容性</value>
+  </data>
+  <data name="MainWindow_Settings_005" xml:space="preserve">
+    <value>關於與支援</value>
+  </data>
+  <data name="MainWindow_Settings_006" xml:space="preserve">
+    <value>SnapBar · 設定</value>
+  </data>
+  <data name="MainWindow_Settings_007" xml:space="preserve">
+    <value>正在啟動</value>
+  </data>
+  <data name="MainWindow_Settings_008" xml:space="preserve">
+    <value>一般</value>
+  </data>
+  <data name="MainWindow_Settings_009" xml:space="preserve">
+    <value>關閉設定後，SnapBar 會繼續在背景執行。</value>
+  </data>
+  <data name="MainWindow_Settings_010" xml:space="preserve">
+    <value>← 返回動作列</value>
+  </data>
+  <data name="MainWindow_Settings_011" xml:space="preserve">
+    <value>編輯搜尋動作</value>
+  </data>
+  <data name="MainWindow_Settings_012" xml:space="preserve">
+    <value>本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。</value>
+  </data>
+  <data name="MainWindow_Settings_013" xml:space="preserve">
+    <value>選字相容模式</value>
+  </data>
+  <data name="MainWindow_Settings_014" xml:space="preserve">
+    <value>選字相容模式</value>
+  </data>
+  <data name="MainWindow_Settings_015" xml:space="preserve">
+    <value>選字相容模式</value>
+  </data>
+  <data name="MainWindow_Settings_016" xml:space="preserve">
+    <value>原生讀取不足時，暫借剪貼簿取得文字。相容讀取可能出現在剪貼簿歷程。</value>
+  </data>
+  <data name="MainWindow_Settings_017" xml:space="preserve">
+    <value>Sublime 支援</value>
+  </data>
+  <data name="MainWindow_Settings_018" xml:space="preserve">
+    <value>Sublime 支援</value>
+  </data>
+  <data name="MainWindow_Settings_019" xml:space="preserve">
+    <value>Sublime 支援</value>
+  </data>
+  <data name="MainWindow_Settings_020" xml:space="preserve">
+    <value>需先啟用選字相容模式。首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。</value>
+  </data>
+  <data name="OcrOverlay_000" xml:space="preserve">
+    <value>拖曳框選文字 · Esc 取消</value>
+  </data>
+  <data name="PopupWindow_000" xml:space="preserve">
+    <value>搜尋動作</value>
+  </data>
+  <data name="PopupWindow_001" xml:space="preserve">
+    <value>搜尋動作…</value>
+  </data>
+  <data name="PopupWindow_002" xml:space="preserve">
+    <value>管理／新增動作</value>
+  </data>
+  <data name="PopupWindow_003" xml:space="preserve">
+    <value>更多動作 · 輸入名稱、上下選擇、Enter 執行、Esc 關閉</value>
+  </data>
+  <data name="PopupWindow_004" xml:space="preserve">
+    <value>更多動作</value>
+  </data>
+  <data name="PopupWindow_005" xml:space="preserve">
+    <value>最近使用</value>
+  </data>
+  <data name="PopupWindow_006" xml:space="preserve">
+    <value>所有動作</value>
+  </data>
+  <data name="PopupWindow_007" xml:space="preserve">
+    <value>搜尋結果</value>
+  </data>
+  <data name="PopupWindow_008" xml:space="preserve">
+    <value>釘選</value>
+  </data>
+  <data name="PopupWindow_009" xml:space="preserve">
+    <value>釘選到動作列</value>
+  </data>
+  <data name="PopupWindow_010" xml:space="preserve">
+    <value>動作列已釘選 {0} 個動作</value>
+  </data>
+  <data name="PopupWindow_011" xml:space="preserve">
+    <value>請選取完整的檔案或資料夾路徑</value>
+  </data>
+  <data name="PopupWindow_012" xml:space="preserve">
+    <value>請選取完整的 HTTP／HTTPS 網址</value>
+  </data>
+  <data name="PopupWindow_013" xml:space="preserve">
+    <value>選取文字過長或搜尋設定無效</value>
+  </data>
+  <data name="PopupWindow_014" xml:space="preserve">
+    <value>來源未確認可編輯，無法寫入</value>
+  </data>
+  <data name="PopupWindow_015" xml:space="preserve">
+    <value>沒有更多動作，請到「管理動作」設定顯示位置。</value>
+  </data>
+  <data name="PopupWindow_016" xml:space="preserve">
+    <value>找不到符合名稱的動作，請試試其他搜尋。</value>
+  </data>
+  <data name="PopupWindow_017" xml:space="preserve">
+    <value>{0} 字 · 來源選取仍保留</value>
+  </data>
+  <data name="ScriptDiagnostic_000" xml:space="preserve">
+    <value>程序已結束，另有診斷訊息。請展開詳細資訊查看。</value>
+  </data>
+  <data name="ScriptDiagnostic_001" xml:space="preserve">
+    <value>這個指令需要互動輸入，SnapBar 無法代答。請改用不需要確認或輸入的寫法。</value>
+  </data>
+  <data name="ScriptDiagnostic_002" xml:space="preserve">
+    <value>這個指令需要互動確認，SnapBar 無法代答。Windows PowerShell 的 curl 是別名；請改用 curl.exe。</value>
+  </data>
+  <data name="ScriptDiagnostic_003" xml:space="preserve">
+    <value>動作：{0}</value>
+  </data>
+  <data name="ScriptDiagnostic_004" xml:space="preserve">
+    <value>執行環境：{0}</value>
+  </data>
+  <data name="ScriptDiagnostic_005" xml:space="preserve">
+    <value>狀態：{0}</value>
+  </data>
+  <data name="ScriptDiagnostic_006" xml:space="preserve">
+    <value>結束代碼：{0}</value>
+  </data>
+  <data name="ScriptDiagnostic_007" xml:space="preserve">
+    <value>程序已逾時；以下保留中止前擷取的內容。</value>
+  </data>
+  <data name="ScriptDiagnostic_008" xml:space="preserve">
+    <value>輸出超過每個串流 262,144 字元的上限，程序已停止。</value>
+  </data>
+  <data name="ScriptDiagnostic_009" xml:space="preserve">
+    <value>標準輸出已截斷，以下不是完整輸出。</value>
+  </data>
+  <data name="ScriptDiagnostic_010" xml:space="preserve">
+    <value>標準錯誤已截斷，以下不是完整錯誤內容。</value>
+  </data>
+  <data name="ScriptDiagnostic_011" xml:space="preserve">
+    <value>部分串流未能完整讀取；以下僅包含已擷取的內容。</value>
+  </data>
+  <data name="ScriptDiagnostic_012" xml:space="preserve">
+    <value>標準錯誤（stderr）</value>
+  </data>
+  <data name="ScriptDiagnostic_013" xml:space="preserve">
+    <value>（無）</value>
+  </data>
+  <data name="ScriptDiagnostic_014" xml:space="preserve">
+    <value>標準輸出（stdout）</value>
+  </data>
+  <data name="ScriptDiagnostic_015" xml:space="preserve">
+    <value>（無）</value>
+  </data>
+  <data name="ScriptDiagnostic_016" xml:space="preserve">
+    <value>原始標準錯誤（CLIXML）</value>
+  </data>
+  <data name="ScriptDiagnostic_017" xml:space="preserve">
+    <value>執行已完成。</value>
+  </data>
+  <data name="ScriptDiagnostic_018" xml:space="preserve">
+    <value>已取消執行。</value>
+  </data>
+  <data name="ScriptDiagnostic_019" xml:space="preserve">
+    <value>執行逾時，已終止程序。請檢查指令是否等待輸入，或調整進階設定中的逾時秒數。</value>
+  </data>
+  <data name="ScriptDiagnostic_020" xml:space="preserve">
+    <value>找不到或無法啟動執行環境。請在進階設定指定可用的 .exe 完整路徑。</value>
+  </data>
+  <data name="ScriptDiagnostic_021" xml:space="preserve">
+    <value>輸出超過大小限制，已停止。請減少指令輸出；已擷取的內容可在詳細資訊查看。</value>
+  </data>
+  <data name="ScriptDiagnostic_022" xml:space="preserve">
+    <value>動作設定無效。請檢查名稱、腳本、執行環境與逾時設定。</value>
+  </data>
+  <data name="ScriptDiagnostic_023" xml:space="preserve">
+    <value>腳本執行失敗。請展開詳細資訊查看原始錯誤與發生位置。</value>
+  </data>
+  <data name="SearchSettingsPanel_000" xml:space="preserve">
+    <value>搜尋設定</value>
+  </data>
+  <data name="SearchSettingsPanel_001" xml:space="preserve">
+    <value>儲存搜尋設定</value>
+  </data>
+  <data name="SearchSettingsPanel_002" xml:space="preserve">
+    <value>捨棄變更</value>
+  </data>
+  <data name="SearchSettingsPanel_003" xml:space="preserve">
+    <value>恢復 Google 預設</value>
+  </data>
+  <data name="SearchSettingsPanel_004" xml:space="preserve">
+    <value>搜尋引擎</value>
+  </data>
+  <data name="SearchSettingsPanel_005" xml:space="preserve">
+    <value>自訂</value>
+  </data>
+  <data name="SearchSettingsPanel_006" xml:space="preserve">
+    <value>搜尋引擎</value>
+  </data>
+  <data name="SearchSettingsPanel_007" xml:space="preserve">
+    <value>搜尋網址</value>
+  </data>
+  <data name="SearchSettingsPanel_008" xml:space="preserve">
+    <value>將 {query} 放在網址參數值中，選取文字會自動編碼。</value>
+  </data>
+  <data name="SearchSettingsPanel_009" xml:space="preserve">
+    <value>搜尋網址範本</value>
+  </data>
+  <data name="SearchSettingsPanel_010" xml:space="preserve">
+    <value>尚未儲存</value>
+  </data>
+  <data name="SearchSettingsPanel_011" xml:space="preserve">
+    <value>搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。</value>
+  </data>
+  <data name="SearchSettingsPanel_012" xml:space="preserve">
+    <value>搜尋設定無法保存；變更仍保留，請檢查檔案權限或設定大小。</value>
+  </data>
+  <data name="SearchSettingsPanel_013" xml:space="preserve">
+    <value>已儲存</value>
+  </data>
+  <data name="SelectionController_Ai_000" xml:space="preserve">
+    <value>AI 服務尚未初始化。</value>
+  </data>
+  <data name="SelectionController_Ai_001" xml:space="preserve">
+    <value>AI 面板已開啟，選擇指令後才傳送文字。</value>
+  </data>
+  <data name="SelectionController_000" xml:space="preserve">
+    <value>正在等候 App 的選字介面就緒…</value>
+  </data>
+  <data name="SelectionController_001" xml:space="preserve">
+    <value>Sublime 相容模式 · {0} 字 · {1} · 剪貼簿已還原 · {2} ms</value>
+  </data>
+  <data name="SelectionController_002" xml:space="preserve">
+    <value>選字相容模式 · {0} 字 · 不提供寫入 · 剪貼簿已還原 · {1} ms</value>
+  </data>
+  <data name="SelectionController_003" xml:space="preserve">
+    <value>已取得 {0} 字 · {1} · {2} ms（UIA {3} ms{4}）</value>
+  </data>
+  <data name="SelectionController_004" xml:space="preserve">
+    <value>已複製 {0} 字</value>
+  </data>
+  <data name="SelectionController_005" xml:space="preserve">
+    <value>已交由檔案總管顯示項目。</value>
+  </data>
+  <data name="SelectionController_006" xml:space="preserve">
+    <value>已交由預設瀏覽器搜尋。</value>
+  </data>
+  <data name="SelectionController_007" xml:space="preserve">
+    <value>已交由預設瀏覽器開啟連結。</value>
+  </data>
+  <data name="SelectionController_008" xml:space="preserve">
+    <value>已送出剪下指令（請確認原 App 結果）</value>
+  </data>
+  <data name="SelectionController_009" xml:space="preserve">
+    <value>已送出貼上指令（請確認原 App 結果）</value>
+  </data>
+  <data name="SelectionController_010" xml:space="preserve">
+    <value>未取得選取文字；請選取後再試。</value>
+  </data>
+  <data name="SelectionController_011" xml:space="preserve">
+    <value>目前未取得此控制項的選字介面；可能尚未就緒，請稍候重新選字。</value>
+  </data>
+  <data name="SelectionController_012" xml:space="preserve">
+    <value>密碼欄位不提供選字動作。</value>
+  </data>
+  <data name="SelectionController_013" xml:space="preserve">
+    <value>選字讀取逾時，已停止此次讀取；請重新選字。</value>
+  </data>
+  <data name="SelectionController_014" xml:space="preserve">
+    <value>目標或選取已變更，已取消動作。</value>
+  </data>
+  <data name="SelectionController_015" xml:space="preserve">
+    <value>無法確認可編輯，已取消寫入。</value>
+  </data>
+  <data name="SelectionController_016" xml:space="preserve">
+    <value>不支援此動作，已取消。</value>
+  </data>
+  <data name="SelectionController_017" xml:space="preserve">
+    <value>選取內容不是完整的 HTTP／HTTPS 網址。</value>
+  </data>
+  <data name="SelectionController_018" xml:space="preserve">
+    <value>搜尋網址設定無效，請至設定修正或恢復預設。</value>
+  </data>
+  <data name="SelectionController_019" xml:space="preserve">
+    <value>搜尋或連結網址過長，請縮短選取內容後再試。</value>
+  </data>
+  <data name="SelectionController_020" xml:space="preserve">
+    <value>無法開啟預設瀏覽器，請檢查 Windows 的預設瀏覽器設定。</value>
+  </data>
+  <data name="SelectionController_021" xml:space="preserve">
+    <value>選取內容不是支援的完整檔案路徑。</value>
+  </data>
+  <data name="SelectionController_022" xml:space="preserve">
+    <value>找不到項目或無法存取，未開啟檔案總管。</value>
+  </data>
+  <data name="SelectionController_023" xml:space="preserve">
+    <value>無法在檔案總管顯示項目，請稍後再試。</value>
+  </data>
+  <data name="SelectionController_024" xml:space="preserve">
+    <value>路徑查詢逾時，已停止此次操作。</value>
+  </data>
+  <data name="SelectionController_025" xml:space="preserve">
+    <value>操作已取消。</value>
+  </data>
+  <data name="SelectionController_026" xml:space="preserve">
+    <value>請先放開 Ctrl、Alt、Shift 等修飾鍵。</value>
+  </data>
+  <data name="SelectionController_027" xml:space="preserve">
+    <value>輸入指令未完整送出，請確認目標權限。</value>
+  </data>
+  <data name="SelectionController_028" xml:space="preserve">
+    <value>P0 貼上目前只接受含文字的剪貼簿。</value>
+  </data>
+  <data name="SelectionController_029" xml:space="preserve">
+    <value>剪貼簿正被其他程式使用，請稍後再試。</value>
+  </data>
+  <data name="SelectionController_030" xml:space="preserve">
+    <value>Sublime 尚未啟用相容讀取；請至設定啟用「選字相容模式」與「Sublime 支援」。</value>
+  </data>
+  <data name="SelectionController_031" xml:space="preserve">
+    <value>選字相容模式已關閉，請至設定啟用。</value>
+  </data>
+  <data name="SelectionController_032" xml:space="preserve">
+    <value>無法確認此控制項的選取，未執行動作。</value>
+  </data>
+  <data name="SelectionController_033" xml:space="preserve">
+    <value>相容快捷鍵設定不存在或已變更；請重新勾選相容模式。</value>
+  </data>
+  <data name="SelectionController_034" xml:space="preserve">
+    <value>Sublime 未回傳單段選取；請選取文字，確認設定已載入且快捷鍵無衝突。</value>
+  </data>
+  <data name="SelectionController_035" xml:space="preserve">
+    <value>剪貼簿含尚未支援備份的特殊格式，未觸發複製。</value>
+  </data>
+  <data name="SelectionController_036" xml:space="preserve">
+    <value>目前剪貼簿無法完整備份，自動重試後仍未就緒；已保留原內容，未讀取選字。</value>
+  </data>
+  <data name="SelectionController_037" xml:space="preserve">
+    <value>剪貼簿備份失敗，未觸發複製。</value>
+  </data>
+  <data name="SelectionController_038" xml:space="preserve">
+    <value>剪貼簿備份超過 64 MB，未觸發複製。</value>
+  </data>
+  <data name="SelectionController_039" xml:space="preserve">
+    <value>剪貼簿在讀取期間再次變動，已取消並保留目前內容。</value>
+  </data>
+  <data name="SelectionController_040" xml:space="preserve">
+    <value>剪貼簿已由其他程序接手，已取消並保留新內容。</value>
+  </data>
+  <data name="SelectionController_041" xml:space="preserve">
+    <value>讀取期間收到新的操作，已取消此次選字。</value>
+  </data>
+  <data name="SelectionController_042" xml:space="preserve">
+    <value>剪貼簿還原失敗；請確認目前剪貼簿內容。</value>
+  </data>
+  <data name="SelectionController_043" xml:space="preserve">
+    <value>選取超過原型的 32,768 字元／16 段限制。</value>
+  </data>
+  <data name="SelectionController_044" xml:space="preserve">
+    <value>上一筆讀取尚未完成，請重新選字。</value>
+  </data>
+  <data name="SelectionController_045" xml:space="preserve">
+    <value>操作未完成（{0}），未寫入原 App。</value>
+  </data>
+  <data name="SelectionController_046" xml:space="preserve">
+    <value>選字等待已取消，請重新選字。</value>
+  </data>
+  <data name="SelectionController_CustomActions_000" xml:space="preserve">
+    <value>已交由預設瀏覽器開啟自訂網址。</value>
+  </data>
+  <data name="SelectionController_CustomActions_001" xml:space="preserve">
+    <value>正在執行自訂動作…</value>
+  </data>
+  <data name="SelectionController_CustomActions_002" xml:space="preserve">
+    <value>自訂動作已完成。</value>
+  </data>
+  <data name="SelectionController_CustomActions_003" xml:space="preserve">
+    <value>已複製自訂動作的結果。</value>
+  </data>
+  <data name="SelectionController_CustomActions_004" xml:space="preserve">
+    <value>自訂動作未完成，請檢查設定或執行環境。</value>
+  </data>
+  <data name="SelectionController_CustomActions_005" xml:space="preserve">
+    <value>結果已顯示；只有原選取仍有效時才能套用。</value>
+  </data>
+  <data name="SelectionController_CustomActions_006" xml:space="preserve">
+    <value>結果為空，已保留原文；可在結果視窗查看。</value>
+  </data>
+  <data name="SelectionController_CustomActions_007" xml:space="preserve">
+    <value>結果已複製並送出貼上指令（請確認原 App 結果）。</value>
+  </data>
+  <data name="SelectionController_Dictionary_000" xml:space="preserve">
+    <value>請先匯入一份 StarDict 詞典。</value>
+  </data>
+  <data name="SelectionController_Dictionary_001" xml:space="preserve">
+    <value>尚未啟用詞典，請在管理詞典中勾選要使用的來源。</value>
+  </data>
+  <data name="SelectionController_Dictionary_002" xml:space="preserve">
+    <value>部分詞典無法讀取，請在管理詞典中重新匯入。</value>
+  </data>
+  <data name="SelectionController_Dictionary_003" xml:space="preserve">
+    <value>無法讀取離線詞典，請重新匯入。</value>
+  </data>
+  <data name="SelectionController_Dictionary_004" xml:space="preserve">
+    <value>詞典未收錄。</value>
+  </data>
+  <data name="SelectionController_Dictionary_005" xml:space="preserve">
+    <value>查詞</value>
+  </data>
+  <data name="SelectionController_Dictionary_006" xml:space="preserve">
+    <value>管理詞典</value>
+  </data>
+  <data name="SelectionController_Dictionary_007" xml:space="preserve">
+    <value>匯入詞典</value>
+  </data>
+  <data name="SettingsSupportPage_000" xml:space="preserve">
+    <value>結束 SnapBar</value>
+  </data>
+  <data name="SettingsSupportPage_001" xml:space="preserve">
+    <value>未知版本</value>
+  </data>
+  <data name="SettingsSupportPage_002" xml:space="preserve">
+    <value>版本 </value>
+  </data>
+  <data name="SettingsSupportPage_003" xml:space="preserve">
+    <value>關閉視窗後會繼續在背景待命。使用系統匣圖示可返回設定；「結束 SnapBar」才會完整結束。</value>
+  </data>
+  <data name="SettingsSupportPage_004" xml:space="preserve">
+    <value>開啟測試視窗</value>
+  </data>
+  <data name="SettingsSupportPage_005" xml:space="preserve">
+    <value>正在初始化…</value>
+  </data>
+  <data name="SettingsSupportPage_006" xml:space="preserve">
+    <value>完整版本：</value>
+  </data>
+  <data name="SettingsSupportPage_007" xml:space="preserve">
+    <value>診斷與測試</value>
+  </data>
+  <data name="TrayIcon_000" xml:space="preserve">
+    <value>開啟設定</value>
+  </data>
+  <data name="TrayIcon_001" xml:space="preserve">
+    <value>啟用自動偵測</value>
+  </data>
+  <data name="TrayIcon_002" xml:space="preserve">
+    <value>結束 SnapBar</value>
+  </data>
+  <data name="TrayIcon_003" xml:space="preserve">
+    <value>SnapBar · 僅使用快捷鍵</value>
+  </data>
+  <data name="TrayIcon_004" xml:space="preserve">
+    <value>暫停自動偵測</value>
+  </data>
+  <data name="TrayIcon_005" xml:space="preserve">
+    <value>啟用自動偵測</value>
+  </data>
+  <data name="TrayIcon_006" xml:space="preserve">
+    <value>SnapBar · 自動偵測已啟用</value>
+  </data>
+  <data name="TrayIcon_007" xml:space="preserve">
+    <value>SnapBar · 僅使用快捷鍵</value>
+  </data>
+  <data name="TrayIcon_008" xml:space="preserve">
+    <value>框選 OCR</value>
+  </data>
+  <data name="TrayIcon_009" xml:space="preserve">
+    <value>SnapBar 在背景待命</value>
+  </data>
+  <data name="TrayIcon_010" xml:space="preserve">
+    <value>按系統匣圖示可開啟設定；右鍵選單可結束 SnapBar。</value>
+  </data>
+  <data name="ActionEditorWindow_079" xml:space="preserve">
+    <value>範例測試</value>
+  </data>
+  <data name="ActionEditorWindow_080" xml:space="preserve">
+    <value>不使用選取文字</value>
+  </data>
+  <data name="MainWindow_Dictionary_024" xml:space="preserve">
+    <value>已啟用</value>
+  </data>
+  <data name="MainWindow_Dictionary_025" xml:space="preserve">
+    <value>已停用</value>
+  </data>
+  <data name="ScriptDiagnostic_024" xml:space="preserve">
+    <value>未取得</value>
+  </data>
+  <data name="SelectionController_047" xml:space="preserve">
+    <value>可編輯</value>
+  </data>
+  <data name="SelectionController_048" xml:space="preserve">
+    <value>不提供寫入</value>
+  </data>
+  <data name="SelectionController_049" xml:space="preserve">
+    <value>可編輯</value>
+  </data>
+  <data name="SelectionController_050" xml:space="preserve">
+    <value>唯讀</value>
+  </data>
+  <data name="SelectionController_051" xml:space="preserve">
+    <value>編輯狀態未知</value>
+  </data>
+  <data name="Language_Status" xml:space="preserve">
+    <value>介面語言狀態</value>
+  </data>
+  <data name="Language_SaveFailed" xml:space="preserve">
+    <value>無法保存語言偏好，已保留原介面語言。請檢查設定檔權限後重試。</value>
+  </data>
+  <data name="Validation_Unknown" xml:space="preserve">
+    <value>無法完成這項變更，請檢查設定後重試。</value>
+  </data>
+  <data name="Validation_action-id-invalid" xml:space="preserve">
+    <value>動作識別碼無效。</value>
+  </data>
+  <data name="Validation_action-name-invalid" xml:space="preserve">
+    <value>名稱須為 1 至 32 個字元，且不可包含控制字元。</value>
+  </data>
+  <data name="Validation_action-kind-invalid" xml:space="preserve">
+    <value>動作類型或輸出方式無效。</value>
+  </data>
+  <data name="Validation_action-timeout-invalid" xml:space="preserve">
+    <value>逾時須為 1 至 300 秒。</value>
+  </data>
+  <data name="Validation_action-content-invalid" xml:space="preserve">
+    <value>內容須為 1 至 32768 個字元。</value>
+  </data>
+  <data name="Validation_action-interpreter-invalid" xml:space="preserve">
+    <value>解譯器路徑無效。</value>
+  </data>
+  <data name="Validation_action-selection-required" xml:space="preserve">
+    <value>網址動作必須使用選取文字。</value>
+  </data>
+  <data name="Validation_action-template-invalid" xml:space="preserve">
+    <value>網址須使用 HTTP 或 HTTPS，並在路徑、查詢或片段包含一次 ***。</value>
+  </data>
+  <data name="Validation_action-import-too-large" xml:space="preserve">
+    <value>匯入檔案過大。</value>
+  </data>
+  <data name="Validation_action-import-version" xml:space="preserve">
+    <value>不支援的動作檔案版本。</value>
+  </data>
+  <data name="Validation_action-import-invalid" xml:space="preserve">
+    <value>動作檔案格式無效。</value>
+  </data>
+  <data name="Validation_action-import-duplicate-field" xml:space="preserve">
+    <value>動作檔案包含重複欄位。</value>
+  </data>
+  <data name="Validation_action-settings-invalid" xml:space="preserve">
+    <value>動作設定無效。</value>
+  </data>
+  <data name="Validation_action-id-duplicate" xml:space="preserve">
+    <value>動作識別碼重複。</value>
+  </data>
+  <data name="Validation_action-custom-limit" xml:space="preserve">
+    <value>最多 {0} 個自訂動作，請先移除不需要的項目。</value>
+  </data>
+  <data name="Validation_action-layout-invalid" xml:space="preserve">
+    <value>動作排列無效。</value>
+  </data>
+  <data name="Validation_action-bar-limit" xml:space="preserve">
+    <value>動作列最多可釘選 {0} 個動作，請先移出一個。</value>
+  </data>
+  <data name="Validation_action-recent-invalid" xml:space="preserve">
+    <value>最近動作無效。</value>
+  </data>
+  <data name="Validation_action-not-found" xml:space="preserve">
+    <value>找不到自訂動作。</value>
+  </data>
+  <data name="Validation_action-restore-limit" xml:space="preserve">
+    <value>目前已有 {0} 個自訂動作，無法復原。</value>
+  </data>
+  <data name="Validation_action-restore-duplicate" xml:space="preserve">
+    <value>此動作已存在，無法復原。</value>
+  </data>
+  <data name="Validation_ai-profile-invalid" xml:space="preserve">
+    <value>AI 服務設定無效。</value>
+  </data>
+  <data name="Validation_ai-endpoint-invalid" xml:space="preserve">
+    <value>請使用完整 HTTPS 網址或本機 HTTP 網址，不可包含帳密、查詢參數或片段。</value>
+  </data>
+  <data name="Validation_ai-model-invalid" xml:space="preserve">
+    <value>請輸入模型名稱，最多 128 個字元。</value>
+  </data>
+  <data name="Validation_ai-settings-invalid" xml:space="preserve">
+    <value>AI 設定無效。</value>
+  </data>
+  <data name="Validation_ai-profile-unknown" xml:space="preserve">
+    <value>請選擇已存在的 AI 服務。</value>
+  </data>
+  <data name="Validation_ai-prompt-invalid" xml:space="preserve">
+    <value>請檢查 AI 命令名稱、指令內容、分類、關鍵字與圖示。</value>
+  </data>
+  <data name="Validation_ai-prompt-not-found" xml:space="preserve">
+    <value>找不到這個 AI 命令，請重新選取。</value>
+  </data>
+  <data name="Validation_ai-prompt-duplicate" xml:space="preserve">
+    <value>已有相同識別碼的 AI 命令，無法復原。</value>
+  </data>
+  <data name="Validation_ai-prompt-limit" xml:space="preserve">
+    <value>AI 命令已達 {0} 筆，請先移除不需要的命令再復原。</value>
+  </data>
+  <data name="Action_copy" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="Action_cut" xml:space="preserve">
+    <value>剪下</value>
+  </data>
+  <data name="Action_paste" xml:space="preserve">
+    <value>貼上</value>
+  </data>
+  <data name="Action_search" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="Action_link" xml:space="preserve">
+    <value>開啟連結</value>
+  </data>
+  <data name="Action_path" xml:space="preserve">
+    <value>檔案位置</value>
+  </data>
+  <data name="Action_ai" xml:space="preserve">
+    <value>AI 改寫</value>
+  </data>
+  <data name="Action_lookup" xml:space="preserve">
+    <value>查詞</value>
+  </data>
+  <data name="Action_Gmail" xml:space="preserve">
+    <value>搜尋 Gmail</value>
+  </data>
+  <data name="Action_PublicIp" xml:space="preserve">
+    <value>取得公網 IP</value>
+  </data>
+  <data name="Prompt_grammar" xml:space="preserve">
+    <value>修正文法拼字</value>
+  </data>
+  <data name="Prompt_improve" xml:space="preserve">
+    <value>改善寫作</value>
+  </data>
+  <data name="Prompt_shorten" xml:space="preserve">
+    <value>縮短</value>
+  </data>
+  <data name="Prompt_summary" xml:space="preserve">
+    <value>摘要</value>
+  </data>
+  <data name="Prompt_translate-en" xml:space="preserve">
+    <value>翻成英文</value>
+  </data>
+  <data name="Category_Writing" xml:space="preserve">
+    <value>寫作</value>
+  </data>
+  <data name="Category_Reading" xml:space="preserve">
+    <value>閱讀</value>
+  </data>
+  <data name="Category_Translation" xml:space="preserve">
+    <value>翻譯</value>
+  </data>
+  <data name="Provider_Compatible" xml:space="preserve">
+    <value>自訂相容服務</value>
+  </data>
+  <data name="Ai_Original" xml:space="preserve">
+    <value>原文</value>
+  </data>
+  <data name="Ai_Version" xml:space="preserve">
+    <value>第 {0} 版</value>
+  </data>
+  <data name="Runtime_DefaultMissing" xml:space="preserve">
+    <value>找不到預設的 {0} 執行環境。</value>
+  </data>
+  <data name="Runtime_PathInvalid" xml:space="preserve">
+    <value>執行環境必須是存在的 .exe 完整路徑：{0}</value>
+  </data>
+  <data name="Dictionary_EnableName" xml:space="preserve">
+    <value>啟用「{0}」</value>
+  </data>
+  <data name="Dictionary_RemoveName" xml:space="preserve">
+    <value>移除「{0}」</value>
+  </data>
+  <data name="Selection_Attempts" xml:space="preserve">
+    <value>，{0} 次</value>
+  </data>
+  <data name="Ui_Combine" xml:space="preserve">
+    <value>{0}{1}</value>
+  </data>
+  <data name="Ui_NameAction" xml:space="preserve">
+    <value>{0}{1}</value>
+  </data>
+  <data name="Validation_dictionary-ifo-required" xml:space="preserve">
+    <value>請選取 StarDict 的 .ifo 檔。</value>
+  </data>
+  <data name="Validation_dictionary-stored-format-invalid" xml:space="preserve">
+    <value>已儲存的詞典格式無效，請重新匯入。</value>
+  </data>
+  <data name="Validation_dictionary-stored-data-invalid" xml:space="preserve">
+    <value>已儲存的詞典資料損毀，請重新匯入。</value>
+  </data>
+  <data name="Validation_dictionary-file-too-large" xml:space="preserve">
+    <value>詞典超過檔案大小上限。</value>
+  </data>
+  <data name="Validation_dictionary-expanded-too-large" xml:space="preserve">
+    <value>詞典超過解壓後大小上限。</value>
+  </data>
+  <data name="Validation_dictionary-unrecognized" xml:space="preserve">
+    <value>無法辨識 StarDict 詞典。</value>
+  </data>
+  <data name="Validation_dictionary-format-unsupported" xml:space="preserve">
+    <value>僅支援 StarDict 2.4.2 的純文字釋義與音標。</value>
+  </data>
+  <data name="Validation_dictionary-empty" xml:space="preserve">
+    <value>詞典沒有可用的純文字釋義。</value>
+  </data>
+  <data name="Validation_dictionary-definition-unsupported" xml:space="preserve">
+    <value>詞典包含不支援的釋義格式。</value>
+  </data>
+  <data name="Validation_dictionary-list-changed" xml:space="preserve">
+    <value>詞典清單已變更，請重新匯入。</value>
+  </data>
+  <data name="Validation_dictionary-removed" xml:space="preserve">
+    <value>詞典已移除。</value>
+  </data>
+  <data name="Validation_dictionary-count-limit" xml:space="preserve">
+    <value>最多可匯入 {0} 本詞典。</value>
+  </data>
+  <data name="Validation_dictionary-list-too-large" xml:space="preserve">
+    <value>詞典清單超過大小上限。</value>
+  </data>
+  <data name="Validation_dictionary-index-invalid" xml:space="preserve">
+    <value>詞典索引或詞條損毀，請檢查檔案是否來自同一份詞典。</value>
+  </data>
+  <data name="Validation_dictionary-manifest-invalid" xml:space="preserve">
+    <value>詞典清單損毀，請還原備份的 library.json。</value>
+  </data>
+</root>

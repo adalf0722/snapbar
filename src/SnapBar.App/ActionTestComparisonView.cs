@@ -9,6 +9,7 @@ namespace SnapBar.App;
 
 internal sealed class ActionTestComparisonView : StackPanel
 {
+    private readonly UiLanguage language = UiText.Capture();
     private readonly TextBlock summary = ActionUi.Text("", 12, ActionUi.Muted);
     private readonly TextBox before = CreateTextBox("TestInputWhitespace"), after = CreateTextBox("TestOutputWhitespace");
     private readonly Expander whitespace;
@@ -19,14 +20,14 @@ internal sealed class ActionTestComparisonView : StackPanel
         AutomationProperties.SetAutomationId(summary, "TestComparisonSummary");
         var body = new StackPanel();
         summary.Margin = new(0, 4, 0, 4); body.Children.Add(summary);
-        var legend = ActionUi.Text("· 空格   ⇥ Tab   ␍ CR   ↵ 換行", 12, ActionUi.Muted);
+        var legend = ActionUi.Text(language.Get("ActionTestComparisonView_000"), 12, ActionUi.Muted);
         legend.Margin = new(0, 4, 0, 10); body.Children.Add(legend);
         var columns = new Grid(); columns.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         columns.ColumnDefinitions.Add(new() { Width = new(12) }); columns.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        var left = new StackPanel(); left.Children.Add(ActionUi.Text("輸入", 12, ActionUi.Muted)); before.Margin = new(0, 5, 0, 0); left.Children.Add(before);
-        var right = new StackPanel(); right.Children.Add(ActionUi.Text("輸出", 12, ActionUi.Muted)); after.Margin = new(0, 5, 0, 0); right.Children.Add(after);
+        var left = new StackPanel(); left.Children.Add(ActionUi.Text(language.Get("ActionTestComparisonView_001"), 12, ActionUi.Muted)); before.Margin = new(0, 5, 0, 0); left.Children.Add(before);
+        var right = new StackPanel(); right.Children.Add(ActionUi.Text(language.Get("ActionTestComparisonView_002"), 12, ActionUi.Muted)); after.Margin = new(0, 5, 0, 0); right.Children.Add(after);
         columns.Children.Add(left); Grid.SetColumn(right, 2); columns.Children.Add(right); body.Children.Add(columns);
-        whitespace = new Expander { Header = "輸入／輸出比較", Content = body };
+        whitespace = new Expander { Header = language.Get("ActionTestComparisonView_003"), Content = body };
         AutomationProperties.SetAutomationId(whitespace, "TestWhitespaceComparison"); Children.Add(whitespace);
         Visibility = Visibility.Collapsed;
     }
@@ -35,8 +36,8 @@ internal sealed class ActionTestComparisonView : StackPanel
     {
         var inputCount = new StringInfo(input).LengthInTextElements;
         var outputCount = new StringInfo(output).LengthInTextElements;
-        var state = output.Length == 0 ? "沒有文字輸出" : string.Equals(input, output, StringComparison.Ordinal) ? "內容相同" : "內容已變更";
-        summary.Text = $"輸入 {inputCount} 字元 → 輸出 {outputCount} 字元 · {state}";
+        var state = output.Length == 0 ? language.Get("ActionTestComparisonView_004") : string.Equals(input, output, StringComparison.Ordinal) ? language.Get("ActionTestComparisonView_005") : language.Get("ActionTestComparisonView_006");
+        summary.Text = language.Get("ActionTestComparisonView_007",(inputCount),(outputCount),(state));
         before.Text = VisibleWhitespace(input); after.Text = VisibleWhitespace(output);
         whitespace.IsExpanded = false; Visibility = Visibility.Visible;
     }
@@ -74,7 +75,7 @@ internal sealed class ActionTestComparisonView : StackPanel
         text.VerticalContentAlignment = VerticalAlignment.Top; text.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         text.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
         text.Background = Brushes.White; AutomationProperties.SetAutomationId(text, id);
-        AutomationProperties.SetName(text, id == "TestInputWhitespace" ? "輸入的空白與換行" : "輸出的空白與換行");
+        AutomationProperties.SetName(text, id == "TestInputWhitespace" ? UiText.Get("ActionTestComparisonView_008") : UiText.Get("ActionTestComparisonView_009"));
         return text;
     }
 }

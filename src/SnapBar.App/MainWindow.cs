@@ -27,13 +27,15 @@ public sealed partial class MainWindow : Window
     private bool hotkeyNotice;
     private readonly Action configureSublime;
     private readonly Func<bool> sublimeIsReady;
+    private readonly Func<string> readSystemUiLanguage;
+    internal string InterfaceLanguagePreference => preferences.InterfaceLanguage;
     internal bool AutomaticDetectionEnabled => controller?.Automatic == true;
     internal bool ClipboardCompatibilityEnabled => controller?.ClipboardCompatibilityEnabled == true;
     internal bool SublimeCompatibilityEnabled => controller?.SublimeClipboardEnabled == true;
     internal IReadOnlyList<ExcludedApplication> ExcludedApplications => preferences.ExcludedApplications;
 
     public MainWindow(SettingsStore? settingsStore = null, Action? configureSublime = null, Func<bool>? sublimeIsReady = null,
-        StartupRegistration? startupRegistration = null)
+        StartupRegistration? startupRegistration = null, Func<string>? systemUiLanguage = null)
     {
         this.configureSublime = configureSublime ?? SublimeCompatibility.InstallBinding;
         this.sublimeIsReady = sublimeIsReady ?? SublimeCompatibility.Ready;
@@ -44,15 +46,19 @@ public sealed partial class MainWindow : Window
         aiPreferences = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
         offlineDictionary = new(Path.Combine(Path.GetDirectoryName(this.settingsStore.FilePath)!, "offline-dictionary.bin"));
         preferences = loaded.Settings;
+        readSystemUiLanguage = systemUiLanguage ?? UiText.SystemLanguageSource;
+        UiText.SetLanguage(InterfaceLanguage.Resolve(preferences.InterfaceLanguage, readSystemUiLanguage()));
         if (loaded.Warning != null && loaded.Warning != "hotkey-invalid") preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
         preferences = preferences with { SublimeCompatibilityEnabled = preferences.SublimeCompatibilityEnabled ?? this.sublimeIsReady() };
         BuildSettingsPages();
+        generalPage.ConfigureLanguage(preferences.InterfaceLanguage, ChangeInterfaceLanguage);
+        UiText.Changed += RefreshInterfaceLanguage;
         SourceInitialized += (_, _) =>
         {
             try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); tray.AddOcr(StartOcr); }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
-            { lifetimeHint.Text = "無法建立系統匣圖示；關閉視窗會完整結束 SnapBar。"; }
+            { lifetimeHint.Text = UiText.Get("MainWindow_000"); }
             try
             {
                 var executable = Path.Combine(AppContext.BaseDirectory, "Probe", "SnapBar.Probe.exe");
@@ -73,21 +79,20 @@ public sealed partial class MainWindow : Window
                 controller.ActionsChanged += value => { preferences = preferences with { Actions = value }; actionSettingsPanel.ShowSettings(value); SavePreferences(); };
                 controller.ManageActionsRequested += ShowActionSettings;
                 UpdateAutomaticControls();
-                if (controller.HotkeyRegistered) AddStatus("準備完成 · " + preferences.Hotkey.Display);
-                else { ShowNotice(preferences.Hotkey.Display + " 無法使用；請到一般設定更換，仍可啟用自動偵測。"); hotkeyNotice = true; }
+                if (controller.HotkeyRegistered) AddStatus(UiText.Join(UiText.Get("MainWindow_001"), preferences.Hotkey.Display));
+                else { ShowNotice(UiText.Join(preferences.Hotkey.Display, UiText.Get("MainWindow_002"))); hotkeyNotice = true; }
             }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
             {
-                toggle.IsEnabled = false; mode.Text = "● 啟動失敗"; mode.Foreground = Brushes.Firebrick;
-                tray?.Update(false, false); ShowNotice("無法初始化輸入監聽，請結束後重新啟動。");
+                toggle.IsEnabled = false; mode.Text = UiText.Get("MainWindow_003"); mode.Foreground = Brushes.Firebrick;
+                tray?.Update(false, false); ShowNotice(UiText.Get("MainWindow_004"));
             }
             if (loaded.Warning == "hotkey-invalid")
             {
-                ShowNotice("快捷鍵設定損壞，暫用 Ctrl + Alt + V；其他偏好已保留。下次儲存會先備份原檔。"
-                    + (controller?.HotkeyRegistered == true ? "" : "目前預設快捷鍵也無法使用，請到一般設定更換。"));
+                ShowNotice(UiText.Join(UiText.Get("MainWindow_005"), (controller?.HotkeyRegistered == true ? "" : UiText.Get("MainWindow_006"))));
                 hotkeyNotice = true;
             }
-            else if (loaded.Warning != null) ShowNotice("設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。");
+            else if (loaded.Warning != null) ShowNotice(UiText.Get("MainWindow_007"));
         };
         Activated += (_, _) => { generalPage.RefreshStartup(); generalPage.RefreshShortcut(); };
         Deactivated += (_, _) => generalPage.CancelRecording();
@@ -100,7 +105,7 @@ public sealed partial class MainWindow : Window
             Hide();
             if (!hiddenNoticeShown) { hiddenNoticeShown = true; tray.NotifyHidden(); }
         };
-        Closed += (_, _) => { aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
+        Closed += (_, _) => { UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
     }
 
     internal void ToggleAutomatic()
@@ -135,7 +140,7 @@ public sealed partial class MainWindow : Window
             {
                 try { configureSublime(); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
-                { enabled = false; ShowNotice("無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用 Sublime 支援。"); }
+                { enabled = false; ShowNotice(UiText.Get("MainWindow_008")); }
             }
             preferences = preferences with { SublimeCompatibilityEnabled = enabled };
             sublimeToggle.IsChecked = enabled;
@@ -151,7 +156,7 @@ public sealed partial class MainWindow : Window
         var sublime = preferences.ClipboardCompatibilityEnabled && preferences.SublimeCompatibilityEnabled == true;
         controller.SublimeClipboardEnabled = sublime && sublimeIsReady();
         if (sublime && !controller.SublimeClipboardEnabled)
-            ShowNotice("Sublime 快捷鍵設定不存在或已變更；請關閉再啟用 Sublime 支援以重新設定。");
+            ShowNotice(UiText.Get("MainWindow_009"));
     }
 
     internal bool AddExcludedApplication(string path, string? displayName = null)
@@ -160,12 +165,12 @@ public sealed partial class MainWindow : Window
         var entry = AppExclusionPolicy.Create(path, displayName);
         if (preferences.ExcludedApplications.Any(app =>
             string.Equals(app.ExecutablePath, entry.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
-        { ShowNotice("此 App 已在排除清單中。"); return false; }
+        { ShowNotice(UiText.Get("MainWindow_010")); return false; }
         if (preferences.ExcludedApplications.Length >= AppExclusionPolicy.MaximumApplications)
-        { ShowNotice("排除清單已達 128 項，請先移除不需要的項目。"); return false; }
+        { ShowNotice(UiText.Get("MainWindow_011")); return false; }
         preferences = preferences with { ExcludedApplications = [.. preferences.ExcludedApplications, entry] };
         ApplyExcludedApplications();
-        ShowNotice("已加入排除 App；手動快捷鍵仍可使用。");
+        ShowNotice(UiText.Get("MainWindow_012"));
         SavePreferences();
         return true;
     }
@@ -179,7 +184,7 @@ public sealed partial class MainWindow : Window
         if (remaining.Length == preferences.ExcludedApplications.Length) return false;
         preferences = preferences with { ExcludedApplications = remaining };
         ApplyExcludedApplications();
-        ShowNotice("已移除排除 App；啟用自動偵測時將恢復正常觸發。");
+        ShowNotice(UiText.Get("MainWindow_013"));
         SavePreferences();
         return true;
     }
@@ -194,7 +199,7 @@ public sealed partial class MainWindow : Window
     {
         try { settingsStore.Save(preferences); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-        { ShowNotice("本次設定已生效，但無法保存；下次啟動將使用原設定。"); }
+        { ShowNotice(UiText.Get("MainWindow_014")); }
     }
 
     private void ShowActionSettings() => ShowCategory(SettingsCategory.Actions);
@@ -205,11 +210,11 @@ public sealed partial class MainWindow : Window
     {
         if (exitRequested) return false;
         if (!WebActionPolicy.IsValidSearchTemplate(value))
-        { ShowNotice("搜尋網址無效：請使用 HTTP／HTTPS，並將一個 {query} 放在參數值中。"); return false; }
+        { ShowNotice(UiText.Get("MainWindow_015")); return false; }
         var updated = preferences with { SearchUrlTemplate = value };
         try { settingsStore.Save(updated); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-        { ShowNotice("搜尋設定無法保存；草稿仍保留，請檢查檔案權限或設定大小。"); return false; }
+        { ShowNotice(UiText.Get("MainWindow_016")); return false; }
         preferences = updated;
         if (controller != null) controller.SearchUrlTemplate = value;
         searchSettingsPanel.ShowTemplate(value);
@@ -220,7 +225,7 @@ public sealed partial class MainWindow : Window
     {
         var automatic = controller?.Automatic == true;
         toggle.IsChecked = automatic;
-        mode.Text = controller?.HotkeyRegistered != true ? "● 選字偵測：快捷鍵不可用" : automatic ? "● 選字偵測：自動" : "● 選字偵測：快捷鍵待命";
+        mode.Text = controller?.HotkeyRegistered != true ? UiText.Get("MainWindow_017") : automatic ? UiText.Get("MainWindow_018") : UiText.Get("MainWindow_019");
         mode.Foreground = controller?.HotkeyRegistered == true ? ActionUi.Muted : Brushes.Firebrick;
         UpdateModeVisibility();
         tray?.Update(automatic, controller != null);
@@ -232,9 +237,29 @@ public sealed partial class MainWindow : Window
     public void ShowSettings()
     {
         if (exitRequested) return;
+        UiText.SetLanguage(InterfaceLanguage.Resolve(preferences.InterfaceLanguage, readSystemUiLanguage()));
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
+    }
+
+    internal bool ChangeInterfaceLanguage(string preference)
+    {
+        if (exitRequested) return false;
+        var updated = preferences with { InterfaceLanguage = InterfaceLanguage.Normalize(preference) };
+        try { settingsStore.Save(updated); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException) { return false; }
+        preferences = updated;
+        UiText.SetLanguage(InterfaceLanguage.Resolve(updated.InterfaceLanguage, readSystemUiLanguage()));
+        return true;
+    }
+
+    private void RefreshInterfaceLanguage()
+    {
+        UiText.Refresh(this);
+        aiCommandsPanel.Refresh();
+        UpdateAutomaticControls();
+        tray?.RefreshLanguage();
     }
 
     internal async Task ExitAsync()
@@ -266,7 +291,7 @@ public sealed partial class MainWindow : Window
     private void AddStatus(string message)
     {
         status.Text = message;
-        events.Items.Insert(0, $"{DateTime.Now:HH:mm:ss}  {message}");
+        events.Items.Insert(0, UiText.Join($"{DateTime.Now:HH:mm:ss}  ", message));
         while (events.Items.Count > 100) events.Items.RemoveAt(events.Items.Count - 1);
     }
 

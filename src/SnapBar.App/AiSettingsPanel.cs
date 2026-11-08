@@ -9,6 +9,8 @@ namespace SnapBar.App;
 
 internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
 {
+    private readonly UiLanguage? language;
+    private string Text(string key, params object?[] values) => language?.Get(key, values) ?? UiText.Get(key, values);
     private readonly AiPreferences preferences;
     private ComboBox profiles = null!, model = null!;
     private TextBox endpoint = null!;
@@ -27,14 +29,15 @@ internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
     private bool syncing, saving;
     internal Action? RevealRequested { get; set; }
     internal event Action? Saved;
-    public string DraftName => HasPendingKeyChanges ? "AI 服務（包含金鑰變更）" : "AI 服務";
+    public string DraftName => HasPendingKeyChanges ? Text("AiSettingsPanel_000") : Text("AiSettingsPanel_001");
     internal bool HasPendingKeyChanges => key.Password.Length > 0 || removeKey.IsChecked == true
         || keyChanges.Keys.Any(scope => selected < 0 || scope != Scope(CurrentDraft()));
     public bool IsDirty => selected >= 0 && (HasPendingKeyChanges || drafts[selected].Id != baselineSelected
         || !drafts.Select((p, i) => i == selected ? CurrentDraft() : p).SequenceEqual(baseline));
 
-    public AiSettingsPanel(AiPreferences preferences, Action<Uri>? openLink = null, IAiTextClient? testClient = null)
+    public AiSettingsPanel(AiPreferences preferences, Action<Uri>? openLink = null, IAiTextClient? testClient = null, UiLanguage? language = null)
     {
+        this.language = language;
         this.preferences = preferences;
         baseline = preferences.Settings.Profiles.ToArray(); baselineSelected = preferences.Settings.SelectedProfileId;
         drafts = baseline.ToList(); ActionUi.LoadStyles(this);
@@ -44,7 +47,7 @@ internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
         InitializePresentation(openLink ?? BrowserLauncher.Open, testClient);
         profiles.SelectionChanged += (_, _) =>
         {
-            if (syncing) return;
+            if (syncing || UiText.IsRefreshing) return;
             ResetTest();
             CaptureDraft(); selected = profiles.SelectedIndex; ShowDraft(); UpdateState();
         };
@@ -86,9 +89,9 @@ internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
             modelsLink.ToolTip = definition?.ModelsUrl;
             protocolHint.Text = profile.Protocol switch
             {
-                AiProtocol.Responses => "使用 Responses 協定與完整 /responses 網址。",
-                AiProtocol.Messages => "使用 Messages 協定與完整 /messages 網址。",
-                _ => "使用 Chat Completions 協定與完整 /chat/completions 網址。"
+                AiProtocol.Responses => Text("AiSettingsPanel_002"),
+                AiProtocol.Messages => Text("AiSettingsPanel_003"),
+                _ => Text("AiSettingsPanel_004")
             };
             key.Clear(); removeKey.IsChecked = false;
             if (keyChanges.TryGetValue(Scope(profile), out var pending))
@@ -107,7 +110,7 @@ internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
     private void UpdateState(bool saved = false)
     {
         var dirty = IsDirty;
-        state.Text = dirty ? "尚未儲存" : saved ? "已儲存" : "";
+        state.Text = dirty ? Text("AiSettingsPanel_005") : saved ? Text("AiSettingsPanel_006") : "";
         save.IsEnabled = dirty;
         discard.IsEnabled = dirty;
     }
@@ -116,18 +119,18 @@ internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
     {
         if (testController.Busy) ResetTest();
         CaptureDraft(); var current = drafts[selected];
-        if (AiPolicy.ValidateProfile(current) is { } validation) { hint.Text = validation; return false; }
+        if (AiPolicy.ValidateProfile(current) is { } validation) { hint.Text = ValidationMessages.Describe(validation, language); return false; }
         saving = true;
         try
         {
             var settings = preferences.Settings with { Profiles = drafts.ToArray(), SelectedProfileId = current.Id };
-            if (!preferences.TrySave(settings, out var error)) { hint.Text = error; return false; }
+            if (!preferences.TrySave(settings, out var error)) { hint.Text = error == null ? "" : UiText.Current(error, language?.Culture); return false; }
             baseline = preferences.Settings.Profiles.ToArray(); baselineSelected = preferences.Settings.SelectedProfileId;
             foreach (var (scope, change) in keyChanges.ToArray())
             {
                 try { preferences.Secrets.Set(change.Profile, change.Key); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException or ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
-                { ResetTest(); hint.Text = "服務設定已保存，但金鑰無法保存。請檢查權限後重試。"; UpdateState(); return false; }
+                { ResetTest(); hint.Text = Text("AiSettingsPanel_007"); UpdateState(); return false; }
                 keyChanges.Remove(scope);
                 if (scope == Scope(CurrentDraft()))
                 {
@@ -154,7 +157,7 @@ internal sealed partial class AiSettingsPanel : ContentControl, ISettingsDraft
             key.Clear(); keyChanges.Clear(); removeKey.IsChecked = false;
             baseline = preferences.Settings.Profiles.ToArray(); baselineSelected = preferences.Settings.SelectedProfileId;
             drafts = baseline.ToList(); selected = Math.Max(0, drafts.FindIndex(p => p.Id == baselineSelected));
-            profiles.ItemsSource = drafts.Select(p => p.Name).ToArray(); profiles.SelectedIndex = selected;
+            profiles.ItemsSource = drafts.Select(p => UiNames.Provider(p, language)).ToArray(); profiles.SelectedIndex = selected;
         }
         finally { syncing = false; }
         ShowDraft(); hint.Text = ""; UpdateState();

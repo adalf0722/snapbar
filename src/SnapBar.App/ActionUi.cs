@@ -73,7 +73,7 @@ internal static class ActionUi
             button.Resources["ControlHover"] = Brush("#2E58BE");
             button.Resources["ControlPressed"] = Brush("#24489F");
         }
-        AutomationProperties.SetName(button, label.Length == 0 ? icon ?? "動作" : label);
+        AutomationProperties.SetName(button, label.Length == 0 ? icon ?? UiText.Get("ActionUi_000") : label);
         button.Click += (_, _) => click(); return button;
     }
     public static TextBlock Heading(string value, double size = 16)

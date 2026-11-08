@@ -13,6 +13,7 @@ namespace SnapBar.App;
 
 internal sealed class ActionResultWindow : Window
 {
+    private readonly UiLanguage language = UiText.Capture();
     private readonly Button? applyButton;
     private readonly TextBlock? hint;
     private readonly bool diagnosticOnly;
@@ -21,12 +22,12 @@ internal sealed class ActionResultWindow : Window
     internal bool IsLookupPinned { get; private set; }
     public ActionResultWindow(string name, string text, bool markdown, bool canApply, Action? apply = null, bool hud = false,
         ScriptDiagnostic? diagnostic = null, bool diagnosticOnly = false, bool lookup = false, bool messageOnly = false,
-        Action? openSettings = null, string openSettingsLabel = "管理詞典",
+        Action? openSettings = null, string? openSettingsLabel = null,
         IReadOnlyList<DictionaryMatch>? lookupMatches = null, string? lookupWarning = null)
     {
         this.diagnosticOnly = diagnosticOnly;
         if (diagnostic != null) hud = false;
-        ActionUi.Setup(this, name + (diagnosticOnly ? " · SnapBar 執行診斷" : " · SnapBar 結果"),
+        ActionUi.Setup(this, UiText.Join(name, (diagnosticOnly ? language.Get("ActionResultWindow_001") : language.Get("ActionResultWindow_002"))),
             hud || lookup ? 420 : 650, hud ? 180 : 520);
         MinHeight = hud ? 120 : 280; MinWidth = 320; ShowActivated = false; ShowInTaskbar = !hud && !lookup; Topmost = true;
         var body = new DockPanel { Margin = new(20) }; var heading = ActionUi.Text(name, 18); heading.Margin = new(0, 0, 0, 15); DockPanel.SetDock(heading, Dock.Top); body.Children.Add(heading);
@@ -46,7 +47,7 @@ internal sealed class ActionResultWindow : Window
             var view = new ActionDiagnosticView(); view.Show(diagnostic);
             if (diagnosticOnly)
             {
-                var close = ActionUi.Button("關閉", Close); close.HorizontalAlignment = HorizontalAlignment.Right;
+                var close = ActionUi.Button(language.Get("ActionResultWindow_003"), Close); close.HorizontalAlignment = HorizontalAlignment.Right;
                 DockPanel.SetDock(close, Dock.Bottom); body.Children.Add(close);
             }
             var scroll = new ScrollViewer { Content = view, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -57,33 +58,33 @@ internal sealed class ActionResultWindow : Window
         if (!diagnosticOnly)
         {
             var footer = new StackPanel { Margin = new(0, 12, 0, 0) }; var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            hint = ActionUi.Text(canApply ? "套用前會重新驗證原視窗、焦點及選取；結果也會放入剪貼簿。" : "來源不可寫入或已變更；可以複製結果。", 11, ActionUi.Muted);
-            if (!messageOnly) buttons.Children.Add(ActionUi.Button("複製結果", () =>
-            { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = "已複製結果。"; } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = "剪貼簿忙碌，請稍後再試。"; } }, "copy"));
+            hint = ActionUi.Text(canApply ? language.Get("ActionResultWindow_004") : language.Get("ActionResultWindow_005"), 11, ActionUi.Muted);
+            if (!messageOnly) buttons.Children.Add(ActionUi.Button(language.Get("ActionResultWindow_006"), () =>
+            { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); } }, "copy"));
             if (!lookup)
             {
-                applyButton = ActionUi.Button("套用至原文", () => { applyButton!.IsEnabled = false; apply?.Invoke(); });
+                applyButton = ActionUi.Button(language.Get("ActionResultWindow_009"), () => { applyButton!.IsEnabled = false; apply?.Invoke(); });
                 applyButton.IsEnabled = canApply;
                 buttons.Children.Add(applyButton);
             }
-            if (openSettings != null) buttons.Children.Add(ActionUi.Button(openSettingsLabel, () => { Close(); openSettings(); }));
+            if (openSettings != null) buttons.Children.Add(ActionUi.Button(openSettingsLabel ?? language.Get("ActionResultWindow_000"), () => { Close(); openSettings(); }));
             if (lookup)
             {
-                var pin = ActionUi.Button("釘住", () => { });
-                pin.ToolTip = "釘住查詞小窗，切換視窗或截圖時保持顯示";
+                var pin = ActionUi.Button(language.Get("ActionResultWindow_010"), () => { });
+                pin.ToolTip = language.Get("ActionResultWindow_011");
                 AutomationProperties.SetAutomationId(pin, "PinLookupResult");
                 pin.Click += (_, _) =>
                 {
                     IsLookupPinned = !IsLookupPinned;
-                    var label = IsLookupPinned ? "取消釘住" : "釘住";
+                    var label = IsLookupPinned ? language.Get("ActionResultWindow_012") : language.Get("ActionResultWindow_013");
                     ((TextBlock)((StackPanel)pin.Content).Children[0]).Text = label;
                     AutomationProperties.SetName(pin, label);
                 };
                 buttons.Children.Add(pin);
             }
-            buttons.Children.Add(ActionUi.Button("關閉", Close)); footer.Children.Add(buttons);
+            buttons.Children.Add(ActionUi.Button(language.Get("ActionResultWindow_014"), Close)); footer.Children.Add(buttons);
             if (!lookup || !messageOnly) footer.Children.Add(hint);
-            if (lookup) hint.Text = "離線詞典";
+            if (lookup) hint.Text = language.Get("ActionResultWindow_015");
             DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
             if (lookup) body.Children.Add(lookupMatches is { Count: > 0 }
                 ? CreateLookupGroups(lookupMatches, lookupWarning) : CreateLookupContent(name, text, messageOnly));
@@ -107,7 +108,7 @@ internal sealed class ActionResultWindow : Window
     {
         if (diagnosticOnly) return;
         if (applyButton != null) applyButton.IsEnabled = false;
-        if (hint != null) hint.Text = "原選取已失效；請複製結果後自行貼上。";
+        if (hint != null) hint.Text = language.Get("ActionResultWindow_016");
     }
     public bool Contains(int x, int y) => IsVisible && Native.GetWindowRect(handle, out var r) && x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom;
     internal void PlaceNear(ScreenRect? bounds)

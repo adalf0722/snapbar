@@ -28,7 +28,7 @@ internal sealed class OcrOverlay : Window
         ShowActivated = false;
         Topmost = true;
         Cursor = Cursors.Cross;
-        var help = new Border { Child = ActionUi.Text("拖曳框選文字 · Esc 取消", 15, Brushes.White),
+        var help = new Border { Child = ActionUi.Text(UiText.Get("OcrOverlay_000"), 15, Brushes.White),
             Background = Brushes.Black, Padding = new(12, 8, 12, 8), IsHitTestVisible = false };
         Canvas.SetLeft(help, 24);
         Canvas.SetTop(help, 24);

@@ -51,7 +51,7 @@ public sealed class OfflineDictionaryLibrary(string legacyPath)
                 var existing = installed!.FirstOrDefault(item => string.Equals(item.Name.Trim(), info.Name.Trim(), StringComparison.OrdinalIgnoreCase));
                 if (existing != null && replaceId != existing.Id) throw new DuplicateDictionaryException(existing);
                 if (replaceId != null && existing?.Id != replaceId)
-                    throw new InvalidOperationException("詞典清單已變更，請重新匯入。");
+                    throw ProductError.InvalidOperation("dictionary-list-changed");
                 var entry = new InstalledDictionary(existing?.Id ?? Guid.NewGuid().ToString("N"), info.Name, info.EntryCount,
                     existing?.Enabled ?? true, snapshot);
                 var next = installed!.ToList();
@@ -74,7 +74,7 @@ public sealed class OfflineDictionaryLibrary(string legacyPath)
             EnsureLoaded();
             var next = installed!.ToList();
             var index = next.FindIndex(item => item.Id == id);
-            if (index < 0) throw new InvalidOperationException("詞典已移除。");
+            if (index < 0) throw ProductError.InvalidOperation("dictionary-removed");
             next[index] = next[index] with { Enabled = enabled };
             Save(next);
             if (!enabled) cache.Remove(next[index].Snapshot);
@@ -162,9 +162,9 @@ public sealed class OfflineDictionaryLibrary(string legacyPath)
 
     private void Save(List<InstalledDictionary> entries)
     {
-        if (entries.Count > 256) throw new InvalidDataException("最多可匯入 256 本詞典。");
+        if (entries.Count > 256) throw ProductError.InvalidData("dictionary-count-limit", 256);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(entries);
-        if (bytes.Length > 1024 * 1024) throw new InvalidDataException("詞典清單超過大小上限。");
+        if (bytes.Length > 1024 * 1024) throw ProductError.InvalidData("dictionary-list-too-large");
         Directory.CreateDirectory(directory);
         var temporary = Manifest + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
@@ -182,7 +182,7 @@ public sealed class OfflineDictionaryLibrary(string legacyPath)
 
     private string SnapshotPath(string snapshot) => Path.Combine(directory, snapshot + ".bin");
     private static bool IsId(string value) => Guid.TryParseExact(value, "N", out _);
-    private static InvalidDataException InvalidManifest() => new("詞典清單損毀，請還原備份的 library.json。");
+    private static InvalidDataException InvalidManifest() => ProductError.InvalidData("dictionary-manifest-invalid");
     private static bool IsReadError(Exception e) => e is IOException or UnauthorizedAccessException or InvalidDataException or DecoderFallbackException;
     private void Forget(string snapshot) { cache.Remove(snapshot); TryDelete(SnapshotPath(snapshot)); }
     private static void TryDelete(string path)

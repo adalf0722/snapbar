@@ -26,9 +26,9 @@ internal sealed partial class AiSettingsPanel
         footer.Children.Add(hint);
         var footerRow = new DockPanel();
         var buttons = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right };
-        discard = ActionUi.Button("捨棄變更", Discard);
+        discard = ActionUi.Button(Text("AiSettingsPanel_Presentation_000"), Discard);
         AutomationProperties.SetAutomationId(discard, "DiscardAiSettings"); buttons.Children.Add(discard);
-        save = ActionUi.Button("儲存設定", () => TrySave(), primary: true);
+        save = ActionUi.Button(Text("AiSettingsPanel_Presentation_001"), () => TrySave(), primary: true);
         save.Margin = new(0);
         AutomationProperties.SetAutomationId(save, "SaveAiSettings"); buttons.Children.Add(save);
         DockPanel.SetDock(buttons, Dock.Right); footerRow.Children.Add(buttons);
@@ -42,24 +42,24 @@ internal sealed partial class AiSettingsPanel
         Grid.SetRow(footerBorder, 1);
 
         var content = new StackPanel { Margin = new(0, 0, 8, 0) };
-        var introduction = ActionUi.Text("選字只在執行指令後傳送至你設定的服務。", 13, ActionUi.Muted);
+        var introduction = ActionUi.Text(Text("AiSettingsPanel_Presentation_002"), 13, ActionUi.Muted);
         introduction.Margin = new(0, 0, 0, 14); content.Children.Add(introduction);
         var fields = new StackPanel();
-        fields.Children.Add(FieldHeader("服務"));
-        profiles = new ComboBox { ItemsSource = drafts.Select(p => p.Name).ToArray(), MinHeight = 40 };
-        AutomationProperties.SetAutomationId(profiles, "AiProvider"); AutomationProperties.SetName(profiles, "AI 服務"); fields.Children.Add(profiles);
+        fields.Children.Add(FieldHeader(Text("AiSettingsPanel_Presentation_003")));
+        profiles = new ComboBox { ItemsSource = drafts.Select(p => UiNames.Provider(p, language)).ToArray(), MinHeight = 40 };
+        AutomationProperties.SetAutomationId(profiles, "AiProvider"); AutomationProperties.SetName(profiles, Text("AiSettingsPanel_Presentation_004")); fields.Children.Add(profiles);
 
-        keyLink = ProviderLink("取得金鑰 ↗", "AiKeyLink", false, launch);
+        keyLink = ProviderLink(Text("AiSettingsPanel_Presentation_005"), "AiKeyLink", false, launch);
         fields.Children.Add(FieldHeader("API Key", keyLink, spaced: true));
         key = new PasswordBox { MaxLength = 8192, Padding = new(12, 9, 12, 9), MinHeight = 40 };
-        AutomationProperties.SetAutomationId(key, "AiApiKey"); AutomationProperties.SetName(key, "貼上 API Key");
-        key.ToolTip = "貼上 API Key；留白會保留此網址已儲存的金鑰。";
+        AutomationProperties.SetAutomationId(key, "AiApiKey"); AutomationProperties.SetName(key, Text("AiSettingsPanel_Presentation_006"));
+        key.ToolTip = Text("AiSettingsPanel_Presentation_007");
         var keyEditor = new Grid(); keyEditor.Children.Add(key);
-        keyPlaceholder = ActionUi.Text("貼上 API Key", 13, ActionUi.Muted);
+        keyPlaceholder = ActionUi.Text(Text("AiSettingsPanel_Presentation_008"), 13, ActionUi.Muted);
         keyPlaceholder.Margin = new(12, 0, 12, 0); keyPlaceholder.IsHitTestVisible = false;
         keyEditor.Children.Add(keyPlaceholder); fields.Children.Add(keyEditor);
         var keyRow = new DockPanel { Margin = new(0, 6, 0, 0) };
-        replaceKey = TextLink("更換", "AiReplaceKey", () =>
+        replaceKey = TextLink(Text("AiSettingsPanel_Presentation_009"), "AiReplaceKey", () =>
         {
             editingKeyScope = Scope(CurrentDraft()); ShowKeyStatus(); key.Focus();
         });
@@ -68,8 +68,8 @@ internal sealed partial class AiSettingsPanel
         AutomationProperties.SetAutomationId(keyStatus, "AiKeyStatus"); keyRow.Children.Add(keyStatus); fields.Children.Add(keyRow);
         keyHelp = ActionUi.Text("", 12, ActionUi.Muted); keyHelp.Margin = new(0, 6, 0, 0); fields.Children.Add(keyHelp);
 
-        modelsLink = ProviderLink("查看模型 ↗", "AiModelsLink", true, launch);
-        fields.Children.Add(FieldHeader("模型", modelsLink, spaced: true));
+        modelsLink = ProviderLink(Text("AiSettingsPanel_Presentation_010"), "AiModelsLink", true, launch);
+        fields.Children.Add(FieldHeader(Text("AiSettingsPanel_Presentation_011"), modelsLink, spaced: true));
         model = new ComboBox { IsEditable = true, MinHeight = 40, SelectedValuePath = "Id" };
         TextSearch.SetTextPath(model, "Id");
         var item = new FrameworkElementFactory(typeof(TextBlock));
@@ -80,24 +80,24 @@ internal sealed partial class AiSettingsPanel
             model.ApplyTemplate();
             if (model.Template.FindName("PART_EditableTextBox", model) is TextBox editor) editor.MaxLength = 128;
         };
-        AutomationProperties.SetAutomationId(model, "AiModel"); AutomationProperties.SetName(model, "模型 ID"); fields.Children.Add(model);
-        var modelHelp = ActionUi.Text("選擇或輸入模型 ID", 12, ActionUi.Muted);
+        AutomationProperties.SetAutomationId(model, "AiModel"); AutomationProperties.SetName(model, Text("AiSettingsPanel_Presentation_012")); fields.Children.Add(model);
+        var modelHelp = ActionUi.Text(Text("AiSettingsPanel_Presentation_013"), 12, ActionUi.Muted);
         modelHelp.Margin = new(0, 4, 0, 0); fields.Children.Add(modelHelp);
-        customEndpointNotice = ActionUi.Text("使用自訂網址", 12, ActionUi.Muted);
+        customEndpointNotice = ActionUi.Text(Text("AiSettingsPanel_Presentation_014"), 12, ActionUi.Muted);
         customEndpointNotice.Margin = new(0, 8, 0, 0);
         AutomationProperties.SetAutomationId(customEndpointNotice, "AiCustomEndpointNotice"); fields.Children.Add(customEndpointNotice);
 
-        advanced = new Expander { Header = "進階設定", Margin = new(0, 12, 0, 0),
+        advanced = new Expander { Header = Text("AiSettingsPanel_Presentation_015"), Margin = new(0, 12, 0, 0),
             Style = (Style)FindResource("AiSettingsExpander") };
         AutomationProperties.SetAutomationId(advanced, "AiAdvancedSettings");
         var advancedFields = new StackPanel { Margin = new(0, 12, 0, 0) };
-        advancedFields.Children.Add(FieldHeader("完整 API 網址"));
+        advancedFields.Children.Add(FieldHeader(Text("AiSettingsPanel_Presentation_016")));
         endpoint = ActionUi.Input("", 2048); endpoint.MinHeight = 40;
-        AutomationProperties.SetAutomationId(endpoint, "AiEndpoint"); AutomationProperties.SetName(endpoint, "完整 API 網址"); advancedFields.Children.Add(endpoint);
+        AutomationProperties.SetAutomationId(endpoint, "AiEndpoint"); AutomationProperties.SetName(endpoint, Text("AiSettingsPanel_Presentation_017")); advancedFields.Children.Add(endpoint);
         protocolHint = ActionUi.Text("", 12, ActionUi.Muted); protocolHint.Margin = new(0, 6, 0, 0); advancedFields.Children.Add(protocolHint);
-        removeKey = new CheckBox { Content = ActionUi.Text("移除此網址已保存的 API Key", 13), Margin = new(0, 12, 0, 0) };
+        removeKey = new CheckBox { Content = ActionUi.Text(Text("AiSettingsPanel_Presentation_018"), 13), Margin = new(0, 12, 0, 0) };
         AutomationProperties.SetAutomationId(removeKey, "AiRemoveKey");
-        AutomationProperties.SetName(removeKey, "移除此網址已保存的 API Key"); advancedFields.Children.Add(removeKey);
+        AutomationProperties.SetName(removeKey, Text("AiSettingsPanel_Presentation_019")); advancedFields.Children.Add(removeKey);
         advanced.Content = advancedFields; fields.Children.Add(advanced);
         content.Children.Add(ActionUi.Card(fields, new(24, 16, 24, 16)));
         InitializeTesting(content, testClient);
@@ -132,7 +132,7 @@ internal sealed partial class AiSettingsPanel
         var url = models ? definition?.ModelsUrl : definition?.KeyUrl;
         if (url == null) return;
         try { launch(new Uri(url)); }
-        catch { hint.Text = "無法開啟官方頁面，請稍後再試。"; }
+        catch { hint.Text = Text("AiSettingsPanel_Presentation_020"); }
     });
 
     private void ShowKeyStatus()
@@ -154,12 +154,12 @@ internal sealed partial class AiSettingsPanel
         key.Visibility = !removing && (!stored || editingKeyScope == Scope(profile)) ? Visibility.Visible : Visibility.Collapsed;
         keyPlaceholder.Visibility = key.Visibility == Visibility.Visible && !pending ? Visibility.Visible : Visibility.Collapsed;
         replaceKey.Visibility = stored && key.Visibility == Visibility.Collapsed ? Visibility.Visible : Visibility.Collapsed;
-        keyStatus.Text = removing ? "金鑰將在儲存後移除" : pending ? "新金鑰尚未儲存"
-            : unavailable ? "無法讀取金鑰，請重新輸入後儲存。" : stored ? "✓ 已儲存金鑰" : "尚未設定金鑰";
+        keyStatus.Text = removing ? Text("AiSettingsPanel_Presentation_021") : pending ? Text("AiSettingsPanel_Presentation_022")
+            : unavailable ? Text("AiSettingsPanel_Presentation_023") : stored ? Text("AiSettingsPanel_Presentation_024") : Text("AiSettingsPanel_Presentation_025");
         keyStatus.Visibility = removing || pending || unavailable || stored ? Visibility.Visible : Visibility.Collapsed;
         keyStatus.Foreground = removing || pending ? ActionUi.Ink : ActionUi.Muted;
-        keyHelp.Text = removing ? "儲存前仍可取消勾選，保留原有金鑰。"
-            : stored ? "金鑰已加密儲存在此電腦。留白會保留原有金鑰。"
-            : profile.Id == "compatible" ? "金鑰將加密儲存在此電腦；本機相容服務可不填。" : "金鑰將加密儲存在此電腦。";
+        keyHelp.Text = removing ? Text("AiSettingsPanel_Presentation_026")
+            : stored ? Text("AiSettingsPanel_Presentation_027")
+            : profile.Id == "compatible" ? Text("AiSettingsPanel_Presentation_028") : Text("AiSettingsPanel_Presentation_029");
     }
 }

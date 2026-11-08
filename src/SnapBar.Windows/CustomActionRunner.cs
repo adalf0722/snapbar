@@ -9,7 +9,8 @@ using SnapBar.Core;
 namespace SnapBar.Windows;
 
 public sealed record ScriptExecutionResult(string Status, string Output = "", string Error = "", int? ExitCode = null,
-    bool OutputTruncated = false, bool ErrorTruncated = false, bool CaptureIncomplete = false)
+    bool OutputTruncated = false, bool ErrorTruncated = false, bool CaptureIncomplete = false,
+    string? ProductErrorCode = null, string? ProductErrorArgument = null)
 {
     public bool Success => Status == "ok";
 }
@@ -32,9 +33,9 @@ public static class CustomActionRunner
         try
         {
             var interpreter = ResolveInterpreter(action);
-            if (interpreter == null) return new("runtime-unavailable", Error: action.InterpreterPath == null
-                ? $"找不到預設的 {action.Kind} 執行環境。"
-                : $"執行環境必須是存在的 .exe 完整路徑：{action.InterpreterPath}");
+            if (interpreter == null) return new("runtime-unavailable",
+                ProductErrorCode: action.InterpreterPath == null ? "Runtime_DefaultMissing" : "Runtime_PathInvalid",
+                ProductErrorArgument: action.InterpreterPath ?? action.Kind.ToString());
             directory = Path.Combine(Path.GetTempPath(), "SnapBar.Actions", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             script = Path.Combine(directory, action.Kind == CustomActionKind.PowerShell ? "action.ps1" : "action.js");

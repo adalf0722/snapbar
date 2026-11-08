@@ -39,7 +39,7 @@ public sealed class OfflineDictionary(string filePath)
     public string Import(string metadataPath)
     {
         if (!Path.GetExtension(metadataPath).Equals(".ifo", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("請選取 StarDict 的 .ifo 檔。");
+            throw ProductError.InvalidData("dictionary-ifo-required");
         var indexPath = Path.ChangeExtension(metadataPath, ".idx");
         var dataPath = Path.ChangeExtension(metadataPath, ".dict");
         var metadata = ReadFile(metadataPath, MetadataLimit);
@@ -140,14 +140,14 @@ public sealed class OfflineDictionary(string filePath)
     {
         using var reader = new BinaryReader(File.OpenRead(filePath));
         if (!reader.ReadBytes(20).AsSpan().SequenceEqual("SnapBar dictionary 1"u8))
-            throw new InvalidDataException("已儲存的詞典格式無效，請重新匯入。");
+            throw ProductError.InvalidData("dictionary-stored-format-invalid");
         return Parse(ReadPart(MetadataLimit), ReadPart(IndexLimit), ReadPart(DataLimit));
 
         byte[] ReadPart(int limit)
         {
             var length = reader.ReadInt32();
             if (length < 0 || length > limit || length > reader.BaseStream.Length - reader.BaseStream.Position)
-                throw new InvalidDataException("已儲存的詞典資料損毀，請重新匯入。");
+                throw ProductError.InvalidData("dictionary-stored-data-invalid");
             return reader.ReadBytes(length);
         }
     }
@@ -155,7 +155,7 @@ public sealed class OfflineDictionary(string filePath)
     private static byte[] ReadFile(string path, int limit)
     {
         using var stream = File.OpenRead(path);
-        if (stream.Length > limit) throw new InvalidDataException("詞典超過檔案大小上限。");
+        if (stream.Length > limit) throw ProductError.InvalidData("dictionary-file-too-large");
         return ReadBounded(stream, limit);
     }
 
@@ -166,7 +166,7 @@ public sealed class OfflineDictionary(string filePath)
         int read;
         while ((read = stream.Read(buffer)) != 0)
         {
-            if (data.Length + read > limit) throw new InvalidDataException("詞典超過解壓後大小上限。");
+            if (data.Length + read > limit) throw ProductError.InvalidData("dictionary-expanded-too-large");
             data.Write(buffer, 0, read);
         }
         return data.ToArray();
@@ -176,7 +176,7 @@ public sealed class OfflineDictionary(string filePath)
     {
         using var lines = new StringReader(Utf8.GetString(metadata).TrimStart('\uFEFF'));
         if (lines.ReadLine() != "StarDict's dict ifo file")
-            throw new InvalidDataException("無法辨識 StarDict 詞典。");
+            throw ProductError.InvalidData("dictionary-unrecognized");
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);
         while (lines.ReadLine() is { } line)
         {
@@ -187,7 +187,7 @@ public sealed class OfflineDictionary(string filePath)
         var sequence = fields.GetValueOrDefault("sametypesequence", "");
         if (fields.GetValueOrDefault("version") != "2.4.2" || fields.GetValueOrDefault("idxoffsetbits", "32") != "32"
             || sequence.Any(type => type is not ('m' or 't')))
-            throw new InvalidDataException("僅支援 StarDict 2.4.2 的純文字釋義與音標。");
+            throw ProductError.InvalidData("dictionary-format-unsupported");
         if (string.IsNullOrWhiteSpace(name) || !int.TryParse(fields.GetValueOrDefault("idxfilesize"), out var size) || size != index.Length
             || !int.TryParse(fields.GetValueOrDefault("wordcount"), out var count) || count <= 0 || count > IndexLimit / 16)
             throw InvalidIndex();
@@ -210,7 +210,7 @@ public sealed class OfflineDictionary(string filePath)
             remaining = remaining[(terminator + 9)..];
         }
         if (!remaining.IsEmpty) throw InvalidIndex();
-        if (entries.Count == 0) throw new InvalidDataException("詞典沒有可用的純文字釋義。");
+        if (entries.Count == 0) throw ProductError.InvalidData("dictionary-empty");
         return new(name, entries, data, sequence);
     }
 
@@ -224,7 +224,7 @@ public sealed class OfflineDictionary(string filePath)
             if (sequence.Length != 0 && field >= sequence.Length) throw InvalidIndex();
             var type = sequence.Length == 0 ? (char)bytes[0] : sequence[field];
             if (sequence.Length == 0) bytes = bytes[1..];
-            if (type is not ('m' or 't')) throw new InvalidDataException("詞典包含不支援的釋義格式。");
+            if (type is not ('m' or 't')) throw ProductError.InvalidData("dictionary-definition-unsupported");
             field++;
             var lastFixedField = field == sequence.Length;
             var end = lastFixedField ? bytes.Length : bytes.IndexOf((byte)0);
@@ -238,7 +238,7 @@ public sealed class OfflineDictionary(string filePath)
         return meaning ? output?.ToString().Trim() ?? "" : null;
     }
 
-    private static InvalidDataException InvalidIndex() => new("詞典索引或詞條損毀，請檢查檔案是否來自同一份詞典。");
+    private static InvalidDataException InvalidIndex() => ProductError.InvalidData("dictionary-index-invalid");
     private sealed record Entry(string Headword, int Offset, int Length);
     private sealed record Lexicon(string Name, Dictionary<string, Entry> Entries, byte[] Data, string Sequence);
 }

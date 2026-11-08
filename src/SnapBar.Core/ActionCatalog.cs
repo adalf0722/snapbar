@@ -28,14 +28,14 @@ public static class ActionCatalog
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (settings.CustomActions == null || settings.Layout == null || settings.RecentIds == null
-            || settings.CustomActions.Length > CustomActionLimit + 2 || settings.Theme is not ("Dark" or "Light")) throw new ArgumentException("動作設定無效。");
+            || settings.CustomActions.Length > CustomActionLimit + 2 || settings.Theme is not ("Dark" or "Light")) throw new ProductValidationException("action-settings-invalid");
         var customs = settings.CustomActions.Select(action =>
         {
-            if (CustomActionPolicy.Validate(action!) is { } error) throw new ArgumentException(error);
+            if (CustomActionPolicy.Validate(action!) is { } error) throw new ProductValidationException(error);
             return action with { Icon = CustomActionPolicy.NormalizeIcon(action.Icon) };
         }).ToArray();
-        if (customs.Select(a => a.Id).Distinct(StringComparer.Ordinal).Count() != customs.Length) throw new ArgumentException("動作識別碼重複。");
-        if (customs.Count(a => !IsBundled(a.Id)) > CustomActionLimit) throw new ArgumentException("最多 32 個自訂動作，請先移除不需要的項目。");
+        if (customs.Select(a => a.Id).Distinct(StringComparer.Ordinal).Count() != customs.Length) throw new ProductValidationException("action-id-duplicate");
+        if (customs.Count(a => !IsBundled(a.Id)) > CustomActionLimit) throw new ProductValidationException("action-custom-limit", CustomActionLimit);
         if (!settings.GmailSearchRemoved && !customs.Any(a => a.Id == GmailSearch.Id))
             customs = [.. customs, GmailSearch];
         if (!settings.PublicIpRemoved && !customs.Any(a => a.Id == PublicIp.Id))
@@ -46,14 +46,14 @@ public static class ActionCatalog
         foreach (var entry in settings.Layout)
         {
             if (entry?.Id is "translate" or "dictionary") continue;
-            if (entry == null || entry.Id == null || !ids.Contains(entry.Id) || !seen.Add(entry.Id) || !Enum.IsDefined(entry.Placement)) throw new ArgumentException("動作排列無效。");
+            if (entry == null || entry.Id == null || !ids.Contains(entry.Id) || !seen.Add(entry.Id) || !Enum.IsDefined(entry.Placement)) throw new ProductValidationException("action-layout-invalid");
             layout.Add(entry);
         }
         foreach (var id in BuiltIns.Select(a => a.Id).Concat(customs.Select(a => a.Id)))
             if (seen.Add(id)) layout.Add(new(id, id is "copy" or "cut" or "paste" or "search" ? ActionPlacement.Bar : ActionPlacement.More));
         if (layout.Count(e => e.Placement == ActionPlacement.Bar) > BarActionLimit)
-            throw new ArgumentException($"動作列最多可釘選 {BarActionLimit} 個動作，請先移出一個。");
-        if (settings.RecentIds.Any(id => id == null)) throw new ArgumentException("最近動作無效。");
+            throw new ProductValidationException("action-bar-limit", BarActionLimit);
+        if (settings.RecentIds.Any(id => id == null)) throw new ProductValidationException("action-recent-invalid");
         var visible = layout.Where(e => e.Placement != ActionPlacement.Hidden).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         return settings with { CustomActions = customs, Layout = layout.ToArray(), RecentIds = settings.RecentIds.Where(visible.Contains).Distinct(StringComparer.Ordinal).Take(5).ToArray() };
     }
@@ -105,7 +105,7 @@ public static class ActionCatalog
     public static ActionSettings SetPlacement(ActionSettings settings, string id, ActionPlacement placement)
     {
         settings = Normalize(settings);
-        if (!Enum.IsDefined(placement) || !settings.Layout.Any(e => e.Id == id)) throw new ArgumentException("動作排列無效。");
+        if (!Enum.IsDefined(placement) || !settings.Layout.Any(e => e.Id == id)) throw new ProductValidationException("action-layout-invalid");
         var current = settings.Layout.Single(e => e.Id == id);
         if (current.Placement == placement) return settings;
         var layout = settings.Layout.Where(e => e.Id != id).ToList();
@@ -140,7 +140,7 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         var action = settings.CustomActions.SingleOrDefault(a => a.Id == id)
-            ?? throw new ArgumentException("找不到自訂動作。", nameof(id));
+            ?? throw new ProductValidationException("action-not-found");
         var entry = settings.Layout.Single(e => e.Id == id);
         var index = settings.Layout.Where(e => e.Placement == entry.Placement).TakeWhile(e => e.Id != id).Count();
         deleted = new(action, entry.Placement, index);
@@ -158,9 +158,9 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         if (!IsBundled(deleted.Action.Id) && settings.CustomActions.Count(a => !IsBundled(a.Id)) >= CustomActionLimit)
-            throw new ArgumentException("目前已有 32 個自訂動作，無法復原。");
-        if (settings.CustomActions.Any(a => a.Id == deleted.Action.Id)) throw new ArgumentException("此動作已存在，無法復原。");
-        if (!Enum.IsDefined(deleted.Placement) || deleted.PlacementIndex < 0) throw new ArgumentException("動作排列無效。");
+            throw new ProductValidationException("action-restore-limit", CustomActionLimit);
+        if (settings.CustomActions.Any(a => a.Id == deleted.Action.Id)) throw new ProductValidationException("action-restore-duplicate");
+        if (!Enum.IsDefined(deleted.Placement) || deleted.PlacementIndex < 0) throw new ProductValidationException("action-layout-invalid");
         var placement = deleted.Placement;
         if (placement == ActionPlacement.Bar && settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) >= BarActionLimit)
             placement = ActionPlacement.More;

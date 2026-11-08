@@ -1,0 +1,2623 @@
+
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ActionDiagnosticView_000" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="ActionDiagnosticView_001" xml:space="preserve">
+    <value>Copy details</value>
+  </data>
+  <data name="ActionDiagnosticView_002" xml:space="preserve">
+    <value>Details copied.</value>
+  </data>
+  <data name="ActionDiagnosticView_003" xml:space="preserve">
+    <value>Clipboard is busy. Try again in a moment.</value>
+  </data>
+  <data name="ActionEditorWindow_000" xml:space="preserve">
+    <value>Use selected text</value>
+  </data>
+  <data name="ActionEditorWindow_001" xml:space="preserve">
+    <value>When off, scripts receive an empty string. The selection source is still verified before running from the toolbar.</value>
+  </data>
+  <data name="ActionEditorWindow_002" xml:space="preserve">
+    <value>Show whitespace</value>
+  </data>
+  <data name="ActionEditorWindow_003" xml:space="preserve">
+    <value>· Space   ⇥ Tab   ␍ CR   ↵ Line break
+Changes the display only; the output is unchanged.</value>
+  </data>
+  <data name="ActionEditorWindow_004" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="ActionEditorWindow_005" xml:space="preserve">
+    <value>Script</value>
+  </data>
+  <data name="ActionEditorWindow_006" xml:space="preserve">
+    <value>Ignore output</value>
+  </data>
+  <data name="ActionEditorWindow_007" xml:space="preserve">
+    <value>Copy to clipboard</value>
+  </data>
+  <data name="ActionEditorWindow_008" xml:space="preserve">
+    <value>Replace selection</value>
+  </data>
+  <data name="ActionEditorWindow_009" xml:space="preserve">
+    <value>Brief notification</value>
+  </data>
+  <data name="ActionEditorWindow_010" xml:space="preserve">
+    <value>Show result window</value>
+  </data>
+  <data name="ActionEditorWindow_011" xml:space="preserve">
+    <value>Show Markdown window</value>
+  </data>
+  <data name="ActionEditorWindow_012" xml:space="preserve">
+    <value>New custom action · SnapBar</value>
+  </data>
+  <data name="ActionEditorWindow_013" xml:space="preserve">
+    <value>Edit custom action · SnapBar</value>
+  </data>
+  <data name="ActionEditorWindow_014" xml:space="preserve">
+    <value>New action</value>
+  </data>
+  <data name="ActionEditorWindow_015" xml:space="preserve">
+    <value>Edit action</value>
+  </data>
+  <data name="ActionEditorWindow_016" xml:space="preserve">
+    <value>Set it up once, then use it after selecting text.</value>
+  </data>
+  <data name="ActionEditorWindow_017" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ActionEditorWindow_018" xml:space="preserve">
+    <value>Save action</value>
+  </data>
+  <data name="ActionEditorWindow_019" xml:space="preserve">
+    <value>Saving does not run the action.</value>
+  </data>
+  <data name="ActionEditorWindow_020" xml:space="preserve">
+    <value>Action settings</value>
+  </data>
+  <data name="ActionEditorWindow_021" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="ActionEditorWindow_022" xml:space="preserve">
+    <value>Action type</value>
+  </data>
+  <data name="ActionEditorWindow_023" xml:space="preserve">
+    <value>Action type</value>
+  </data>
+  <data name="ActionEditorWindow_024" xml:space="preserve">
+    <value>Change icon</value>
+  </data>
+  <data name="ActionEditorWindow_025" xml:space="preserve">
+    <value>Change icon</value>
+  </data>
+  <data name="ActionEditorWindow_026" xml:space="preserve">
+    <value>Icon</value>
+  </data>
+  <data name="ActionEditorWindow_027" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ActionEditorWindow_028" xml:space="preserve">
+    <value>Action name</value>
+  </data>
+  <data name="ActionEditorWindow_029" xml:space="preserve">
+    <value>Insert selected text</value>
+  </data>
+  <data name="ActionEditorWindow_030" xml:space="preserve">
+    <value>Drag to resize; use Up/Down to adjust and Home to reset.</value>
+  </data>
+  <data name="ActionEditorWindow_031" xml:space="preserve">
+    <value>Resize content editor</value>
+  </data>
+  <data name="ActionEditorWindow_032" xml:space="preserve">
+    <value>What should happen to the result?</value>
+  </data>
+  <data name="ActionEditorWindow_033" xml:space="preserve">
+    <value>Output handling</value>
+  </data>
+  <data name="ActionEditorWindow_034" xml:space="preserve">
+    <value>Full runtime path (leave blank for default)</value>
+  </data>
+  <data name="ActionEditorWindow_035" xml:space="preserve">
+    <value>Timeout in seconds · 1–300</value>
+  </data>
+  <data name="ActionEditorWindow_036" xml:space="preserve">
+    <value>Full runtime path</value>
+  </data>
+  <data name="ActionEditorWindow_037" xml:space="preserve">
+    <value>Timeout in seconds</value>
+  </data>
+  <data name="ActionEditorWindow_038" xml:space="preserve">
+    <value>Advanced settings</value>
+  </data>
+  <data name="ActionEditorWindow_039" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="ActionEditorWindow_040" xml:space="preserve">
+    <value>Sample input</value>
+  </data>
+  <data name="ActionEditorWindow_041" xml:space="preserve">
+    <value>Sample input</value>
+  </data>
+  <data name="ActionEditorWindow_042" xml:space="preserve">
+    <value>Show whitespace</value>
+  </data>
+  <data name="ActionEditorWindow_043" xml:space="preserve">
+    <value>Output or URL preview</value>
+  </data>
+  <data name="ActionEditorWindow_044" xml:space="preserve">
+    <value>Run test</value>
+  </data>
+  <data name="ActionEditorWindow_045" xml:space="preserve">
+    <value>Stop test</value>
+  </data>
+  <data name="ActionEditorWindow_046" xml:space="preserve">
+    <value>Saving does not run the action. URLs are previewed only; testing a script runs it with your user permissions.</value>
+  </data>
+  <data name="ActionEditorWindow_047" xml:space="preserve">
+    <value>Translate to Traditional Chinese</value>
+  </data>
+  <data name="ActionEditorWindow_048" xml:space="preserve">
+    <value>Clean up whitespace</value>
+  </data>
+  <data name="ActionEditorWindow_049" xml:space="preserve">
+    <value>Format JSON</value>
+  </data>
+  <data name="ActionEditorWindow_050" xml:space="preserve">
+    <value>Enter a whole number from 1 to 300 for the timeout.</value>
+  </data>
+  <data name="ActionEditorWindow_051" xml:space="preserve">
+    <value>*** is replaced with the fully encoded selection. Saving does not open the URL.</value>
+  </data>
+  <data name="ActionEditorWindow_052" xml:space="preserve">
+    <value>Selected text is not passed in; POPCLIP_TEXT will be empty.</value>
+  </data>
+  <data name="ActionEditorWindow_053" xml:space="preserve">
+    <value>Read selected text from $env:POPCLIP_TEXT without inserting it into commands.</value>
+  </data>
+  <data name="ActionEditorWindow_054" xml:space="preserve">
+    <value>Read selected text from process.env.POPCLIP_TEXT. Requires Node.js.</value>
+  </data>
+  <data name="ActionEditorWindow_055" xml:space="preserve">
+    <value>Preview URL</value>
+  </data>
+  <data name="ActionEditorWindow_056" xml:space="preserve">
+    <value>Run test</value>
+  </data>
+  <data name="ActionEditorWindow_057" xml:space="preserve">
+    <value>URL preview</value>
+  </data>
+  <data name="ActionEditorWindow_058" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="ActionEditorWindow_059" xml:space="preserve">
+    <value>URL template</value>
+  </data>
+  <data name="ActionEditorWindow_060" xml:space="preserve">
+    <value>Script</value>
+  </data>
+  <data name="ActionEditorWindow_061" xml:space="preserve">
+    <value>Destination · </value>
+  </data>
+  <data name="ActionEditorWindow_062" xml:space="preserve">
+    <value>Waiting for a valid HTTP/HTTPS URL</value>
+  </data>
+  <data name="ActionEditorWindow_063" xml:space="preserve">
+    <value>Include exactly one *** in the path, query value, or fragment.</value>
+  </data>
+  <data name="ActionEditorWindow_064" xml:space="preserve">
+    <value>Not tested yet
+After running, review the raw result and input/output comparison.</value>
+  </data>
+  <data name="ActionEditorWindow_065" xml:space="preserve">
+    <value>Not tested yet
+Results appear here after running.</value>
+  </data>
+  <data name="ActionEditorWindow_066" xml:space="preserve">
+    <value>Wait for the test to finish or cancel it before saving.</value>
+  </data>
+  <data name="ActionEditorWindow_067" xml:space="preserve">
+    <value>URL previewed; browser was not opened.</value>
+  </data>
+  <data name="ActionEditorWindow_068" xml:space="preserve">
+    <value>Running sample…</value>
+  </data>
+  <data name="ActionEditorWindow_069" xml:space="preserve">
+    <value>Settings or sample changed. Run the test again.</value>
+  </data>
+  <data name="ActionEditorWindow_070" xml:space="preserve">
+    <value>Sample finished; nothing was copied or applied to another app.</value>
+  </data>
+  <data name="ActionEditorWindow_071" xml:space="preserve">
+    <value>Process exited. Review diagnostics; nothing was copied or applied to another app.</value>
+  </data>
+  <data name="ActionEditorWindow_072" xml:space="preserve">
+    <value>Sample did not finish. Review the reason and details above.</value>
+  </data>
+  <data name="ActionEditorWindow_073" xml:space="preserve">
+    <value>Discard output without displaying, copying, or changing the selection.</value>
+  </data>
+  <data name="ActionEditorWindow_074" xml:space="preserve">
+    <value>Copy the result to the clipboard without changing the selection.</value>
+  </data>
+  <data name="ActionEditorWindow_075" xml:space="preserve">
+    <value>Verify the original selection again, then replace it and copy the result to the clipboard.</value>
+  </data>
+  <data name="ActionEditorWindow_076" xml:space="preserve">
+    <value>Show the result briefly without changing the selection or clipboard.</value>
+  </data>
+  <data name="ActionEditorWindow_077" xml:space="preserve">
+    <value>Show a text result window where you can copy or apply the result.</value>
+  </data>
+  <data name="ActionEditorWindow_078" xml:space="preserve">
+    <value>Show a formatted Markdown result where you can copy or apply it.</value>
+  </data>
+  <data name="ActionResultWindow_000" xml:space="preserve">
+    <value>Manage dictionaries</value>
+  </data>
+  <data name="ActionResultWindow_001" xml:space="preserve">
+    <value> · SnapBar diagnostics</value>
+  </data>
+  <data name="ActionResultWindow_002" xml:space="preserve">
+    <value> · SnapBar result</value>
+  </data>
+  <data name="ActionResultWindow_003" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ActionResultWindow_004" xml:space="preserve">
+    <value>Applying verifies the original window, focus, and selection again and copies the result to the clipboard.</value>
+  </data>
+  <data name="ActionResultWindow_005" xml:space="preserve">
+    <value>The source is read-only or has changed. You can copy the result.</value>
+  </data>
+  <data name="ActionResultWindow_006" xml:space="preserve">
+    <value>Copy result</value>
+  </data>
+  <data name="ActionResultWindow_007" xml:space="preserve">
+    <value>Result copied.</value>
+  </data>
+  <data name="ActionResultWindow_008" xml:space="preserve">
+    <value>Clipboard is busy. Try again in a moment.</value>
+  </data>
+  <data name="ActionResultWindow_009" xml:space="preserve">
+    <value>Apply to selection</value>
+  </data>
+  <data name="ActionResultWindow_010" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="ActionResultWindow_011" xml:space="preserve">
+    <value>Keep this dictionary window visible when switching windows or taking screenshots</value>
+  </data>
+  <data name="ActionResultWindow_012" xml:space="preserve">
+    <value>Unpin</value>
+  </data>
+  <data name="ActionResultWindow_013" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="ActionResultWindow_014" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ActionResultWindow_015" xml:space="preserve">
+    <value>Offline dictionary</value>
+  </data>
+  <data name="ActionResultWindow_016" xml:space="preserve">
+    <value>The original selection is no longer valid. Copy the result and paste it yourself.</value>
+  </data>
+  <data name="ActionSettingsPanel_000" xml:space="preserve">
+    <value>New action</value>
+  </data>
+  <data name="ActionSettingsPanel_001" xml:space="preserve">
+    <value>Import…</value>
+  </data>
+  <data name="ActionSettingsPanel_002" xml:space="preserve">
+    <value>Toolbar preview</value>
+  </data>
+  <data name="ActionSettingsPanel_003" xml:space="preserve">
+    <value>Shows the full pinned order. The toolbar adapts to your selection and moves overflow into “⋯”. This preview does not run actions.</value>
+  </data>
+  <data name="ActionSettingsPanel_004" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="ActionSettingsPanel_005" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ActionSettingsPanel_006" xml:space="preserve">
+    <value>Toolbar theme</value>
+  </data>
+  <data name="ActionSettingsPanel_007" xml:space="preserve">
+    <value>Icons and labels</value>
+  </data>
+  <data name="ActionSettingsPanel_008" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="ActionSettingsPanel_009" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="ActionSettingsPanel_010" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="ActionSettingsPanel_011" xml:space="preserve">
+    <value>Placement</value>
+  </data>
+  <data name="ActionSettingsPanel_012" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="ActionSettingsPanel_013" xml:space="preserve">
+    <value>Imported</value>
+  </data>
+  <data name="ActionSettingsPanel_014" xml:space="preserve">
+    <value>Not imported</value>
+  </data>
+  <data name="ActionSettingsPanel_015" xml:space="preserve">
+    <value>Saved. New actions appear in the More menu.</value>
+  </data>
+  <data name="ActionSettingsPanel_016" xml:space="preserve">
+    <value>Changes are active but could not be saved. Check file permissions or the 64 KiB settings limit.</value>
+  </data>
+  <data name="ActionSettingsPanel_017" xml:space="preserve">
+    <value>Deleted “{0}”</value>
+  </data>
+  <data name="ActionSettingsPanel_018" xml:space="preserve">
+    <value>Toolbar · {0}/{1}</value>
+  </data>
+  <data name="ActionSettingsPanel_019" xml:space="preserve">
+    <value>More · {0}</value>
+  </data>
+  <data name="ActionSettingsPanel_020" xml:space="preserve">
+    <value>Hidden · {0}</value>
+  </data>
+  <data name="ActionSettingsPanel_021" xml:space="preserve">
+    <value>Shown when a complete URL is selected</value>
+  </data>
+  <data name="ActionSettingsPanel_022" xml:space="preserve">
+    <value>Shown when a complete path is selected</value>
+  </data>
+  <data name="ActionSettingsPanel_023" xml:space="preserve">
+    <value>Shown for editable sources only</value>
+  </data>
+  <data name="ActionSettingsPanel_024" xml:space="preserve">
+    <value>Toolbar actions</value>
+  </data>
+  <data name="ActionSettingsPanel_025" xml:space="preserve">
+    <value>Actions in the More menu</value>
+  </data>
+  <data name="ActionSettingsPanel_026" xml:space="preserve">
+    <value>Hidden actions</value>
+  </data>
+  <data name="ActionSettingsPanel_027" xml:space="preserve">
+    <value>No more actions yet. New actions appear here.</value>
+  </data>
+  <data name="ActionSettingsPanel_028" xml:space="preserve">
+    <value>No pinned actions. Choose items from More to add them to the toolbar.</value>
+  </data>
+  <data name="ActionSettingsPanel_029" xml:space="preserve">
+    <value>Unsaved</value>
+  </data>
+  <data name="ActionSettingsPanel_030" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="ActionSettingsPanel_031" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="ActionSettingsPanel_032" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="ActionSettingsPanel_033" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="ActionSettingsPanel_034" xml:space="preserve">
+    <value>Drag to reorder</value>
+  </data>
+  <data name="ActionSettingsPanel_035" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ActionSettingsPanel_036" xml:space="preserve">
+    <value>Configure search engine and URL</value>
+  </data>
+  <data name="ActionSettingsPanel_037" xml:space="preserve">
+    <value>Edit search action</value>
+  </data>
+  <data name="ActionSettingsPanel_038" xml:space="preserve">
+    <value>Manage dictionaries</value>
+  </data>
+  <data name="ActionSettingsPanel_039" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ActionSettingsPanel_040" xml:space="preserve">
+    <value>Toolbar</value>
+  </data>
+  <data name="ActionSettingsPanel_041" xml:space="preserve">
+    <value>More menu</value>
+  </data>
+  <data name="ActionSettingsPanel_042" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="ActionSettingsPanel_043" xml:space="preserve">
+    <value>Placement</value>
+  </data>
+  <data name="ActionSettingsPanel_044" xml:space="preserve">
+    <value>Drag to reorder, or use the up/down buttons on the right.</value>
+  </data>
+  <data name="ActionSettingsPanel_045" xml:space="preserve">
+    <value>Duplicate action</value>
+  </data>
+  <data name="ActionSettingsPanel_046" xml:space="preserve">
+    <value> copy</value>
+  </data>
+  <data name="ActionSettingsPanel_047" xml:space="preserve">
+    <value> copy</value>
+  </data>
+  <data name="ActionSettingsPanel_048" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="ActionSettingsPanel_049" xml:space="preserve">
+    <value>Delete action</value>
+  </data>
+  <data name="ActionSettingsPanel_050" xml:space="preserve">
+    <value>Saved.</value>
+  </data>
+  <data name="ActionSettingsPanel_051" xml:space="preserve">
+    <value>Action restored to More because the toolbar is full.</value>
+  </data>
+  <data name="ActionSettingsPanel_052" xml:space="preserve">
+    <value>Action restored.</value>
+  </data>
+  <data name="ActionSettingsPanel_053" xml:space="preserve">
+    <value>SnapBar action|*.snapbaraction|JSON|*.json</value>
+  </data>
+  <data name="ActionSettingsPanel_054" xml:space="preserve">
+    <value>Action file exceeds 256 KiB.</value>
+  </data>
+  <data name="ActionSettingsPanel_055" xml:space="preserve">
+    <value>Import preview</value>
+  </data>
+  <data name="ActionSettingsPanel_056" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ActionSettingsPanel_057" xml:space="preserve">
+    <value>Add to More menu</value>
+  </data>
+  <data name="ActionSettingsPanel_058" xml:space="preserve">
+    <value>Review the name, type, full content, and output handling. Importing does not run the action; scripts run with your user permissions when used.</value>
+  </data>
+  <data name="ActionSettingsPanel_059" xml:space="preserve">
+    <value>Could not import. Check the file format, action count, size, and permissions.</value>
+  </data>
+  <data name="ActionSettingsPanel_060" xml:space="preserve">
+    <value>SnapBar action|*.snapbaraction</value>
+  </data>
+  <data name="ActionSettingsPanel_061" xml:space="preserve">
+    <value>Action exported. It contains a script or URL template; review the contents before sharing.</value>
+  </data>
+  <data name="ActionSettingsPanel_062" xml:space="preserve">
+    <value>Could not export. Check the location and file permissions.</value>
+  </data>
+  <data name="ActionSettingsWindow_000" xml:space="preserve">
+    <value>My actions · SnapBar</value>
+  </data>
+  <data name="ActionTestComparisonView_000" xml:space="preserve">
+    <value>· Space   ⇥ Tab   ␍ CR   ↵ Line break</value>
+  </data>
+  <data name="ActionTestComparisonView_001" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="ActionTestComparisonView_002" xml:space="preserve">
+    <value>Output</value>
+  </data>
+  <data name="ActionTestComparisonView_003" xml:space="preserve">
+    <value>Input/output comparison</value>
+  </data>
+  <data name="ActionTestComparisonView_004" xml:space="preserve">
+    <value>No text output</value>
+  </data>
+  <data name="ActionTestComparisonView_005" xml:space="preserve">
+    <value>Unchanged</value>
+  </data>
+  <data name="ActionTestComparisonView_006" xml:space="preserve">
+    <value>Changed</value>
+  </data>
+  <data name="ActionTestComparisonView_007" xml:space="preserve">
+    <value>{0} input characters → {1} output characters · {2}</value>
+  </data>
+  <data name="ActionTestComparisonView_008" xml:space="preserve">
+    <value>Input whitespace and line breaks</value>
+  </data>
+  <data name="ActionTestComparisonView_009" xml:space="preserve">
+    <value>Output whitespace and line breaks</value>
+  </data>
+  <data name="ActionUi_000" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="AiCommandsPanel_000" xml:space="preserve">
+    <value>New command</value>
+  </data>
+  <data name="AiCommandsPanel_001" xml:space="preserve">
+    <value>Set up an AI service to get started</value>
+  </data>
+  <data name="AiCommandsPanel_002" xml:space="preserve">
+    <value>Service settings…</value>
+  </data>
+  <data name="AiCommandsPanel_003" xml:space="preserve">
+    <value>Set up AI service</value>
+  </data>
+  <data name="AiCommandsPanel_004" xml:space="preserve">
+    <value>Search names, instructions, and keywords</value>
+  </data>
+  <data name="AiCommandsPanel_005" xml:space="preserve">
+    <value>Search names, instructions, and keywords</value>
+  </data>
+  <data name="AiCommandsPanel_006" xml:space="preserve">
+    <value>Search AI commands</value>
+  </data>
+  <data name="AiCommandsPanel_007" xml:space="preserve">
+    <value>Command category</value>
+  </data>
+  <data name="AiCommandsPanel_008" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="AiCommandsPanel_009" xml:space="preserve">
+    <value>All categories</value>
+  </data>
+  <data name="AiCommandsPanel_010" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
+  <data name="AiCommandsPanel_011" xml:space="preserve">
+    <value>{0} found of {1}</value>
+  </data>
+  <data name="AiCommandsPanel_012" xml:space="preserve">
+    <value>{0} commands</value>
+  </data>
+  <data name="AiCommandsPanel_013" xml:space="preserve">
+    <value> · 128-command limit reached</value>
+  </data>
+  <data name="AiCommandsPanel_014" xml:space="preserve">
+    <value>Deleted “{0}”</value>
+  </data>
+  <data name="AiCommandsPanel_015" xml:space="preserve">
+    <value>Choose icon </value>
+  </data>
+  <data name="AiCommandsPanel_016" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
+  <data name="AiCommandsPanel_017" xml:space="preserve">
+    <value>Unpin </value>
+  </data>
+  <data name="AiCommandsPanel_018" xml:space="preserve">
+    <value>Pin </value>
+  </data>
+  <data name="AiCommandsPanel_019" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="AiCommandsPanel_020" xml:space="preserve">
+    <value>Command options </value>
+  </data>
+  <data name="AiCommandsPanel_021" xml:space="preserve">
+    <value>Delete command</value>
+  </data>
+  <data name="AiCommandsPanel_022" xml:space="preserve">
+    <value>No commands yet. Add your first AI command.</value>
+  </data>
+  <data name="AiCommandsPanel_023" xml:space="preserve">
+    <value>No commands match your search and category.</value>
+  </data>
+  <data name="AiCommandsPanel_024" xml:space="preserve">
+    <value>Restored; hidden by the current filter</value>
+  </data>
+  <data name="AiCommandsPanel_025" xml:space="preserve">
+    <value>Command restored.</value>
+  </data>
+  <data name="AiCommandsPanel_026" xml:space="preserve">
+    <value>This command has been deleted.</value>
+  </data>
+  <data name="AiErrorMessages_000" xml:space="preserve">
+    <value>API key is missing. Open service settings to add it.</value>
+  </data>
+  <data name="AiErrorMessages_001" xml:space="preserve">
+    <value>API key is invalid or lacks permission. Check the key and service permissions.</value>
+  </data>
+  <data name="AiErrorMessages_002" xml:space="preserve">
+    <value>Model is unavailable or your key lacks access. Check the model ID against the official list.</value>
+  </data>
+  <data name="AiErrorMessages_003" xml:space="preserve">
+    <value>Check the service URL and model ID.</value>
+  </data>
+  <data name="AiErrorMessages_004" xml:space="preserve">
+    <value>The service is limiting requests. Check your quota or try again later.</value>
+  </data>
+  <data name="AiErrorMessages_005" xml:space="preserve">
+    <value>The service timed out.</value>
+  </data>
+  <data name="AiErrorMessages_006" xml:space="preserve">
+    <value>Could not reach the AI service. Check the connection and URL.</value>
+  </data>
+  <data name="AiErrorMessages_007" xml:space="preserve">
+    <value>The text or response exceeds the size limit.</value>
+  </data>
+  <data name="AiErrorMessages_008" xml:space="preserve">
+    <value>The service returned an incomplete result.</value>
+  </data>
+  <data name="AiErrorMessages_009" xml:space="preserve">
+    <value>The service returned no usable result.</value>
+  </data>
+  <data name="AiErrorMessages_010" xml:space="preserve">
+    <value>The service returned an invalid response format.</value>
+  </data>
+  <data name="AiIconCatalog_000" xml:space="preserve">
+    <value>Improve writing</value>
+  </data>
+  <data name="AiIconCatalog_001" xml:space="preserve">
+    <value>Shorten text</value>
+  </data>
+  <data name="AiIconCatalog_002" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="AiIconCatalog_003" xml:space="preserve">
+    <value>Grammar and spelling</value>
+  </data>
+  <data name="AiIconCatalog_004" xml:space="preserve">
+    <value>Key points / summary</value>
+  </data>
+  <data name="AiIconCatalog_005" xml:space="preserve">
+    <value>Smart summary</value>
+  </data>
+  <data name="AiIconCatalog_006" xml:space="preserve">
+    <value>Polish text</value>
+  </data>
+  <data name="AiIconCatalog_007" xml:space="preserve">
+    <value>Magic wand</value>
+  </data>
+  <data name="AiIconCatalog_008" xml:space="preserve">
+    <value>Sparkle</value>
+  </data>
+  <data name="AiIconCatalog_009" xml:space="preserve">
+    <value>Document</value>
+  </data>
+  <data name="AiIconCatalog_010" xml:space="preserve">
+    <value>Text document</value>
+  </data>
+  <data name="AiIconCatalog_011" xml:space="preserve">
+    <value>Reading</value>
+  </data>
+  <data name="AiIconCatalog_012" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="AiIconCatalog_013" xml:space="preserve">
+    <value>Code block</value>
+  </data>
+  <data name="AiIconCatalog_014" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="AiIconCatalog_015" xml:space="preserve">
+    <value>Braces</value>
+  </data>
+  <data name="AiIconCatalog_016" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="AiIconCatalog_017" xml:space="preserve">
+    <value>Mail</value>
+  </data>
+  <data name="AiIconCatalog_018" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="AiIconCatalog_019" xml:space="preserve">
+    <value>Smart chat</value>
+  </data>
+  <data name="AiIconCatalog_020" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="AiIconCatalog_021" xml:space="preserve">
+    <value>Question</value>
+  </data>
+  <data name="AiIconCatalog_022" xml:space="preserve">
+    <value>Ideas</value>
+  </data>
+  <data name="AiIconCatalog_023" xml:space="preserve">
+    <value>Analysis</value>
+  </data>
+  <data name="AiIconCatalog_024" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="AiIconCatalog_025" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="AiIconCatalog_026" xml:space="preserve">
+    <value>Writing</value>
+  </data>
+  <data name="AiIconCatalog_027" xml:space="preserve">
+    <value>Clipboard text</value>
+  </data>
+  <data name="AiIconCatalog_028" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="AiIconCatalog_029" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="AiIconCatalog_030" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="AiIconCatalog_031" xml:space="preserve">
+    <value>Link</value>
+  </data>
+  <data name="AiIconCatalog_032" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="AiIconCatalog_033" xml:space="preserve">
+    <value>Web / language</value>
+  </data>
+  <data name="AiIconCatalog_034" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="AiIconCatalog_035" xml:space="preserve">
+    <value>Task list</value>
+  </data>
+  <data name="AiIconCatalog_036" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="AiIconCatalog_037" xml:space="preserve">
+    <value>Bar chart</value>
+  </data>
+  <data name="AiIconCatalog_038" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="AiIconCatalog_039" xml:space="preserve">
+    <value>Sync / convert</value>
+  </data>
+  <data name="AiIconCatalog_040" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="AiIconCatalog_041" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="AiIconCatalog_042" xml:space="preserve">
+    <value>Paint brush</value>
+  </data>
+  <data name="AiIconCatalog_043" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="AiIconCatalog_044" xml:space="preserve">
+    <value>Music</value>
+  </data>
+  <data name="AiIconCatalog_045" xml:space="preserve">
+    <value>Voice</value>
+  </data>
+  <data name="AiIconCatalog_046" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="AiIconCatalog_047" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="AiIconCatalog_048" xml:space="preserve">
+    <value>Person</value>
+  </data>
+  <data name="AiIconCatalog_049" xml:space="preserve">
+    <value>Star</value>
+  </data>
+  <data name="AiIconCatalog_050" xml:space="preserve">
+    <value>Heart</value>
+  </data>
+  <data name="AiIconCatalog_051" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="AiIconCatalog_052" xml:space="preserve">
+    <value>Security check</value>
+  </data>
+  <data name="AiIconCatalog_053" xml:space="preserve">
+    <value>Reminder</value>
+  </data>
+  <data name="AiIconCatalog_054" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="AiIconCatalog_055" xml:space="preserve">
+    <value>Flag</value>
+  </data>
+  <data name="AiIconCatalog_056" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="AiIconCatalog_057" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="AiIconCatalog_058" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="AiIconCatalog_059" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="AiIconCatalog_060" xml:space="preserve">
+    <value>Link</value>
+  </data>
+  <data name="AiIconCatalog_061" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="AiIconCatalog_062" xml:space="preserve">
+    <value>Web</value>
+  </data>
+  <data name="AiIconCatalog_063" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="AiIconCatalog_064" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="AiIconCatalog_065" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="AiIconCatalog_066" xml:space="preserve">
+    <value>Starburst</value>
+  </data>
+  <data name="AiIconCatalog_067" xml:space="preserve">
+    <value>Document</value>
+  </data>
+  <data name="AiIconCatalog_068" xml:space="preserve">
+    <value>Clean up text</value>
+  </data>
+  <data name="AiIconCatalog_069" xml:space="preserve">
+    <value>Legacy icons</value>
+  </data>
+  <data name="AiIconCatalog_070" xml:space="preserve">
+    <value>All icons</value>
+  </data>
+  <data name="AiIconCatalog_071" xml:space="preserve">
+    <value>Common</value>
+  </data>
+  <data name="AiIconCatalog_072" xml:space="preserve">
+    <value> text writing format</value>
+  </data>
+  <data name="AiIconCatalog_073" xml:space="preserve">
+    <value> check correction</value>
+  </data>
+  <data name="AiIconCatalog_074" xml:space="preserve">
+    <value> smart AI magic improve polish</value>
+  </data>
+  <data name="AiIconCatalog_075" xml:space="preserve">
+    <value>Writing</value>
+  </data>
+  <data name="AiIconCatalog_076" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="AiIconCatalog_077" xml:space="preserve">
+    <value>Reading</value>
+  </data>
+  <data name="AiIconCatalog_078" xml:space="preserve">
+    <value>Programming</value>
+  </data>
+  <data name="AiIconCatalog_079" xml:space="preserve">
+    <value>Communication</value>
+  </data>
+  <data name="AiIconCatalog_080" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="AiIconCatalog_081" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="AiIconCatalog_082" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="AiIconPickerWindow_000" xml:space="preserve">
+    <value>Choose icon</value>
+  </data>
+  <data name="AiIconPickerWindow_001" xml:space="preserve">
+    <value>Choose icon</value>
+  </data>
+  <data name="AiIconPickerWindow_002" xml:space="preserve">
+    <value>Search Chinese or English names, or paste a full icon name.</value>
+  </data>
+  <data name="AiIconPickerWindow_003" xml:space="preserve">
+    <value>Common</value>
+  </data>
+  <data name="AiIconPickerWindow_004" xml:space="preserve">
+    <value>All icons</value>
+  </data>
+  <data name="AiIconPickerWindow_005" xml:space="preserve">
+    <value>Writing</value>
+  </data>
+  <data name="AiIconPickerWindow_006" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="AiIconPickerWindow_007" xml:space="preserve">
+    <value>Reading</value>
+  </data>
+  <data name="AiIconPickerWindow_008" xml:space="preserve">
+    <value>Programming</value>
+  </data>
+  <data name="AiIconPickerWindow_009" xml:space="preserve">
+    <value>Communication</value>
+  </data>
+  <data name="AiIconPickerWindow_010" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="AiIconPickerWindow_011" xml:space="preserve">
+    <value>Media</value>
+  </data>
+  <data name="AiIconPickerWindow_012" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="AiIconPickerWindow_013" xml:space="preserve">
+    <value>Legacy icons</value>
+  </data>
+  <data name="AiIconPickerWindow_014" xml:space="preserve">
+    <value>Search icons or enter a full name</value>
+  </data>
+  <data name="AiIconPickerWindow_015" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="AiIconPickerWindow_016" xml:space="preserve">
+    <value>All icons</value>
+  </data>
+  <data name="AiIconPickerWindow_017" xml:space="preserve">
+    <value>No matching icons. Try another name.</value>
+  </data>
+  <data name="AiIconPickerWindow_018" xml:space="preserve">
+    <value>{0} icons · Arrow keys to select · Enter to apply</value>
+  </data>
+  <data name="AiMarkdownView_000" xml:space="preserve">
+    <value>Copy code</value>
+  </data>
+  <data name="AiPanelWindow_Commands_000" xml:space="preserve">
+    <value>Search commands, or describe what to do with the source…</value>
+  </data>
+  <data name="AiPanelWindow_Commands_001" xml:space="preserve">
+    <value>What next? You can also search commands…</value>
+  </data>
+  <data name="AiPanelWindow_Commands_002" xml:space="preserve">
+    <value>Deleted “{0}”</value>
+  </data>
+  <data name="AiPanelWindow_Commands_003" xml:space="preserve">
+    <value>All categories</value>
+  </data>
+  <data name="AiPanelWindow_Commands_004" xml:space="preserve">
+    <value>Working…</value>
+  </data>
+  <data name="AiPanelWindow_Commands_005" xml:space="preserve">
+    <value>Arrow keys to select · Enter to run · Esc to return to input</value>
+  </data>
+  <data name="AiPanelWindow_Commands_006" xml:space="preserve">
+    <value>Unpin</value>
+  </data>
+  <data name="AiPanelWindow_Commands_007" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="AiPanelWindow_Commands_008" xml:space="preserve">
+    <value>Command options</value>
+  </data>
+  <data name="AiPanelWindow_Commands_009" xml:space="preserve">
+    <value>Command options </value>
+  </data>
+  <data name="AiPanelWindow_Commands_010" xml:space="preserve">
+    <value>Edit command</value>
+  </data>
+  <data name="AiPanelWindow_Commands_011" xml:space="preserve">
+    <value>Delete command</value>
+  </data>
+  <data name="AiPanelWindow_Commands_012" xml:space="preserve">
+    <value>No saved commands match. You can still run your instructions directly.</value>
+  </data>
+  <data name="AiPanelWindow_Commands_013" xml:space="preserve">
+    <value>No commands in this category yet.</value>
+  </data>
+  <data name="AiPanelWindow_Commands_014" xml:space="preserve">
+    <value>Search all · </value>
+  </data>
+  <data name="AiPanelWindow_Commands_015" xml:space="preserve">
+    <value>{0} / {1} commands</value>
+  </data>
+  <data name="AiPanelWindow_000" xml:space="preserve">
+    <value>SnapBar · AI rewrite</value>
+  </data>
+  <data name="AiPanelWindow_001" xml:space="preserve">
+    <value>AI settings</value>
+  </data>
+  <data name="AiPanelWindow_002" xml:space="preserve">
+    <value>AI rewrite</value>
+  </data>
+  <data name="AiPanelWindow_003" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="AiPanelWindow_004" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="AiPanelWindow_005" xml:space="preserve">
+    <value>Manage AI commands</value>
+  </data>
+  <data name="AiPanelWindow_006" xml:space="preserve">
+    <value>Manage AI commands</value>
+  </data>
+  <data name="AiPanelWindow_007" xml:space="preserve">
+    <value>AI commands</value>
+  </data>
+  <data name="AiPanelWindow_008" xml:space="preserve">
+    <value>Use original</value>
+  </data>
+  <data name="AiPanelWindow_009" xml:space="preserve">
+    <value>Use this version</value>
+  </data>
+  <data name="AiPanelWindow_010" xml:space="preserve">
+    <value>Next rewrite: Original</value>
+  </data>
+  <data name="AiPanelWindow_011" xml:space="preserve">
+    <value>Search commands or enter your instructions</value>
+  </data>
+  <data name="AiPanelWindow_012" xml:space="preserve">
+    <value>Search commands, or describe what to do with the source…</value>
+  </data>
+  <data name="AiPanelWindow_013" xml:space="preserve">
+    <value>Enter to run · ↓ to select a command</value>
+  </data>
+  <data name="AiPanelWindow_014" xml:space="preserve">
+    <value>Shift+Enter for a new line · Arrow keys in the command grid · Enter to run · Esc to return to input</value>
+  </data>
+  <data name="AiPanelWindow_015" xml:space="preserve">
+    <value>Enter to run · ↓ to select · Shift+Enter for a new line</value>
+  </data>
+  <data name="AiPanelWindow_016" xml:space="preserve">
+    <value>Run these instructions ↵</value>
+  </data>
+  <data name="AiPanelWindow_017" xml:space="preserve">
+    <value>Filter by category</value>
+  </data>
+  <data name="AiPanelWindow_018" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="AiPanelWindow_019" xml:space="preserve">
+    <value>Copy result</value>
+  </data>
+  <data name="AiPanelWindow_020" xml:space="preserve">
+    <value>Replace selection</value>
+  </data>
+  <data name="AiPanelWindow_021" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="AiPanelWindow_022" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="AiPanelWindow_023" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="AiPanelWindow_024" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="AiPanelWindow_025" xml:space="preserve">
+    <value>Previous version</value>
+  </data>
+  <data name="AiPanelWindow_026" xml:space="preserve">
+    <value>Next version</value>
+  </data>
+  <data name="AiPanelWindow_027" xml:space="preserve">
+    <value>Instruction details</value>
+  </data>
+  <data name="AiPanelWindow_028" xml:space="preserve">
+    <value>View full instructions</value>
+  </data>
+  <data name="AiPanelWindow_029" xml:space="preserve">
+    <value>View full instructions</value>
+  </data>
+  <data name="AiPanelWindow_030" xml:space="preserve">
+    <value>Could not read AI settings. Defaults are in use; your original file is preserved.</value>
+  </data>
+  <data name="AiPanelWindow_031" xml:space="preserve">
+    <value>SnapBar · Version {0} instructions</value>
+  </data>
+  <data name="AiPanelWindow_032" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="AiPanelWindow_033" xml:space="preserve">
+    <value>Based on </value>
+  </data>
+  <data name="AiPanelWindow_034" xml:space="preserve">
+    <value>All categories</value>
+  </data>
+  <data name="AiPanelWindow_035" xml:space="preserve">
+    <value>All categories</value>
+  </data>
+  <data name="AiPanelWindow_036" xml:space="preserve">
+    <value>All categories</value>
+  </data>
+  <data name="AiPanelWindow_037" xml:space="preserve">
+    <value>Next rewrite: </value>
+  </data>
+  <data name="AiPanelWindow_038" xml:space="preserve">
+    <value>Set up AI service</value>
+  </data>
+  <data name="AiPanelWindow_039" xml:space="preserve">
+    <value>AI service and model settings</value>
+  </data>
+  <data name="AiPanelWindow_040" xml:space="preserve">
+    <value>Use version {0}</value>
+  </data>
+  <data name="AiPanelWindow_041" xml:space="preserve">
+    <value>Use this version</value>
+  </data>
+  <data name="AiPanelWindow_042" xml:space="preserve">
+    <value>Result · New</value>
+  </data>
+  <data name="AiPanelWindow_043" xml:space="preserve">
+    <value>Result · Generating</value>
+  </data>
+  <data name="AiPanelWindow_044" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="AiPanelWindow_045" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="AiPanelWindow_046" xml:space="preserve">
+    <value>Custom instruction</value>
+  </data>
+  <data name="AiPanelWindow_047" xml:space="preserve">
+    <value>Copy original</value>
+  </data>
+  <data name="AiPanelWindow_048" xml:space="preserve">
+    <value>Copy result</value>
+  </data>
+  <data name="AiPanelWindow_049" xml:space="preserve">
+    <value>The original selection is no longer valid. You can still copy the original.</value>
+  </data>
+  <data name="AiPanelWindow_050" xml:space="preserve">
+    <value>The original selection is no longer valid. Copy the result and paste it yourself.</value>
+  </data>
+  <data name="AiPanelWindow_051" xml:space="preserve">
+    <value>Direct replacement is unavailable here. Copy the original.</value>
+  </data>
+  <data name="AiPanelWindow_052" xml:space="preserve">
+    <value>Direct replacement is unavailable here. Copy the result.</value>
+  </data>
+  <data name="AiPanelWindow_053" xml:space="preserve">
+    <value>Text is sent only after you choose a command.</value>
+  </data>
+  <data name="AiPanelWindow_054" xml:space="preserve">
+    <value>Replacing also copies the result.</value>
+  </data>
+  <data name="AiPanelWindow_055" xml:space="preserve">
+    <value>Custom instruction</value>
+  </data>
+  <data name="AiPanelWindow_056" xml:space="preserve">
+    <value>Set the AI service URL and model ID first.</value>
+  </data>
+  <data name="AiPanelWindow_057" xml:space="preserve">
+    <value>API key is missing. Open service/model settings above.</value>
+  </data>
+  <data name="AiPanelWindow_058" xml:space="preserve">
+    <value>The instructions or source text exceed the length limit.</value>
+  </data>
+  <data name="AiPanelWindow_059" xml:space="preserve">
+    <value>Working. Press Stop to cancel.</value>
+  </data>
+  <data name="AiPanelWindow_060" xml:space="preserve">
+    <value>No usable new result. The previous version is preserved.</value>
+  </data>
+  <data name="AiPanelWindow_061" xml:space="preserve">
+    <value>Result is ready, but recent commands could not be saved.</value>
+  </data>
+  <data name="AiPanelWindow_062" xml:space="preserve">
+    <value>Stopped. The previous version is preserved.</value>
+  </data>
+  <data name="AiPanelWindow_063" xml:space="preserve">
+    <value>AI request did not finish. The previous version is preserved.</value>
+  </data>
+  <data name="AiPanelWindow_064" xml:space="preserve">
+    <value>The previous version is preserved.</value>
+  </data>
+  <data name="AiPanelWindow_065" xml:space="preserve">
+    <value>Source changed. You can still copy the result.</value>
+  </data>
+  <data name="AiPanelWindow_066" xml:space="preserve">
+    <value>Could not replace the selection. Copy the result and paste it yourself.</value>
+  </data>
+  <data name="AiPanelWindow_067" xml:space="preserve">
+    <value>Copied.</value>
+  </data>
+  <data name="AiPanelWindow_068" xml:space="preserve">
+    <value>Clipboard is busy. Try again in a moment.</value>
+  </data>
+  <data name="AiPreferences_000" xml:space="preserve">
+    <value>Could not save AI settings. Check the format, file permissions, or size. Your previous settings are preserved.</value>
+  </data>
+  <data name="AiPreferences_001" xml:space="preserve">
+    <value>This command was deleted. Your draft is preserved.</value>
+  </data>
+  <data name="AiPreferences_002" xml:space="preserve">
+    <value>This command ID already exists.</value>
+  </data>
+  <data name="AiPreferences_003" xml:space="preserve">
+    <value>Could not delete: command not found.</value>
+  </data>
+  <data name="AiPreferences_004" xml:space="preserve">
+    <value>No command to restore.</value>
+  </data>
+  <data name="AiPreferences_005" xml:space="preserve">
+    <value>Could not restore: command ID exists or the 128-command limit was reached.</value>
+  </data>
+  <data name="AiPromptEditorWindow_000" xml:space="preserve">
+    <value>AI command editor</value>
+  </data>
+  <data name="AiPromptEditorWindow_001" xml:space="preserve">
+    <value>New AI command</value>
+  </data>
+  <data name="AiPromptEditorWindow_002" xml:space="preserve">
+    <value>Edit AI command</value>
+  </data>
+  <data name="AiPromptEditorWindow_003" xml:space="preserve">
+    <value>New command</value>
+  </data>
+  <data name="AiPromptEditorWindow_004" xml:space="preserve">
+    <value>Edit command</value>
+  </data>
+  <data name="AiPromptEditorWindow_005" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="AiPromptEditorWindow_006" xml:space="preserve">
+    <value>Command name</value>
+  </data>
+  <data name="AiPromptEditorWindow_007" xml:space="preserve">
+    <value>Instructions</value>
+  </data>
+  <data name="AiPromptEditorWindow_008" xml:space="preserve">
+    <value>Category (optional)</value>
+  </data>
+  <data name="AiPromptEditorWindow_009" xml:space="preserve">
+    <value>Search keywords (optional)</value>
+  </data>
+  <data name="AiPromptEditorWindow_010" xml:space="preserve">
+    <value>Icon name</value>
+  </data>
+  <data name="AiPromptEditorWindow_011" xml:space="preserve">
+    <value>Enter translate or translate_20_regular, or choose an icon.</value>
+  </data>
+  <data name="AiPromptEditorWindow_012" xml:space="preserve">
+    <value>Choose icon</value>
+  </data>
+  <data name="AiPromptEditorWindow_013" xml:space="preserve">
+    <value>Keep the current icon, or choose a new one.</value>
+  </data>
+  <data name="AiPromptEditorWindow_014" xml:space="preserve">
+    <value>Icon not found. Check the name or choose one from the library.</value>
+  </data>
+  <data name="AiPromptEditorWindow_015" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="AiPromptEditorWindow_016" xml:space="preserve">
+    <value>Enter a command name.</value>
+  </data>
+  <data name="AiPromptEditorWindow_017" xml:space="preserve">
+    <value>Enter instructions.</value>
+  </data>
+  <data name="AiPromptEditorWindow_018" xml:space="preserve">
+    <value>Icon not found. Check the name or choose an icon.</value>
+  </data>
+  <data name="AiPromptEditorWindow_019" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="AiPromptEditorWindow_020" xml:space="preserve">
+    <value>Unsaved</value>
+  </data>
+  <data name="AiPromptEditorWindow_021" xml:space="preserve">
+    <value>Save command</value>
+  </data>
+  <data name="AiPromptEditorWindow_022" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="AiPromptEditorWindow_023" xml:space="preserve">
+    <value>Instructions</value>
+  </data>
+  <data name="AiPromptEditorWindow_024" xml:space="preserve">
+    <value>Describe what to do. Selected text is included automatically.</value>
+  </data>
+  <data name="AiPromptEditorWindow_025" xml:space="preserve">
+    <value>Category (optional)</value>
+  </data>
+  <data name="AiPromptEditorWindow_026" xml:space="preserve">
+    <value>Search keywords (optional)</value>
+  </data>
+  <data name="AiPromptEditorWindow_027" xml:space="preserve">
+    <value>Icon</value>
+  </data>
+  <data name="AiPromptEditorWindow_028" xml:space="preserve">
+    <value>More settings (optional)</value>
+  </data>
+  <data name="AiSettingsPanel_000" xml:space="preserve">
+    <value>AI service (including key changes)</value>
+  </data>
+  <data name="AiSettingsPanel_001" xml:space="preserve">
+    <value>AI services</value>
+  </data>
+  <data name="AiSettingsPanel_002" xml:space="preserve">
+    <value>Use the Responses protocol with the full /responses URL.</value>
+  </data>
+  <data name="AiSettingsPanel_003" xml:space="preserve">
+    <value>Use the Messages protocol with the full /messages URL.</value>
+  </data>
+  <data name="AiSettingsPanel_004" xml:space="preserve">
+    <value>Use the Chat Completions protocol with the full /chat/completions URL.</value>
+  </data>
+  <data name="AiSettingsPanel_005" xml:space="preserve">
+    <value>Unsaved</value>
+  </data>
+  <data name="AiSettingsPanel_006" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="AiSettingsPanel_007" xml:space="preserve">
+    <value>Service settings saved, but the key could not be saved. Check permissions and try again.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_000" xml:space="preserve">
+    <value>Discard changes</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_001" xml:space="preserve">
+    <value>Save settings</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_002" xml:space="preserve">
+    <value>Selected text is sent to your configured service only when you run a command.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_003" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_004" xml:space="preserve">
+    <value>AI services</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_005" xml:space="preserve">
+    <value>Get API key ↗</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_006" xml:space="preserve">
+    <value>Paste API key</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_007" xml:space="preserve">
+    <value>Paste an API key. Leave blank to keep the saved key for this URL.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_008" xml:space="preserve">
+    <value>Paste API key</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_009" xml:space="preserve">
+    <value>Change</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_010" xml:space="preserve">
+    <value>View models ↗</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_011" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_012" xml:space="preserve">
+    <value>Model ID</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_013" xml:space="preserve">
+    <value>Select or enter a model ID</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_014" xml:space="preserve">
+    <value>Use custom URL</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_015" xml:space="preserve">
+    <value>Advanced settings</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_016" xml:space="preserve">
+    <value>Full API URL</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_017" xml:space="preserve">
+    <value>Full API URL</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_018" xml:space="preserve">
+    <value>Remove the saved API key for this URL</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_019" xml:space="preserve">
+    <value>Remove the saved API key for this URL</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_020" xml:space="preserve">
+    <value>Could not open the official page. Try again later.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_021" xml:space="preserve">
+    <value>Key will be removed when saved</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_022" xml:space="preserve">
+    <value>New key is not saved yet</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_023" xml:space="preserve">
+    <value>Could not read the key. Enter it again and save.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_024" xml:space="preserve">
+    <value>✓ Key saved</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_025" xml:space="preserve">
+    <value>No key configured</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_026" xml:space="preserve">
+    <value>Uncheck before saving to keep your existing key.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_027" xml:space="preserve">
+    <value>The key is encrypted on this computer. Leave blank to keep it.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_028" xml:space="preserve">
+    <value>The key will be encrypted on this computer. Local compatible services may not need one.</value>
+  </data>
+  <data name="AiSettingsPanel_Presentation_029" xml:space="preserve">
+    <value>The key will be encrypted on this computer.</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_000" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_001" xml:space="preserve">
+    <value>Cancel test</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_002" xml:space="preserve">
+    <value>Testing sends a small amount of text and may incur charges.</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_003" xml:space="preserve">
+    <value>Could not read the key. Enter it again before testing.</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_004" xml:space="preserve">
+    <value>Testing…</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_005" xml:space="preserve">
+    <value>✓ Connected</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_006" xml:space="preserve">
+    <value>Not tested</value>
+  </data>
+  <data name="AiSettingsPanel_Testing_007" xml:space="preserve">
+    <value>Test failed: </value>
+  </data>
+  <data name="AiSettingsWindow_000" xml:space="preserve">
+    <value>SnapBar · AI settings</value>
+  </data>
+  <data name="AiSettingsWindow_001" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ExcludedAppsPanel_000" xml:space="preserve">
+    <value>Excluded apps (0)</value>
+  </data>
+  <data name="ExcludedAppsPanel_001" xml:space="preserve">
+    <value>The toolbar does not appear automatically in these apps. Manual shortcuts still work.</value>
+  </data>
+  <data name="ExcludedAppsPanel_002" xml:space="preserve">
+    <value>Add app…</value>
+  </data>
+  <data name="ExcludedAppsPanel_003" xml:space="preserve">
+    <value>Choose an app to exclude</value>
+  </data>
+  <data name="ExcludedAppsPanel_004" xml:space="preserve">
+    <value>Applications (*.exe)|*.exe</value>
+  </data>
+  <data name="ExcludedAppsPanel_005" xml:space="preserve">
+    <value>Choose a valid .exe application. The exclusion list is unchanged.</value>
+  </data>
+  <data name="ExcludedAppsPanel_006" xml:space="preserve">
+    <value>Remove selected item</value>
+  </data>
+  <data name="ExcludedAppsPanel_007" xml:space="preserve">
+    <value>No excluded apps yet.</value>
+  </data>
+  <data name="ExcludedAppsPanel_008" xml:space="preserve">
+    <value>No excluded apps</value>
+  </data>
+  <data name="ExcludedAppsPanel_009" xml:space="preserve">
+    <value>Choose “Add app…” to stop the toolbar appearing automatically in an app.</value>
+  </data>
+  <data name="ExcludedAppsPanel_010" xml:space="preserve">
+    <value>Excluded apps ({0})</value>
+  </data>
+  <data name="GeneralSettingsPage_000" xml:space="preserve">
+    <value>Start automatically when you sign in to Windows</value>
+  </data>
+  <data name="GeneralSettingsPage_001" xml:space="preserve">
+    <value>Start automatically when you sign in to Windows</value>
+  </data>
+  <data name="GeneralSettingsPage_002" xml:space="preserve">
+    <value>Ready in the system tray after sign-in.</value>
+  </data>
+  <data name="GeneralSettingsPage_003" xml:space="preserve">
+    <value>Startup status</value>
+  </data>
+  <data name="GeneralSettingsPage_004" xml:space="preserve">
+    <value>Open Windows settings</value>
+  </data>
+  <data name="GeneralSettingsPage_005" xml:space="preserve">
+    <value>Open Windows startup settings</value>
+  </data>
+  <data name="GeneralSettingsPage_006" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="GeneralSettingsPage_007" xml:space="preserve">
+    <value>Read startup status again</value>
+  </data>
+  <data name="GeneralSettingsPage_008" xml:space="preserve">
+    <value>Automatically detect selected text</value>
+  </data>
+  <data name="GeneralSettingsPage_009" xml:space="preserve">
+    <value>Automatically detect selected text</value>
+  </data>
+  <data name="GeneralSettingsPage_010" xml:space="preserve">
+    <value>Show toolbar automatically</value>
+  </data>
+  <data name="GeneralSettingsPage_011" xml:space="preserve">
+    <value>Show the toolbar after dragging or double-clicking to select text.</value>
+  </data>
+  <data name="GeneralSettingsPage_012" xml:space="preserve">
+    <value>Show toolbar</value>
+  </data>
+  <data name="GeneralSettingsPage_013" xml:space="preserve">
+    <value>Search selected text directly</value>
+  </data>
+  <data name="GeneralSettingsPage_014" xml:space="preserve">
+    <value>Copy selected text directly</value>
+  </data>
+  <data name="GeneralSettingsPage_015" xml:space="preserve">
+    <value>Capture OCR</value>
+  </data>
+  <data name="GeneralSettingsPage_016" xml:space="preserve">
+    <value>Select shortcut action</value>
+  </data>
+  <data name="GeneralSettingsPage_017" xml:space="preserve">
+    <value>Selection shortcut</value>
+  </data>
+  <data name="GeneralSettingsPage_018" xml:space="preserve">
+    <value>Press the shortcut to run the selected action. Capture OCR starts directly.</value>
+  </data>
+  <data name="GeneralSettingsPage_019" xml:space="preserve">
+    <value>Shortcut combination; press a new combination here when changing it</value>
+  </data>
+  <data name="GeneralSettingsPage_020" xml:space="preserve">
+    <value>Change</value>
+  </data>
+  <data name="GeneralSettingsPage_021" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="GeneralSettingsPage_022" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="GeneralSettingsPage_023" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
+  <data name="GeneralSettingsPage_024" xml:space="preserve">
+    <value>Shortcut editor</value>
+  </data>
+  <data name="GeneralSettingsPage_025" xml:space="preserve">
+    <value>Shortcut settings status</value>
+  </data>
+  <data name="GeneralSettingsPage_026" xml:space="preserve">
+    <value>Prefer Traditional Chinese</value>
+  </data>
+  <data name="GeneralSettingsPage_027" xml:space="preserve">
+    <value>Prefer English</value>
+  </data>
+  <data name="GeneralSettingsPage_028" xml:space="preserve">
+    <value>Both Traditional Chinese and English are recognized. Prioritize the main language in the capture.</value>
+  </data>
+  <data name="GeneralSettingsPage_029" xml:space="preserve">
+    <value>OCR language priority</value>
+  </data>
+  <data name="GeneralSettingsPage_030" xml:space="preserve">
+    <value>OCR language priority</value>
+  </data>
+  <data name="GeneralSettingsPage_031" xml:space="preserve">
+    <value>General settings content</value>
+  </data>
+  <data name="GeneralSettingsPage_032" xml:space="preserve">
+    <value>Ready in the system tray after sign-in.</value>
+  </data>
+  <data name="GeneralSettingsPage_033" xml:space="preserve">
+    <value>Disabled by Windows. Enable it in Windows settings.</value>
+  </data>
+  <data name="GeneralSettingsPage_034" xml:space="preserve">
+    <value>Could not read startup status. Try again.</value>
+  </data>
+  <data name="GeneralSettingsPage_035" xml:space="preserve">
+    <value>The app has moved. Enable startup to update its location.</value>
+  </data>
+  <data name="GeneralSettingsPage_036" xml:space="preserve">
+    <value>Ready in the system tray after sign-in.</value>
+  </data>
+  <data name="GeneralSettingsPage_037" xml:space="preserve">
+    <value>Could not confirm startup was enabled. Try again.</value>
+  </data>
+  <data name="GeneralSettingsPage_038" xml:space="preserve">
+    <value>This build cannot start independently at sign-in. Use the full package including the runtime.</value>
+  </data>
+  <data name="GeneralSettingsPage_039" xml:space="preserve">
+    <value>Could not change startup settings. Check permissions and try again.</value>
+  </data>
+  <data name="GeneralSettingsPage_040" xml:space="preserve">
+    <value>Could not open Windows settings. Open Apps → Startup manually.</value>
+  </data>
+  <data name="GeneralSettingsPage_041" xml:space="preserve">
+    <value>Press Ctrl or Alt with a letter, digit, or F1–F11, then Save. Esc cancels.</value>
+  </data>
+  <data name="GeneralSettingsPage_042" xml:space="preserve">
+    <value>Use Ctrl or Alt with a letter, digit, or F1–F11. Avoid reserved editing and system shortcuts.</value>
+  </data>
+  <data name="GeneralSettingsPage_043" xml:space="preserve">
+    <value>Press Save to apply, or press another combination.</value>
+  </data>
+  <data name="GeneralSettingsPage_044" xml:space="preserve">
+    <value>Saved · </value>
+  </data>
+  <data name="GeneralSettingsPage_045" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="GeneralSettingsPage_046" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
+  <data name="GeneralSettingsPage_047" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="GeneralSettingsPage_048" xml:space="preserve">
+    <value>This shortcut is currently unavailable. Change or clear it.</value>
+  </data>
+  <data name="GeneralSettingsPage_049" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="GeneralSettingsPage_050" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="MainWindow_000" xml:space="preserve">
+    <value>Could not create the tray icon. Closing this window will quit SnapBar.</value>
+  </data>
+  <data name="MainWindow_001" xml:space="preserve">
+    <value>Ready · </value>
+  </data>
+  <data name="MainWindow_002" xml:space="preserve">
+    <value> is unavailable. Change it in General settings; automatic detection can still be enabled.</value>
+  </data>
+  <data name="MainWindow_003" xml:space="preserve">
+    <value>● Startup failed</value>
+  </data>
+  <data name="MainWindow_004" xml:space="preserve">
+    <value>Could not initialize input monitoring. Quit and restart SnapBar.</value>
+  </data>
+  <data name="MainWindow_005" xml:space="preserve">
+    <value>Shortcut settings are damaged. Using Ctrl + Alt + V temporarily; other preferences are preserved. The original file will be backed up on the next save.</value>
+  </data>
+  <data name="MainWindow_006" xml:space="preserve">
+    <value>The default shortcut is also unavailable. Change it in General settings.</value>
+  </data>
+  <data name="MainWindow_007" xml:space="preserve">
+    <value>Settings could not be read or use an incompatible version. Defaults are in use; your original file is preserved and will not be overwritten.</value>
+  </data>
+  <data name="MainWindow_008" xml:space="preserve">
+    <value>Could not configure Sublime shortcuts due to file format, permissions, or key conflicts. Sublime support is off.</value>
+  </data>
+  <data name="MainWindow_009" xml:space="preserve">
+    <value>Sublime shortcuts are missing or changed. Turn Sublime support off and on to configure them again.</value>
+  </data>
+  <data name="MainWindow_010" xml:space="preserve">
+    <value>This app is already excluded.</value>
+  </data>
+  <data name="MainWindow_011" xml:space="preserve">
+    <value>The exclusion list has reached 128 apps. Remove an unused entry first.</value>
+  </data>
+  <data name="MainWindow_012" xml:space="preserve">
+    <value>App excluded. Manual shortcuts still work.</value>
+  </data>
+  <data name="MainWindow_013" xml:space="preserve">
+    <value>App exclusion removed. Automatic detection can now trigger normally.</value>
+  </data>
+  <data name="MainWindow_014" xml:space="preserve">
+    <value>Changes are active but could not be saved. Your previous settings will be used next time.</value>
+  </data>
+  <data name="MainWindow_015" xml:space="preserve">
+    <value>Invalid search URL. Use HTTP/HTTPS with one {query} in a query parameter value.</value>
+  </data>
+  <data name="MainWindow_016" xml:space="preserve">
+    <value>Could not save search settings. Your draft is preserved; check permissions or settings size.</value>
+  </data>
+  <data name="MainWindow_017" xml:space="preserve">
+    <value>● Selection detection: Shortcut unavailable</value>
+  </data>
+  <data name="MainWindow_018" xml:space="preserve">
+    <value>● Selection detection: Automatic</value>
+  </data>
+  <data name="MainWindow_019" xml:space="preserve">
+    <value>● Selection detection: Shortcut ready</value>
+  </data>
+  <data name="MainWindow_Dictionary_000" xml:space="preserve">
+    <value>Manage offline dictionaries</value>
+  </data>
+  <data name="MainWindow_Dictionary_001" xml:space="preserve">
+    <value>← Back to toolbar</value>
+  </data>
+  <data name="MainWindow_Dictionary_002" xml:space="preserve">
+    <value>Import multiple dictionaries to search all enabled sources. Keep .ifo, .idx, and .dict or .dict.dz in the same folder.</value>
+  </data>
+  <data name="MainWindow_Dictionary_003" xml:space="preserve">
+    <value>Import dictionary</value>
+  </data>
+  <data name="MainWindow_Dictionary_004" xml:space="preserve">
+    <value>StarDict dictionary (*.ifo)|*.ifo</value>
+  </data>
+  <data name="MainWindow_Dictionary_005" xml:space="preserve">
+    <value>“{0}” is already imported ({1} entries). Update it with this file?
+Its enabled state will be preserved.</value>
+  </data>
+  <data name="MainWindow_Dictionary_006" xml:space="preserve">
+    <value>Update dictionary</value>
+  </data>
+  <data name="MainWindow_Dictionary_007" xml:space="preserve">
+    <value>Existing dictionary preserved.</value>
+  </data>
+  <data name="MainWindow_Dictionary_008" xml:space="preserve">
+    <value>Imported “{0}” with {1} entries.</value>
+  </data>
+  <data name="MainWindow_Dictionary_009" xml:space="preserve">
+    <value>No dictionaries imported yet.</value>
+  </data>
+  <data name="MainWindow_Dictionary_010" xml:space="preserve">
+    <value>{0} dictionaries imported, {1} enabled.</value>
+  </data>
+  <data name="MainWindow_Dictionary_011" xml:space="preserve">
+    <value>Enable “</value>
+  </data>
+  <data name="MainWindow_Dictionary_012" xml:space="preserve">
+    <value>Dictionary enabled.</value>
+  </data>
+  <data name="MainWindow_Dictionary_013" xml:space="preserve">
+    <value>Dictionary disabled. Its files are preserved.</value>
+  </data>
+  <data name="MainWindow_Dictionary_014" xml:space="preserve">
+    <value>{0} entries · {1}</value>
+  </data>
+  <data name="MainWindow_Dictionary_015" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="MainWindow_Dictionary_016" xml:space="preserve">
+    <value>Remove “</value>
+  </data>
+  <data name="MainWindow_Dictionary_017" xml:space="preserve">
+    <value>Remove “{0}”? Original dictionary files will be preserved.</value>
+  </data>
+  <data name="MainWindow_Dictionary_018" xml:space="preserve">
+    <value>Remove dictionary</value>
+  </data>
+  <data name="MainWindow_Dictionary_019" xml:space="preserve">
+    <value>Dictionary removed.</value>
+  </data>
+  <data name="MainWindow_Dictionary_020" xml:space="preserve">
+    <value>Could not read the dictionary list. Check the files or restore a backup.</value>
+  </data>
+  <data name="MainWindow_Dictionary_021" xml:space="preserve">
+    <value>Processing dictionary…</value>
+  </data>
+  <data name="MainWindow_Dictionary_022" xml:space="preserve">
+    <value>Dictionary text must use UTF-8.</value>
+  </data>
+  <data name="MainWindow_Dictionary_023" xml:space="preserve">
+    <value>Could not read or save the dictionary. Check its companion files and access permissions.</value>
+  </data>
+  <data name="MainWindow_Exit_000" xml:space="preserve">
+    <value>Quit SnapBar</value>
+  </data>
+  <data name="MainWindow_Exit_001" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="MainWindow_Exit_002" xml:space="preserve">
+    <value>Discard and quit</value>
+  </data>
+  <data name="MainWindow_Exit_003" xml:space="preserve">
+    <value>Save and quit</value>
+  </data>
+  <data name="MainWindow_Exit_004" xml:space="preserve">
+    <value>You have unsaved changes</value>
+  </data>
+  <data name="MainWindow_Exit_005" xml:space="preserve">
+    <value>Save and quit saves the following forms in order. If one fails, quitting stops; completed saves are kept.</value>
+  </data>
+  <data name="MainWindow_General_000" xml:space="preserve">
+    <value>Input monitoring is not ready. Restart SnapBar.</value>
+  </data>
+  <data name="MainWindow_General_001" xml:space="preserve">
+    <value>SnapBar already uses this shortcut. Choose another combination.</value>
+  </data>
+  <data name="MainWindow_General_002" xml:space="preserve">
+    <value>This shortcut is unavailable. Choose another combination. Your previous settings are preserved.</value>
+  </data>
+  <data name="MainWindow_General_003" xml:space="preserve">
+    <value>Could not save the shortcut. Check settings file permissions. Your previous shortcut is preserved.</value>
+  </data>
+  <data name="MainWindow_General_004" xml:space="preserve">
+    <value>Input monitoring is not ready. Restart SnapBar.</value>
+  </data>
+  <data name="MainWindow_General_005" xml:space="preserve">
+    <value>This shortcut is not supported. Choose another combination.</value>
+  </data>
+  <data name="MainWindow_General_006" xml:space="preserve">
+    <value>This shortcut is unavailable. Choose another combination. Your previous shortcut still works.</value>
+  </data>
+  <data name="MainWindow_General_007" xml:space="preserve">
+    <value>This shortcut is unavailable. Choose another combination. Your current shortcut is still unavailable.</value>
+  </data>
+  <data name="MainWindow_General_008" xml:space="preserve">
+    <value>Could not save the shortcut. Check settings file permissions. Your previous shortcut is preserved.</value>
+  </data>
+  <data name="MainWindow_General_009" xml:space="preserve">
+    <value>Shortcut set · </value>
+  </data>
+  <data name="MainWindow_Ocr_000" xml:space="preserve">
+    <value>Capture OCR · SnapBar</value>
+  </data>
+  <data name="MainWindow_Ocr_001" xml:space="preserve">
+    <value>Correct the recognized text, or select part of it to run an action.</value>
+  </data>
+  <data name="MainWindow_Ocr_002" xml:space="preserve">
+    <value>No text recognized. Capture a clearer area and try again.</value>
+  </data>
+  <data name="MainWindow_Ocr_003" xml:space="preserve">
+    <value>Could not load the OCR engine. Install the Microsoft Visual C++ x64 runtime.</value>
+  </data>
+  <data name="MainWindow_Ocr_004" xml:space="preserve">
+    <value>OCR language models are missing. Extract the complete package again.</value>
+  </data>
+  <data name="MainWindow_Ocr_005" xml:space="preserve">
+    <value>The area is too large or outside the screen. Capture an area within one screen.</value>
+  </data>
+  <data name="MainWindow_Ocr_006" xml:space="preserve">
+    <value>Could not recognize this area. Try capturing it again.</value>
+  </data>
+  <data name="MainWindow_Ocr_007" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="MainWindow_Ocr_008" xml:space="preserve">
+    <value>Copied.</value>
+  </data>
+  <data name="MainWindow_Ocr_009" xml:space="preserve">
+    <value>Clipboard is busy. Try again in a moment.</value>
+  </data>
+  <data name="MainWindow_Ocr_010" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="MainWindow_Ocr_011" xml:space="preserve">
+    <value>Could not search this text. Shorten it and try again.</value>
+  </data>
+  <data name="MainWindow_Ocr_012" xml:space="preserve">
+    <value>Could not open the default browser.</value>
+  </data>
+  <data name="MainWindow_Ocr_013" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MainWindow_Settings_000" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="MainWindow_Settings_001" xml:space="preserve">
+    <value>Toolbar</value>
+  </data>
+  <data name="MainWindow_Settings_002" xml:space="preserve">
+    <value>AI commands</value>
+  </data>
+  <data name="MainWindow_Settings_003" xml:space="preserve">
+    <value>AI services</value>
+  </data>
+  <data name="MainWindow_Settings_004" xml:space="preserve">
+    <value>Compatibility</value>
+  </data>
+  <data name="MainWindow_Settings_005" xml:space="preserve">
+    <value>About and support</value>
+  </data>
+  <data name="MainWindow_Settings_006" xml:space="preserve">
+    <value>SnapBar · Settings</value>
+  </data>
+  <data name="MainWindow_Settings_007" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="MainWindow_Settings_008" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="MainWindow_Settings_009" xml:space="preserve">
+    <value>SnapBar keeps running in the background after you close settings.</value>
+  </data>
+  <data name="MainWindow_Settings_010" xml:space="preserve">
+    <value>← Back to toolbar</value>
+  </data>
+  <data name="MainWindow_Settings_011" xml:space="preserve">
+    <value>Edit search action</value>
+  </data>
+  <data name="MainWindow_Settings_012" xml:space="preserve">
+    <value>Action settings are active but could not be saved. Check permissions or the 64 KiB settings limit.</value>
+  </data>
+  <data name="MainWindow_Settings_013" xml:space="preserve">
+    <value>Selection compatibility mode</value>
+  </data>
+  <data name="MainWindow_Settings_014" xml:space="preserve">
+    <value>Selection compatibility mode</value>
+  </data>
+  <data name="MainWindow_Settings_015" xml:space="preserve">
+    <value>Selection compatibility mode</value>
+  </data>
+  <data name="MainWindow_Settings_016" xml:space="preserve">
+    <value>When native reading is unavailable, temporarily use the clipboard to read text. This may appear in clipboard history.</value>
+  </data>
+  <data name="MainWindow_Settings_017" xml:space="preserve">
+    <value>Sublime support</value>
+  </data>
+  <data name="MainWindow_Settings_018" xml:space="preserve">
+    <value>Sublime support</value>
+  </data>
+  <data name="MainWindow_Settings_019" xml:space="preserve">
+    <value>Sublime support</value>
+  </data>
+  <data name="MainWindow_Settings_020" xml:space="preserve">
+    <value>Requires selection compatibility mode. First-time setup adds guarded copy/cut/paste shortcuts. Your choice is remembered; no plugin is installed.</value>
+  </data>
+  <data name="OcrOverlay_000" xml:space="preserve">
+    <value>Drag to capture text · Esc to cancel</value>
+  </data>
+  <data name="PopupWindow_000" xml:space="preserve">
+    <value>Search actions</value>
+  </data>
+  <data name="PopupWindow_001" xml:space="preserve">
+    <value>Search actions…</value>
+  </data>
+  <data name="PopupWindow_002" xml:space="preserve">
+    <value>Manage / add actions</value>
+  </data>
+  <data name="PopupWindow_003" xml:space="preserve">
+    <value>More actions · Type a name · Up/Down to select · Enter to run · Esc to close</value>
+  </data>
+  <data name="PopupWindow_004" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="PopupWindow_005" xml:space="preserve">
+    <value>Recent</value>
+  </data>
+  <data name="PopupWindow_006" xml:space="preserve">
+    <value>All actions</value>
+  </data>
+  <data name="PopupWindow_007" xml:space="preserve">
+    <value>Search results</value>
+  </data>
+  <data name="PopupWindow_008" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="PopupWindow_009" xml:space="preserve">
+    <value>Pin to toolbar</value>
+  </data>
+  <data name="PopupWindow_010" xml:space="preserve">
+    <value>Toolbar already has {0} pinned actions</value>
+  </data>
+  <data name="PopupWindow_011" xml:space="preserve">
+    <value>Select a complete file or folder path</value>
+  </data>
+  <data name="PopupWindow_012" xml:space="preserve">
+    <value>Select a complete HTTP/HTTPS URL</value>
+  </data>
+  <data name="PopupWindow_013" xml:space="preserve">
+    <value>Selection is too long or search settings are invalid</value>
+  </data>
+  <data name="PopupWindow_014" xml:space="preserve">
+    <value>Source editability is unconfirmed; writing is unavailable</value>
+  </data>
+  <data name="PopupWindow_015" xml:space="preserve">
+    <value>No more actions. Set placement in Manage actions.</value>
+  </data>
+  <data name="PopupWindow_016" xml:space="preserve">
+    <value>No matching action names. Try another search.</value>
+  </data>
+  <data name="PopupWindow_017" xml:space="preserve">
+    <value>{0} characters · Source selection preserved</value>
+  </data>
+  <data name="ScriptDiagnostic_000" xml:space="preserve">
+    <value>The process exited with diagnostic messages. Expand Details to review them.</value>
+  </data>
+  <data name="ScriptDiagnostic_001" xml:space="preserve">
+    <value>This command requires interactive input. Use a version that does not ask for confirmation or input.</value>
+  </data>
+  <data name="ScriptDiagnostic_002" xml:space="preserve">
+    <value>This command requires interactive confirmation. In Windows PowerShell, curl is an alias; use curl.exe instead.</value>
+  </data>
+  <data name="ScriptDiagnostic_003" xml:space="preserve">
+    <value>Action: {0}</value>
+  </data>
+  <data name="ScriptDiagnostic_004" xml:space="preserve">
+    <value>Runtime: {0}</value>
+  </data>
+  <data name="ScriptDiagnostic_005" xml:space="preserve">
+    <value>Status: {0}</value>
+  </data>
+  <data name="ScriptDiagnostic_006" xml:space="preserve">
+    <value>Exit code: {0}</value>
+  </data>
+  <data name="ScriptDiagnostic_007" xml:space="preserve">
+    <value>The process timed out. Content captured before stopping is preserved below.</value>
+  </data>
+  <data name="ScriptDiagnostic_008" xml:space="preserve">
+    <value>Output exceeded 262,144 characters per stream. The process was stopped.</value>
+  </data>
+  <data name="ScriptDiagnostic_009" xml:space="preserve">
+    <value>Standard output was truncated. The content below is incomplete.</value>
+  </data>
+  <data name="ScriptDiagnostic_010" xml:space="preserve">
+    <value>Standard error was truncated. The content below is incomplete.</value>
+  </data>
+  <data name="ScriptDiagnostic_011" xml:space="preserve">
+    <value>Some streams could not be fully read. Only captured content appears below.</value>
+  </data>
+  <data name="ScriptDiagnostic_012" xml:space="preserve">
+    <value>Standard error (stderr)</value>
+  </data>
+  <data name="ScriptDiagnostic_013" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="ScriptDiagnostic_014" xml:space="preserve">
+    <value>Standard output (stdout)</value>
+  </data>
+  <data name="ScriptDiagnostic_015" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="ScriptDiagnostic_016" xml:space="preserve">
+    <value>Raw standard error (CLIXML)</value>
+  </data>
+  <data name="ScriptDiagnostic_017" xml:space="preserve">
+    <value>Execution completed.</value>
+  </data>
+  <data name="ScriptDiagnostic_018" xml:space="preserve">
+    <value>Execution canceled.</value>
+  </data>
+  <data name="ScriptDiagnostic_019" xml:space="preserve">
+    <value>Execution timed out and the process was stopped. Check whether the command waits for input, or adjust the timeout in Advanced settings.</value>
+  </data>
+  <data name="ScriptDiagnostic_020" xml:space="preserve">
+    <value>Could not find or start the runtime. Set the full path to a working .exe in Advanced settings.</value>
+  </data>
+  <data name="ScriptDiagnostic_021" xml:space="preserve">
+    <value>Output exceeded the size limit and execution stopped. Reduce command output; captured content is available in Details.</value>
+  </data>
+  <data name="ScriptDiagnostic_022" xml:space="preserve">
+    <value>Invalid action settings. Check the name, script, runtime, and timeout.</value>
+  </data>
+  <data name="ScriptDiagnostic_023" xml:space="preserve">
+    <value>Script failed. Expand Details to review the original error and location.</value>
+  </data>
+  <data name="SearchSettingsPanel_000" xml:space="preserve">
+    <value>Search settings</value>
+  </data>
+  <data name="SearchSettingsPanel_001" xml:space="preserve">
+    <value>Save search settings</value>
+  </data>
+  <data name="SearchSettingsPanel_002" xml:space="preserve">
+    <value>Discard changes</value>
+  </data>
+  <data name="SearchSettingsPanel_003" xml:space="preserve">
+    <value>Reset to Google default</value>
+  </data>
+  <data name="SearchSettingsPanel_004" xml:space="preserve">
+    <value>Search engine</value>
+  </data>
+  <data name="SearchSettingsPanel_005" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="SearchSettingsPanel_006" xml:space="preserve">
+    <value>Search engine</value>
+  </data>
+  <data name="SearchSettingsPanel_007" xml:space="preserve">
+    <value>Search URL</value>
+  </data>
+  <data name="SearchSettingsPanel_008" xml:space="preserve">
+    <value>Place {query} in a URL query parameter value. Selected text is encoded automatically.</value>
+  </data>
+  <data name="SearchSettingsPanel_009" xml:space="preserve">
+    <value>Search URL template</value>
+  </data>
+  <data name="SearchSettingsPanel_010" xml:space="preserve">
+    <value>Unsaved</value>
+  </data>
+  <data name="SearchSettingsPanel_011" xml:space="preserve">
+    <value>Invalid search URL. Use HTTP/HTTPS with one {query} in a query parameter value.</value>
+  </data>
+  <data name="SearchSettingsPanel_012" xml:space="preserve">
+    <value>Could not save search settings. Your changes are preserved; check permissions or settings size.</value>
+  </data>
+  <data name="SearchSettingsPanel_013" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="SelectionController_Ai_000" xml:space="preserve">
+    <value>AI service has not initialized.</value>
+  </data>
+  <data name="SelectionController_Ai_001" xml:space="preserve">
+    <value>AI panel opened. Text is sent only after you choose a command.</value>
+  </data>
+  <data name="SelectionController_000" xml:space="preserve">
+    <value>Waiting for the app's selection interface…</value>
+  </data>
+  <data name="SelectionController_001" xml:space="preserve">
+    <value>Sublime compatibility · {0} characters · {1} · Clipboard restored · {2} ms</value>
+  </data>
+  <data name="SelectionController_002" xml:space="preserve">
+    <value>Selection compatibility · {0} characters · Writing unavailable · Clipboard restored · {1} ms</value>
+  </data>
+  <data name="SelectionController_003" xml:space="preserve">
+    <value>Captured {0} characters · {1} · {2} ms (UIA {3} ms{4})</value>
+  </data>
+  <data name="SelectionController_004" xml:space="preserve">
+    <value>Copied {0} characters</value>
+  </data>
+  <data name="SelectionController_005" xml:space="preserve">
+    <value>Asked File Explorer to reveal the item.</value>
+  </data>
+  <data name="SelectionController_006" xml:space="preserve">
+    <value>Search opened in your default browser.</value>
+  </data>
+  <data name="SelectionController_007" xml:space="preserve">
+    <value>Link opened in your default browser.</value>
+  </data>
+  <data name="SelectionController_008" xml:space="preserve">
+    <value>Cut command sent (check the result in the original app)</value>
+  </data>
+  <data name="SelectionController_009" xml:space="preserve">
+    <value>Paste command sent (check the result in the original app)</value>
+  </data>
+  <data name="SelectionController_010" xml:space="preserve">
+    <value>No selected text found. Select text and try again.</value>
+  </data>
+  <data name="SelectionController_011" xml:space="preserve">
+    <value>This control's selection interface is not available yet. Wait briefly and select text again.</value>
+  </data>
+  <data name="SelectionController_012" xml:space="preserve">
+    <value>Selection actions are unavailable in password fields.</value>
+  </data>
+  <data name="SelectionController_013" xml:space="preserve">
+    <value>Selection reading timed out and stopped. Select text again.</value>
+  </data>
+  <data name="SelectionController_014" xml:space="preserve">
+    <value>The target or selection changed. Action canceled.</value>
+  </data>
+  <data name="SelectionController_015" xml:space="preserve">
+    <value>Editability could not be confirmed. Writing canceled.</value>
+  </data>
+  <data name="SelectionController_016" xml:space="preserve">
+    <value>This action is unsupported and was canceled.</value>
+  </data>
+  <data name="SelectionController_017" xml:space="preserve">
+    <value>The selection is not a complete HTTP/HTTPS URL.</value>
+  </data>
+  <data name="SelectionController_018" xml:space="preserve">
+    <value>Search URL settings are invalid. Correct them or restore defaults in Settings.</value>
+  </data>
+  <data name="SelectionController_019" xml:space="preserve">
+    <value>The search or link URL is too long. Shorten the selection and try again.</value>
+  </data>
+  <data name="SelectionController_020" xml:space="preserve">
+    <value>Could not open the default browser. Check Windows default browser settings.</value>
+  </data>
+  <data name="SelectionController_021" xml:space="preserve">
+    <value>The selection is not a supported complete file path.</value>
+  </data>
+  <data name="SelectionController_022" xml:space="preserve">
+    <value>Item was not found or cannot be accessed. File Explorer was not opened.</value>
+  </data>
+  <data name="SelectionController_023" xml:space="preserve">
+    <value>Could not reveal the item in File Explorer. Try again later.</value>
+  </data>
+  <data name="SelectionController_024" xml:space="preserve">
+    <value>Path lookup timed out and stopped.</value>
+  </data>
+  <data name="SelectionController_025" xml:space="preserve">
+    <value>Action canceled.</value>
+  </data>
+  <data name="SelectionController_026" xml:space="preserve">
+    <value>Release Ctrl, Alt, Shift, and other modifier keys first.</value>
+  </data>
+  <data name="SelectionController_027" xml:space="preserve">
+    <value>Input was not fully sent. Check the target app's permissions.</value>
+  </data>
+  <data name="SelectionController_028" xml:space="preserve">
+    <value>Paste currently requires text in the clipboard.</value>
+  </data>
+  <data name="SelectionController_029" xml:space="preserve">
+    <value>Another app is using the clipboard. Try again in a moment.</value>
+  </data>
+  <data name="SelectionController_030" xml:space="preserve">
+    <value>Sublime compatibility reading is off. Enable Selection compatibility mode and Sublime support in Settings.</value>
+  </data>
+  <data name="SelectionController_031" xml:space="preserve">
+    <value>Selection compatibility mode is off. Enable it in Settings.</value>
+  </data>
+  <data name="SelectionController_032" xml:space="preserve">
+    <value>Could not verify this control's selection. Action was not performed.</value>
+  </data>
+  <data name="SelectionController_033" xml:space="preserve">
+    <value>Compatibility shortcuts are missing or changed. Turn compatibility mode off and on again.</value>
+  </data>
+  <data name="SelectionController_034" xml:space="preserve">
+    <value>Sublime did not return a single selection. Select text and check loaded settings and shortcut conflicts.</value>
+  </data>
+  <data name="SelectionController_035" xml:space="preserve">
+    <value>The clipboard contains a special format that cannot be backed up. Copy was not triggered.</value>
+  </data>
+  <data name="SelectionController_036" xml:space="preserve">
+    <value>Clipboard backup is still unavailable after retrying. Original contents are preserved; selection was not read.</value>
+  </data>
+  <data name="SelectionController_037" xml:space="preserve">
+    <value>Clipboard backup failed. Copy was not triggered.</value>
+  </data>
+  <data name="SelectionController_038" xml:space="preserve">
+    <value>Clipboard backup exceeds 64 MB. Copy was not triggered.</value>
+  </data>
+  <data name="SelectionController_039" xml:space="preserve">
+    <value>The clipboard changed during reading. Canceled and preserved its current contents.</value>
+  </data>
+  <data name="SelectionController_040" xml:space="preserve">
+    <value>Another process took ownership of the clipboard. Canceled and preserved the new contents.</value>
+  </data>
+  <data name="SelectionController_041" xml:space="preserve">
+    <value>A new operation arrived during reading. This selection was canceled.</value>
+  </data>
+  <data name="SelectionController_042" xml:space="preserve">
+    <value>Clipboard restoration failed. Check the current clipboard contents.</value>
+  </data>
+  <data name="SelectionController_043" xml:space="preserve">
+    <value>Selection exceeds the 32,768-character / 16-range limit.</value>
+  </data>
+  <data name="SelectionController_044" xml:space="preserve">
+    <value>The previous read is still pending. Select text again.</value>
+  </data>
+  <data name="SelectionController_045" xml:space="preserve">
+    <value>Action did not finish ({0}). The original app was not modified.</value>
+  </data>
+  <data name="SelectionController_046" xml:space="preserve">
+    <value>Selection wait canceled. Select text again.</value>
+  </data>
+  <data name="SelectionController_CustomActions_000" xml:space="preserve">
+    <value>Custom URL opened in the default browser.</value>
+  </data>
+  <data name="SelectionController_CustomActions_001" xml:space="preserve">
+    <value>Running custom action…</value>
+  </data>
+  <data name="SelectionController_CustomActions_002" xml:space="preserve">
+    <value>Custom action completed.</value>
+  </data>
+  <data name="SelectionController_CustomActions_003" xml:space="preserve">
+    <value>Custom action result copied.</value>
+  </data>
+  <data name="SelectionController_CustomActions_004" xml:space="preserve">
+    <value>Custom action did not finish. Check its settings or runtime.</value>
+  </data>
+  <data name="SelectionController_CustomActions_005" xml:space="preserve">
+    <value>Result displayed. It can be applied only while the original selection remains valid.</value>
+  </data>
+  <data name="SelectionController_CustomActions_006" xml:space="preserve">
+    <value>Result is empty. Original text is preserved; review the result window.</value>
+  </data>
+  <data name="SelectionController_CustomActions_007" xml:space="preserve">
+    <value>Result copied and paste command sent (check the original app).</value>
+  </data>
+  <data name="SelectionController_Dictionary_000" xml:space="preserve">
+    <value>Import a StarDict dictionary first.</value>
+  </data>
+  <data name="SelectionController_Dictionary_001" xml:space="preserve">
+    <value>No dictionary is enabled. Select sources in Manage dictionaries.</value>
+  </data>
+  <data name="SelectionController_Dictionary_002" xml:space="preserve">
+    <value>Some dictionaries could not be read. Import them again in Manage dictionaries.</value>
+  </data>
+  <data name="SelectionController_Dictionary_003" xml:space="preserve">
+    <value>Could not read the offline dictionary. Import it again.</value>
+  </data>
+  <data name="SelectionController_Dictionary_004" xml:space="preserve">
+    <value>No dictionary entry found.</value>
+  </data>
+  <data name="SelectionController_Dictionary_005" xml:space="preserve">
+    <value>Look up</value>
+  </data>
+  <data name="SelectionController_Dictionary_006" xml:space="preserve">
+    <value>Manage dictionaries</value>
+  </data>
+  <data name="SelectionController_Dictionary_007" xml:space="preserve">
+    <value>Import dictionary</value>
+  </data>
+  <data name="SettingsSupportPage_000" xml:space="preserve">
+    <value>Quit SnapBar</value>
+  </data>
+  <data name="SettingsSupportPage_001" xml:space="preserve">
+    <value>Unknown version</value>
+  </data>
+  <data name="SettingsSupportPage_002" xml:space="preserve">
+    <value>Version </value>
+  </data>
+  <data name="SettingsSupportPage_003" xml:space="preserve">
+    <value>SnapBar keeps running after you close the window. Return to settings from the tray icon; choose Quit SnapBar to exit fully.</value>
+  </data>
+  <data name="SettingsSupportPage_004" xml:space="preserve">
+    <value>Open test window</value>
+  </data>
+  <data name="SettingsSupportPage_005" xml:space="preserve">
+    <value>Initializing…</value>
+  </data>
+  <data name="SettingsSupportPage_006" xml:space="preserve">
+    <value>Full version: </value>
+  </data>
+  <data name="SettingsSupportPage_007" xml:space="preserve">
+    <value>Diagnostics and tests</value>
+  </data>
+  <data name="TrayIcon_000" xml:space="preserve">
+    <value>Open settings</value>
+  </data>
+  <data name="TrayIcon_001" xml:space="preserve">
+    <value>Enable automatic detection</value>
+  </data>
+  <data name="TrayIcon_002" xml:space="preserve">
+    <value>Quit SnapBar</value>
+  </data>
+  <data name="TrayIcon_003" xml:space="preserve">
+    <value>SnapBar · Shortcuts only</value>
+  </data>
+  <data name="TrayIcon_004" xml:space="preserve">
+    <value>Pause automatic detection</value>
+  </data>
+  <data name="TrayIcon_005" xml:space="preserve">
+    <value>Enable automatic detection</value>
+  </data>
+  <data name="TrayIcon_006" xml:space="preserve">
+    <value>SnapBar · Automatic detection on</value>
+  </data>
+  <data name="TrayIcon_007" xml:space="preserve">
+    <value>SnapBar · Shortcuts only</value>
+  </data>
+  <data name="TrayIcon_008" xml:space="preserve">
+    <value>Capture OCR</value>
+  </data>
+  <data name="TrayIcon_009" xml:space="preserve">
+    <value>SnapBar is ready in the background</value>
+  </data>
+  <data name="TrayIcon_010" xml:space="preserve">
+    <value>Click the tray icon to open settings. Right-click it and choose Quit SnapBar to exit.</value>
+  </data>
+  <data name="ActionEditorWindow_079" xml:space="preserve">
+    <value>Sample test</value>
+  </data>
+  <data name="ActionEditorWindow_080" xml:space="preserve">
+    <value>Selected text not used</value>
+  </data>
+  <data name="MainWindow_Dictionary_024" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="MainWindow_Dictionary_025" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="ScriptDiagnostic_024" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="SelectionController_047" xml:space="preserve">
+    <value>Editable</value>
+  </data>
+  <data name="SelectionController_048" xml:space="preserve">
+    <value>Writing unavailable</value>
+  </data>
+  <data name="SelectionController_049" xml:space="preserve">
+    <value>Editable</value>
+  </data>
+  <data name="SelectionController_050" xml:space="preserve">
+    <value>Read-only</value>
+  </data>
+  <data name="SelectionController_051" xml:space="preserve">
+    <value>Editability unknown</value>
+  </data>
+  <data name="Language_Status" xml:space="preserve">
+    <value>Interface language status</value>
+  </data>
+  <data name="Language_SaveFailed" xml:space="preserve">
+    <value>Could not save the language preference. Your previous language is unchanged. Check settings file permissions and try again.</value>
+  </data>
+  <data name="Validation_Unknown" xml:space="preserve">
+    <value>Could not complete this change. Check the settings and try again.</value>
+  </data>
+  <data name="Validation_action-id-invalid" xml:space="preserve">
+    <value>The action ID is invalid.</value>
+  </data>
+  <data name="Validation_action-name-invalid" xml:space="preserve">
+    <value>Enter a name of 1–32 characters without control characters.</value>
+  </data>
+  <data name="Validation_action-kind-invalid" xml:space="preserve">
+    <value>The action type or output handling is invalid.</value>
+  </data>
+  <data name="Validation_action-timeout-invalid" xml:space="preserve">
+    <value>Set a timeout from 1 to 300 seconds.</value>
+  </data>
+  <data name="Validation_action-content-invalid" xml:space="preserve">
+    <value>Enter content of 1–32,768 characters.</value>
+  </data>
+  <data name="Validation_action-interpreter-invalid" xml:space="preserve">
+    <value>The runtime path is invalid.</value>
+  </data>
+  <data name="Validation_action-selection-required" xml:space="preserve">
+    <value>URL actions must use selected text.</value>
+  </data>
+  <data name="Validation_action-template-invalid" xml:space="preserve">
+    <value>Use HTTP or HTTPS with exactly one *** in the path, query, or fragment.</value>
+  </data>
+  <data name="Validation_action-import-too-large" xml:space="preserve">
+    <value>The import file is too large.</value>
+  </data>
+  <data name="Validation_action-import-version" xml:space="preserve">
+    <value>This action file version is not supported.</value>
+  </data>
+  <data name="Validation_action-import-invalid" xml:space="preserve">
+    <value>The action file format is invalid.</value>
+  </data>
+  <data name="Validation_action-import-duplicate-field" xml:space="preserve">
+    <value>The action file contains duplicate fields.</value>
+  </data>
+  <data name="Validation_action-settings-invalid" xml:space="preserve">
+    <value>The action settings are invalid.</value>
+  </data>
+  <data name="Validation_action-id-duplicate" xml:space="preserve">
+    <value>Action IDs must be unique.</value>
+  </data>
+  <data name="Validation_action-custom-limit" xml:space="preserve">
+    <value>You can have up to {0} custom actions. Remove an unused action first.</value>
+  </data>
+  <data name="Validation_action-layout-invalid" xml:space="preserve">
+    <value>The action layout is invalid.</value>
+  </data>
+  <data name="Validation_action-bar-limit" xml:space="preserve">
+    <value>The toolbar can hold {0} actions. Move one out first.</value>
+  </data>
+  <data name="Validation_action-recent-invalid" xml:space="preserve">
+    <value>Recent actions are invalid.</value>
+  </data>
+  <data name="Validation_action-not-found" xml:space="preserve">
+    <value>The custom action was not found.</value>
+  </data>
+  <data name="Validation_action-restore-limit" xml:space="preserve">
+    <value>There are already {0} custom actions. Remove one before restoring.</value>
+  </data>
+  <data name="Validation_action-restore-duplicate" xml:space="preserve">
+    <value>This action already exists and cannot be restored.</value>
+  </data>
+  <data name="Validation_ai-profile-invalid" xml:space="preserve">
+    <value>The provider profile is invalid.</value>
+  </data>
+  <data name="Validation_ai-endpoint-invalid" xml:space="preserve">
+    <value>Use a full HTTPS endpoint or loopback HTTP endpoint without credentials, query, or fragment.</value>
+  </data>
+  <data name="Validation_ai-model-invalid" xml:space="preserve">
+    <value>Enter a model name of up to 128 characters.</value>
+  </data>
+  <data name="Validation_ai-settings-invalid" xml:space="preserve">
+    <value>The AI settings are invalid.</value>
+  </data>
+  <data name="Validation_ai-profile-unknown" xml:space="preserve">
+    <value>Choose an existing AI service.</value>
+  </data>
+  <data name="Validation_ai-prompt-invalid" xml:space="preserve">
+    <value>Check the command name, instructions, category, keywords, and icon.</value>
+  </data>
+  <data name="Validation_ai-prompt-not-found" xml:space="preserve">
+    <value>This AI command was not found. Select it again.</value>
+  </data>
+  <data name="Validation_ai-prompt-duplicate" xml:space="preserve">
+    <value>An AI command with this ID already exists and cannot be restored.</value>
+  </data>
+  <data name="Validation_ai-prompt-limit" xml:space="preserve">
+    <value>The {0}-command limit was reached. Remove an unused command before restoring.</value>
+  </data>
+  <data name="Action_copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Action_cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Action_paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="Action_search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Action_link" xml:space="preserve">
+    <value>Open link</value>
+  </data>
+  <data name="Action_path" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="Action_ai" xml:space="preserve">
+    <value>AI rewrite</value>
+  </data>
+  <data name="Action_lookup" xml:space="preserve">
+    <value>Look up</value>
+  </data>
+  <data name="Action_Gmail" xml:space="preserve">
+    <value>Search Gmail</value>
+  </data>
+  <data name="Action_PublicIp" xml:space="preserve">
+    <value>Get public IP</value>
+  </data>
+  <data name="Prompt_grammar" xml:space="preserve">
+    <value>Correct grammar and spelling</value>
+  </data>
+  <data name="Prompt_improve" xml:space="preserve">
+    <value>Improve writing</value>
+  </data>
+  <data name="Prompt_shorten" xml:space="preserve">
+    <value>Shorten</value>
+  </data>
+  <data name="Prompt_summary" xml:space="preserve">
+    <value>Summarize</value>
+  </data>
+  <data name="Prompt_translate-en" xml:space="preserve">
+    <value>Translate to English</value>
+  </data>
+  <data name="Category_Writing" xml:space="preserve">
+    <value>Writing</value>
+  </data>
+  <data name="Category_Reading" xml:space="preserve">
+    <value>Reading</value>
+  </data>
+  <data name="Category_Translation" xml:space="preserve">
+    <value>Translation</value>
+  </data>
+  <data name="Provider_Compatible" xml:space="preserve">
+    <value>Custom compatible service</value>
+  </data>
+  <data name="Ai_Original" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="Ai_Version" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="Runtime_DefaultMissing" xml:space="preserve">
+    <value>The default {0} runtime was not found.</value>
+  </data>
+  <data name="Runtime_PathInvalid" xml:space="preserve">
+    <value>The runtime must be an existing .exe at a full path: {0}</value>
+  </data>
+  <data name="Dictionary_EnableName" xml:space="preserve">
+    <value>Enable “{0}”</value>
+  </data>
+  <data name="Dictionary_RemoveName" xml:space="preserve">
+    <value>Remove “{0}”</value>
+  </data>
+  <data name="Selection_Attempts" xml:space="preserve">
+    <value>, {0} attempts</value>
+  </data>
+  <data name="Ui_Combine" xml:space="preserve">
+    <value>{0}{1}</value>
+  </data>
+  <data name="Ui_NameAction" xml:space="preserve">
+    <value>{1} {0}</value>
+  </data>
+  <data name="Validation_dictionary-ifo-required" xml:space="preserve">
+    <value>Select a StarDict .ifo file.</value>
+  </data>
+  <data name="Validation_dictionary-stored-format-invalid" xml:space="preserve">
+    <value>The saved dictionary format is invalid. Import it again.</value>
+  </data>
+  <data name="Validation_dictionary-stored-data-invalid" xml:space="preserve">
+    <value>The saved dictionary is damaged. Import it again.</value>
+  </data>
+  <data name="Validation_dictionary-file-too-large" xml:space="preserve">
+    <value>The dictionary exceeds the file size limit.</value>
+  </data>
+  <data name="Validation_dictionary-expanded-too-large" xml:space="preserve">
+    <value>The dictionary exceeds the uncompressed size limit.</value>
+  </data>
+  <data name="Validation_dictionary-unrecognized" xml:space="preserve">
+    <value>The StarDict dictionary could not be recognized.</value>
+  </data>
+  <data name="Validation_dictionary-format-unsupported" xml:space="preserve">
+    <value>Only StarDict 2.4.2 plain-text definitions and phonetics are supported.</value>
+  </data>
+  <data name="Validation_dictionary-empty" xml:space="preserve">
+    <value>The dictionary has no usable plain-text definitions.</value>
+  </data>
+  <data name="Validation_dictionary-definition-unsupported" xml:space="preserve">
+    <value>The dictionary contains an unsupported definition format.</value>
+  </data>
+  <data name="Validation_dictionary-list-changed" xml:space="preserve">
+    <value>The dictionary list changed. Import the dictionary again.</value>
+  </data>
+  <data name="Validation_dictionary-removed" xml:space="preserve">
+    <value>The dictionary has been removed.</value>
+  </data>
+  <data name="Validation_dictionary-count-limit" xml:space="preserve">
+    <value>You can import up to {0} dictionaries.</value>
+  </data>
+  <data name="Validation_dictionary-list-too-large" xml:space="preserve">
+    <value>The dictionary list exceeds the size limit.</value>
+  </data>
+  <data name="Validation_dictionary-index-invalid" xml:space="preserve">
+    <value>The dictionary index or entries are damaged. Check that all files belong to the same dictionary.</value>
+  </data>
+  <data name="Validation_dictionary-manifest-invalid" xml:space="preserve">
+    <value>The dictionary list is damaged. Restore a backup of library.json.</value>
+  </data>
+</root>

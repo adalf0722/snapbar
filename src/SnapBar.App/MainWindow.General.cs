@@ -21,12 +21,12 @@ public sealed partial class MainWindow
 
     private string? SaveShortcut(TextAction? action, HotkeySettings? value)
     {
-        if (controller == null || exitRequested) return "輸入監聽尚未就緒，請重新啟動 SnapBar。";
+        if (controller == null || exitRequested) return UiText.Get("MainWindow_General_000");
         if (value != null && ((action != null && value == preferences.Hotkey)
             || (action != TextAction.Search && value == preferences.SearchHotkey)
             || (action != TextAction.Copy && value == preferences.CopyHotkey)
             || (action != TextAction.Ocr && value == preferences.OcrHotkey)))
-            return "SnapBar 已使用這組快捷鍵，請換一組。";
+            return UiText.Get("MainWindow_General_001");
         if (action == null) return SaveHotkey(value!);
         var updated = action switch
         {
@@ -38,30 +38,30 @@ public sealed partial class MainWindow
         try
         {
             if (!controller.TryChangeActionHotkey(action.Value, value, () => settingsStore.Save(updated)))
-                return "這組快捷鍵無法使用，請換一組。原設定已保留。";
+                return UiText.Get("MainWindow_General_002");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-        { return "無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。"; }
+        { return UiText.Get("MainWindow_General_003"); }
         preferences = updated;
         return null;
     }
 
     private string? SaveHotkey(HotkeySettings value)
     {
-        if (controller == null || exitRequested) return "輸入監聽尚未就緒，請重新啟動 SnapBar。";
-        if (!value.IsValid) return "這組快捷鍵不支援，請換一組。";
+        if (controller == null || exitRequested) return UiText.Get("MainWindow_General_004");
+        if (!value.IsValid) return UiText.Get("MainWindow_General_005");
         var updated = preferences with { Hotkey = value };
         try
         {
             if (!controller.TryChangeHotkey(value, () => settingsStore.Save(updated)))
-                return controller.HotkeyRegistered ? "這組快捷鍵無法使用，請換一組。原快捷鍵仍有效。"
-                    : "這組快捷鍵無法使用，請換一組。目前快捷鍵仍不可用。";
+                return controller.HotkeyRegistered ? UiText.Get("MainWindow_General_006")
+                    : UiText.Get("MainWindow_General_007");
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
-        { return "無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。"; }
+        { return UiText.Get("MainWindow_General_008"); }
         preferences = updated; UpdateAutomaticControls();
         if (hotkeyNotice) { notice.Visibility = System.Windows.Visibility.Collapsed; hotkeyNotice = false; }
-        AddStatus("快捷鍵已設定 · " + value.Display);
+        AddStatus(UiText.Join(UiText.Get("MainWindow_General_009"), value.Display));
         return null;
     }
 
