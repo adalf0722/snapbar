@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'auto-release-common.ps1')
+. (Join-Path $PSScriptRoot 'release-notes.ps1')
 $run = New-SnapBarRun 'auto-release-tests'
 $script:autoPassed = 0
 function Check-Auto([string]$Name, [scriptblock]$Test) {
@@ -71,7 +72,6 @@ function gh {
             return '[' + (ConvertTo-Json -InputObject $listed -Depth 12 -Compress) + ']'
         }
         if ($endpoint -like '*/git/matching-refs/*') { return ConvertTo-Json -InputObject @($global:SnapBarFixtureTags) -Compress }
-        if ($endpoint -like '*/releases/generate-notes') { return '{"body":"Controlled generated changes"}' }
         if ($endpoint -like '*/commits/*') { return '{"sha":"different-source"}' }
         if ($endpoint -eq 'repos/fixture/repo/releases' -and $arguments[2] -eq 'POST') {
             $version = ($arguments | Where-Object { $_ -like 'tag_name=*' }) -replace '^tag_name=', ''
@@ -95,16 +95,87 @@ function gh {
     }
     throw "Unexpected fake GitHub call: $arguments"
 }
-$commit = 'a' * 40
+$source = Join-Path $run 'source'
+$null = New-Item -ItemType Directory -Path $source
+function Invoke-NotesFixtureGit([string[]]$Arguments) {
+    return Invoke-SnapBarNotesGit $source $Arguments
+}
+function Write-NotesFixture([string]$Path, [string]$Content) {
+    $full = Join-Path $source $Path
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path $full -Parent)
+    [IO.File]::WriteAllText($full, $Content, [Text.UTF8Encoding]::new($false))
+}
+function Save-NotesFixture {
+    $null = Invoke-NotesFixtureGit @('add', '-A')
+    $null = Invoke-NotesFixtureGit @('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'core.hooksPath=', 'commit', '-qm', 'fixture')
+    return Invoke-NotesFixtureGit @('rev-parse', 'HEAD')
+}
+$null = Invoke-NotesFixtureGit @('init', '-q')
+Write-NotesFixture 'src/app.txt' 'old desktop'
+$base = Save-NotesFixture
+$null = Invoke-NotesFixtureGit @('tag', 'v0.1.0-rc.4')
+Write-NotesFixture 'src/app.txt' 'new desktop'
+$missing = Save-NotesFixture
+Check-Auto 'desktop changes without notes fail instead of publishing an empty changelog' {
+    Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $missing -PreviousTag v0.1.0-rc.4 }
+}
+$validNote = '{"title":"離線查詞","summary":"閱讀時查看釋義。","highlights":["多本詞典一起查詢。"],"usage":"先匯入自己的詞典。"}'
+Write-NotesFixture 'release-notes/lookup.json' $validNote
+$commit = Save-NotesFixture
+Check-Auto 'notes use the exact source commit and retain Traditional Chinese' {
+    Write-NotesFixture 'release-notes/lookup.json' 'invalid working copy'
+    $content = Get-SnapBarReleaseContent -Root $source -Commit $commit -PreviousTag v0.1.0-rc.4
+    Assert-Auto ($content.Contains('離線查詞') -and $content.Contains('先匯入自己的詞典。'))
+    Write-NotesFixture 'release-notes/lookup.json' $validNote
+    Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $commit -PreviousTag nonexistent }
+    Assert-Auto ((Get-SnapBarReleaseContent -Root $source -Commit $commit).Contains('離線查詞'))
+}
+Check-Auto 'invalid and placeholder notes are rejected' {
+    Reject-Auto { ConvertFrom-SnapBarReleaseNote '{}' 'fixture.json' }
+    Reject-Auto { ConvertFrom-SnapBarReleaseNote ($validNote.Replace('離線查詞', 'TODO')) 'fixture.json' }
+    Reject-Auto { ConvertFrom-SnapBarReleaseNote ($validNote.Replace('["多本詞典一起查詢。"]', '[]')) 'fixture.json' }
+}
+Check-Auto 'website and tooling changes explicitly say there are no desktop feature updates' {
+    $null = Invoke-NotesFixtureGit @('tag', 'notes-baseline', $commit)
+    Write-NotesFixture 'site/index.html' 'website update'
+    Write-NotesFixture 'scripts/build.ps1' '# tooling update'
+    $maintenance = Save-NotesFixture
+    $content = Get-SnapBarReleaseContent -Root $source -Commit $maintenance -PreviousTag notes-baseline
+    Assert-Auto ($content.Contains('本次沒有桌面功能更新') -and $content.Contains('網站') -and $content.Contains('發布工具') -and -not $content.Contains('離線查詞'))
+}
+Check-Auto 'old notes cannot silently cover new desktop changes' {
+    Write-NotesFixture 'src/app.txt' 'another desktop change'
+    $uncovered = Save-NotesFixture
+    Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $uncovered -PreviousTag notes-baseline }
+    $null = Invoke-NotesFixtureGit @('tag', 'future', $uncovered)
+    Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $commit -PreviousTag future }
+}
+Check-Auto 'new malformed committed notes block publication' {
+    Write-NotesFixture 'release-notes/broken.json' '{invalid json'
+    $broken = Save-NotesFixture
+    Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $broken -PreviousTag notes-baseline }
+}
 function Invoke-AutoPublishFixture {
-    & (Join-Path $PSScriptRoot 'publish-auto-release.ps1') -Version v0.1.0-rc.5 -Commit $commit -PackageDirectory $run -PreviousTag v0.1.0-rc.4 -Repository fixture/repo -RunId 123
+    & (Join-Path $PSScriptRoot 'publish-auto-release.ps1') -Version v0.1.0-rc.5 -Commit $commit -PackageDirectory $run -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo -RunId 123
 }
 try {
+    Check-Auto 'missing release notes block publishing before any GitHub write' {
+        $global:SnapBarFixtureCommands.Clear()
+        Reject-Auto {
+            & (Join-Path $PSScriptRoot 'publish-auto-release.ps1') -Version v0.1.0-rc.5 -Commit $missing -PackageDirectory $run -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo -RunId 123
+        }
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+    }
     Check-Auto 'publisher stages complete assets even when its new draft is absent from the release list' {
         $global:SnapBarFixtureHideDraft = $true
         try { Invoke-AutoPublishFixture } finally { $global:SnapBarFixtureHideDraft = $false }
         Assert-Auto (-not $global:SnapBarFixtureRelease.draft -and $global:SnapBarFixtureRelease.assets.Count -eq 2)
-        Assert-Auto ($global:SnapBarFixtureRelease.body.Contains("<!-- snapbar-source: $commit -->") -and $global:SnapBarFixtureRelease.body.Contains('Controlled generated changes'))
+        $body = $global:SnapBarFixtureRelease.body
+        Assert-Auto ($body.Contains("<!-- snapbar-source: $commit -->") -and $body.Contains('離線查詞'))
+        Assert-Auto ($body.IndexOf('## 本次更新') -lt $body.IndexOf('## 下載與更新'))
+        Assert-Auto ($body.Contains('https://github.com/fixture/repo/releases/download/v0.1.0-rc.5/SnapBar-v0.1.0-rc.5-win-x64.zip'))
+        Assert-Auto ($body.Contains('compare/v0.1.0-rc.4...v0.1.0-rc.5') -and $body.Contains('<details>'))
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like '*generate-notes*' }).Count)
         Assert-Auto ($global:SnapBarFixtureCommands[$global:SnapBarFixtureCommands.Count - 1] -like 'api --method PATCH repos/fixture/repo/releases/42*')
     }
     Check-Auto 'successful rerun does not create a second Release or overwrite attachments' {

@@ -42,6 +42,8 @@ Clipboard tests temporarily replace clipboard contents; avoid concurrent copying
 
 Use concise, imperative, type-prefixed Conventional Commits. PRs should explain behavior changes, link relevant issues or design notes, list validation performed and remaining limitations, and include screenshots for UI changes.
 
+For desktop behavior or package changes, add a new, uniquely named `release-notes/<date>-<topic>.json` in Traditional Chinese. Include `title`, `summary`, one to three `highlights`, and `usage`; describe user benefits and how to start, including prerequisites. Keep published notes unchanged. Automatic releases collect new notes since the previous published version and reject desktop/package changes without one. See `release-notes/README.md`.
+
 ## Selection Safety
 
 Preserve password-field rejection, foreground/focus revalidation, candidate identity and stale-result cancellation. Generic clipboard compatibility defaults on and must respect persisted preferences; Sublime key bindings require explicit first-time setup and persisted choices must be preserved. Keep selected text and clipboard contents out of logs. Review timeout/lease and action permission changes across Core, Windows, Probe and App together.

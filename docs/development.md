@@ -99,9 +99,11 @@ Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執�
 
 ### 每次 push main 自動發布
 
-`git push origin main` 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。最後自動建立預覽版 Release，附上 ZIP、SHA-256 與 GitHub 自動產生的更新說明，一般使用者直接到 Releases 下載。
+`git push origin main` 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。最後自動建立預覽版 Release，附上 ZIP、SHA-256 與從版本庫彙整的使用者更新說明，一般使用者直接到 Releases 下載。
 
 自動版本固定使用 `v0.1.0-rc.N`，取遠端 tags 與 Releases（含草稿）內同系列最大的整數 N 加一；現有 rc.4 後為 rc.5、rc.6。不同系列與正式版不參與比較，改變系列需另行調整腳本。main push 工作依 concurrency group 序列執行；GitHub 預設只保留一個等待工作，密集連續 push 可能使尚未開始的舊工作被較新的 push 取代。正在執行的工作不會被取消。只有最後發布工作具有 contents write，不需額外 PAT。
+
+發布頁先顯示繁中更新價值及使用方法，再提供直接下載、更新步驟與必要限制；來源 SHA、驗證資訊及完整比較連結放在折疊區。桌面或套件變更需新增 `release-notes/<date>-<topic>.json`，格式與撰寫規則見 [使用者更新說明](../release-notes/README.md)。版本選擇階段以完整 Git 歷史和前一公開 tag 檢查說明，缺漏會在打包前失敗；實際發布亦檢查。純網站、文件或工具變動會明確說明沒有桌面功能更新。既有公開 Release 的文字不會被本次修改追溯覆寫。
 
 發布先建立對應確切 commit 的草稿，完整上傳兩個附件並核對 digest 後才公開，避免只有原始碼或部分附件的公開版本。整條流程在同一個 workflow 完成；GITHUB_TOKEN 建立的 Release 不會再次觸發 release 事件，避免重複打包。
 

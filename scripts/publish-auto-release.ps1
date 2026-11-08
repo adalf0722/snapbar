@@ -3,11 +3,13 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$Commit,
     [Parameter(Mandatory)][string]$PackageDirectory,
     [string]$PreviousTag,
+    [string]$SourceDirectory = (Split-Path $PSScriptRoot -Parent),
     [string]$Repository = $env:GH_REPO,
     [ValidatePattern('^[0-9]+$')][string]$RunId = $env:GITHUB_RUN_ID
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'auto-release-common.ps1')
+. (Join-Path $PSScriptRoot 'release-notes.ps1')
 if (-not $Repository -or -not $RunId) { throw 'Repository and workflow run ID are required.' }
 $archive = Join-Path $PackageDirectory "SnapBar-$Version-win-x64.zip"
 $checksum = "$archive.sha256"
@@ -23,11 +25,11 @@ if ($existing.Count) { $release = $existing[0] }
 else {
     $refs = (Invoke-SnapBarGh @('api', "repos/$Repository/git/matching-refs/tags/$Version")) | ConvertFrom-Json
     if (@($refs | Where-Object { $_.ref -ceq "refs/tags/$Version" }).Count) { throw 'Release tag was reserved by another publisher. Rerun the entire workflow to select a new version.' }
-    $arguments = @('api', '--method', 'POST', "repos/$Repository/releases/generate-notes", '-f', "tag_name=$Version", '-f', "target_commitish=$Commit")
-    if ($PreviousTag) { $arguments += @('-f', "previous_tag_name=$PreviousTag") }
-    $generated = (Invoke-SnapBarGh $arguments) | ConvertFrom-Json
+    $changes = Get-SnapBarReleaseContent -Root $SourceDirectory -Commit $Commit -PreviousTag $PreviousTag
+    $comparison = if ($PreviousTag) { "[$PreviousTag → $Version](https://github.com/$Repository/compare/$PreviousTag...$Version)" }
+        else { "[檢視原始碼](https://github.com/$Repository/tree/$Commit)" }
     $template = [IO.File]::ReadAllText((Join-Path $PSScriptRoot '../packaging/AUTO-RELEASE-NOTES.md'), [Text.Encoding]::UTF8)
-    $notes = $template.Replace('{version}', $Version).Replace('{commit}', $Commit).Replace('{run}', $RunId).Replace('{changes}', $generated.body)
+    $notes = $template.Replace('{version}', $Version).Replace('{commit}', $Commit).Replace('{run}', $RunId).Replace('{repository}', $Repository).Replace('{comparison}', $comparison).Replace('{changes}', $changes)
     $notesPath = Join-Path $PackageDirectory 'release-notes.md'
     [IO.File]::WriteAllText($notesPath, $notes, [Text.UTF8Encoding]::new($false))
     $release = (Invoke-SnapBarGh @('api', '--method', 'POST', "repos/$Repository/releases",

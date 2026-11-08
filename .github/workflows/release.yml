@@ -32,6 +32,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - name: Select a version using published releases and drafts
         id: plan
@@ -42,6 +43,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $plan = ./scripts/resolve-auto-version.ps1
+          . ./scripts/release-notes.ps1
+          $null = Get-SnapBarReleaseContent -Commit $env:GITHUB_SHA -PreviousTag $plan.previousTag
           "version=$($plan.version)" >> $env:GITHUB_OUTPUT
           "previous-tag=$($plan.previousTag)" >> $env:GITHUB_OUTPUT
           Write-Host "Selected automatic prerelease version: $($plan.version)"
@@ -187,6 +190,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/download-artifact@v7
         with:

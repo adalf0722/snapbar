@@ -2,6 +2,7 @@ param([switch]$Staged)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'workflow-checks.ps1')
+. (Join-Path $PSScriptRoot 'release-notes.ps1')
 Push-Location $script:SnapBarRepo
 try {
     if ($Staged) {
@@ -14,7 +15,8 @@ try {
     }
     else { $files = Get-SnapBarFiles; $workflowChanges = $files }
     foreach ($file in $files) {
-        if ($file -notmatch '\.(md|ps1)$') { continue }
+        $releaseNote = $file -match '^release-notes/.*\.json$'
+        if ($file -notmatch '\.(md|ps1)$' -and -not $releaseNote) { continue }
         if ($Staged) {
             $bytes = Read-SnapBarIndexBlob $file
         }
@@ -24,6 +26,10 @@ try {
         }
         $content = ConvertFrom-SnapBarUtf8 $bytes $file
         if ($file -match '\.ps1$') { Assert-SnapBarScript $content $file }
+        if ($releaseNote) {
+            if ($file -cnotmatch '^release-notes/[a-z0-9][a-z0-9-]*\.json$') { throw "Invalid release note filename: $file" }
+            $null = ConvertFrom-SnapBarReleaseNote $content $file
+        }
     }
     & git diff --cached --check
     if ($LASTEXITCODE -ne 0) { throw 'Index whitespace check failed.' }
