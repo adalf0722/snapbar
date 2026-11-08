@@ -76,30 +76,27 @@ public sealed partial class SelectionController
             var result = await runCustom(action, action.UseSelection ? current.Text : "", cancellation.Token);
             if (!Current(current, ticket) || cancellation.IsCancellationRequested) return;
             var diagnostic = ScriptDiagnostic.Create(action, result);
+            SelectionSnapshot? validatedSelection = current;
             if (diagnostic.IsFailure)
             {
-                keepResult = true; ShowDiagnostic(action, result);
+                keepResult = ActionOutputRouter.Route(action.Output, result.Output, true, false, CreateOutputHost());
                 return;
             }
             var final = await ValidateCustomAsync(current, ticket, writes);
             if (!final.Success) { if (generation.IsCurrent(ticket)) Report(final.Status); return; }
+            validatedSelection = final.Selection;
             RememberAction(id);
-            switch (action.Output)
-            {
-                case ActionOutput.None: Status?.Invoke(UiText.Get("SelectionController_CustomActions_002")); break;
-                case ActionOutput.Clipboard:
-                    if (!Current(current, ticket)) return;
-                    Clipboard.SetText(result.Output, TextDataFormat.UnicodeText); Status?.Invoke(UiText.Get("SelectionController_CustomActions_003")); break;
-                case ActionOutput.ReplaceSelection:
-                    if (!TryPasteResult(current, ticket, result.Output)) ShowResult(action, result.Output, current, ticket, false);
-                    break;
-                default:
-                    keepResult = action.Output != ActionOutput.Hud || !string.IsNullOrWhiteSpace(result.Error);
-                    ShowResult(action, result.Output, current, ticket, SessionPolicy.CanWrite(final.Selection, current.Target),
-                        string.IsNullOrWhiteSpace(result.Error) ? null : diagnostic); break;
-            }
-            if (!string.IsNullOrWhiteSpace(result.Error) && action.Output is ActionOutput.None or ActionOutput.Clipboard or ActionOutput.ReplaceSelection)
-            { keepResult = true; ShowDiagnostic(action, result); }
+            keepResult = ActionOutputRouter.Route(action.Output, result.Output, false, !string.IsNullOrWhiteSpace(result.Error), CreateOutputHost());
+
+            ActionOutputHost CreateOutputHost() => new(
+                () => Current(current, ticket) && !cancellation.IsCancellationRequested,
+                () => Status?.Invoke(UiText.Get("SelectionController_CustomActions_002")),
+                text => { Clipboard.SetText(text, TextDataFormat.UnicodeText); Status?.Invoke(UiText.Get("SelectionController_CustomActions_003")); },
+                text => TryPasteResult(current, ticket, text),
+                (text, allowApply) => ShowResult(action, text, current, ticket,
+                    allowApply && SessionPolicy.CanWrite(validatedSelection, current.Target),
+                    allowApply && !string.IsNullOrWhiteSpace(result.Error) ? diagnostic : null),
+                () => ShowDiagnostic(action, result));
         }
         catch (OperationCanceledException) { }
         catch (ExternalException) { Report("clipboard-busy"); }

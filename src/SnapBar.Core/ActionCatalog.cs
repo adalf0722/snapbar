@@ -96,6 +96,27 @@ public static class ActionCatalog
             .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
+    public static IReadOnlyList<ActionItem> GetLocalActions(ActionSettings settings, string query = "")
+    {
+        settings = Normalize(settings);
+        var visible = settings.Layout.Where(e => e.Placement != ActionPlacement.Hidden && e.Id is not ("copy" or "cut" or "paste"))
+            .Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        query = (query ?? "").Trim();
+        return Items(settings).Where(a => visible.Contains(a.Id))
+            .Where(a => (a.Name + " " + a.Id + " " + Aliases(a)).Contains(query, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(a => { int index = Array.IndexOf(settings.RecentIds, a.Id); return index < 0 ? int.MaxValue : index; })
+            .ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    public static bool IsApplicableLocal(ActionItem item, string text) => item.BuiltIn switch
+    {
+        TextAction.Copy or TextAction.Cut or TextAction.Paste => false,
+        TextAction.OpenLink => WebActionPolicy.OpenLink(text).Success,
+        TextAction.RevealPath => PathActionPolicy.Resolve(text).Success,
+        TextAction.Lookup => OfflineDictionary.CanLookup(text),
+        _ => item.Custom is { Kind: not CustomActionKind.Url, UseSelection: false } || !string.IsNullOrWhiteSpace(text)
+    };
+
     private static string Aliases(ActionItem item) => item.Custom?.Kind switch
     {
         CustomActionKind.Url => "url web 網址 網頁", CustomActionKind.PowerShell => "powershell ps 腳本 指令",

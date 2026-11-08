@@ -259,6 +259,7 @@ AppExclusionPolicyTests.Run(Check);
 WebActionPolicyTests.Run(Check);
 PathActionPolicyTests.Run(Check);
 ActionCatalogTests.Run(Check);
+ActionOutputRouterTests.Run(Check);
 OfflineDictionaryTests.Run(Check);
 OfflineDictionaryLibraryTests.Run(Check);
 AiRuntimeTests.Run(Check);

@@ -9,6 +9,34 @@ internal static class ActionCatalogTests
         var target = new TargetIdentity(1, 2, 3);
         var selection = new SelectionSnapshot("s", target, "hello", null, true, 1, 5);
         var settings = new ActionSettings { CustomActions = [action] };
+        check("local menu joins visible placements and excludes editing commands", () =>
+        {
+            var configured = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar);
+            configured = ActionCatalog.SetPlacement(configured, "path", ActionPlacement.Hidden);
+            var ids = ActionCatalog.GetLocalActions(configured).Select(a => a.Id).ToArray();
+            return ids.Contains("search") && ids.Contains(action.Id) && ids.Contains("link")
+                && !ids.Any(id => id is "copy" or "cut" or "paste" or "path");
+        });
+        check("local applicability uses content policies and allows blank no-input scripts", () =>
+        {
+            var items = ActionCatalog.GetLocalActions(new());
+            return !ActionCatalog.IsApplicableLocal(items.Single(a => a.Id == "link"), "bad link")
+                && !ActionCatalog.IsApplicableLocal(items.Single(a => a.Id == "path"), "bad path")
+                && !ActionCatalog.IsApplicableLocal(items.Single(a => a.Id == "lookup"), "123")
+                && ActionCatalog.IsApplicableLocal(items.Single(a => a.Custom is { UseSelection: false }), "");
+        });
+        check("local tickets capture selected or full corrected text and reject stale replacement", () =>
+        {
+            var card = Guid.NewGuid();
+            var selected = LocalActionTicket.Create(card, 1, "corrected text", 10, 4, true);
+            var full = LocalActionTicket.Create(card, 1, "corrected text", 0, 0, true);
+            var independent = LocalActionTicket.Create(card, 1, "corrected text", 10, 4, false);
+            return selected.Input == "text" && full.Input == "corrected text" && independent.Input == ""
+                && selected.TryReplace(card, 1, "corrected text", 10, 4, "word", out var changed) && changed == "corrected word"
+                && !selected.TryReplace(card, 2, "corrected text", 10, 4, "word", out _)
+                && !selected.TryReplace(card, 1, "corrected text", 0, 0, "word", out _)
+                && !selected.TryReplace(Guid.NewGuid(), 1, "corrected text", 10, 4, "word", out _);
+        });
         bool Reject(Action test) { try { test(); return false; } catch (ArgumentException) { return true; } }
         ActionSettings PinFiveMore(ActionSettings value) => ActionCatalog.GetMore(value, selection)
             .Where(item => item.Id != action.Id).Take(5)
