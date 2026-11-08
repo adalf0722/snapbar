@@ -77,7 +77,7 @@ internal static class InterfaceLanguageTest
                 var controller = Field(main, "controller");
                 var tray = (TrayIcon?)Field(main, "tray");
                 var selector = Find<ComboBox>(main, "InterfaceLanguageSelector");
-                Check("language selector offers stable bilingual choices", selector.Items.Cast<string>().SequenceEqual(new[] { "跟隨系統 / System", "繁體中文", "English" }));
+                Check("language selector choices follow Traditional Chinese interface", selector.Items.Cast<string>().SequenceEqual(new[] { "跟隨系統", "繁體中文", "英文" }));
                 var ocrPriority = Find<ComboBox>(main, "OcrLanguagePriority"); ocrPriority.SelectedIndex = 1;
                 var shortcut = Find<ComboBox>(main, "ShortcutTarget"); shortcut.SelectedIndex = 1;
                 main.GeneralPage.BeginRecording(); main.GeneralPage.Record(new(3, 0x4A));
@@ -100,6 +100,10 @@ internal static class InterfaceLanguageTest
                 var scope = UiText.Capture();
                 selector.SelectedIndex = 2;
                 Check("language is saved before settings refresh", new SettingsStore(path).Load().Settings.InterfaceLanguage == "en" && main.Title == "SnapBar · Settings");
+                Check("language selector translates all choices in place without changing the selected preference",
+                    selector.Items.Cast<string>().SequenceEqual(new[] { "System", "Traditional Chinese", "English" })
+                    && selector.SelectedIndex == 2 && new SettingsStore(path).Load().Settings.InterfaceLanguage == "en"
+                    && AutomationProperties.GetName(selector) == "Language");
                 Check("controller identity and selection policies are preserved", controller != null && ReferenceEquals(controller, Field(main, "controller")));
                 Check("OCR priority and hotkey draft survive refresh without callback writes", ocrPriority.SelectedIndex == 1 && shortcut.SelectedIndex == 1
                     && main.GeneralPage.IsRecording && AutomationProperties.GetName(Find<StackPanel>(main, "GeneralShortcutKeys")) == recorded
@@ -146,7 +150,7 @@ internal static class InterfaceLanguageTest
                 foreach (var category in Enum.GetValues<SettingsCategory>())
                 {
                     main.NavigateTo(category); main.UpdateLayout();
-                    var unexpected = Children<TextBlock>(main).Where(text => text.IsVisible && HasChinese(text.Text) && text.Text != "語言 / Language").Select(text => text.Text).ToArray();
+                    var unexpected = Children<TextBlock>(main).Where(text => text.IsVisible && HasChinese(text.Text)).Select(text => text.Text).ToArray();
                     Check("English settings labels: " + category, unexpected.Length == 0);
                     if (unexpected.Length > 0) Console.WriteLine(string.Join(" | ", unexpected));
                 }

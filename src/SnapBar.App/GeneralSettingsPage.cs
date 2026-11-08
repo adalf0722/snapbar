@@ -37,13 +37,14 @@ internal sealed class GeneralSettingsPage : ContentControl
     {
         var row = new StackPanel();
         var heading = new DockPanel();
-        languageSelector = new ComboBox { ItemsSource = new[] { "跟隨系統 / System", "繁體中文", "English" },
+        languageSelector = new ComboBox { ItemsSource = new[] { UiText.Get("Language_OptionSystem"),
+                UiText.Get("Language_OptionTraditionalChinese"), UiText.Get("Language_OptionEnglish") },
             SelectedIndex = LanguageIndex(preference), HorizontalAlignment = HorizontalAlignment.Right, MinWidth = 200, Margin = new(16, 0, 0, 0) };
-        Identify(languageSelector, "InterfaceLanguageSelector", "語言 / Language");
+        Identify(languageSelector, "InterfaceLanguageSelector", UiText.Get("Language_Label"));
         languageStatus = Description(""); Identify(languageStatus, "InterfaceLanguageStatus", UiText.Get("Language_Status"));
         languageStatus.Visibility = Visibility.Collapsed;
         DockPanel.SetDock(languageSelector, Dock.Right); heading.Children.Add(languageSelector);
-        heading.Children.Add(ActionUi.Heading("語言 / Language", 16)); row.Children.Add(heading); row.Children.Add(languageStatus);
+        heading.Children.Add(ActionUi.Heading(UiText.Get("Language_Label"), 16)); row.Children.Add(heading); row.Children.Add(languageStatus);
         var card = ActionUi.Card(row); card.Margin = new(0, 0, 0, 14);
         ((StackPanel)scroll.Content).Children.Insert(0, card);
         languageSelector.SelectionChanged += (_, _) =>

@@ -14,7 +14,7 @@ The preview is unsigned. Keep the `Probe` and language-resource folders beside t
 
 Click the tray icon to return to settings. Enable **Show toolbar automatically** under General if you want dragging or double-clicking to trigger the toolbar. General also lets you change shortcuts and optionally start SnapBar when you sign in to Windows.
 
-The language options are **跟隨系統 / System**, **繁體中文**, and **English**. The choice is saved. Settings and tray labels change immediately; already-open editor and result windows keep their language and contents until reopened. Language changes do not alter your AI instructions, OCR language priority or other saved preferences.
+The language options are **System**, **Traditional Chinese**, and **English** in the English interface. The choice is saved. Settings and tray labels change immediately; already-open editor and result windows keep their language and contents until reopened. Language changes do not alter your AI instructions, OCR language priority or other saved preferences.
 
 Settings live under `%LOCALAPPDATA%\SnapBar`. Existing valid settings upgrade while preserving preferences; unreadable, damaged or newer-format files are not overwritten. Keep this directory private: it includes your custom actions and Windows-encrypted AI credentials.
 
@@ -23,7 +23,7 @@ Settings live under `%LOCALAPPDATA%\SnapBar`. Existing valid settings upgrade wh
 - Use **⋯** for more actions. Complete HTTP/HTTPS links can be opened; absolute file paths can be revealed without executing the file. Invalid or inapplicable actions are disabled with an explanation.
 - Pin up to nine actions and reorder them in toolbar settings. Custom URL actions use `***` for URL-encoded selected text. PowerShell/JavaScript scripts read `POPCLIP_TEXT`; JavaScript requires a separate Node.js installation. Scripts run with your Windows account permissions. Saving or importing does not execute them; the test button does.
 - For AI rewrite, configure your endpoint, model and any required API key in **AI services**. Only executing an instruction sends text to the chosen service. You can copy results; replacement requires a still-valid editable source. Services may charge for usage.
-- For offline Lookup, import your own StarDict 2.4.2 `.ifo`, with matching `.idx` and `.dict` or `.dict.dz` files in the same folder. Supported definitions are UTF-8 plain text and phonetics. Multiple dictionaries can be enabled independently. No dictionary is bundled.
+- For the Dictionary action, import your own StarDict 2.4.2 `.ifo`, with matching `.idx` and `.dict` or `.dict.dz` files in the same folder. Supported definitions are UTF-8 plain text and phonetics. Multiple dictionaries can be enabled independently. No dictionary is bundled.
 - For local OCR, use the tray capture action or assign an OCR shortcut. Drag a rectangle on one screen; Esc cancels. English and Traditional Chinese models are included. Install the [Microsoft Visual C++ x64 runtime](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) if it is missing. Correct the recognized text before copying or searching it.
 
 ## If selection fails

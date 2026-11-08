@@ -2395,6 +2395,18 @@
   <data name="Language_Status" xml:space="preserve">
     <value>介面語言狀態</value>
   </data>
+  <data name="Language_Label" xml:space="preserve">
+    <value>語言</value>
+  </data>
+  <data name="Language_OptionSystem" xml:space="preserve">
+    <value>跟隨系統</value>
+  </data>
+  <data name="Language_OptionTraditionalChinese" xml:space="preserve">
+    <value>繁體中文</value>
+  </data>
+  <data name="Language_OptionEnglish" xml:space="preserve">
+    <value>英文</value>
+  </data>
   <data name="Language_SaveFailed" xml:space="preserve">
     <value>無法保存語言偏好，已保留原介面語言。請檢查設定檔權限後重試。</value>
   </data>
@@ -2513,7 +2525,7 @@
     <value>AI 改寫</value>
   </data>
   <data name="Action_lookup" xml:space="preserve">
-    <value>查詞</value>
+    <value>字典</value>
   </data>
   <data name="Action_Gmail" xml:space="preserve">
     <value>搜尋 Gmail</value>

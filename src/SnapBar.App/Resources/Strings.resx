@@ -2395,6 +2395,18 @@ Its enabled state will be preserved.</value>
   <data name="Language_Status" xml:space="preserve">
     <value>Interface language status</value>
   </data>
+  <data name="Language_Label" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Language_OptionSystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Language_OptionTraditionalChinese" xml:space="preserve">
+    <value>Traditional Chinese</value>
+  </data>
+  <data name="Language_OptionEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
   <data name="Language_SaveFailed" xml:space="preserve">
     <value>Could not save the language preference. Your previous language is unchanged. Check settings file permissions and try again.</value>
   </data>
@@ -2513,7 +2525,7 @@ Its enabled state will be preserved.</value>
     <value>AI rewrite</value>
   </data>
   <data name="Action_lookup" xml:space="preserve">
-    <value>Look up</value>
+    <value>Dictionary</value>
   </data>
   <data name="Action_Gmail" xml:space="preserve">
     <value>Search Gmail</value>
