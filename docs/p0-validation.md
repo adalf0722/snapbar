@@ -934,3 +934,19 @@ Repository checks 通過工具契約 12、Core 420 與 Release 建置；完整 R
 已經正式 staging 流程更新本機 `artifacts/p0`，舊套件保留於 `artifacts/publish/a96611a7f6dd4d23a57b7b5e940ec001/previous`。發布報告：`artifacts/checks/build/20261108T074205274Z-c91e28b3e3c246f6868fca245d83513c/report.json`，Probe smoke 10、獨立啟動及雙語資源 smoke 各 1 項通過。
 
 本機驗證 ZIP：`artifacts/releases/1f00aaa76b5347839f63c78bea15fb81/SnapBar-v0.0.0-validation-win-x64.zip`，SHA-256 為 `3a15e1ff23294ce9b99723c3f5b8bca7aaf44be294bc8a6213610ad103f81174`。實際解壓後確認英文 README、獨立啟動及兩種資源載入；暫移繁中 satellite 時檢查拒絕通過，還原後再次通過。結果存於同目錄 `verification.json`。此為本機驗證版本，未推送或公開發布。
+
+## 2026-11-08 OCR 凍結框選、辨識狀態與復原
+
+OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像；成功後就近顯示可編輯卡片，提供複製全部／所選文字、重新框選與搜尋。獨立工作程序有 15 秒總逾時及擁有者生命週期保護。保留既有繁中／英文優先偏好，不自動改寫剪貼簿。
+
+`scripts/check.ps1` 通過 actionlint、工具契約 22、push 契約 10、自動發布契約 18、Release 建置與 Core 510。最終建置報告：`artifacts/checks/build/20261108T121211756Z-7f0e7f56838d47318a16a141eece7098/report.json`。最終 OCR 測試補上拖曳中的選框截圖，並改用既有 `ClipboardBackup` 完整備份／復原剪貼簿；備份不完整時不開始複製測試。修改後再經桌面腳本重建與 Core 檢查。桌面 `Ocr,Language,Appearance` 通過 Preflight 1、OCR 29、Language 50、Appearance 174，全部零失敗；最終報告：`artifacts/checks/desktop/20261108T121224570Z-4073521e0c8343eb9a0c2fb8919819a9/report.json`。這是指定套件驗證，不是完整 Release 證據。
+
+實際 fixture 在框選就緒後改變來源，仍辨識到快照原文；按重新框選則辨識到更新後來源。涵蓋處理狀態原地轉成結果、重複觸發不排隊、關閉取消與晚到結果丟棄、逾時／執行階段缺少／空結果的 UI 復原、下一次真實辨識、所選文字複製、空白停用、剪貼簿占用失敗保留結果及復原原剪貼簿。`--ocr-backend` 再次通過 21 項，包含裁切限制、凍結像素、傳輸與停滯取消、逾時後所擁有 PID 已退出、父程序退出清理、後續工作成功與語言偏好。UI 逾時案例使用辨識委派回傳錯誤狀態；真實工作程序逾時與清理由 backend 測試分開驗證。
+
+同機只有 1920 × 1080、96 DPI（100%）單螢幕，選區 660 × 178 實體像素。Stopwatch 加上 overlay ready／處理卡／結果卡狀態量測，首個框選到就緒 119.1 ms，首次真實辨識放開到回應 25.6 ms、到結果 311.5 ms；兩個冷指標分別取本次測試的首次框選與首次引擎呼叫，中間有一次取消框選檢查。五次暖執行框選到就緒 99.0–122.8 ms、放開到回應 16.3–20.2 ms、放開到結果 268.4–283.3 ms。沒有以固定等待作為量測終點，也沒有為量測加入辨識延遲。冷執行包含截圖與記憶體取樣成本；工作程序每次重新啟動，暖執行代表父程序與作業系統快取暖機。
+
+父程序累積尖峰工作集冷 253,833,216 bytes、暖 276,578,304 bytes；僅透過父 PID 確認本次所擁有子程序後取樣的工作程序尖峰冷 105,594,880 bytes、暖 104,849,408–105,046,016 bytes。子程序離開前最後一次取樣後的短暫尖峰可能未捕捉。數值只記錄 fixture ID、尺寸與效能，不記錄辨識文字或畫面。原版 desktop OCR 9 項基準報告：`artifacts/checks/desktop/20261108T114249750Z-ba37de31b6f24d619bd44e1424711f49/report.json`；原版未有 UI 耗時儀表，不宣稱 UI 加速比例。原生引擎單獨基準為冷 141.7 ms、五次暖 85.6–88.0 ms，與隔離工作程序的端到端時間不可直接比較。
+
+已目視檢查 `artifacts/ui-polish/ocr-frozen-overlay.png`、`ocr-selection.png`、`ocr-processing-card.png`、`ocr-result-card.png`、`ocr-empty-card.png`、`ocr-timeout-card.png`、`ocr-runtime-card.png` 與 `ocr-result-restricted.png`。全螢幕證據先以拋棄式白色視窗遮住使用者桌面，僅保留 fixture；拖曳時框內原亮度、框外暗幕與細選框清楚可見，固定提示已隱藏。處理、空結果與成功卡的文字／按鈕完整，成功編輯器有焦點框，受限 360 × 240 DIP 工作區仍可操作。實際卡片位置另由螢幕工作區邊界約束；受限工作區使用現有注入 seam，不等同第二台實體顯示器。
+
+4K／8K、150% DPI、混合 DPI、負座標與多螢幕實機未量測；負座標裁切由 backend 隔離案例驗證。未新增外部 App 人工相容性驗證，未發布、推送、安裝或替換 `artifacts/p0`。新增更新說明 `release-notes/2026-11-08-ocr-capture-experience.json`。
