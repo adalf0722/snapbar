@@ -207,7 +207,7 @@ internal static class ScreenOcrTest
                 var buttons = body.Children.OfType<WrapPanel>().Single().Children.OfType<Button>()
                     .Where(button => button.IsVisible)
                     .Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
-                Check(buttons.SequenceEqual(new[] { "複製文字", "重新框選", "搜尋" }),
+                Check(buttons.SequenceEqual(new[] { "複製文字", "重新框選", "更多" }),
                     "OCR result offers text actions without a write-back action");
                 UiAppearanceTest.Snapshot(result, "ocr-result-card.png");
                 WindowWorkArea.SetWorkAreaOverride(result, new Rect(0, 0, 360, 240));
