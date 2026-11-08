@@ -2632,4 +2632,16 @@
   <data name="Validation_dictionary-manifest-invalid" xml:space="preserve">
     <value>詞典清單損毀，請還原備份的 library.json。</value>
   </data>
+  <data name="Ocr_Processing" xml:space="preserve"><value>正在辨識文字…</value></data>
+  <data name="Ocr_Editor" xml:space="preserve"><value>辨識文字</value></data>
+  <data name="Ocr_Copy" xml:space="preserve"><value>複製文字</value></data>
+  <data name="Ocr_CopySelected" xml:space="preserve"><value>複製所選文字</value></data>
+  <data name="Ocr_Copied" xml:space="preserve"><value>已複製 ✓</value></data>
+  <data name="Ocr_Reselect" xml:space="preserve"><value>重新框選</value></data>
+  <data name="Ocr_Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Ocr_Empty" xml:space="preserve"><value>沒有找到文字，試著只框住文字區域。</value></data>
+  <data name="Ocr_Timeout" xml:space="preserve"><value>辨識時間過長，請縮小範圍後重試。</value></data>
+  <data name="Ocr_CaptureError" xml:space="preserve"><value>無法擷取螢幕，請重新框選。</value></data>
+  <data name="Ocr_WorkerError" xml:space="preserve"><value>無法啟動辨識工作程序，請重新框選。</value></data>
+  <data name="Ocr_ProtocolError" xml:space="preserve"><value>無法讀取辨識回應，請重新框選。</value></data>
 </root>

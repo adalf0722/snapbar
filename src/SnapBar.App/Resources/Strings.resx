@@ -2632,4 +2632,16 @@ Its enabled state will be preserved.</value>
   <data name="Validation_dictionary-manifest-invalid" xml:space="preserve">
     <value>The dictionary list is damaged. Restore a backup of library.json.</value>
   </data>
+  <data name="Ocr_Processing" xml:space="preserve"><value>Recognizing text…</value></data>
+  <data name="Ocr_Editor" xml:space="preserve"><value>Recognized text</value></data>
+  <data name="Ocr_Copy" xml:space="preserve"><value>Copy text</value></data>
+  <data name="Ocr_CopySelected" xml:space="preserve"><value>Copy selected text</value></data>
+  <data name="Ocr_Copied" xml:space="preserve"><value>Copied ✓</value></data>
+  <data name="Ocr_Reselect" xml:space="preserve"><value>Reselect</value></data>
+  <data name="Ocr_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Ocr_Empty" xml:space="preserve"><value>No text found. Try selecting just the text area.</value></data>
+  <data name="Ocr_Timeout" xml:space="preserve"><value>Recognition took too long. Select a smaller area and try again.</value></data>
+  <data name="Ocr_CaptureError" xml:space="preserve"><value>Could not capture the screen. Please try again.</value></data>
+  <data name="Ocr_WorkerError" xml:space="preserve"><value>Could not start the recognition worker. Please try again.</value></data>
+  <data name="Ocr_ProtocolError" xml:space="preserve"><value>Could not read the recognition response. Please try again.</value></data>
 </root>

@@ -56,7 +56,13 @@ internal static class ScreenOcrTest
                 Check(Native.GetForegroundWindow() == fixtureHandle, "desktop OCR fixture owns foreground");
 
                 void Trigger() => SendMessage(hwnd, Native.WM_HOTKEY, 9, (hotkey.Key << 16) | hotkey.Modifiers);
+                async Task Ready()
+                {
+                    var until = DateTime.UtcNow.AddSeconds(5);
+                    while (!snapBar.OcrCaptureReady && DateTime.UtcNow < until) await Task.Delay(15);
+                }
                 Trigger();
+                await Ready();
                 Check(app.Windows.OfType<OcrOverlay>().Count(window => window.IsVisible) == ScreenOcr.Monitors().Count,
                     "OCR hotkey opens a capture overlay on each monitor");
                 await Task.Delay(100);
@@ -67,8 +73,14 @@ internal static class ScreenOcrTest
                     && !app.Windows.OfType<Window>().Any(window => window.Title == "框選 OCR · SnapBar"),
                     "Escape cancels capture without opening results");
 
+                var recognize = snapBar.OcrRecognize;
+                snapBar.OcrRecognize = async (png, english, token) =>
+                {
+                    await Task.Delay(450, token);
+                    return await recognize(png, english, token);
+                };
                 Trigger();
-                await Task.Delay(100);
+                await Ready();
                 var from = content.PointToScreen(new(12, 12));
                 var to = content.PointToScreen(new(content.ActualWidth - 12, 190));
                 Check(SetCursorPos((int)from.X, (int)from.Y), "drag starts over the disposable image");
@@ -83,14 +95,26 @@ internal static class ScreenOcrTest
                 finally { mouse_event(4, 0, 0, 0, 0); }
 
                 Window? result = null;
+                var sawProcessing = false;
+                OcrResultWindow? processingCard = null;
+                var release = DateTime.UtcNow;
                 deadline = DateTime.UtcNow.AddSeconds(8);
                 while (result == null && DateTime.UtcNow < deadline)
                 {
                     await Task.Delay(50);
-                    result = app.Windows.OfType<Window>().SingleOrDefault(window => window.Title == "框選 OCR · SnapBar");
+                    var processing = app.Windows.OfType<OcrResultWindow>().SingleOrDefault(window => window.IsProcessing);
+                    if (!sawProcessing && processing != null && DateTime.UtcNow - release >= TimeSpan.FromMilliseconds(330))
+                    {
+                        UiAppearanceTest.Snapshot(processing, "ocr-processing-card.png");
+                        processingCard = processing;
+                        sawProcessing = true;
+                    }
+                    result = app.Windows.OfType<OcrResultWindow>().SingleOrDefault(window => !window.IsProcessing);
                 }
                 Check(result != null && !app.Windows.OfType<OcrOverlay>().Any(window => window.IsVisible),
                     "drag closes capture overlays and displays OCR results");
+                Check(sawProcessing && ReferenceEquals(processingCard, result),
+                    "recognition exposes processing feedback before transitioning in place");
                 var body = (DockPanel)result!.Content;
                 var editor = body.Children.OfType<TextBox>().SingleOrDefault();
                 if (editor == null) throw new InvalidOperationException(body.Children.OfType<TextBlock>().Single().Text);
@@ -98,9 +122,11 @@ internal static class ScreenOcrTest
                 Check(normalized == "SnapBarOCRtest123繁體中文辨識測試", "actual desktop crop recognizes English and Traditional Chinese");
                 Check(!editor.IsReadOnly, "recognized text can be corrected without modifying the source");
                 var buttons = body.Children.OfType<WrapPanel>().Single().Children.OfType<Button>()
+                    .Where(button => button.IsVisible)
                     .Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
-                Check(buttons.SequenceEqual(new[] { "複製", "搜尋", "關閉" }),
+                Check(buttons.SequenceEqual(new[] { "複製文字", "重新框選", "搜尋" }),
                     "OCR result offers text actions without a write-back action");
+                UiAppearanceTest.Snapshot(result, "ocr-result-card.png");
                 result.Close();
                 exit = 0;
             }

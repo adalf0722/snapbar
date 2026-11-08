@@ -219,6 +219,8 @@ internal static class InterfaceLanguageTest
                 UiText.SetLanguage("zh-Hant"); UiText.Refresh(identity);
                 Check("user text and adopted sample names are never translated", userLabel.Text == "Copy" && productLabel.Text == "複製" && customLabel.Text == "Copy");
                 Children<TextBox>(ocrWindow).Single().Text = "";
+                Check("empty OCR disables search", !Children<Button>(ocrWindow).Single(button => AutomationProperties.GetName(button) == "Search").IsEnabled);
+                Children<TextBox>(ocrWindow).Single().Text = new string('x', 20000);
                 Children<Button>(ocrWindow).Single(button => AutomationProperties.GetName(button) == "Search").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check("OCR result callbacks retain opening-language guidance", Children<TextBlock>(ocrWindow).Any(text => text.Text.StartsWith("Could not search", StringComparison.Ordinal)));
                 ocrWindow.Close();
