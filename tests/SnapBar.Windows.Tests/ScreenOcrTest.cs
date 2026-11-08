@@ -116,6 +116,22 @@ internal static class ScreenOcrTest
                 UiAppearanceTest.Snapshot(app.Windows.OfType<OcrOverlay>().First(), "ocr-frozen-overlay.png");
                 Check(app.Windows.OfType<OcrOverlay>().Count(window => window.IsVisible) == ScreenOcr.Monitors().Count,
                     "OCR hotkey opens a capture overlay on each monitor");
+                var gesturePoint = content.PointToScreen(new(100, 80));
+                SetCursorPos((int)gesturePoint.X, (int)gesturePoint.Y);
+                mouse_event(2, 0, 0, 0, 0);
+                await Task.Delay(20);
+                mouse_event(4, 0, 0, 0, 0);
+                await Task.Delay(20);
+                Check(snapBar.OcrCaptureReady && !app.Windows.OfType<OcrResultWindow>().Any(),
+                    "undersized selection keeps capture ready without recognition");
+                mouse_event(2, 0, 0, 0, 0);
+                await Task.Delay(20);
+                try { System.Windows.Input.Mouse.Capture(null); }
+                finally { mouse_event(4, 0, 0, 0, 0); }
+                await Task.Delay(20);
+                Check(snapBar.OcrCaptureReady && app.Windows.OfType<OcrOverlay>().All(window =>
+                    ((Canvas)window.Content).Children.OfType<System.Windows.Shapes.Rectangle>().All(edge => !edge.IsVisible)),
+                    "lost mouse capture clears selection and permits another drag");
                 await Task.Delay(100);
                 keybd_event(0x1B, 0, 0, 0);
                 keybd_event(0x1B, 0, 2, 0);
@@ -124,6 +140,14 @@ internal static class ScreenOcrTest
                     && !app.Windows.OfType<Window>().Any(window => window.Title == "框選 OCR · SnapBar"),
                     "Escape cancels capture without opening results");
 
+                Trigger(); await Ready();
+                Check(snapBar.OcrCaptureReady, "capture is ready before right-click cancellation");
+                mouse_event(8, 0, 0, 0, 0);
+                mouse_event(16, 0, 0, 0, 0);
+                await Task.Delay(30);
+                Check(!snapBar.OcrCaptureReady && !app.Windows.OfType<OcrResultWindow>().Any(),
+                    "right click cancels every overlay without recognition");
+
                 var recognize = snapBar.OcrRecognize;
                 Trigger();
                 await Ready();
@@ -131,13 +155,13 @@ internal static class ScreenOcrTest
                 await fixture.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Render);
                 var from = content.PointToScreen(new(12, 12));
                 var to = content.PointToScreen(new(content.ActualWidth - 12, 190));
-                Check(SetCursorPos((int)from.X, (int)from.Y), "drag starts over the disposable image");
+                Check(SetCursorPos((int)to.X, (int)to.Y), "reverse drag starts over the disposable image");
                 await Task.Delay(50);
                 mouse_event(2, 0, 0, 0, 0);
                 try
                 {
                     await Task.Delay(50);
-                    Check(SetCursorPos((int)to.X, (int)to.Y), "drag ends over the disposable image");
+                    Check(SetCursorPos((int)from.X, (int)from.Y), "reverse drag ends over the disposable image");
                     await Task.Delay(80);
                     var selectedOverlay = app.Windows.OfType<OcrOverlay>().Single(window =>
                     {
@@ -279,8 +303,20 @@ internal static class ScreenOcrTest
                 {
                     snapBar.OcrRecognize = (_, _, _) => Task.FromResult(new OcrResult(state));
                     Trigger(); await Ready(); await Drag(); var recovery = await Completed();
-                    Check(!recovery.IsProcessing, state + " returns an actionable recovery card");
-                    UiAppearanceTest.Snapshot(recovery, "ocr-" + state + "-card.png"); recovery.Close();
+                    var recoveryBody = (DockPanel)recovery.Content;
+                    var statusKey = state switch { "timeout" => "Ocr_Timeout", "runtime" => "MainWindow_Ocr_003", _ => "Ocr_Empty" };
+                    var retry = recoveryBody.Children.OfType<WrapPanel>().Single().Children.OfType<Button>()
+                        .Single(button => AutomationProperties.GetAutomationId(button) == "OcrReselect");
+                    Check(!recovery.IsProcessing && retry.IsVisible && retry.IsEnabled
+                        && recoveryBody.Children.OfType<TextBlock>().Any(text => text.Text == UiText.Capture().Get(statusKey)),
+                        state + " returns a localized actionable recovery card");
+                    UiAppearanceTest.Snapshot(recovery, "ocr-" + state + "-card.png");
+                    retry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    await Ready();
+                    Check(snapBar.OcrCaptureReady && !app.Windows.OfType<OcrResultWindow>().Any(), state + " reselect starts a fresh capture");
+                    keybd_event(0x1B, 0, 0, 0); keybd_event(0x1B, 0, 2, 0);
+                    var cancelDeadline = Stopwatch.StartNew();
+                    while (snapBar.OcrCaptureReady && cancelDeadline.Elapsed < TimeSpan.FromSeconds(2)) await Task.Delay(5);
                 }
                 snapBar.OcrRecognize = recognize;
                 var process = Process.GetCurrentProcess();
