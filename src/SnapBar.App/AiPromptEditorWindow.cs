@@ -78,7 +78,7 @@ internal sealed class AiPromptEditorWindow : Window, ISettingsDraft
             }
             var prompt = new AiPrompt(existing?.Id ?? Guid.NewGuid().ToString("N"), UiNames.KeepOriginalName(name.Text.Trim(), initialName, existing?.Name), instruction.Text,
                 UiNames.KeepOriginalName(category.Text.Trim(), initialCategory, existing?.Category), keywords.Text.Trim(), iconId);
-            if (language.Run(() => save(prompt)) is { } error) { hint.Text = UiText.Current(error, language.Culture); return false; }
+            if (save(prompt) is { } error) { hint.Text = UiText.Current(error, language.Culture); return false; }
             dirty = () => false; Close(); return true;
         }
         saveDraft = SaveDraft;

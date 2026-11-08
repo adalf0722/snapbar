@@ -163,6 +163,6 @@ public sealed partial class MainWindow
             dictionaryImport.IsEnabled = dictionaryList.IsEnabled = true;
             RefreshDictionaryList();
         }
-        dictionaryStatus.Text += " " + message;
+        dictionaryStatus.Text = UiText.Join(dictionaryStatus.Text, " ", message);
     }
 }

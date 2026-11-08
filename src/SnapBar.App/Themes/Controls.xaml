@@ -514,7 +514,7 @@
                     <StackPanel>
                         <Border BorderBrush="{DynamicResource ControlLine}" BorderThickness="0,1,0,0" Padding="0,8,0,0">
                             <ToggleButton x:Name="HeaderToggle" Content="{TemplateBinding Header}" HorizontalContentAlignment="Stretch"
-                                          AutomationProperties.Name="進階設定" FocusVisualStyle="{x:Null}"
+                                          AutomationProperties.Name="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}" FocusVisualStyle="{x:Null}"
                                           IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">

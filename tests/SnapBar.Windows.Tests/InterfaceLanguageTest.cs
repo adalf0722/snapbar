@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Xml.Linq;
 using SnapBar.App;
@@ -48,7 +49,7 @@ internal static class InterfaceLanguageTest
         }
         MainWindow? main = null;
         ActionEditorWindow? oldAction = null, newAction = null;
-        AiPromptEditorWindow? oldPrompt = null;
+        AiPromptEditorWindow? oldPrompt = null, failedPrompt = null;
         ActionResultWindow? oldResult = null;
         AiPanelWindow? aiPanel = null;
         PopupWindow? popup = null;
@@ -91,7 +92,9 @@ internal static class InterfaceLanguageTest
                 // Construct opening-language fixtures before switching; these do not touch selection or clipboard.
                 oldAction = new ActionEditorWindow(ActionCatalog.GetItems(new()).Single(item => item.Id == "custom-62bf87b962054dc7bacd6588e37c2843").Custom);
                 var defaultPrompt = new AiSettings().Prompts[0];
-                oldPrompt = new AiPromptEditorWindow(defaultPrompt, _ => null);
+                string? SaveSharedPrompt(AiPrompt value) => main.AiPreferences.TrySavePrompt(value, false, out var error) ? null : error;
+                oldPrompt = new AiPromptEditorWindow(defaultPrompt, SaveSharedPrompt);
+                failedPrompt = new AiPromptEditorWindow(defaultPrompt, SaveSharedPrompt);
                 oldResult = new ActionResultWindow("Fixture result", "Keep user text: 原文", false, false);
                 var oldTitle = oldAction.Title; var oldPromptTitle = oldPrompt.Title; var oldResultTitle = oldResult.Title;
                 var scope = UiText.Capture();
@@ -125,6 +128,21 @@ internal static class InterfaceLanguageTest
                 main.GeneralPage.CancelRecording();
                 // Restore fixture-only drafts so the representative English audit contains no intentional user CJK.
                 search.Discard(); ai.Discard();
+                Check("saving an old-language editor leaves shared settings in the current language", oldPrompt.TrySave()
+                    && Find<ComboBox>(ai, "AiProvider").Items.Cast<string>().Contains("Custom compatible service")
+                    && Children<TextBlock>(main.AiCommandsPanel).All(text => !HasChinese(text.Text)));
+                using (var lockedAi = new FileStream(Path.Combine(directory, "ai.json"), FileMode.Open, FileAccess.Read, FileShare.Read))
+                    Check("shared-save failure is translated only inside the old editor", !failedPrompt.TrySave()
+                        && Find<TextBlock>(failedPrompt, "AiPromptError").Text.StartsWith("AI 設定無法保存", StringComparison.Ordinal)
+                        && Find<ComboBox>(ai, "AiProvider").Items.Cast<string>().Contains("Custom compatible service"));
+                failedPrompt.Close(); failedPrompt = null;
+                main.NavigateTo(SettingsCategory.AiServices); main.UpdateLayout();
+                var advanced = Find<Expander>(ai, "AiAdvancedSettings"); advanced.ApplyTemplate();
+                var headerToggle = (ToggleButton)advanced.Template.FindName("HeaderToggle", advanced);
+                Check("English expander toggle automation name follows its localized header", AutomationProperties.GetName(headerToggle) == "Advanced settings");
+                selector.SelectedIndex = 1; main.UpdateLayout();
+                Check("expander automation name refreshes with the existing settings page", AutomationProperties.GetName(headerToggle) == "進階設定");
+                selector.SelectedIndex = 2; main.UpdateLayout();
                 foreach (var category in Enum.GetValues<SettingsCategory>())
                 {
                     main.NavigateTo(category); main.UpdateLayout();
@@ -136,6 +154,14 @@ internal static class InterfaceLanguageTest
                 main.ShowDictionarySettings(); main.UpdateLayout();
                 Check("English dictionary management labels", Children<TextBlock>(main).Where(text => text.IsVisible).All(text => !HasChinese(text.Text)));
                 UiAppearanceTest.Snapshot(main, "language-dictionary-en.png");
+                Func<Task<string>> dictionaryOperation = () => Task.FromResult(UiText.Get("MainWindow_Dictionary_019"));
+                await (Task)typeof(MainWindow).GetMethod("UpdateDictionaryAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(main, [dictionaryOperation])!;
+                var completedDictionaryStatus = (TextBlock)Field(main, "dictionaryStatus")!;
+                Check("completed dictionary operation displays current-language status", completedDictionaryStatus.Text.Contains("Dictionary removed.", StringComparison.Ordinal));
+                selector.SelectedIndex = 1;
+                Check("completed dictionary status keeps translation metadata through language refresh", completedDictionaryStatus.Text.Contains("已移除詞典。", StringComparison.Ordinal)
+                    && !completedDictionaryStatus.Text.Contains("Dictionary removed.", StringComparison.Ordinal));
+                selector.SelectedIndex = 2;
                 Check("Core validation codes map to complete English guidance", !HasChinese(ValidationMessages.Describe("action-name-invalid"))
                     && ValidationMessages.Describe("ai-endpoint-invalid").Contains("HTTPS", StringComparison.Ordinal)
                     && ValidationMessages.Describe(ProductError.InvalidData("dictionary-index-invalid")).Contains("dictionary", StringComparison.OrdinalIgnoreCase));
@@ -223,7 +249,7 @@ internal static class InterfaceLanguageTest
             catch (Exception error) { Console.WriteLine("FAIL " + error); failed++; }
             finally
             {
-                popup?.Close(); aiPanel?.Close(); oldAction?.Close(); newAction?.Close(); oldPrompt?.Close(); oldResult?.Close();
+                popup?.Close(); aiPanel?.Close(); oldAction?.Close(); newAction?.Close(); oldPrompt?.Close(); failedPrompt?.Close(); oldResult?.Close();
                 main?.PrepareSessionEnd(); main?.Close();
                 foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)) File.Delete(file);
                 foreach (var child in Directory.EnumerateDirectories(directory, "*", SearchOption.AllDirectories).OrderByDescending(value => value.Length)) Directory.Delete(child);
