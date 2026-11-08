@@ -71,6 +71,10 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args.SequenceEqual(["--ocr-worker"]) || args.SequenceEqual(["--ocr-worker", "--english"])) return OcrBackendTest.FakeWorker(args.Length == 2);
+        if (args.SequenceEqual(["--ocr-test-supervisor"])) return OcrBackendTest.Supervisor();
+        if (args.SequenceEqual(["--ocr-backend"])) return OcrBackendTest.RunAsync().GetAwaiter().GetResult();
+        if (args.SequenceEqual(["--ocr-engine-baseline"])) return OcrBackendTest.MeasureEngineAsync().GetAwaiter().GetResult();
         if (!args.Contains("--interface-language"))
         {
             var legacyCulture = System.Globalization.CultureInfo.GetCultureInfo("zh-Hant");

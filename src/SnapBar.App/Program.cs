@@ -7,6 +7,11 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.SequenceEqual(["--ocr-worker"]) || args.SequenceEqual(["--ocr-worker", "--english"]))
+        {
+            Environment.ExitCode = SnapBar.Windows.Ocr.OcrWorker.RunAsync(args.Length == 2).GetAwaiter().GetResult();
+            return;
+        }
         // A side-effect-free launch check: no settings, tray, input hooks or single-instance signal.
         if (args.SequenceEqual(["--startup-check"])) return;
         if (args.SequenceEqual(["--language-resources-check"]))
