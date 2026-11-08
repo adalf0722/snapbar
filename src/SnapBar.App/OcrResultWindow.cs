@@ -60,7 +60,7 @@ internal sealed partial class OcrResultWindow : Window
             catch (ExternalException) { copied = false; status.Text = language.Get("MainWindow_Ocr_009"); UpdateActions(); }
         }, 1);
         reselect = AddButton("Ocr_Reselect", "OcrReselect", () => Reselect?.Invoke(), 2);
-        more = AddButton("Ocr_More", "OcrMore", OpenActions, 3);
+        more = AddButton("Ocr_More", "OcrMore", OpenActions, 3, "more");
         cancel = AddButton("Ocr_Cancel", "OcrCancel", Close, 4);
         copy.Visibility = reselect.Visibility = more.Visibility = Visibility.Collapsed;
         editor.TextChanged += (_, _) => EditorChanged();
@@ -81,9 +81,9 @@ internal sealed partial class OcrResultWindow : Window
         Closed += (_, _) => { DisposeActions(); progressTimer.Stop(); copyTimer.Stop(); editor.Clear(); };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; if (!CloseActions()) Close(); } };
 
-        Button AddButton(string key, string id, Action action, int tab)
+        Button AddButton(string key, string id, Action action, int tab, string? icon = null)
         {
-            var button = ActionUi.Button(language.Get(key), action);
+            var button = ActionUi.Button(language.Get(key), action, icon);
             AutomationProperties.SetAutomationId(button, id); KeyboardNavigation.SetTabIndex(button, tab);
             buttons.Children.Add(button); return button;
         }

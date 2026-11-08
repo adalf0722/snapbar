@@ -64,6 +64,11 @@ internal sealed partial class OcrResultWindow
                     Icon = ActionUi.ItemIcon(item, ActionUi.Ink), ToolTip = enabled ? null : language.Get(item.BuiltIn switch
                     { TextAction.OpenLink => "Ocr_InvalidLink", TextAction.RevealPath => "Ocr_InvalidPath", TextAction.Lookup => "Ocr_InvalidLookup", _ => "Ocr_ActionUnavailable" }) };
                 if (enabled && item.Custom?.Output == ActionOutput.ReplaceSelection) row.ToolTip = language.Get("Ocr_Apply");
+                if (!enabled)
+                {
+                    ToolTipService.SetShowOnDisabled(row, true);
+                    AutomationProperties.SetHelpText(row, (string)row.ToolTip);
+                }
                 AutomationProperties.SetAutomationId(row, "OcrAction_" + item.Id);
                 row.Click += (_, _) => { menu.IsOpen = false; _ = RunActionAsync(item); };
                 menu.Items.Add(row);
@@ -172,11 +177,15 @@ internal sealed partial class OcrResultWindow
                 var result = await (actionDependencies.RunCustom ?? CustomActionRunner.RunAsync)(custom, ticket.Input, cancellation.Token);
                 if (!Current() || cancellation.IsCancellationRequested) return;
                 var diagnostic = ScriptDiagnostic.Create(custom, result);
-                var host = new ActionOutputHost(Current, () => status.Text = language.Get("Ocr_ActionComplete"), text =>
+                var replaced = false;
+                bool CanPresent() => Current() || replaced && !actionClosed && invocation == serial
+                    && !cancellation.IsCancellationRequested && DefinitionCurrent(item);
+                var host = new ActionOutputHost(CanPresent, () => status.Text = language.Get("Ocr_ActionComplete"), text =>
                 {
                     try { Clipboard.SetText(text, TextDataFormat.UnicodeText); status.Text = language.Get("Ocr_ActionComplete"); }
                     catch (ExternalException) { status.Text = language.Get("MainWindow_Ocr_009"); ShowResult(text, false); }
-                }, Replace, (text, allowApply) => ShowResult(text, allowApply), () =>
+                }, text => replaced = Replace(text), (text, allowApply) => ShowResult(text, allowApply,
+                    allowApply && !string.IsNullOrWhiteSpace(result.Error) ? diagnostic : null), () =>
                 {
                     actionResult?.Close(); actionResult = new ActionResultWindow(UiNames.Action(item, language), "", false, false, diagnostic: diagnostic, diagnosticOnly: true); actionResult.Show();
                 });
