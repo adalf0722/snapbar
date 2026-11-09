@@ -107,15 +107,15 @@ internal static class OcrActionsTest
                     FixtureKey(0x26); FixtureKey(0x26, true); await Task.Delay(30);
                     Check("physical Up returns to previous action", firstFocused.IsKeyboardFocusWithin);
                     menu.Search.Text = "Fixture URL"; menu.Search.Focus();
-                    keybd_event(0x28, 0, 0, 0); keybd_event(0x28, 0, 2, 0); await Task.Delay(50);
+                    FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(50);
                     Check("physical Down focuses matching action", menu.Rows.Any(row => row.IsKeyboardFocusWithin));
-                    keybd_event(0x0D, 0, 0, 0); keybd_event(0x0D, 0, 2, 0); await Task.Delay(100);
+                    FixtureKey(0x0D); FixtureKey(0x0D, true); await Task.Delay(100);
                     Check("physical Enter executes focused action", launched.Count == 1); launched.Clear(); saves = 0;
                     live = live with { RecentIds = [] };
                     OpenUrl(); menu = (OcrActionMenu)urlMore.ContextMenu;
                     menu.Manage.Focus();
                     if (!menu.Manage.IsKeyboardFocusWithin) throw new InvalidOperationException("Fixture management did not receive focus");
-                    keybd_event(0x0D, 0, 0, 0); keybd_event(0x0D, 0, 2, 0); await Task.Delay(100);
+                    FixtureKey(0x0D); FixtureKey(0x0D, true); await Task.Delay(100);
                     Check("physical Enter activates management", managed == 1); managed = 0;
                     OpenUrl();
                 }

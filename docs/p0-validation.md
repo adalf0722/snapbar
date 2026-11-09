@@ -972,7 +972,7 @@ OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像�
 
 ### 2026-11-09 OCR「更多」選單呈現
 
-- `pwsh -NoProfile -File scripts/check.ps1`：通過，Core 529/0；最後一次建置報告位於 `artifacts/checks/build/20261109T121217594Z-e1229947e59b41659e3a64aeb404918e/`。
+- `pwsh -NoProfile -File scripts/check.ps1` 通過。審查修正後的合跑重建與 Core 529/0 記錄於 `artifacts/checks/build/20261109T122050795Z-0bab4e6615bb482199d3111c7449c26f/report.json`。
 - `$env:SNAPBAR_OCR_MENU_CAPTURE='1'; pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite OcrActions,Language,Appearance,Ocr"`：OcrActions 76/0、Language 50/0、Appearance 174/0；報告 `artifacts/checks/desktop/20261109T120910776Z-6c3b310d38c74aa38c168dbe5f972896/report.json`。此輪 Ocr 在複製選取文字斷言得到 16/1，原因未確認。
 - 不啟用截圖選項，單獨執行 `pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite Ocr"`：36/0，報告 `artifacts/checks/desktop/20261109T121034847Z-94758265b7ab4b0285242f91ecd3bcb4/report.json`；此前完整桌面輪次亦有 Ocr 36/0。保留原斷言，未將間歇失敗視為已解決。
 - 中英文選單分別渲染，以及搜尋結果及空狀態、最近與其他群組、受限長清單的測試圖片在 `artifacts/ocr-shared-actions/`；其中 `zh-expanded-fixture.png` 是拋棄式背景與辨識卡實際展開畫面。已檢視卡片與選單相對位置、停用原因、捲動區和固定入口；實體鍵盤 Down、Enter 與管理入口 Enter 在專用測試卡通過。
@@ -981,3 +981,4 @@ OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像�
 - 審查修正後的完整桌面輪次：`$env:SNAPBAR_OCR_MENU_CAPTURE='1'; pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite OcrActions,Language,Appearance,Ocr"`，OcrActions 86/0、Language 50/0、Appearance 174/0、Ocr 36/0，報告 `artifacts/checks/desktop/20261109T122050219Z-7ea32b6d38374afc9c6f3944bcf47231/report.json`。此選項現在只啟用受前景檢查保護的實體鍵盤測試，不再擷取桌面像素。
 - 新增英文分組、搜尋結果與受限長清單的控制項渲染：`en-recent-other.png`、`en-search-results.png`、`en-long-constrained.png`。`zh-expanded-fixture.png` 為先前已檢視的實際展開截圖，非此次重新擷取；目前測試以實際卡片及選單位置斷言取代桌面擷取。工作區限制由視窗既有的模擬工作區接點提供。
 - 另一審查修正前輪次 `artifacts/checks/desktop/20261109T121841139Z-b7a5766d1c0d4209adeab455f48aef6b/report.json` 的 Ocr 複製選取文字斷言再次得到 16/1；其原因仍未確認，後續兩次完整輪次均為 36/0。
+- 獨立複審通過規格、程式品質與整合檢查。測試中的 Down 和 Enter 改用與 Tab、Up 相同的前景檢查。啟用實體鍵盤後單獨重跑 OcrActions，86 項全數通過。報告位於 `artifacts/checks/desktop/20261109T122333192Z-d2b9efcbf3e743b99ad107107093ded3/report.json`。
