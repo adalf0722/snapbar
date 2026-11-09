@@ -19,40 +19,6 @@ internal static class OcrActionsTest
     [DllImport("user32.dll")] private static extern bool CloseClipboard();
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, nuint extra);
-    [DllImport("user32.dll")] private static extern nint GetDC(nint hwnd);
-    [DllImport("user32.dll")] private static extern int ReleaseDC(nint hwnd, nint dc);
-    [DllImport("gdi32.dll")] private static extern nint CreateCompatibleDC(nint dc);
-    [DllImport("gdi32.dll")] private static extern nint CreateCompatibleBitmap(nint dc, int width, int height);
-    [DllImport("gdi32.dll")] private static extern nint SelectObject(nint dc, nint obj);
-    [DllImport("gdi32.dll")] private static extern bool BitBlt(nint dest, int x, int y, int width, int height, nint source, int sx, int sy, uint operation);
-    [DllImport("gdi32.dll")] private static extern bool DeleteObject(nint obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteDC(nint dc);
-    private static void SnapshotExpanded(Window card, ContextMenu menu, string name)
-    {
-        var a = card.PointToScreen(new Point()); var b = menu.PointToScreen(new Point());
-        var scale = PresentationSource.FromVisual(card)!.CompositionTarget!.TransformToDevice.M11;
-        var x = (int)Math.Floor(Math.Min(a.X, b.X)) - 8; var y = (int)Math.Floor(Math.Min(a.Y, b.Y)) - 8;
-        var right = Math.Max(a.X + card.ActualWidth * scale, b.X + menu.ActualWidth * scale);
-        var bottom = Math.Max(a.Y + card.ActualHeight * scale, b.Y + menu.ActualHeight * scale);
-        var width = (int)Math.Ceiling(right - x) + 8; var height = (int)Math.Ceiling(bottom - y) + 8;
-        var work = SystemParameters.WorkArea;
-        var foreground = GetForegroundWindow();
-        var cardHandle = new WindowInteropHelper(card).Handle;
-        var popupHandle = ((HwndSource)PresentationSource.FromVisual(menu)!).Handle;
-        if (foreground != cardHandle && foreground != popupHandle) throw new InvalidOperationException("Fixture lost foreground; capture skipped");
-        if (x < work.Left * scale || y < work.Top * scale || x + width > work.Right * scale || y + height > work.Bottom * scale)
-            throw new InvalidOperationException("Capture extends beyond fixture backdrop; capture skipped");
-        var screen = GetDC(0); var memory = CreateCompatibleDC(screen); var bitmap = CreateCompatibleBitmap(screen, width, height);
-        var previous = SelectObject(memory, bitmap);
-        try
-        {
-            if (!BitBlt(memory, 0, 0, width, height, screen, x, y, 0x00CC0020)) throw new InvalidOperationException("Fixture capture failed");
-            var image = Imaging.CreateBitmapSourceFromHBitmap(bitmap, 0, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
-            using var stream = System.IO.File.Create(System.IO.Path.Combine("artifacts", "ocr-shared-actions", name)); encoder.Save(stream);
-        }
-        finally { SelectObject(memory, previous); DeleteObject(bitmap); DeleteDC(memory); ReleaseDC(0, screen); }
-    }
     private sealed class FixtureAi : IAiTextClient
     {
         public string? Source; public string? Instruction;
@@ -98,20 +64,14 @@ internal static class OcrActionsTest
                 var url = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "Fixture URL", CustomActionKind.Url, "globe", "https://example.org/?q=***");
                 var live = ActionCatalog.Normalize(new ActionSettings { CustomActions = [url] });
                 var launched = new List<Uri>(); var saves = 0; var managed = 0;
-                Window? backdrop = null;
-                if (Environment.GetEnvironmentVariable("SNAPBAR_OCR_MENU_CAPTURE") == "1")
-                {
-                    backdrop = new Window { WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize, Background = Brushes.LightSlateGray,
-                        WindowState = WindowState.Maximized, Topmost = true, ShowInTaskbar = false };
-                    backdrop.Show();
-                }
+                var physicalInput = Environment.GetEnvironmentVariable("SNAPBAR_OCR_MENU_CAPTURE") == "1";
                 var urlCard = new OcrResultWindow("https://example.org/?q={query}", null,
                     new OcrActionDependencies(() => live, () => "https://example.org/?q={query}", value => { live = value; saves++; return true; }, () => managed++, null, LaunchWeb: launched.Add));
-                urlCard.SetResult(new OcrResult("ok", "original")); urlCard.Show(); if (backdrop != null) urlCard.Activate();
+                urlCard.SetResult(new OcrResult("ok", "original")); urlCard.Show();
                 var urlEditor = Children<TextBox>(urlCard).Single(); urlEditor.Text = "corrected words"; urlEditor.Select(10, 5);
                 var urlMore = Children<Button>(urlCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
                 MenuItem OpenUrl() { urlMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); return ((OcrActionMenu)urlMore.ContextMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_" + url.Id); }
-                if (backdrop != null)
+                if (physicalInput)
                 {
                     urlCard.Title = "SnapBar OCR Menu Capture Fixture";
                     Console.WriteLine("WAITING: activate the SnapBar OCR Menu Capture Fixture");
@@ -124,10 +84,28 @@ internal static class OcrActionsTest
                 var cardPoint = urlCard.PointToScreen(new Point()); var menuPoint = urlMore.ContextMenu.PointToScreen(new Point());
                 var displayScale = PresentationSource.FromVisual(urlCard)!.CompositionTarget!.TransformToDevice.M11;
                 Check("expanded menu is beside card", menuPoint.X + urlMore.ContextMenu.ActualWidth * displayScale <= cardPoint.X + 1 || cardPoint.X + urlCard.ActualWidth * displayScale <= menuPoint.X + 1);
-                if (backdrop != null)
+                if (physicalInput)
                 {
-                    await Task.Delay(600); SnapshotExpanded(urlCard, urlMore.ContextMenu, "zh-expanded-fixture.png");
+                    var foreground = GetForegroundWindow();
+                    var menuHandle = ((HwndSource)PresentationSource.FromVisual(urlMore.ContextMenu)!).Handle;
+                    if (foreground != new WindowInteropHelper(urlCard).Handle && foreground != menuHandle) throw new InvalidOperationException("Fixture lost foreground; input skipped");
                     var menu = (OcrActionMenu)urlMore.ContextMenu;
+                    void FixtureKey(byte key, bool up = false)
+                    {
+                        var active = GetForegroundWindow();
+                        var popup = ((HwndSource)PresentationSource.FromVisual(menu)!).Handle;
+                        if (active != new WindowInteropHelper(urlCard).Handle && active != popup) throw new InvalidOperationException("Fixture lost foreground; input skipped");
+                        keybd_event(key, 0, up ? 2u : 0u, 0);
+                    }
+                    menu.Search.Focus(); FixtureKey(0x09); FixtureKey(0x09, true); await Task.Delay(50);
+                    Check("physical Tab moves to an action", menu.Rows.Any(row => row.IsKeyboardFocusWithin));
+                    FixtureKey(0x10); FixtureKey(0x09); FixtureKey(0x09, true); FixtureKey(0x10, true); await Task.Delay(50);
+                    Check("physical Shift-Tab returns to search", menu.Search.IsKeyboardFocusWithin);
+                    FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(30);
+                    var firstFocused = menu.Rows.Single(row => row.IsKeyboardFocusWithin);
+                    FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(30);
+                    FixtureKey(0x26); FixtureKey(0x26, true); await Task.Delay(30);
+                    Check("physical Up returns to previous action", firstFocused.IsKeyboardFocusWithin);
                     menu.Search.Text = "Fixture URL"; menu.Search.Focus();
                     keybd_event(0x28, 0, 0, 0); keybd_event(0x28, 0, 2, 0); await Task.Delay(50);
                     Check("physical Down focuses matching action", menu.Rows.Any(row => row.IsKeyboardFocusWithin));
@@ -139,7 +117,7 @@ internal static class OcrActionsTest
                     if (!menu.Manage.IsKeyboardFocusWithin) throw new InvalidOperationException("Fixture management did not receive focus");
                     keybd_event(0x0D, 0, 0, 0); keybd_event(0x0D, 0, 2, 0); await Task.Delay(100);
                     Check("physical Enter activates management", managed == 1); managed = 0;
-                    OpenUrl(); backdrop.Close();
+                    OpenUrl();
                 }
                 var presentation = (OcrActionMenu)urlMore.ContextMenu;
                 TextBlock Label(string id) => Children<TextBlock>((DependencyObject)presentation.Tag).Single(x => AutomationProperties.GetAutomationId(x) == id);
@@ -147,9 +125,11 @@ internal static class OcrActionsTest
                 Check("source caption identifies selection", Label("OcrActionSource").Text == UiText.Capture().Get("Ocr_ActionSourceSelection"));
                 Check("menu uses bounded width and height", presentation.Width <= 320 && presentation.MaxHeight <= 420);
                 Check("small work area clamps both dimensions", OcrActionMenu.ClampSize(200, 240) == new Size(200, 240));
-                urlEditor.Select(0, 0);
+                presentation.Search.Focus(); urlEditor.Select(0, 0);
+                Check("selection refresh leaves search focus", presentation.Search.IsKeyboardFocusWithin);
                 Check("source caption updates to all text while open", Label("OcrActionSource").Text == UiText.Capture().Get("Ocr_ActionSourceAll"));
-                urlEditor.Select(10, 5);
+                presentation.Manage.Focus(); urlEditor.Select(10, 5);
+                Check("selection refresh leaves management focus", presentation.Manage.IsKeyboardFocusWithin);
                 Check("source caption updates back to selected text", Label("OcrActionSource").Text == UiText.Capture().Get("Ocr_ActionSourceSelection"));
                 Check("other group is shown without recent group", Children<TextBlock>((DependencyObject)presentation.Tag).Any(x => AutomationProperties.GetAutomationId(x) == "OcrActionOther") && !Children<TextBlock>((DependencyObject)presentation.Tag).Any(x => AutomationProperties.GetAutomationId(x) == "OcrActionRecent"));
                 var disabledLink = presentation.Rows.Single(x => AutomationProperties.GetAutomationId(x) == "OcrAction_link");
@@ -161,19 +141,30 @@ internal static class OcrActionsTest
                 presentation.Search.Text = "";
                 var originalLive = live;
                 live = new ActionSettings { CustomActions = Enumerable.Range(0, 20).Select(n => url with { Id = "custom-" + n.ToString("x32"), Name = "Long fixture action " + n }).ToArray() };
-                presentation.Width = 200; presentation.MaxHeight = 240; presentation.Search.Text = "long fixture";
+                presentation.IsOpen = false;
+                WindowWorkArea.SetWorkAreaOverride(urlCard, new Rect(0, 0, 200, 240));
+                urlMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); presentation = (OcrActionMenu)urlMore.ContextMenu;
+                presentation.Search.Text = "long fixture";
+                Check("production menu clamps to constrained work area", presentation.Width == 200 && presentation.MaxHeight == 240);
                 await Task.Delay(50); presentation.UpdateLayout();
-                presentation.ActionList.ScrollToEnd(); await Task.Delay(50); Snapshot(presentation, "zh-long-constrained.png");
+                var lastRow = presentation.Rows.Last(); lastRow.Focus(); lastRow.BringIntoView(); await Task.Delay(50); Snapshot(presentation, "zh-long-constrained.png");
                 Check("long list scrolls independently of footer", presentation.ActionList.ScrollableHeight > 0 && presentation.ActionList.VerticalOffset > 0 && presentation.Manage.IsVisible);
+                WindowWorkArea.SetWorkAreaOverride(urlCard, null);
                 live = originalLive; urlRow = OpenUrl(); presentation = (OcrActionMenu)urlMore.ContextMenu;
+                Check("automatic alternate opening is suppressed", !ContextMenuService.GetIsEnabled(urlMore));
                 Check("More retains corrected selection", urlEditor.SelectionStart == 10 && urlEditor.SelectionLength == 5);
                 var menuSearch = ((OcrActionMenu)urlMore.ContextMenu).Search;
                 var down = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(menuSearch), 0, Key.Down) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
                 menuSearch.RaiseEvent(down);
                 Check("Down moves from search to an action", down.Handled && presentation.Rows.Any(row => row.IsKeyboardFocusWithin));
+                var focusedId = AutomationProperties.GetAutomationId(presentation.Rows.Single(row => row.IsKeyboardFocusWithin));
+                urlEditor.Select(0, 0);
+                Check("selection refresh retains action focus", presentation.Rows.Any(row => AutomationProperties.GetAutomationId(row) == focusedId && row.IsKeyboardFocusWithin));
+                urlEditor.Select(10, 5);
                 var escape = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(menuSearch), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
                 menuSearch.RaiseEvent(escape);
-                Check("Escape closes More and preserves selection", !urlMore.ContextMenu.IsOpen && urlEditor.SelectionStart == 10 && urlEditor.SelectionLength == 5);
+                for (var n = 0; n < 50 && urlMore.ContextMenu != null; n++) await Task.Delay(20);
+                Check("Escape closes More and preserves selection", !presentation.IsOpen && urlMore.ContextMenu == null && urlEditor.SelectionStart == 10 && urlEditor.SelectionLength == 5);
                 live = live with { RecentIds = [url.Id] };
                 urlRow = OpenUrl();
                 presentation = (OcrActionMenu)urlMore.ContextMenu;
@@ -199,11 +190,21 @@ internal static class OcrActionsTest
                 searchBox.Text = "no-such-fixture-action";
                 await Task.Delay(30); Snapshot(urlMore.ContextMenu, "zh-search-empty.png");
                 var key = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(searchBox), 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+                searchBox.Focus(); var searchFocused = searchBox.IsKeyboardFocusWithin;
                 searchBox.RaiseEvent(key);
-                Check("Enter with no search matches does not open management", managed == 0);
+                Check("Enter with no search matches does not open management", searchFocused && key.Handled && managed == 0 && ((OcrActionMenu)urlMore.ContextMenu).IsOpen);
                 searchBox.Text = "";
                 ((OcrActionMenu)urlMore.ContextMenu).Manage.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Check("management preserves editor", managed == 1 && urlEditor.Text == "corrected words"); urlCard.Close();
+                var escapeCard = new OcrResultWindow("", null); escapeCard.SetResult(new OcrResult("ok", "fixture")); escapeCard.Show();
+                var escapeEditor = Children<TextBox>(escapeCard).Single(); escapeEditor.Select(0, 3);
+                var escapeMore = Children<Button>(escapeCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
+                escapeMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); var escapeMenu = (OcrActionMenu)escapeMore.ContextMenu;
+                var firstEscape = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(escapeMenu.Search), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+                escapeMenu.Search.RaiseEvent(firstEscape); for (var n = 0; n < 50 && escapeMore.ContextMenu != null; n++) await Task.Delay(20);
+                var secondEscape = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(escapeEditor), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+                escapeEditor.RaiseEvent(secondEscape);
+                Check("second Escape closes card after menu", firstEscape.Handled && secondEscape.Handled && !escapeCard.IsVisible);
 
                 var replacement = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "Replace fixture", CustomActionKind.PowerShell, "terminal", "fixture", ActionOutput.ReplaceSelection);
                 var replacementSettings = ActionCatalog.Normalize(new ActionSettings { CustomActions = [replacement] });
@@ -336,17 +337,27 @@ internal static class OcrActionsTest
                 ((OcrActionMenu)englishRunningMore.ContextMenu).Rows.Single(i => AutomationProperties.GetAutomationId(i) == "OcrAction_" + delayed.Id).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 await Task.Delay(30); Snapshot(englishRunning, "en-running.png");
                 englishPending.SetResult(new ScriptExecutionResult("ok", "applied fixture")); await Task.Delay(30); Snapshot(englishRunning, "en-applied.png"); englishRunning.Close();
-                var englishCard = new OcrResultWindow("", null, new OcrActionDependencies(() => noInputSettings, () => "", _ => true, () => { }, null));
+                var englishSettings = noInputSettings with { RecentIds = ["search"] };
+                var englishCard = new OcrResultWindow("", null, new OcrActionDependencies(() => englishSettings, () => "", _ => true, () => { }, null));
                 englishCard.SetResult(new OcrResult("ok", "fixture text")); englishCard.Show();
                 WindowWorkArea.SetWorkAreaOverride(englishCard, new Rect(0, 0, 360, 240)); englishCard.UpdateLayout();
                 Check("OCR card remains within restricted work area", englishCard.ActualWidth <= 360 && englishCard.ActualHeight <= 240);
                 Snapshot(englishCard, "en-restricted.png");
+                WindowWorkArea.SetWorkAreaOverride(englishCard, null);
                 var englishMore = Children<Button>(englishCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
                 englishMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(50);
                 Snapshot(englishCard, "en-card.png"); Snapshot(englishMore.ContextMenu, "en-more.png");
                 var englishSearch = ((OcrActionMenu)englishMore.ContextMenu).Search;
+                Snapshot(englishMore.ContextMenu, "en-recent-other.png");
+                englishSearch.Text = "search"; await Task.Delay(30); Snapshot(englishMore.ContextMenu, "en-search-results.png");
                 englishSearch.Text = "no-such-fixture-action"; await Task.Delay(30); Snapshot(englishMore.ContextMenu, "en-search-empty.png");
                 Check("restricted More menu is visible and bounded", englishMore.ContextMenu.IsOpen && englishMore.ContextMenu.ActualHeight <= SystemParameters.WorkArea.Height);
+                englishSettings = new ActionSettings { CustomActions = Enumerable.Range(0, 20).Select(n => url with { Id = "custom-" + n.ToString("x32"), Name = "Long fixture action " + n }).ToArray() };
+                englishMore.ContextMenu.IsOpen = false; WindowWorkArea.SetWorkAreaOverride(englishCard, new Rect(0, 0, 200, 240));
+                englishMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); var englishMenu = (OcrActionMenu)englishMore.ContextMenu;
+                englishMenu.Search.Text = "long fixture"; await Task.Delay(50); englishMenu.ActionList.ScrollToEnd(); await Task.Delay(50);
+                Snapshot(englishMenu, "en-long-constrained.png");
+                Check("English constrained list uses production sizing", englishMenu.Width == 200 && englishMenu.MaxHeight == 240 && englishMenu.ActionList.ScrollableHeight > 0 && englishMenu.Manage.IsVisible);
                 englishCard.Close(); UiText.SetLanguage("zh-Hant");
 
                 var aiDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "snapbar-ocr-ai-" + Guid.NewGuid().ToString("N"));

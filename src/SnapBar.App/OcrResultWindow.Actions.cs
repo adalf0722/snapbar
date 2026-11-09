@@ -34,21 +34,32 @@ internal sealed partial class OcrResultWindow
     private void ActionEditorChanged() { actionMenu?.RefreshSelection(); revision++; actionResult?.InvalidateTarget(); actionAi?.InvalidateTarget(); }
     private void DisposeActions()
     {
-        actionClosed = true; invocation++; actionCancellation?.Cancel(); actionMenu?.SetCurrentValue(ContextMenu.IsOpenProperty, false);
+        actionClosed = true; invocation++; actionCancellation?.Cancel();
+        var menu = actionMenu; menu?.SetCurrentValue(ContextMenu.IsOpenProperty, false);
+        if (ReferenceEquals(actionMenu, menu)) actionMenu = null;
+        if (ReferenceEquals(more.ContextMenu, menu)) more.ContextMenu = null;
         // Keep already-produced output available for copying, but detach its stale target.
         actionResult?.InvalidateTarget(); actionResult = null; actionAi?.Close(); actionAi = null;
     }
     private bool CloseActions()
     {
         if (actionMenu?.IsOpen != true) return false;
-        actionMenu.IsOpen = false; editor.Focus(); return true;
+        actionMenu.IsOpen = false; return true;
     }
     private void OpenActions()
     {
         if (actionCancellation != null || actionAi?.IsVisible == true || actionClosed) return;
+        actionMenu?.SetCurrentValue(ContextMenu.IsOpenProperty, false);
         var menu = new OcrActionMenu(more, language, actionDependencies, SelectedText, () => editor.SelectionLength > 0,
-            item => _ = RunActionAsync(item), () => { if (!actionClosed && actionCancellation == null) editor.Focus(); });
+            item => _ = RunActionAsync(item));
         actionMenu = menu; more.ContextMenu = menu;
+        menu.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(actionMenu, menu)) return;
+            actionMenu = null;
+            if (ReferenceEquals(more.ContextMenu, menu)) more.ContextMenu = null;
+            if (!actionClosed && actionCancellation == null) editor.Focus();
+        };
         menu.IsOpen = true; menu.Search.Focus();
     }
 

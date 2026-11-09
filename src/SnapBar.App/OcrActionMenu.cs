@@ -30,7 +30,7 @@ internal sealed class OcrActionMenu : ContextMenu
     internal ScrollViewer ActionList => scroll;
 
     internal OcrActionMenu(Button target, UiLanguage language, OcrActionDependencies dependencies,
-        Func<string> selectedText, Func<bool> hasSelection, Action<ActionItem> invoke, Action returnFocus)
+        Func<string> selectedText, Func<bool> hasSelection, Action<ActionItem> invoke)
     {
         this.language = language; this.dependencies = dependencies; this.selectedText = selectedText;
         this.hasSelection = hasSelection; this.invoke = invoke;
@@ -39,7 +39,8 @@ internal sealed class OcrActionMenu : ContextMenu
         var point = target.PointToScreen(new Point(0, 0));
         var work = Native.WorkArea((int)point.X, (int)point.Y);
         var scale = Math.Max(96, Native.GetDpiForWindow(handle)) / 96d;
-        var bounds = ClampSize(work.Width / scale, work.Height / scale);
+        var overrideArea = WindowWorkArea.GetWorkAreaOverride(Window.GetWindow(target));
+        var bounds = ClampSize(overrideArea?.Width ?? work.Width / scale, overrideArea?.Height ?? work.Height / scale);
         Width = bounds.Width; MaxHeight = bounds.Height;
         Background = Brushes.White; BorderBrush = ActionUi.Line; BorderThickness = new(1);
         FontFamily = ActionUi.Font; FontSize = 13;
@@ -68,14 +69,14 @@ internal sealed class OcrActionMenu : ContextMenu
         AutomationProperties.SetAutomationId(source, "OcrActionSource"); header.Children.Add(source);
         var footer = new Border { BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 0, 0), Padding = new(0, 4, 0, 0) };
         DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
-        Manage = new MenuItem { Header = language.Get("Ocr_ManageActions"), MinHeight = 36, Padding = new(8, 6, 8, 6) };
+        Manage = new MenuItem { Header = new TextBlock { Text = language.Get("Ocr_ManageActions"), TextWrapping = TextWrapping.Wrap }, MinHeight = 36, Padding = new(8, 6, 8, 6) };
+        AutomationProperties.SetName(Manage, language.Get("Ocr_ManageActions"));
         AutomationProperties.SetAutomationId(Manage, "OcrManageActions"); Manage.Click += (_, _) => { IsOpen = false; dependencies.Manage(); };
         footer.Child = Manage;
         scroll = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
         root.Children.Add(scroll);
         Search.TextChanged += (_, _) => Render();
         PreviewKeyDown += OnKey;
-        Closed += (_, _) => returnFocus();
         Render();
     }
 
@@ -90,6 +91,7 @@ internal sealed class OcrActionMenu : ContextMenu
     {
         placeholder.Visibility = Search.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         source.Text = language.Get(hasSelection() ? "Ocr_ActionSourceSelection" : "Ocr_ActionSourceAll");
+        var focusedId = Rows.FirstOrDefault(row => row.IsKeyboardFocusWithin) is { } focused ? AutomationProperties.GetAutomationId(focused) : null;
         list.Children.Clear();
         var settings = ActionCatalog.Normalize(dependencies.Settings());
         var query = Search.Text.Trim();
@@ -108,6 +110,11 @@ internal sealed class OcrActionMenu : ContextMenu
             var other = filtered.Where(item => !recent.Contains(item.Id)).ToArray();
             if (first.Length > 0) { AddLabel("Ocr_ActionRecent", "OcrActionRecent"); foreach (var item in first) AddRow(item); }
             if (other.Length > 0) { AddLabel("Ocr_ActionOther", "OcrActionOther"); foreach (var item in other) AddRow(item); }
+        }
+        if (focusedId != null)
+        {
+            var replacement = Rows.FirstOrDefault(row => AutomationProperties.GetAutomationId(row) == focusedId && row.IsEnabled);
+            if (replacement != null) replacement.Focus(); else Search.Focus();
         }
     }
 

@@ -61,6 +61,8 @@ internal sealed partial class OcrResultWindow : Window
         }, 1);
         reselect = AddButton("Ocr_Reselect", "OcrReselect", () => Reselect?.Invoke(), 2);
         more = AddButton("Ocr_More", "OcrMore", OpenActions, 3, "more");
+        // Context menus are opened only through OpenActions, which checks current state and settings.
+        ContextMenuService.SetIsEnabled(more, false);
         cancel = AddButton("Ocr_Cancel", "OcrCancel", Close, 4);
         copy.Visibility = reselect.Visibility = more.Visibility = Visibility.Collapsed;
         editor.TextChanged += (_, _) => EditorChanged();
