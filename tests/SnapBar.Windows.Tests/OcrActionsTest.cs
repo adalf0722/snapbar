@@ -19,6 +19,7 @@ internal static class OcrActionsTest
     [DllImport("user32.dll")] private static extern bool CloseClipboard();
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, nuint extra);
+    [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
     private sealed class FixtureAi : IAiTextClient
     {
         public string? Source; public string? Instruction;
@@ -90,12 +91,25 @@ internal static class OcrActionsTest
                     var menuHandle = ((HwndSource)PresentationSource.FromVisual(urlMore.ContextMenu)!).Handle;
                     if (foreground != new WindowInteropHelper(urlCard).Handle && foreground != menuHandle) throw new InvalidOperationException("Fixture lost foreground; input skipped");
                     var menu = (OcrActionMenu)urlMore.ContextMenu;
-                    void FixtureKey(byte key, bool up = false)
+                    void RequireFixtureForeground()
                     {
                         var active = GetForegroundWindow();
                         var popup = ((HwndSource)PresentationSource.FromVisual(menu)!).Handle;
                         if (active != new WindowInteropHelper(urlCard).Handle && active != popup) throw new InvalidOperationException("Fixture lost foreground; input skipped");
+                    }
+                    void FixtureKey(byte key, bool up = false)
+                    {
+                        RequireFixtureForeground();
                         keybd_event(key, 0, up ? 2u : 0u, 0);
+                    }
+                    bool OnlyFocusedRowIsHighlighted()
+                    {
+                        menu.UpdateLayout();
+                        var highlighted = menu.Rows.Append(menu.Manage)
+                            .Where(row => row.Template.FindName("RowChrome", row) is Border { Background: var background }
+                                && background != Brushes.Transparent)
+                            .ToArray();
+                        return highlighted is [var row] && row.IsKeyboardFocusWithin;
                     }
                     menu.Search.Focus(); FixtureKey(0x09); FixtureKey(0x09, true); await Task.Delay(50);
                     Check("physical Tab moves to an action", menu.Rows.Any(row => row.IsKeyboardFocusWithin));
@@ -103,9 +117,25 @@ internal static class OcrActionsTest
                     Check("physical Shift-Tab returns to search", menu.Search.IsKeyboardFocusWithin);
                     FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(30);
                     var firstFocused = menu.Rows.Single(row => row.IsKeyboardFocusWithin);
-                    FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(30);
-                    FixtureKey(0x26); FixtureKey(0x26, true); await Task.Delay(30);
-                    Check("physical Up returns to previous action", firstFocused.IsKeyboardFocusWithin);
+                    RequireFixtureForeground();
+                    if (!Native.GetCursorPos(out var previousCursor)) throw new InvalidOperationException("Fixture could not read cursor position");
+                    var rowCenter = firstFocused.PointToScreen(new Point(firstFocused.ActualWidth / 2, firstFocused.ActualHeight / 2));
+                    if (!SetCursorPos((int)rowCenter.X, (int)rowCenter.Y)) throw new InvalidOperationException("Fixture could not position the cursor");
+                    try
+                    {
+                        await Task.Delay(50);
+                        FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(30);
+                        Check("physical Down highlights only the focused row while the pointer stays on the previous row",
+                            firstFocused.IsMouseOver && !firstFocused.IsKeyboardFocusWithin && OnlyFocusedRowIsHighlighted());
+                        Snapshot(menu, "zh-keyboard-highlight.png");
+                        FixtureKey(0x26); FixtureKey(0x26, true); await Task.Delay(30);
+                        Check("physical Up returns to previous action", firstFocused.IsKeyboardFocusWithin && OnlyFocusedRowIsHighlighted());
+                    }
+                    finally
+                    {
+                        if (Native.GetCursorPos(out var cursor) && cursor.X == (int)rowCenter.X && cursor.Y == (int)rowCenter.Y)
+                            SetCursorPos(previousCursor.X, previousCursor.Y);
+                    }
                     menu.Search.Text = "Fixture URL"; menu.Search.Focus();
                     FixtureKey(0x28); FixtureKey(0x28, true); await Task.Delay(50);
                     Check("physical Down focuses matching action", menu.Rows.Any(row => row.IsKeyboardFocusWithin));

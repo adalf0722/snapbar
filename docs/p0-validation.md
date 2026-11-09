@@ -982,3 +982,9 @@ OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像�
 - 新增英文分組、搜尋結果與受限長清單的控制項渲染：`en-recent-other.png`、`en-search-results.png`、`en-long-constrained.png`。`zh-expanded-fixture.png` 為先前已檢視的實際展開截圖，非此次重新擷取；目前測試以實際卡片及選單位置斷言取代桌面擷取。工作區限制由視窗既有的模擬工作區接點提供。
 - 另一審查修正前輪次 `artifacts/checks/desktop/20261109T121841139Z-b7a5766d1c0d4209adeab455f48aef6b/report.json` 的 Ocr 複製選取文字斷言再次得到 16/1；其原因仍未確認，後續兩次完整輪次均為 36/0。
 - 獨立複審通過規格、程式品質與整合檢查。測試中的 Down 和 Enter 改用與 Tab、Up 相同的前景檢查。啟用實體鍵盤後單獨重跑 OcrActions，86 項全數通過。報告位於 `artifacts/checks/desktop/20261109T122333192Z-d2b9efcbf3e743b99ad107107093ded3/report.json`。
+
+### 2026-11-09 OCR「更多」鍵盤反白
+
+動作列與管理入口依目前焦點顯示反白。桌面測試把游標留在上一列，按向下鍵後確認只有新焦點列反白，再按向上鍵確認反白返回上一列。測試視窗渲染位於 `artifacts/ocr-shared-actions/zh-keyboard-highlight.png`。
+
+OcrActions 87 項全數通過，報告位於 `artifacts/checks/desktop/20261109T130226077Z-e7fbf2937cbf42c6a12ccfeccdf85978/report.json`。相同產品程式的合跑也通過 Language 50 項與 Appearance 174 項，報告位於 `artifacts/checks/desktop/20261109T130107476Z-14c07e2c16004b17ad01e012d7807875/report.json`。

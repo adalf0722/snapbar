@@ -24,6 +24,7 @@ internal sealed class OcrActionMenu : ContextMenu
     private readonly StackPanel list = new();
     private readonly TextBlock placeholder;
     private readonly ScrollViewer scroll;
+    private readonly ControlTemplate rowTemplate;
     internal TextBox Search { get; }
     internal IEnumerable<MenuItem> Rows => list.Children.OfType<MenuItem>();
     internal MenuItem Manage { get; }
@@ -59,6 +60,7 @@ internal sealed class OcrActionMenu : ContextMenu
         var icon = ActionUi.Icon("search", ActionUi.Muted, 16); icon.Margin = new(0, 0, 8, 0); searchGrid.Children.Add(icon);
         var inputGrid = new Grid(); Grid.SetColumn(inputGrid, 1); searchGrid.Children.Add(inputGrid);
         Search = new TextBox { BorderThickness = new(0), Background = Brushes.Transparent, Padding = new(0, 4, 0, 4), FontSize = 13 };
+        rowTemplate = CreateRowTemplate(Search);
         AutomationProperties.SetAutomationId(Search, "OcrActionSearch"); AutomationProperties.SetName(Search, language.Get("Ocr_ActionSearch"));
         placeholder = ActionUi.Text(language.Get("Ocr_ActionSearchPlaceholder"), 13, ActionUi.Muted); placeholder.IsHitTestVisible = false;
         AutomationProperties.SetAutomationId(placeholder, "OcrActionSearchPlaceholder");
@@ -69,7 +71,8 @@ internal sealed class OcrActionMenu : ContextMenu
         AutomationProperties.SetAutomationId(source, "OcrActionSource"); header.Children.Add(source);
         var footer = new Border { BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 0, 0), Padding = new(0, 4, 0, 0) };
         DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
-        Manage = new MenuItem { Header = new TextBlock { Text = language.Get("Ocr_ManageActions"), TextWrapping = TextWrapping.Wrap }, MinHeight = 36, Padding = new(8, 6, 8, 6) };
+        Manage = new MenuItem { Header = new TextBlock { Text = language.Get("Ocr_ManageActions"), TextWrapping = TextWrapping.Wrap },
+            Template = rowTemplate, MinHeight = 36, Padding = new(8, 6, 8, 6) };
         AutomationProperties.SetName(Manage, language.Get("Ocr_ManageActions"));
         AutomationProperties.SetAutomationId(Manage, "OcrManageActions"); Manage.Click += (_, _) => { IsOpen = false; dependencies.Manage(); };
         footer.Child = Manage;
@@ -81,6 +84,40 @@ internal sealed class OcrActionMenu : ContextMenu
     }
 
     internal static Size ClampSize(double width, double height) => new(Math.Max(1, Math.Min(320, width)), Math.Max(1, Math.Min(420, height)));
+
+    private static ControlTemplate CreateRowTemplate(TextBox search)
+    {
+        // These rows live in a panel, so MenuItem's native selection state can linger after focus moves.
+        var chrome = new FrameworkElementFactory(typeof(Border), "RowChrome");
+        chrome.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+        chrome.SetValue(Border.PaddingProperty, new TemplateBindingExtension(PaddingProperty));
+        chrome.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+
+        var content = new FrameworkElementFactory(typeof(DockPanel));
+        var icon = new FrameworkElementFactory(typeof(ContentPresenter));
+        icon.SetValue(ContentPresenter.ContentSourceProperty, nameof(MenuItem.Icon));
+        icon.SetValue(WidthProperty, 16d);
+        icon.SetValue(MarginProperty, new Thickness(0, 0, 8, 0));
+        icon.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+        content.AppendChild(icon);
+        var header = new FrameworkElementFactory(typeof(ContentPresenter));
+        header.SetValue(ContentPresenter.ContentSourceProperty, nameof(MenuItem.Header));
+        header.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+        content.AppendChild(header);
+        chrome.AppendChild(content);
+
+        var template = new ControlTemplate(typeof(MenuItem)) { VisualTree = chrome };
+        var hover = new MultiDataTrigger();
+        hover.Conditions.Add(new(new Binding(nameof(IsMouseOver)) { RelativeSource = RelativeSource.Self }, true));
+        hover.Conditions.Add(new(new Binding(nameof(IsEnabled)) { RelativeSource = RelativeSource.Self }, true));
+        hover.Conditions.Add(new(new Binding(nameof(IsKeyboardFocusWithin)) { Source = search }, true));
+        hover.Setters.Add(new Setter(Border.BackgroundProperty, ActionUi.Canvas, "RowChrome"));
+        template.Triggers.Add(hover);
+        var focus = new Trigger { Property = IsKeyboardFocusWithinProperty, Value = true };
+        focus.Setters.Add(new Setter(Border.BackgroundProperty, ActionUi.Pale, "RowChrome"));
+        template.Triggers.Add(focus);
+        return template;
+    }
 
     internal void RefreshSelection()
     {
@@ -134,7 +171,7 @@ internal sealed class OcrActionMenu : ContextMenu
         var label = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13, Foreground = enabled ? ActionUi.Ink : ActionUi.Muted, VerticalAlignment = VerticalAlignment.Center };
         label.Inlines.Add(new Run(UiNames.Action(item, language)));
         if (!enabled) label.Inlines.Add(new Run("  " + shortReason) { Foreground = ActionUi.Muted, FontSize = 12 });
-        var row = new MenuItem { Header = label, IsEnabled = enabled, MinHeight = 36, Padding = new(8, 6, 8, 6),
+        var row = new MenuItem { Header = label, IsEnabled = enabled, Template = rowTemplate, MinHeight = 36, Padding = new(8, 6, 8, 6),
             Icon = ActionUi.ItemIcon(item, enabled ? ActionUi.Ink : ActionUi.Muted, 16), ToolTip = enabled ? item.Custom?.Output == ActionOutput.ReplaceSelection ? language.Get("Ocr_Apply") : null : reason };
         if (!enabled) { ToolTipService.SetShowOnDisabled(row, true); AutomationProperties.SetHelpText(row, reason); }
         AutomationProperties.SetName(row, UiNames.Action(item, language)); AutomationProperties.SetAutomationId(row, "OcrAction_" + item.Id);
