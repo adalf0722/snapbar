@@ -2662,4 +2662,15 @@ Its enabled state will be preserved.</value>
   <data name="Ocr_ActionFailed" xml:space="preserve"><value>Could not run this action.</value></data>
   <data name="Ocr_ActionCancelled" xml:space="preserve"><value>Action cancelled.</value></data>
   <data name="Ocr_ActionTargetChanged" xml:space="preserve"><value>Recognized text or action changed; result was discarded.</value></data>
+  <data name="Ocr_ActionSearchPlaceholder" xml:space="preserve"><value>Search actions…</value></data>
+  <data name="Ocr_ActionSourceSelection" xml:space="preserve"><value>Text source: selected text</value></data>
+  <data name="Ocr_ActionSourceAll" xml:space="preserve"><value>Text source: all recognized text</value></data>
+  <data name="Ocr_ActionRecent" xml:space="preserve"><value>Recent</value></data>
+  <data name="Ocr_ActionOther" xml:space="preserve"><value>Other actions</value></data>
+  <data name="Ocr_ActionResults" xml:space="preserve"><value>Search results</value></data>
+  <data name="Ocr_ActionNoResults" xml:space="preserve"><value>No matching actions</value></data>
+  <data name="Ocr_ReasonLink" xml:space="preserve"><value>Needs a valid URL</value></data>
+  <data name="Ocr_ReasonPath" xml:space="preserve"><value>Needs a full path</value></data>
+  <data name="Ocr_ReasonLookup" xml:space="preserve"><value>Needs a word</value></data>
+  <data name="Ocr_ReasonUnavailable" xml:space="preserve"><value>Unavailable</value></data>
 </root>

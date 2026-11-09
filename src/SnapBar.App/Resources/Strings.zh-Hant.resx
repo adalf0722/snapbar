@@ -2662,4 +2662,15 @@
   <data name="Ocr_ActionFailed" xml:space="preserve"><value>無法執行此動作。</value></data>
   <data name="Ocr_ActionCancelled" xml:space="preserve"><value>已取消動作。</value></data>
   <data name="Ocr_ActionTargetChanged" xml:space="preserve"><value>辨識文字或動作已變更，結果已捨棄。</value></data>
+  <data name="Ocr_ActionSearchPlaceholder" xml:space="preserve"><value>搜尋動作…</value></data>
+  <data name="Ocr_ActionSourceSelection" xml:space="preserve"><value>文字來源：所選文字</value></data>
+  <data name="Ocr_ActionSourceAll" xml:space="preserve"><value>文字來源：全部辨識文字</value></data>
+  <data name="Ocr_ActionRecent" xml:space="preserve"><value>最近使用</value></data>
+  <data name="Ocr_ActionOther" xml:space="preserve"><value>其他動作</value></data>
+  <data name="Ocr_ActionResults" xml:space="preserve"><value>搜尋結果</value></data>
+  <data name="Ocr_ActionNoResults" xml:space="preserve"><value>找不到符合的動作</value></data>
+  <data name="Ocr_ReasonLink" xml:space="preserve"><value>需有效網址</value></data>
+  <data name="Ocr_ReasonPath" xml:space="preserve"><value>需完整路徑</value></data>
+  <data name="Ocr_ReasonLookup" xml:space="preserve"><value>需單字</value></data>
+  <data name="Ocr_ReasonUnavailable" xml:space="preserve"><value>目前不適用</value></data>
 </root>

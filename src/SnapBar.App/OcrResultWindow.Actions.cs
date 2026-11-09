@@ -25,13 +25,13 @@ internal sealed partial class OcrResultWindow
     private long revision, invocation;
     private bool actionClosed;
     private CancellationTokenSource? actionCancellation;
-    private ContextMenu? actionMenu;
+    private OcrActionMenu? actionMenu;
     private ActionResultWindow? actionResult;
     private AiPanelWindow? actionAi;
     private Button? actionCancel;
 
     private void InitializeActions(OcrActionDependencies dependencies) => actionDependencies = dependencies;
-    private void ActionEditorChanged() { revision++; actionResult?.InvalidateTarget(); actionAi?.InvalidateTarget(); }
+    private void ActionEditorChanged() { actionMenu?.RefreshSelection(); revision++; actionResult?.InvalidateTarget(); actionAi?.InvalidateTarget(); }
     private void DisposeActions()
     {
         actionClosed = true; invocation++; actionCancellation?.Cancel(); actionMenu?.SetCurrentValue(ContextMenu.IsOpenProperty, false);
@@ -46,52 +46,12 @@ internal sealed partial class OcrResultWindow
     private void OpenActions()
     {
         if (actionCancellation != null || actionAi?.IsVisible == true || actionClosed) return;
-        var menu = new ContextMenu { PlacementTarget = more, MaxHeight = Math.Max(160, SystemParameters.WorkArea.Height / 2) };
+        var menu = new OcrActionMenu(more, language, actionDependencies, SelectedText, () => editor.SelectionLength > 0,
+            item => _ = RunActionAsync(item), () => { if (!actionClosed && actionCancellation == null) editor.Focus(); });
         actionMenu = menu; more.ContextMenu = menu;
-        var search = new TextBox { MinWidth = 220, Margin = new(4) };
-        AutomationProperties.SetAutomationId(search, "OcrActionSearch"); AutomationProperties.SetName(search, language.Get("Ocr_ActionSearch"));
-        var searchItem = new MenuItem { StaysOpenOnClick = true, Header = search }; menu.Items.Add(searchItem);
-        void Render()
-        {
-            while (menu.Items.Count > 1) menu.Items.RemoveAt(1);
-            var settings = actionDependencies.Settings(); var query = search.Text.Trim();
-            var matches = ActionCatalog.GetLocalActions(settings, query).Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
-            foreach (var item in ActionCatalog.GetLocalActions(settings).Where(item => matches.Contains(item.Id)
-                || UiNames.Action(item, language).Contains(query, StringComparison.OrdinalIgnoreCase)))
-            {
-                var enabled = ActionCatalog.IsApplicableLocal(item, SelectedText()) && (item.BuiltIn != TextAction.Ai || actionDependencies.Ai != null);
-                var row = new MenuItem { Header = UiNames.Action(item, language), IsEnabled = enabled,
-                    Icon = ActionUi.ItemIcon(item, ActionUi.Ink), ToolTip = enabled ? null : language.Get(item.BuiltIn switch
-                    { TextAction.OpenLink => "Ocr_InvalidLink", TextAction.RevealPath => "Ocr_InvalidPath", TextAction.Lookup => "Ocr_InvalidLookup", _ => "Ocr_ActionUnavailable" }) };
-                if (enabled && item.Custom?.Output == ActionOutput.ReplaceSelection) row.ToolTip = language.Get("Ocr_Apply");
-                if (!enabled)
-                {
-                    ToolTipService.SetShowOnDisabled(row, true);
-                    AutomationProperties.SetHelpText(row, (string)row.ToolTip);
-                }
-                AutomationProperties.SetAutomationId(row, "OcrAction_" + item.Id);
-                row.Click += (_, _) => { menu.IsOpen = false; _ = RunActionAsync(item); };
-                menu.Items.Add(row);
-            }
-            menu.Items.Add(new Separator());
-            var manage = new MenuItem { Header = language.Get("Ocr_ManageActions") };
-            AutomationProperties.SetAutomationId(manage, "OcrManageActions"); manage.Click += (_, _) => actionDependencies.Manage(); menu.Items.Add(manage);
-        }
-        search.TextChanged += (_, _) => Render();
-        search.PreviewKeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Escape) { e.Handled = true; menu.IsOpen = false; editor.Focus(); }
-            else if (e.Key is Key.Down or Key.Enter)
-            {
-                var first = menu.Items.OfType<MenuItem>().FirstOrDefault(item => item != searchItem && item.IsEnabled
-                    && AutomationProperties.GetAutomationId(item) != "OcrManageActions");
-                if (first != null) { e.Handled = true; if (e.Key == Key.Enter) first.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); else first.Focus(); }
-            }
-        };
-        Render();
-        menu.Closed += (_, _) => { if (!actionClosed && actionCancellation == null) editor.Focus(); };
-        menu.IsOpen = true; search.Focus();
+        menu.IsOpen = true; menu.Search.Focus();
     }
+
     private bool DefinitionCurrent(ActionItem item) => ActionCatalog.GetLocalActions(actionDependencies.Settings()).Any(current => current == item);
     private async Task RunActionAsync(ActionItem item)
     {

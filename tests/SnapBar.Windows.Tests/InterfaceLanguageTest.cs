@@ -222,11 +222,11 @@ internal static class InterfaceLanguageTest
                 var ocrMore = Children<Button>(ocrWindow).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
                 ocrMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 var ocrMenu = ocrMore.ContextMenu;
-                Check("empty OCR disables search", !ocrMenu.Items.OfType<MenuItem>().Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").IsEnabled);
+                Check("empty OCR disables search", !((OcrActionMenu)ocrMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").IsEnabled);
                 ocrMenu.IsOpen = false;
                 Children<TextBox>(ocrWindow).Single().Text = new string('x', 20000);
                 ocrMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                ocrMore.ContextMenu.Items.OfType<MenuItem>().Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                ((OcrActionMenu)ocrMore.ContextMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Check("OCR result callbacks retain opening-language guidance", Children<TextBlock>(ocrWindow).Any(text => text.Text == "Action unavailable for this text."));
                 ocrWindow.Close();
                 client.Completion.SetResult(new AiTextResult(true, "Generated 原文 content remains unchanged."));

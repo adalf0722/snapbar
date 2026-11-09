@@ -968,3 +968,12 @@ OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像�
 針對 OCR 動作輸出與生命週期，桌面 `OcrActions` 60 項通過，報告為 `artifacts/checks/desktop/20261108T222402508Z-43b6982f1f624fddacf80b241efef3d0/report.json`；`Language` 50 項通過，報告為 `artifacts/checks/desktop/20261108T222031433Z-438697e41eda4353b362625dfbbf2cb4/report.json`。涵蓋剪貼簿成功與占用時保留輸出、無輸入工作在編輯後完成、關閉後晚到輸出、AI 重選後舊目標、路徑準備後重新驗證、兩個暫存詞典的分組查詢，以及同一自訂網址經原生選字與 OCR 執行。剪貼簿測試使用既有備份／復原機制。OCR 結果視窗的套用提示改為說明本機文字範圍，並保留原選字提示。`scripts/check.ps1` 通過，Core 529 項通過；建置報告 `artifacts/checks/build/20261108T222444977Z-e9766ff076724d07a8f611bf7e8165c6/report.json`。
 
 已檢查 `artifacts/ocr-shared-actions/` 的英文執行中、套用後、空搜尋與受限工作區影像；受限案例使用模擬 360 × 240 DIP 工作區，不代表混合 DPI 或多螢幕實機。三次 `Actions` 均在既有的原生捲動關閉檢查失敗（各 9 項通過、1 項失敗）；隔離的整合前基準 `42cfc23` 也在相同檢查得到 9 通過、1 失敗，記錄於 `artifacts/ocr-actions-baseline-42cfc23-native-actions.log`。原因未確認，未修改原測試或原生政策，亦不宣稱完整 Release 驗證通過。
+
+
+### 2026-11-09 OCR「更多」選單呈現
+
+- `pwsh -NoProfile -File scripts/check.ps1`：通過，Core 529/0；最後一次建置報告位於 `artifacts/checks/build/20261109T121217594Z-e1229947e59b41659e3a64aeb404918e/`。
+- `$env:SNAPBAR_OCR_MENU_CAPTURE='1'; pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite OcrActions,Language,Appearance,Ocr"`：OcrActions 76/0、Language 50/0、Appearance 174/0；報告 `artifacts/checks/desktop/20261109T120910776Z-6c3b310d38c74aa38c168dbe5f972896/report.json`。此輪 Ocr 在複製選取文字斷言得到 16/1，原因未確認。
+- 不啟用截圖選項，單獨執行 `pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite Ocr"`：36/0，報告 `artifacts/checks/desktop/20261109T121034847Z-94758265b7ab4b0285242f91ecd3bcb4/report.json`；此前完整桌面輪次亦有 Ocr 36/0。保留原斷言，未將間歇失敗視為已解決。
+- 中英文選單分別渲染，以及搜尋結果及空狀態、最近與其他群組、受限長清單的測試圖片在 `artifacts/ocr-shared-actions/`；其中 `zh-expanded-fixture.png` 是拋棄式背景與辨識卡實際展開畫面。已檢視卡片與選單相對位置、停用原因、捲動區和固定入口；實體鍵盤 Down、Enter 與管理入口 Enter 在專用測試卡通過。
+- 受限工作區採模擬尺寸；實體混合 DPI 與多螢幕未驗證。原生 Actions 滾輪測試的既有基準失敗未重跑或宣稱修復；不宣稱完整 Release 通過。

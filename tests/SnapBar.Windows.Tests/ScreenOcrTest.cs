@@ -251,7 +251,7 @@ internal static class ScreenOcrTest
                     editor.Text = " ";
                     Action(result, "OcrMore").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     var blankMenu = Action(result, "OcrMore").ContextMenu;
-                    Check(!Action(result, "OcrCopy").IsEnabled && !blankMenu.Items.OfType<MenuItem>().Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").IsEnabled,
+                    Check(!Action(result, "OcrCopy").IsEnabled && !((OcrActionMenu)blankMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").IsEnabled,
                         "blank edited text disables copy and search");
                     blankMenu.IsOpen = false;
                     editor.Text = "Disposable replacement";
