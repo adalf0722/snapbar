@@ -47,6 +47,7 @@ internal static class UiAppearanceTest
             Directory.CreateDirectory(directory);
             try
             {
+                OnboardingTest.Ui(Check);
                 main = new MainWindow(new SettingsStore(Path.Combine(directory, "settings.json"))); main.Show(); main.UpdateLayout();
                 Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).Where(e => e.IsVisible).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
                 Check(main.ClipboardCompatibilityEnabled && Children<CheckBox>(main).Single(c => AutomationProperties.GetAutomationId(c) == "ClipboardCompatibilityToggle").IsChecked == true,

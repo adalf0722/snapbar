@@ -1,5 +1,17 @@
 # P0 驗證紀錄
 
+## 2026-11-14 單一畫面使用入門
+
+新增首次手動開啟即能練習的獨立視窗。反白唯讀範例、按目前快捷鍵並從真正工具列搜尋後，原處顯示完成、自動顯示開關與系統匣說明；可略過並從「關於與支援 → 使用入門」重看。背景登入與已有設定的使用者不自動彈出。`onboarding.json` 獨立保存版本與狀態，不變更 schema 8，不保存選字或剪貼簿內容。
+
+工程驗證使用真正的獨立練習程序、UIA 選取與工具列 Click 路徑，瀏覽器啟動器以可計數／可失敗的 fixture 注入。確認唯讀來源不可寫入、真正搜尋完成通知仍攜帶原來源、訂閱者例外不影響動作、瀏覽器失敗不算完成；錯誤 HWND／程序啟動時間與舊工作階段結果不更新教學。受限通訊拒絕未知命令、重複欄位、過長及截斷訊息；取消握手、正常完成、略過重看及關閉的程序清理已驗證。更換快捷鍵一律選工具列鍵位，偏好保存失敗保持原值，過期回應不能覆寫新狀態。
+
+`scripts/check.ps1` 通過；Core 540／0。當前來源的完整 Release 通過 784／0，另 WebActions 21／0、Preflight 1／0，全部 skipped=0。Release 包含 ActionRunner 35、Lifecycle 101、Appearance 186、CompatibilitySlow 22、AiRuntime 117、AiPanel 251、Lookup 16、Language 56。報告：`artifacts/checks/desktop/20261113T233845203Z-29effddca9ad4a91831d072edd72bfea/report.json`；來源指紋：`EDBFC041CC47B8EF76E17651E0EF7718E49E972EC475B371B007F380A53E07B1`。Core 報告所在目錄：`artifacts/checks/build/20261113T233845765Z-5c71817423554fd481f72e79ead8aefe/`。
+
+已逐張目視 `artifacts/ui-polish/onboarding-en.png`、`onboarding-small-conflict.png`、`onboarding-complete-zh.png`：英文起始、繁中完成及小視窗衝突畫面可讀，小視窗以捲動保留後續控制項。這些是 WPF 渲染與程式化尺寸驗證，未執行 100%、150%、200% 實體顯示器人工驗收。未安排未使用過 SnapBar 的真人試做，也未測量一分鐘目標；未以真實預設瀏覽器載入搜尋結果作端到端驗收。啟動成功只表示已交給啟動器，不能證明網頁載入。
+
+本次完成來源、開發版、雙語 README 與新的繁中發布說明，未推送、未發布或替換 `artifacts/p0`。
+
 ## 2026-11-09 OCR 共用動作
 
 以下保留初輪分批紀錄；最終補充驗證見文末同日小節（OcrActions 60／0、Language 50／0、Core 529／0），最終規格與品質複審通過，無剩餘程式問題。

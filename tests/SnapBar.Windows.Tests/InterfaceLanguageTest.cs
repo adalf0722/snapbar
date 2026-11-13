@@ -57,6 +57,7 @@ internal static class InterfaceLanguageTest
         {
             try
             {
+                OnboardingTest.Ui((ok, name) => Check(name, ok), snapshots: false);
                 var resourceRoot = Path.Combine(TestPaths.Repository, "src/SnapBar.App/Resources");
                 Dictionary<string, string> Read(string file) => XDocument.Load(Path.Combine(resourceRoot, file)).Root!.Elements("data")
                     .ToDictionary(node => (string)node.Attribute("name")!, node => node.Element("value")!.Value, StringComparer.Ordinal);

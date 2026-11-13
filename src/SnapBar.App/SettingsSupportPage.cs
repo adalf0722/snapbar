@@ -10,7 +10,7 @@ internal sealed class SettingsSupportPage : ContentControl
 {
     internal TextBlock Status { get; }
     internal ListBox Events { get; }
-    internal SettingsSupportPage(Action exit)
+    internal SettingsSupportPage(Action exit, Action? getStarted = null)
     {
         HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         var body = new DockPanel(); var exitButton = ActionUi.Button(UiText.Get("SettingsSupportPage_000"), exit);
@@ -27,6 +27,12 @@ internal sealed class SettingsSupportPage : ContentControl
         var versionLabel = ActionUi.Text(UiText.Join(UiText.Get("SettingsSupportPage_002"), version.Split('+')[0]), 14, ActionUi.Muted); versionLabel.ToolTip = version; product.Children.Add(versionLabel);
         identity.Children.Add(product); heading.Children.Add(identity);
         var lifetime = ActionUi.Text(UiText.Get("SettingsSupportPage_003"), 13, ActionUi.Muted); lifetime.Margin = new(0, 16, 0, 16); heading.Children.Add(lifetime);
+        if (getStarted != null)
+        {
+            var tutorial = ActionUi.Button(UiText.Get("Onboarding_Entry"), getStarted);
+            tutorial.HorizontalAlignment = HorizontalAlignment.Left; tutorial.Margin = new(0, 0, 0, 16);
+            AutomationProperties.SetAutomationId(tutorial, "OpenOnboarding"); heading.Children.Add(tutorial);
+        }
         DockPanel.SetDock(heading, Dock.Top); content.Children.Add(heading);
         var diagnostics = new DockPanel();
         var fixture = ActionUi.Button(UiText.Get("SettingsSupportPage_004"), () =>

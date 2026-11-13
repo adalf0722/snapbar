@@ -49,6 +49,16 @@ public sealed partial class SelectionController : IDisposable
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
     internal event Action? OcrRequested;
+    internal event Action<OnboardingSearchResult>? OnboardingSearchFinished;
+    private void NotifyOnboardingSearch(SelectionSnapshot current, bool launched)
+    {
+        if (OnboardingSearchFinished == null) return;
+        foreach (Action<OnboardingSearchResult> handler in OnboardingSearchFinished.GetInvocationList())
+        {
+            try { handler(new(current.Id, current.Target, launched)); }
+            catch (Exception) { /* Optional observers must not change the action result. */ }
+        }
+    }
     internal void CancelSelection() => Invalidate();
     internal SelectionSnapshot? ActiveSelection => selection;
     public string SearchUrlTemplate
@@ -249,11 +259,12 @@ public sealed partial class SelectionController : IDisposable
                 try
                 {
                     launchWeb(destination.Uri!);
+                    if (action == TextAction.Search) NotifyOnboardingSearch(current, true);
                     Status?.Invoke(action == TextAction.Search ? UiText.Get("SelectionController_006") : UiText.Get("SelectionController_007"));
                     RememberBuiltIn(action);
                 }
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
-                { Report("browser-unavailable"); }
+                { if (action == TextAction.Search) NotifyOnboardingSearch(current, false); Report("browser-unavailable"); }
             }
             else
             {

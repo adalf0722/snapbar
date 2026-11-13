@@ -12,8 +12,11 @@ SnapBar is a text-selection toolbar for Windows. Select text in the app you are 
 
 1. Open a preview release, expand **Assets**, and download `SnapBar-*-win-x64.zip`.
 2. Extract the entire ZIP to one folder, then open `SnapBar.App.exe`. The unsigned, portable preview includes the .NET runtime.
-3. Under **General → 語言 / Language**, choose **English** if needed. New installations follow your Windows display language, with English used for unsupported languages. Existing installations keep Traditional Chinese until you change it.
-4. Select a sentence in Notepad or a browser, press **Ctrl + Alt + V**, then choose **Copy** or **Search**.
+3. Your first manual launch opens a practice window. Select a few sample words, press the shortcut shown, then click **Search** in the real toolbar (or **⋯**). Search sends those sample words to your search service and opens your browser. No AI account is needed.
+4. After searching, the same window shows a completion message, an optional automatic-toolbar switch and tray instructions. Choose **Maybe later** to skip; reopen practice under **About and support → Get started**. Upgrades and background login launches do not automatically show it.
+5. To use SnapBar in your work, select a sentence in Notepad or a browser, press **Ctrl + Alt + V** (or your configured shortcut), then choose **Copy** or **Search**.
+
+Choose your language directly in practice or under **General → 語言 / Language**. New installations follow your Windows display language, with English used for unsupported languages. Existing installations keep Traditional Chinese until you change it.
 
 Enable **Show toolbar automatically** under **General** to show the toolbar after dragging or double-clicking to select text. The default is manual activation. You can change the toolbar shortcut or assign direct Search, Copy, and OCR shortcuts under General.
 
@@ -30,7 +33,7 @@ Changing language updates settings and the tray immediately. Editor and result w
 
 ## If the toolbar does not appear
 
-1. Click the SnapBar tray icon to open settings. Under **About and support**, expand diagnostics and open the test window. Select some test text and press the shortcut.
+1. Click the SnapBar tray icon and open **About and support → Get started** to practice on sample text. The separate test window is still available in the diagnostics section for advanced checks.
 2. Check the toolbar shortcut under **General**. If another app has reserved it, choose a different combination.
 3. If only one app is affected, check selection compatibility under **Compatibility**. Sublime Text support needs explicit first-time setup of guarded key bindings; the choice is saved.
 
