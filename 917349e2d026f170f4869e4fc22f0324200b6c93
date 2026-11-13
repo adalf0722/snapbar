@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "kind": "snapbar-desktop",
+  "commit": "917349e2d026f170f4869e4fc22f0324200b6c93",
+  "tree": "1d7b2091dc2d4a5c8a79a37f99d7d99e16211a68",
+  "report": {
+    "schema": 1,
+    "success": true,
+    "sourceFingerprint": "896D7CF76A9723598539A654704B0D87CCA76F31F8773A949A703211FEA3EB82",
+    "startedUtc": "2026-11-13T13:48:01.3839491Z",
+    "finishedUtc": "2026-11-13T13:49:50.1158898Z",
+    "results": [
+      {
+        "name": "Build",
+        "success": true,
+        "exitCode": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 8.548
+      },
+      {
+        "name": "Preflight",
+        "success": true,
+        "exitCode": 0,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 0.228
+      },
+      {
+        "name": "ActionRunner",
+        "success": true,
+        "exitCode": 0,
+        "passed": 35,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": true,
+        "seconds": 12.679
+      },
+      {
+        "name": "Lifecycle",
+        "success": true,
+        "exitCode": 0,
+        "passed": 75,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 1.683
+      },
+      {
+        "name": "Appearance",
+        "success": true,
+        "exitCode": 0,
+        "passed": 180,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 5.999
+      },
+      {
+        "name": "CompatibilitySlow",
+        "success": true,
+        "exitCode": 0,
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 62.294
+      },
+      {
+        "name": "AiRuntime",
+        "success": true,
+        "exitCode": 0,
+        "passed": 117,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 0.189
+      },
+      {
+        "name": "AiPanel",
+        "success": true,
+        "exitCode": 0,
+        "passed": 251,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 9.558
+      },
+      {
+        "name": "Lookup",
+        "success": true,
+        "exitCode": 0,
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 5.502
+      },
+      {
+        "name": "Language",
+        "success": true,
+        "exitCode": 0,
+        "passed": 50,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 1.835
+      }
+    ]
+  }
+}
