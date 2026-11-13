@@ -47,6 +47,7 @@ function Assert-SnapBarDesktopReceipt($Receipt, [string]$Commit, [string]$Tree) 
             $results[0].failed -ne 0 -or ($name -ne 'Build' -and $results[0].passed -lt 1)) {
             throw "Desktop receipt is missing a successful $name result."
         }
+        if ($name -eq 'ActionRunner') { Assert-SnapBarActionRunnerEvidence $results[0] }
     }
 }
 
@@ -61,7 +62,7 @@ function New-SnapBarDesktopReceipt([string]$Commit, [string]$ReportPath) {
         report = [pscustomobject]@{
             schema = 1; success = $true; sourceFingerprint = $report.sourceFingerprint
             startedUtc = $report.startedUtc; finishedUtc = $report.finishedUtc
-            results = @($report.results | Select-Object name, success, exitCode, passed, failed, seconds)
+            results = @($report.results | Select-Object name, success, exitCode, passed, failed, skipped, runtimesRequired, seconds)
         }
     }
     Assert-SnapBarDesktopReceipt $receipt $Commit "$tree"

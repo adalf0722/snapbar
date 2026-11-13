@@ -264,6 +264,8 @@
   <data name="ActionEditorWindow_078" xml:space="preserve">
     <value>以 Markdown 排版顯示結果，可自行複製或套用。</value>
   </data>
+  <data name="Ocr_ApplyHint" xml:space="preserve"><value>套用會替換辨識文字中原先的範圍。文字或選取範圍變更後無法替換，剪貼簿不受影響。</value></data>
+  <data name="Ocr_ApplyStaleHint" xml:space="preserve"><value>辨識文字的套用目標已無法使用，仍可複製輸出。</value></data>
   <data name="ActionResultWindow_000" xml:space="preserve">
     <value>管理詞典</value>
   </data>
@@ -1835,10 +1837,10 @@
     <value>快捷鍵已設定 · </value>
   </data>
   <data name="MainWindow_Ocr_000" xml:space="preserve">
-    <value>框選 OCR · SnapBar</value>
+    <value>擷取文字 · SnapBar</value>
   </data>
   <data name="MainWindow_Ocr_001" xml:space="preserve">
-    <value>可校正辨識文字，或反白其中一部分再執行動作。</value>
+    <value>編輯文字後，可複製或選擇動作。</value>
   </data>
   <data name="MainWindow_Ocr_002" xml:space="preserve">
     <value>沒有辨識到文字。請重新框選清楚的文字。</value>
@@ -2631,5 +2633,56 @@
   </data>
   <data name="Validation_dictionary-manifest-invalid" xml:space="preserve">
     <value>詞典清單損毀，請還原備份的 library.json。</value>
+  </data>
+  <data name="Ocr_Processing" xml:space="preserve"><value>正在辨識文字…</value></data>
+  <data name="Ocr_Editor" xml:space="preserve"><value>辨識文字</value></data>
+  <data name="Ocr_Copy" xml:space="preserve"><value>複製文字</value></data>
+  <data name="Ocr_CopySelected" xml:space="preserve"><value>複製所選文字</value></data>
+  <data name="Ocr_Copied" xml:space="preserve"><value>已複製 ✓</value></data>
+  <data name="Ocr_Reselect" xml:space="preserve"><value>重新框選</value></data>
+  <data name="Ocr_Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Ocr_Empty" xml:space="preserve"><value>沒有找到文字，試著只框住文字區域。</value></data>
+  <data name="Ocr_Timeout" xml:space="preserve"><value>辨識時間過長，請縮小範圍後重試。</value></data>
+  <data name="Ocr_CaptureError" xml:space="preserve"><value>無法擷取螢幕，請重新框選。</value></data>
+  <data name="Ocr_WorkerError" xml:space="preserve"><value>無法啟動辨識工作程序，請重新框選。</value></data>
+  <data name="Ocr_ProtocolError" xml:space="preserve"><value>無法讀取辨識回應，請重新框選。</value></data>
+  <data name="Ocr_Apply" xml:space="preserve"><value>套用到辨識文字</value></data>
+  <data name="Ocr_More" xml:space="preserve"><value>動作</value></data>
+  <data name="Ocr_ActionSearch" xml:space="preserve"><value>搜尋動作</value></data>
+  <data name="Ocr_ActionUnavailable" xml:space="preserve"><value>此文字不適用這個動作。</value></data>
+  <data name="Ocr_ActionChanged" xml:space="preserve"><value>動作已變更，請重新開啟「動作」並選擇。</value></data>
+  <data name="Ocr_ManageActions" xml:space="preserve"><value>管理動作</value></data>
+  <data name="Ocr_ActionRunning" xml:space="preserve"><value>正在執行動作…</value></data>
+  <data name="Ocr_ActionComplete" xml:space="preserve"><value>動作已完成。</value></data>
+  <data name="Ocr_ActionSaveFailed" xml:space="preserve"><value>無法儲存最近使用的動作。</value></data>
+  <data name="Ocr_ActionCancel" xml:space="preserve"><value>取消動作</value></data>
+  <data name="Ocr_InvalidLink" xml:space="preserve"><value>請選擇有效的網頁連結。</value></data>
+  <data name="Ocr_InvalidPath" xml:space="preserve"><value>請選擇有效的檔案路徑。</value></data>
+  <data name="Ocr_InvalidLookup" xml:space="preserve"><value>請選擇要查詢的單字。</value></data>
+  <data name="Ocr_ActionFailed" xml:space="preserve"><value>無法執行此動作。</value></data>
+  <data name="Ocr_ActionCancelled" xml:space="preserve"><value>已取消動作。</value></data>
+  <data name="Ocr_ActionTargetChanged" xml:space="preserve"><value>辨識文字或動作已變更，結果已捨棄。</value></data>
+  <data name="Ocr_ActionSearchPlaceholder" xml:space="preserve"><value>搜尋動作…</value></data>
+  <data name="Ocr_ActionSourceSelection" xml:space="preserve"><value>處理範圍：所選文字</value></data>
+  <data name="Ocr_ActionSourceAll" xml:space="preserve"><value>處理範圍：全部文字</value></data>
+  <data name="Ocr_ActionRecent" xml:space="preserve"><value>最近使用</value></data>
+  <data name="Ocr_ActionOther" xml:space="preserve"><value>其他動作</value></data>
+  <data name="Ocr_ActionResults" xml:space="preserve"><value>搜尋結果</value></data>
+  <data name="Ocr_ActionNoResults" xml:space="preserve"><value>找不到符合的動作</value></data>
+  <data name="Ocr_ReasonLink" xml:space="preserve"><value>需有效網址</value></data>
+  <data name="Ocr_ReasonPath" xml:space="preserve"><value>需完整路徑</value></data>
+  <data name="Ocr_ReasonLookup" xml:space="preserve"><value>需單字</value></data>
+  <data name="Ocr_ReasonUnavailable" xml:space="preserve"><value>目前不適用</value></data>
+  <data name="ActionEditorWindow_PythonName" xml:space="preserve">
+    <value>整理空白（Python）</value>
+  </data>
+  <data name="ActionEditorWindow_PythonHelp" xml:space="preserve">
+    <value>從 os.environ.get('POPCLIP_TEXT', '') 讀取選取文字。需要 PATH 中的 Python 3，或在進階設定指定 python.exe 完整路徑，也可使用虛擬環境。</value>
+  </data>
+  <data name="Runtime_PythonMissing" xml:space="preserve">
+    <value>PATH 中找不到 Python 3。請安裝 Python 3，或在進階設定指定既有 python.exe 的完整路徑，也可指定虛擬環境的 python.exe。</value>
+  </data>
+  <data name="ScriptDiagnostic_PythonModuleMissing" xml:space="preserve">
+    <value>目前的 Python 環境缺少模組。請在所選環境安裝所需套件，或改用已安裝套件的環境之 python.exe；模組名稱請見詳細資訊。</value>
   </data>
 </root>

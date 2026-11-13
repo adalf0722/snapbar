@@ -71,6 +71,10 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args.SequenceEqual(["--ocr-worker"]) || args.SequenceEqual(["--ocr-worker", "--english"])) return OcrBackendTest.FakeWorker(args.Length == 2);
+        if (args.SequenceEqual(["--ocr-test-supervisor"])) return OcrBackendTest.Supervisor();
+        if (args.SequenceEqual(["--ocr-backend"])) return OcrBackendTest.RunAsync().GetAwaiter().GetResult();
+        if (args.SequenceEqual(["--ocr-engine-baseline"])) return OcrBackendTest.MeasureEngineAsync().GetAwaiter().GetResult();
         if (!args.Contains("--interface-language"))
         {
             var legacyCulture = System.Globalization.CultureInfo.GetCultureInfo("zh-Hant");
@@ -83,11 +87,12 @@ internal static class Program
             "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics", "--ai-panel", "--ai-preview",
             "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--lookup", "--screen-ocr", "--browser-launch-smoke",
             "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
-            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language"];
+            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language", "--ocr-actions"];
         if (args.SequenceEqual(["--list-tests"])) { foreach (var test in tests) Console.WriteLine(test); return 0; }
         var worker = args.Any(a => a is "--clipboard-compatibility-fixture" or "--path-worker" or "--clipboard-race-writer");
+        var requireActionRuntimes = args.SequenceEqual(["--custom-action-runner", "--require-runtimes"]);
         if (!worker && (args.Count(a => tests.Contains(a)) != 1
-            || (!args.Contains("--sublime-action") && args.Length != 1)))
+            || (!args.Contains("--sublime-action") && args.Length != 1 && !requireActionRuntimes)))
         {
             Console.Error.WriteLine("Choose exactly one test. Use --list-tests or scripts/test-desktop.ps1 -List.");
             return 2;
@@ -105,7 +110,7 @@ internal static class Program
         if (args.Contains("--action-layout")) return ActionLayoutTest.Run();
         if (args.Contains("--menu-keyboard")) return MenuKeyboardTest.Run();
         if (args.Contains("--custom-actions")) return CustomActionsTest.Run();
-        if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync(requireActionRuntimes).GetAwaiter().GetResult();
         if (args.Contains("--action-diagnostics")) return ActionDiagnosticsTest.Run();
         if (args.Contains("--path-worker")) return PathWorkerTest.RunFake();
         if (args.Contains("--path-worker-tests")) return PathWorkerTest.RunAsync().GetAwaiter().GetResult();
@@ -114,6 +119,7 @@ internal static class Program
         if (args.Contains("--web-actions")) return WebActionsTest.Run();
         if (args.Contains("--lookup")) return LookupTest.Run();
         if (args.Contains("--screen-ocr")) return ScreenOcrTest.Run();
+        if (args.Contains("--ocr-actions")) return OcrActionsTest.Run();
         if (args.Contains("--browser-launch-smoke")) return BrowserLaunchTest.RunAsync().GetAwaiter().GetResult();
         if (args.Contains("--app-exclusions")) return AppExclusionTest.Run();
         if (args.Contains("--tray-lifecycle")) return TrayLifecycleTest.Run();

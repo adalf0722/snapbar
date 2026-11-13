@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace SnapBar.Core;
 
-public enum CustomActionKind { Url, PowerShell, JavaScript }
+public enum CustomActionKind { Url, PowerShell, JavaScript, Python }
 public enum ActionOutput { None, Clipboard, ReplaceSelection, Hud, Window, Markdown }
 public enum ActionPlacement { Bar, More, Hidden }
 public sealed record CustomActionDefinition(string Id, string Name, CustomActionKind Kind, string Icon, string Content,

@@ -18,6 +18,7 @@ internal static class WindowWorkArea
         if (!constraints.TryGetValue(window, out var constraint)) return;
         constraint.Override = workArea; constraint.Apply();
     }
+    internal static Rect? GetWorkAreaOverride(Window window) => constraints.TryGetValue(window, out var constraint) ? constraint.Override : null;
     internal static void Attach(Window window)
     {
         if (constraints.TryGetValue(window, out _)) return;

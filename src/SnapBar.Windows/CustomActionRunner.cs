@@ -34,11 +34,15 @@ public static class CustomActionRunner
         {
             var interpreter = ResolveInterpreter(action);
             if (interpreter == null) return new("runtime-unavailable",
-                ProductErrorCode: action.InterpreterPath == null ? "Runtime_DefaultMissing" : "Runtime_PathInvalid",
+                ProductErrorCode: action.InterpreterPath != null ? "Runtime_PathInvalid"
+                    : action.Kind == CustomActionKind.Python ? "Runtime_PythonMissing" : "Runtime_DefaultMissing",
                 ProductErrorArgument: action.InterpreterPath ?? action.Kind.ToString());
             directory = Path.Combine(Path.GetTempPath(), "SnapBar.Actions", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
-            script = Path.Combine(directory, action.Kind == CustomActionKind.PowerShell ? "action.ps1" : "action.js");
+            script = Path.Combine(directory, action.Kind switch
+            {
+                CustomActionKind.PowerShell => "action.ps1", CustomActionKind.Python => "action.py", _ => "action.js"
+            });
             await File.WriteAllTextAsync(script, action.Content, new UTF8Encoding(false), token).ConfigureAwait(false);
             var start = new ProcessStartInfo(interpreter)
             {
@@ -54,6 +58,15 @@ public static class CustomActionRunner
             {
                 const string bootstrap = "while(![IO.File]::Exists($env:SNAPBAR_READY_PATH)){[Threading.Thread]::Sleep(10)};$ProgressPreference='SilentlyContinue';$u=New-Object System.Text.UTF8Encoding($false);[Console]::OutputEncoding=$u;$OutputEncoding=$u;& ([ScriptBlock]::Create([IO.File]::ReadAllText($env:SNAPBAR_SCRIPT_PATH,$u)))";
                 foreach (var argument in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-OutputFormat", "Text", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(bootstrap)) })
+                    start.ArgumentList.Add(argument);
+            }
+            else if (action.Kind == CustomActionKind.Python)
+            {
+                bootstrapFile = Path.Combine(directory, "bootstrap.py");
+                const string bootstrap = "import os, sys, time, runpy\nif sys.version_info.major != 3:\n    sys.exit('SnapBar requires Python 3.')\nsys.stdout.reconfigure(newline='')\nsys.stderr.reconfigure(newline='')\nwhile not os.path.exists(os.environ['SNAPBAR_READY_PATH']):\n    time.sleep(0.01)\nrunpy.run_path(os.environ['SNAPBAR_SCRIPT_PATH'], run_name='__main__')\n";
+                await File.WriteAllTextAsync(bootstrapFile, bootstrap, Encoding.ASCII, token).ConfigureAwait(false);
+                start.Environment["PYTHONIOENCODING"] = "utf-8";
+                foreach (var argument in new[] { "-X", "utf8", "-u", bootstrapFile })
                     start.ArgumentList.Add(argument);
             }
             else
@@ -202,7 +215,7 @@ public static class CustomActionRunner
         foreach (var entry in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
         {
             if (string.IsNullOrWhiteSpace(entry)) continue;
-            var candidate = Path.Combine(entry.Trim().Trim('"'), "node.exe");
+            var candidate = Path.Combine(entry.Trim().Trim('"'), action.Kind == CustomActionKind.Python ? "python.exe" : "node.exe");
             if (Path.IsPathFullyQualified(candidate) && File.Exists(candidate)) return candidate;
         }
         return null;

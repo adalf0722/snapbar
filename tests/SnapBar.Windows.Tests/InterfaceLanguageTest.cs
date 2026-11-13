@@ -198,7 +198,7 @@ internal static class InterfaceLanguageTest
                 Check("saving bundled AI name and category preserves original content", savedPrompt?.Name == prompt.Name && savedPrompt.Category == prompt.Category && savedPrompt.Instruction == prompt.Instruction);
                 typeof(MainWindow).GetMethod("ShowOcrResult", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(main, [new SnapBar.Windows.Ocr.OcrResult("ok", "OCR user 原文")]);
                 var ocrWindow = (Window)Field(main, "ocrResultWindow")!;
-                Check("English OCR result preserves recognized content", ocrWindow.Title == "Capture OCR · SnapBar"
+                Check("English OCR result preserves recognized content", ocrWindow.Title == "Capture text · SnapBar"
                     && Children<TextBox>(ocrWindow).Single().Text == "OCR user 原文"
                     && Children<TextBlock>(ocrWindow).Where(text => text.IsVisible).All(text => !HasChinese(text.Text)));
                 UiAppearanceTest.Snapshot(ocrWindow, "language-ocr-en.png");
@@ -219,8 +219,15 @@ internal static class InterfaceLanguageTest
                 UiText.SetLanguage("zh-Hant"); UiText.Refresh(identity);
                 Check("user text and adopted sample names are never translated", userLabel.Text == "Copy" && productLabel.Text == "複製" && customLabel.Text == "Copy");
                 Children<TextBox>(ocrWindow).Single().Text = "";
-                Children<Button>(ocrWindow).Single(button => AutomationProperties.GetName(button) == "Search").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                Check("OCR result callbacks retain opening-language guidance", Children<TextBlock>(ocrWindow).Any(text => text.Text.StartsWith("Could not search", StringComparison.Ordinal)));
+                var ocrMore = Children<Button>(ocrWindow).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
+                ocrMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var ocrMenu = ocrMore.ContextMenu;
+                Check("empty OCR disables search", !((OcrActionMenu)ocrMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").IsEnabled);
+                ocrMenu.IsOpen = false;
+                Children<TextBox>(ocrWindow).Single().Text = new string('x', 20000);
+                ocrMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                ((OcrActionMenu)ocrMore.ContextMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_search").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                Check("OCR result callbacks retain opening-language guidance", Children<TextBlock>(ocrWindow).Any(text => text.Text == "Action unavailable for this text."));
                 ocrWindow.Close();
                 client.Completion.SetResult(new AiTextResult(true, "Generated 原文 content remains unchanged."));
                 for (int attempt = 0; aiPanel.Session.Busy && attempt < 50; attempt++) await Task.Delay(10);

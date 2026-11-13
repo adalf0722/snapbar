@@ -88,9 +88,16 @@ jobs:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           global-json-file: global.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
       - name: Check, build and test
         shell: pwsh
-        run: ./scripts/check.ps1
+        run: ./scripts/check.ps1 -RequireActionRuntimes
       - name: Publish and verify release ZIP
         id: package
         shell: pwsh

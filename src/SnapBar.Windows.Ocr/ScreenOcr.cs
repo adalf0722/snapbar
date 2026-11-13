@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -20,7 +19,9 @@ public static class ScreenOcr
 
     public static async Task<OcrResult> CaptureAsync(ScreenRect region, CancellationToken token, bool preferEnglish = false)
     {
-        var pixels = new Rectangle((int)region.X, (int)region.Y, (int)region.Width, (int)region.Height);
+        Rectangle pixels;
+        try { pixels = OcrSnapshot.Validate(region, MaximumPixels, 4); }
+        catch (ArgumentOutOfRangeException) { return new("region"); }
         if (!Monitors().Any(screen => pixels.Left >= screen.X && pixels.Top >= screen.Y
             && pixels.Right <= screen.Right && pixels.Bottom <= screen.Bottom)
             || pixels.Width < 4 || pixels.Height < 4 || (long)pixels.Width * pixels.Height > MaximumPixels)
@@ -28,12 +29,9 @@ public static class ScreenOcr
         try
         {
             token.ThrowIfCancellationRequested();
-            using var bitmap = new Bitmap(pixels.Width, pixels.Height, PixelFormat.Format24bppRgb);
-            using (var graphics = Graphics.FromImage(bitmap))
-                graphics.CopyFromScreen(pixels.Location, Point.Empty, pixels.Size);
-            using var buffer = new MemoryStream();
-            bitmap.Save(buffer, System.Drawing.Imaging.ImageFormat.Png);
-            return await RecognizeAsync(buffer.ToArray(), token, preferEnglish);
+            using var snapshot = OcrSnapshot.Capture(region);
+            return await OcrWorker.RecognizeAsync(Path.Combine(AppContext.BaseDirectory, "SnapBar.App.exe"),
+                snapshot.CropPng(region), preferEnglish, token);
         }
         catch (ExternalException) { return new("capture"); }
     }

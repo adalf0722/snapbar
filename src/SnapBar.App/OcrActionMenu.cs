@@ -1,0 +1,229 @@
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using SnapBar.Core;
+using SnapBar.Windows;
+
+namespace SnapBar.App;
+
+// Presentation only: execution and ticket validation remain owned by the result card.
+internal sealed class OcrActionMenu : ContextMenu
+{
+    private readonly UiLanguage language;
+    private readonly OcrActionDependencies dependencies;
+    private readonly Func<string> selectedText;
+    private readonly Func<bool> hasSelection;
+    private readonly Action<ActionItem> invoke;
+    private readonly TextBlock source;
+    private readonly StackPanel list = new();
+    private readonly TextBlock placeholder;
+    private readonly ScrollViewer scroll;
+    private readonly ControlTemplate rowTemplate;
+    internal TextBox Search { get; }
+    internal IEnumerable<MenuItem> Rows => list.Children.OfType<MenuItem>();
+    internal MenuItem Manage { get; }
+    internal ScrollViewer ActionList => scroll;
+
+    internal OcrActionMenu(Button target, UiLanguage language, OcrActionDependencies dependencies,
+        Func<string> selectedText, Func<bool> hasSelection, Action<ActionItem> invoke)
+    {
+        this.language = language; this.dependencies = dependencies; this.selectedText = selectedText;
+        this.hasSelection = hasSelection; this.invoke = invoke;
+        var owner = Window.GetWindow(target);
+        PlacementTarget = target; Placement = PlacementMode.Custom;
+        CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+        {
+            var origin = owner.TranslatePoint(new Point(), target);
+            return GetPlacements(popupSize, targetSize, new Rect(origin, owner.RenderSize));
+        };
+        var handle = new WindowInteropHelper(owner).Handle;
+        var point = target.PointToScreen(new Point(0, 0));
+        var work = Native.WorkArea((int)point.X, (int)point.Y);
+        var scale = Math.Max(96, Native.GetDpiForWindow(handle)) / 96d;
+        var overrideArea = WindowWorkArea.GetWorkAreaOverride(Window.GetWindow(target));
+        var bounds = ClampSize(overrideArea?.Width ?? work.Width / scale, overrideArea?.Height ?? work.Height / scale);
+        Width = bounds.Width; MaxHeight = bounds.Height;
+        Background = Brushes.White; BorderBrush = ActionUi.Line; BorderThickness = new(1);
+        FontFamily = ActionUi.Font; FontSize = 13;
+        UseLayoutRounding = true; SnapsToDevicePixels = true;
+        // Popups have a separate visual tree; use the result card's control styles.
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/SnapBar.App;component/Themes/Controls.xaml", UriKind.Relative) });
+
+        // ContextMenu's default item containers are selectable; use a content template instead.
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetValue(Border.BackgroundProperty, Brushes.White); border.SetValue(Border.BorderBrushProperty, ActionUi.Line);
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1)); border.SetValue(Border.PaddingProperty, new Thickness(10));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
+        var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+        presenter.SetBinding(ContentPresenter.ContentProperty, new Binding(nameof(Tag)) { RelativeSource = RelativeSource.TemplatedParent });
+        border.AppendChild(presenter); Template = new ControlTemplate(typeof(ContextMenu)) { VisualTree = border };
+        var root = new DockPanel(); Tag = root;
+        var header = new StackPanel(); DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
+        var searchBorder = new Border { BorderBrush = ActionUi.Line, BorderThickness = new(1), CornerRadius = new(4), Padding = new(8, 3, 8, 3) };
+        var searchGrid = new Grid(); searchGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); searchGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        var icon = ActionUi.Icon("search", ActionUi.Muted, 16); icon.Margin = new(0, 0, 8, 0); searchGrid.Children.Add(icon);
+        var inputGrid = new Grid(); Grid.SetColumn(inputGrid, 1); searchGrid.Children.Add(inputGrid);
+        Search = new TextBox { BorderThickness = new(0), Background = Brushes.Transparent, Padding = new(0, 4, 0, 4), FontSize = 13, MinHeight = 30 };
+        rowTemplate = CreateRowTemplate(Search);
+        AutomationProperties.SetAutomationId(Search, "OcrActionSearch"); AutomationProperties.SetName(Search, language.Get("Ocr_ActionSearch"));
+        placeholder = ActionUi.Text(language.Get("Ocr_ActionSearchPlaceholder"), 13, ActionUi.Muted); placeholder.IsHitTestVisible = false;
+        AutomationProperties.SetAutomationId(placeholder, "OcrActionSearchPlaceholder");
+        inputGrid.Children.Add(Search); inputGrid.Children.Add(placeholder); searchBorder.Child = searchGrid; header.Children.Add(searchBorder);
+        Search.GotKeyboardFocus += (_, _) => searchBorder.BorderBrush = ActionUi.Accent;
+        Search.LostKeyboardFocus += (_, _) => searchBorder.BorderBrush = ActionUi.Line;
+        source = ActionUi.Text("", 12, ActionUi.Muted); source.Margin = new(8, 10, 8, 6);
+        AutomationProperties.SetAutomationId(source, "OcrActionSource"); header.Children.Add(source);
+        var footer = new Border { BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 0, 0), Padding = new(0, 4, 0, 0) };
+        DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
+        Manage = new MenuItem { Header = new TextBlock { Text = language.Get("Ocr_ManageActions"), TextWrapping = TextWrapping.Wrap },
+            Template = rowTemplate, MinHeight = 36, Padding = new(8, 6, 8, 6), Foreground = ActionUi.Muted,
+            Icon = ActionUi.Icon("settings", ActionUi.Muted, 16) };
+        AutomationProperties.SetName(Manage, language.Get("Ocr_ManageActions"));
+        AutomationProperties.SetAutomationId(Manage, "OcrManageActions"); Manage.Click += (_, _) => { IsOpen = false; dependencies.Manage(); };
+        footer.Child = Manage;
+        scroll = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
+        root.Children.Add(scroll);
+        Search.TextChanged += (_, _) => Render();
+        PreviewKeyDown += OnKey;
+        Render();
+    }
+
+    internal static Size ClampSize(double width, double height) => new(Math.Max(1, Math.Min(300, width)), Math.Max(1, Math.Min(360, height)));
+
+    internal static CustomPopupPlacement[] GetPlacements(Size popup, Size target, Rect card)
+    {
+        const double gap = 8;
+        var x = Math.Max(card.Left, target.Width - popup.Width);
+        var y = Math.Clamp(0, card.Top, Math.Max(card.Top, card.Bottom - popup.Height));
+        // WPF selects the candidate with the most visible area; each avoids the editor.
+        return [new(new Point(x, card.Bottom + gap), PopupPrimaryAxis.Horizontal),
+            new(new Point(card.Right + gap, y), PopupPrimaryAxis.Vertical),
+            new(new Point(card.Left - popup.Width - gap, y), PopupPrimaryAxis.Vertical),
+            new(new Point(x, card.Top - popup.Height - gap), PopupPrimaryAxis.Horizontal)];
+    }
+
+    private static ControlTemplate CreateRowTemplate(TextBox search)
+    {
+        // These rows live in a panel, so MenuItem's native selection state can linger after focus moves.
+        var chrome = new FrameworkElementFactory(typeof(Border), "RowChrome");
+        chrome.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+        chrome.SetValue(Border.PaddingProperty, new TemplateBindingExtension(PaddingProperty));
+        chrome.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+
+        var content = new FrameworkElementFactory(typeof(DockPanel));
+        var icon = new FrameworkElementFactory(typeof(ContentPresenter));
+        icon.SetValue(ContentPresenter.ContentSourceProperty, nameof(MenuItem.Icon));
+        icon.SetValue(WidthProperty, 16d);
+        icon.SetValue(MarginProperty, new Thickness(0, 0, 8, 0));
+        icon.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+        content.AppendChild(icon);
+        var header = new FrameworkElementFactory(typeof(ContentPresenter));
+        header.SetValue(ContentPresenter.ContentSourceProperty, nameof(MenuItem.Header));
+        header.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+        content.AppendChild(header);
+        chrome.AppendChild(content);
+
+        var template = new ControlTemplate(typeof(MenuItem)) { VisualTree = chrome };
+        var hover = new MultiDataTrigger();
+        hover.Conditions.Add(new(new Binding(nameof(IsMouseOver)) { RelativeSource = RelativeSource.Self }, true));
+        hover.Conditions.Add(new(new Binding(nameof(IsEnabled)) { RelativeSource = RelativeSource.Self }, true));
+        hover.Conditions.Add(new(new Binding(nameof(IsKeyboardFocusWithin)) { Source = search }, true));
+        hover.Setters.Add(new Setter(Border.BackgroundProperty, ActionUi.Canvas, "RowChrome"));
+        template.Triggers.Add(hover);
+        var focus = new Trigger { Property = IsKeyboardFocusWithinProperty, Value = true };
+        focus.Setters.Add(new Setter(Border.BackgroundProperty, ActionUi.Pale, "RowChrome"));
+        template.Triggers.Add(focus);
+        return template;
+    }
+
+    internal void RefreshSelection()
+    {
+        if (IsOpen) Render();
+    }
+
+    private void Render()
+    {
+        placeholder.Visibility = Search.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        source.Text = language.Get(hasSelection() ? "Ocr_ActionSourceSelection" : "Ocr_ActionSourceAll");
+        var focusedId = Rows.FirstOrDefault(row => row.IsKeyboardFocusWithin) is { } focused ? AutomationProperties.GetAutomationId(focused) : null;
+        list.Children.Clear();
+        var settings = ActionCatalog.Normalize(dependencies.Settings());
+        var query = Search.Text.Trim();
+        var all = ActionCatalog.GetLocalActions(settings);
+        var matches = ActionCatalog.GetLocalActions(settings, query).Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        var filtered = all.Where(item => matches.Contains(item.Id) || UiNames.Action(item, language).Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (query.Length > 0)
+        {
+            if (filtered.Length == 0) AddLabel("Ocr_ActionNoResults", "OcrActionEmpty");
+            else { AddLabel("Ocr_ActionResults", "OcrActionResults"); foreach (var item in filtered) AddRow(item); }
+        }
+        else
+        {
+            var recent = settings.RecentIds.Take(3).ToHashSet(StringComparer.Ordinal);
+            var first = filtered.Where(item => recent.Contains(item.Id)).ToArray();
+            var other = filtered.Where(item => !recent.Contains(item.Id)).ToArray();
+            if (first.Length > 0) { AddLabel("Ocr_ActionRecent", "OcrActionRecent"); foreach (var item in first) AddRow(item); }
+            if (other.Length > 0) { AddLabel("Ocr_ActionOther", "OcrActionOther"); foreach (var item in other) AddRow(item); }
+        }
+        if (focusedId != null)
+        {
+            var replacement = Rows.FirstOrDefault(row => AutomationProperties.GetAutomationId(row) == focusedId && row.IsEnabled);
+            if (replacement != null) replacement.Focus(); else Search.Focus();
+        }
+    }
+
+    private void AddLabel(string key, string id)
+    {
+        var label = ActionUi.Text(language.Get(key), 12, ActionUi.Muted); label.Margin = new(8, 7, 8, 4);
+        AutomationProperties.SetAutomationId(label, id); list.Children.Add(label);
+    }
+
+    private void AddRow(ActionItem item)
+    {
+        var enabled = ActionCatalog.IsApplicableLocal(item, selectedText()) && (item.BuiltIn != TextAction.Ai || dependencies.Ai != null);
+        var reason = language.Get(item.BuiltIn switch
+        { TextAction.OpenLink => "Ocr_InvalidLink", TextAction.RevealPath => "Ocr_InvalidPath", TextAction.Lookup => "Ocr_InvalidLookup", _ => "Ocr_ActionUnavailable" });
+        var shortReason = language.Get(item.BuiltIn switch
+        { TextAction.OpenLink => "Ocr_ReasonLink", TextAction.RevealPath => "Ocr_ReasonPath", TextAction.Lookup => "Ocr_ReasonLookup", _ => "Ocr_ReasonUnavailable" });
+        var label = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13, Foreground = enabled ? ActionUi.Ink : ActionUi.Muted, VerticalAlignment = VerticalAlignment.Center };
+        label.Inlines.Add(new Run(UiNames.Action(item, language)));
+        if (!enabled) label.Inlines.Add(new Run("  " + shortReason) { Foreground = ActionUi.Muted, FontSize = 12 });
+        var row = new MenuItem { Header = label, IsEnabled = enabled, Template = rowTemplate, MinHeight = 36, Padding = new(8, 6, 8, 6),
+            Icon = ActionUi.ItemIcon(item, enabled ? ActionUi.Ink : ActionUi.Muted, 16), ToolTip = enabled ? item.Custom?.Output == ActionOutput.ReplaceSelection ? language.Get("Ocr_Apply") : null : reason };
+        if (!enabled) { ToolTipService.SetShowOnDisabled(row, true); AutomationProperties.SetHelpText(row, reason); }
+        AutomationProperties.SetName(row, UiNames.Action(item, language)); AutomationProperties.SetAutomationId(row, "OcrAction_" + item.Id);
+        row.Click += (_, _) => { IsOpen = false; invoke(item); }; row.GotKeyboardFocus += (_, _) => row.BringIntoView();
+        list.Children.Add(row);
+    }
+
+    private void OnKey(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape) { e.Handled = true; IsOpen = false; return; }
+        var enabled = Rows.Where(row => row.IsEnabled).ToArray();
+        if (e.Key == Key.Enter)
+        {
+            var focused = Search.IsKeyboardFocusWithin ? enabled.FirstOrDefault() : enabled.FirstOrDefault(row => row.IsKeyboardFocusWithin);
+            if (Search.IsKeyboardFocusWithin || focused != null) { e.Handled = true; focused?.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); }
+            return;
+        }
+        if (e.Key == Key.Tab)
+        {
+            var reverse = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+            if (Search.IsKeyboardFocusWithin) { if (reverse) Manage.Focus(); else (enabled.FirstOrDefault() ?? Manage).Focus(); }
+            else if (Manage.IsKeyboardFocusWithin) { if (reverse) (enabled.LastOrDefault() ?? (IInputElement)Search).Focus(); else Search.Focus(); }
+            else if (reverse) Search.Focus(); else Manage.Focus();
+            e.Handled = true; return;
+        }
+        if (e.Key is not (Key.Down or Key.Up)) return;
+        var current = Array.FindIndex(enabled, row => row.IsKeyboardFocusWithin);
+        var next = e.Key == Key.Down ? current + 1 : current < 0 ? enabled.Length - 1 : current - 1;
+        if (next >= 0 && next < enabled.Length) { enabled[next].Focus(); enabled[next].BringIntoView(); }
+        e.Handled = true;
+    }
+}

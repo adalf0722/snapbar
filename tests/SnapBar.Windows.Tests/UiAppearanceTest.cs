@@ -251,6 +251,29 @@ internal static class UiAppearanceTest
                     "URL preview does not expose script-result whitespace control");
                 Check(Children<Button>(editor).Any(b => AutomationProperties.GetName(b) == "預覽網址"), "URL editor labels preview without suggesting execution");
                 var kind = Children<ComboBox>(editor).Single(c => AutomationProperties.GetAutomationId(c) == "CustomActionKind");
+                Check(kind.Items.Cast<string>().Contains("Python"), "editor offers Python alongside existing action types");
+                kind.SelectedIndex = (int)CustomActionKind.Python; editor.UpdateLayout();
+                var pythonContent = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionContent");
+                var pythonRuntime = Children<TextBox>(editor).Single(t => AutomationProperties.GetName(t) == "執行環境完整路徑");
+                Check(pythonContent.Text.Contains("os.environ.get('POPCLIP_TEXT'") && Children<TextBlock>(editor).Any(t => t.Text.Contains("需要 PATH 中的 Python 3")), "Python editor includes runnable sample and environment guidance");
+                pythonRuntime.Text = @"C:\Tools\venv\Scripts\python.exe";
+                kind.SelectedIndex = (int)CustomActionKind.JavaScript;
+                Check(pythonRuntime.Text == "", "Python interpreter is not reused for JavaScript");
+                pythonRuntime.Text = @"C:\Tools\node.exe";
+                kind.SelectedIndex = (int)CustomActionKind.Python;
+                Check(pythonRuntime.Text == @"C:\Tools\venv\Scripts\python.exe", "returning to Python restores its interpreter draft");
+                pythonRuntime.Text = "";
+                var pythonTest = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "TestCustomAction");
+                pythonTest.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                var pythonDeadline = DateTime.UtcNow.AddSeconds(10);
+                while (!pythonTest.IsEnabled && DateTime.UtcNow < pythonDeadline) await Task.Delay(20);
+                Check(pythonTest.IsEnabled, "Python sample test completes");
+                if (Children<TextBlock>(editor).Any(t => t.Text == UiText.Get("Runtime_PythonMissing")))
+                    Console.WriteLine("SKIP Python editor execution: python.exe not found on PATH");
+                else
+                    Check(Children<TextBox>(editor).Any(t => AutomationProperties.GetName(t) == "執行結果或網址預覽" && t.Text == "Make something wonderful."), "Python sample runs through editor preview");
+                Snapshot(editor, "editor-python.png");
+                kind.SelectedIndex = (int)CustomActionKind.Url;
                 AiIconPresenter IconPreview(Window window) => Children<AiIconPresenter>(window).Single(p => AutomationProperties.GetAutomationId(p) == "CustomActionIconPreview");
                 void OpenPicker(Action<AiIconPickerWindow> operate)
                 {

@@ -1,5 +1,15 @@
 # P0 驗證紀錄
 
+## 2026-11-09 OCR 共用動作
+
+以下保留初輪分批紀錄；最終補充驗證見文末同日小節（OcrActions 60／0、Language 50／0、Core 529／0），最終規格與品質複審通過，無剩餘程式問題。
+
+針對開發版的個別桌面套件，Ocr 36／0、OcrActions 30／0（`artifacts/checks/desktop/20261108T132519551Z-dbbc22c2497141548fc7fa287cb4f64c/report.json`）；AiPanel 251／0、Language 50／0（`artifacts/checks/desktop/20261108T132556475Z-9ae35d62c37a45b48a480f9ed2f4d0dc/report.json`）；Appearance 174／0（`artifacts/checks/desktop/20261108T132645229Z-a5ec6822015f4798bd604ce362ec92a2/report.json`）。後續 OcrActions 36／0（`artifacts/checks/desktop/20261108T220929813Z-81b02dd7809148bf8bb865e34133e2f9/report.json`），涵蓋校正文字及反白、自訂網址、隱藏舊選單、無輸入動作、非同步取消、替換與復原，以及受控 AI 回應。這些結果來自不同次執行，並非同一次完整 Release 驗證。
+
+最終 `scripts/check.ps1` 通過，Core 529／0；標準桌面執行 Compatibility 21／0、OcrActions 36／0，見 `artifacts/checks/desktop/20261108T221329718Z-36110741d7084d008ecb117b09d7f4fc/report.json`。先前組合執行的 AiPanel 有一次原生替換範圍失敗，之後獨立重跑通過；Compatibility 曾有剪貼簿序號檢查失敗（`artifacts/checks/desktop/20261108T220754750Z-c2b6fa4931304ad2bc56f019c76c6f41/report.json`），原因未確認，後續基準版及目前版本分別重跑通過。
+
+以拋棄式文字的 WPF 視覺輸出檢查繁中及英文卡片和獨立的更多選單，另檢查繁中搜尋無結果、停用項目、執行中及套用後狀態，圖檔在 `artifacts/ocr-shared-actions/`。這些是個別視覺元素的渲染，並非完整桌面截圖；後續英文及模擬受限工作區驗證見文末補充。混合 DPI 和多螢幕實機仍未驗證。
+
 ## 2026-11-07 離線查詞
 
 Core 471／0、WebActions 28／0、Appearance 167／0、Preflight 1／0。桌面測試透過唯讀文字選取觸發「查詞」，驗證未匯入時的設定入口、結果小窗、複製釋義、保留來源焦點，以及查詢中切換焦點會抑制過時結果。報告見 `artifacts/checks/desktop/20261106T233828224Z-c50d0dfedff244c8a23a3f7bb97e5b09/report.json`。
@@ -934,3 +944,75 @@ Repository checks 通過工具契約 12、Core 420 與 Release 建置；完整 R
 已經正式 staging 流程更新本機 `artifacts/p0`，舊套件保留於 `artifacts/publish/a96611a7f6dd4d23a57b7b5e940ec001/previous`。發布報告：`artifacts/checks/build/20261108T074205274Z-c91e28b3e3c246f6868fca245d83513c/report.json`，Probe smoke 10、獨立啟動及雙語資源 smoke 各 1 項通過。
 
 本機驗證 ZIP：`artifacts/releases/1f00aaa76b5347839f63c78bea15fb81/SnapBar-v0.0.0-validation-win-x64.zip`，SHA-256 為 `3a15e1ff23294ce9b99723c3f5b8bca7aaf44be294bc8a6213610ad103f81174`。實際解壓後確認英文 README、獨立啟動及兩種資源載入；暫移繁中 satellite 時檢查拒絕通過，還原後再次通過。結果存於同目錄 `verification.json`。此為本機驗證版本，未推送或公開發布。
+
+## 2026-11-08 OCR 凍結框選、辨識狀態與復原
+
+OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像；成功後就近顯示可編輯卡片，提供複製全部／所選文字、重新框選與搜尋。獨立工作程序有 15 秒總逾時及擁有者生命週期保護。保留既有繁中／英文優先偏好，不自動改寫剪貼簿。
+
+`scripts/check.ps1` 通過 actionlint、工具契約 22、push 契約 10、自動發布契約 18、Release 建置與 Core 510。最終建置報告：`artifacts/checks/build/20261108T121211756Z-7f0e7f56838d47318a16a141eece7098/report.json`。最終 OCR 測試補上拖曳中的選框截圖，並改用既有 `ClipboardBackup` 完整備份／復原剪貼簿；備份不完整時不開始複製測試。修改後再經桌面腳本重建與 Core 檢查。桌面 `Ocr,Language,Appearance` 通過 Preflight 1、OCR 29、Language 50、Appearance 174，全部零失敗；最終報告：`artifacts/checks/desktop/20261108T121224570Z-4073521e0c8343eb9a0c2fb8919819a9/report.json`。這是指定套件驗證，不是完整 Release 證據。
+
+實際 fixture 在框選就緒後改變來源，仍辨識到快照原文；按重新框選則辨識到更新後來源。涵蓋處理狀態原地轉成結果、重複觸發不排隊、關閉取消與晚到結果丟棄、逾時／執行階段缺少／空結果的 UI 復原、下一次真實辨識、所選文字複製、空白停用、剪貼簿占用失敗保留結果及復原原剪貼簿。`--ocr-backend` 再次通過 21 項，包含裁切限制、凍結像素、傳輸與停滯取消、逾時後所擁有 PID 已退出、父程序退出清理、後續工作成功與語言偏好。UI 逾時案例使用辨識委派回傳錯誤狀態；真實工作程序逾時與清理由 backend 測試分開驗證。
+
+最終整體審查通過規格與程式品質，未發現 Critical／Important 問題，並指出兩項輕微測試缺口。已補上過小選區維持框選、滑鼠擷取遺失後清除選框、右鍵取消所有遮罩，以及反向拖曳的真實辨識；逾時／缺少執行階段／空結果均斷言正確本地化訊息與可見、可操作的重選按鈕，並實際點擊驗證新框選就緒。覆蓋上述修正後的針對性 OCR 重跑通過 Preflight 1、OCR 36、重建與 Core 510，報告：`artifacts/checks/desktop/20261108T121607638Z-3233ef83179a4726a07cd47621e6737d/report.json`。此輪僅增強測試，產品程式與前述 Language／Appearance 整合通過版本相同。
+
+同機只有 1920 × 1080、96 DPI（100%）單螢幕，選區 660 × 178 實體像素。Stopwatch 加上 overlay ready／處理卡／結果卡狀態量測，首個框選到就緒 119.1 ms，首次真實辨識放開到回應 25.6 ms、到結果 311.5 ms；兩個冷指標分別取本次測試的首次框選與首次引擎呼叫，中間有一次取消框選檢查。五次暖執行框選到就緒 99.0–122.8 ms、放開到回應 16.3–20.2 ms、放開到結果 268.4–283.3 ms。沒有以固定等待作為量測終點，也沒有為量測加入辨識延遲。冷執行包含截圖與記憶體取樣成本；工作程序每次重新啟動，暖執行代表父程序與作業系統快取暖機。
+
+父程序累積尖峰工作集冷 253,833,216 bytes、暖 276,578,304 bytes；僅透過父 PID 確認本次所擁有子程序後取樣的工作程序尖峰冷 105,594,880 bytes、暖 104,849,408–105,046,016 bytes。子程序離開前最後一次取樣後的短暫尖峰可能未捕捉。數值只記錄 fixture ID、尺寸與效能，不記錄辨識文字或畫面。原版 desktop OCR 9 項基準報告：`artifacts/checks/desktop/20261108T114249750Z-ba37de31b6f24d619bd44e1424711f49/report.json`；原版未有 UI 耗時儀表，不宣稱 UI 加速比例。原生引擎單獨基準為冷 141.7 ms、五次暖 85.6–88.0 ms，與隔離工作程序的端到端時間不可直接比較。
+
+已目視檢查 `artifacts/ui-polish/ocr-frozen-overlay.png`、`ocr-selection.png`、`ocr-processing-card.png`、`ocr-result-card.png`、`ocr-empty-card.png`、`ocr-timeout-card.png`、`ocr-runtime-card.png` 與 `ocr-result-restricted.png`。全螢幕證據先以拋棄式白色視窗遮住使用者桌面，僅保留 fixture；拖曳時框內原亮度、框外暗幕與細選框清楚可見，固定提示已隱藏。處理、空結果與成功卡的文字／按鈕完整，成功編輯器有焦點框，受限 360 × 240 DIP 工作區仍可操作。實際卡片位置另由螢幕工作區邊界約束；受限工作區使用現有注入 seam，不等同第二台實體顯示器。
+
+4K／8K、150% DPI、混合 DPI、負座標與多螢幕實機未量測；負座標裁切由 backend 隔離案例驗證。未新增外部 App 人工相容性驗證，未發布、推送、安裝或替換 `artifacts/p0`。新增更新說明 `release-notes/2026-11-08-ocr-capture-experience.json`。
+
+## 2026-11-09 OCR 共用動作補充驗證
+
+針對 OCR 動作輸出與生命週期，桌面 `OcrActions` 60 項通過，報告為 `artifacts/checks/desktop/20261108T222402508Z-43b6982f1f624fddacf80b241efef3d0/report.json`；`Language` 50 項通過，報告為 `artifacts/checks/desktop/20261108T222031433Z-438697e41eda4353b362625dfbbf2cb4/report.json`。涵蓋剪貼簿成功與占用時保留輸出、無輸入工作在編輯後完成、關閉後晚到輸出、AI 重選後舊目標、路徑準備後重新驗證、兩個暫存詞典的分組查詢，以及同一自訂網址經原生選字與 OCR 執行。剪貼簿測試使用既有備份／復原機制。OCR 結果視窗的套用提示改為說明本機文字範圍，並保留原選字提示。`scripts/check.ps1` 通過，Core 529 項通過；建置報告 `artifacts/checks/build/20261108T222444977Z-e9766ff076724d07a8f611bf7e8165c6/report.json`。
+
+已檢查 `artifacts/ocr-shared-actions/` 的英文執行中、套用後、空搜尋與受限工作區影像；受限案例使用模擬 360 × 240 DIP 工作區，不代表混合 DPI 或多螢幕實機。三次 `Actions` 均在既有的原生捲動關閉檢查失敗（各 9 項通過、1 項失敗）；隔離的整合前基準 `42cfc23` 也在相同檢查得到 9 通過、1 失敗，記錄於 `artifacts/ocr-actions-baseline-42cfc23-native-actions.log`。原因未確認，未修改原測試或原生政策，亦不宣稱完整 Release 驗證通過。
+
+
+### 2026-11-09 OCR「更多」選單呈現
+
+- `pwsh -NoProfile -File scripts/check.ps1` 通過。審查修正後的合跑重建與 Core 529/0 記錄於 `artifacts/checks/build/20261109T122050795Z-0bab4e6615bb482199d3111c7449c26f/report.json`。
+- `$env:SNAPBAR_OCR_MENU_CAPTURE='1'; pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite OcrActions,Language,Appearance,Ocr"`：OcrActions 76/0、Language 50/0、Appearance 174/0；報告 `artifacts/checks/desktop/20261109T120910776Z-6c3b310d38c74aa38c168dbe5f972896/report.json`。此輪 Ocr 在複製選取文字斷言得到 16/1，原因未確認。
+- 不啟用截圖選項，單獨執行 `pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite Ocr"`：36/0，報告 `artifacts/checks/desktop/20261109T121034847Z-94758265b7ab4b0285242f91ecd3bcb4/report.json`；此前完整桌面輪次亦有 Ocr 36/0。保留原斷言，未將間歇失敗視為已解決。
+- 中英文選單分別渲染，以及搜尋結果及空狀態、最近與其他群組、受限長清單的測試圖片在 `artifacts/ocr-shared-actions/`；其中 `zh-expanded-fixture.png` 是拋棄式背景與辨識卡實際展開畫面。已檢視卡片與選單相對位置、停用原因、捲動區和固定入口；實體鍵盤 Down、Enter 與管理入口 Enter 在專用測試卡通過。
+- 受限工作區採模擬尺寸；實體混合 DPI 與多螢幕未驗證。原生 Actions 滾輪測試的既有基準失敗未重跑或宣稱修復；不宣稱完整 Release 通過。
+
+- 審查修正後的完整桌面輪次：`$env:SNAPBAR_OCR_MENU_CAPTURE='1'; pwsh -NoProfile -Command "& ./scripts/test-desktop.ps1 -Suite OcrActions,Language,Appearance,Ocr"`，OcrActions 86/0、Language 50/0、Appearance 174/0、Ocr 36/0，報告 `artifacts/checks/desktop/20261109T122050219Z-7ea32b6d38374afc9c6f3944bcf47231/report.json`。此選項現在只啟用受前景檢查保護的實體鍵盤測試，不再擷取桌面像素。
+- 新增英文分組、搜尋結果與受限長清單的控制項渲染：`en-recent-other.png`、`en-search-results.png`、`en-long-constrained.png`。`zh-expanded-fixture.png` 為先前已檢視的實際展開截圖，非此次重新擷取；目前測試以實際卡片及選單位置斷言取代桌面擷取。工作區限制由視窗既有的模擬工作區接點提供。
+- 另一審查修正前輪次 `artifacts/checks/desktop/20261109T121841139Z-b7a5766d1c0d4209adeab455f48aef6b/report.json` 的 Ocr 複製選取文字斷言再次得到 16/1；其原因仍未確認，後續兩次完整輪次均為 36/0。
+- 獨立複審通過規格、程式品質與整合檢查。測試中的 Down 和 Enter 改用與 Tab、Up 相同的前景檢查。啟用實體鍵盤後單獨重跑 OcrActions，86 項全數通過。報告位於 `artifacts/checks/desktop/20261109T122333192Z-d2b9efcbf3e743b99ad107107093ded3/report.json`。
+
+### 2026-11-09 OCR「更多」鍵盤反白
+
+動作列與管理入口依目前焦點顯示反白。桌面測試把游標留在上一列，按向下鍵後確認只有新焦點列反白，再按向上鍵確認反白返回上一列。測試視窗渲染位於 `artifacts/ocr-shared-actions/zh-keyboard-highlight.png`。
+
+OcrActions 87 項全數通過，報告位於 `artifacts/checks/desktop/20261109T130226077Z-e7fbf2937cbf42c6a12ccfeccdf85978/report.json`。相同產品程式的合跑也通過 Language 50 項與 Appearance 174 項，報告位於 `artifacts/checks/desktop/20261109T130107476Z-14c07e2c16004b17ad01e012d7807875/report.json`。
+
+### 2026-11-13 擷取文字結果卡與動作面板
+
+結果卡改為白色表面、16 DIP 文字與明確的複製主按鈕。「更多」改為「動作」，選單以按鈕為定位基準，提供結果卡下、右、左、上四種候選方向。最近動作最多三筆，其他動作與完整搜尋仍保留。原有動作票證、焦點、文字範圍與過期結果拒絕保持不變。
+
+最終桌面報告為 `artifacts/checks/desktop/20261113T130556905Z-b6ab4e12e82e405387974e376bd8d4b7/report.json`，Build、Preflight、OcrActions 95、Ocr 36、Language 50、Appearance 174 全數通過；該次 Build 亦通過 Core 529 項。OcrActions 啟用實體鍵盤，驗證 Tab、Shift-Tab、方向鍵與 Enter；在目前螢幕四角確認動作面板完整位於工作區且未覆蓋文字編輯區。受限 360 × 240 DIP 的英文結果卡另驗證至少能完整顯示一行文字，200 × 240 DIP 的動作面板仍可捲動並操作管理入口。
+
+已檢視 `artifacts/ocr-shared-actions/zh-polished-card.png`、`zh-polished-actions.png` 及 `en-restricted.png`。環境為 1920 × 1080、96 DPI（100%）單螢幕；尚未執行 125%／150%／200% 與跨螢幕實機組合。本次沒有改變跨應用選取流程，沒有新增真實外部應用 smoke 驗證。尚未發布或替換發行套件。
+
+### 2026-11-13 Python 自訂動作
+
+新增 Python 類型，使用 PATH 中的 python.exe 或使用者指定的完整路徑，包含虛擬環境。輸入沿用 POPCLIP_TEXT，結果沿用既有輸出模式；逾時、取消、輸出上限與 Job Object 子程序清理共用原有 runner。編輯器提供整理空白範例、Python 變數插入及雙語環境提示，切換語言時分別保留解譯器路徑。缺模組顯示環境修復建議並保留 traceback。
+
+Core 通過 530 項。原生 ActionRunner 33、Diagnostics 28 通過，報告為 `artifacts/checks/desktop/20261113T132720526Z-88453e85facf48ca913afb51148b3783/report.json`；該報告整體因後續 Actions 的原生 Copy 點擊檢查失敗而未通過，不能作為發布證據。Actions 重跑 68、Language 50 通過，報告為 `artifacts/checks/desktop/20261113T132850849Z-110424c217e7491b9bcbca1d888faf9b/report.json`。最終 Appearance 180 通過，報告為 `artifacts/checks/desktop/20261113T132958452Z-6426c957cc8e40f3bd8c258cf3761daf/report.json`。
+
+實際使用本機 Python 3.10，驗證中文、emoji、特殊字元與 CRLF 原樣輸出、不傳入選取、非零結束與 Unicode stderr、缺模組、逾時、取消、雙流輸出上限，以及正常結束／逾時／取消後的子程序清理。另建立含中文及空白路徑的暫存虛擬環境，載入該環境 site-packages 的 fixture 模組，確認完整解譯器路徑及套件來源有效。最初 roundtrip 發現 Windows 換行轉換造成 CRCRLF，修正 stdout／stderr 換行設定後通過。
+
+已檢視 `artifacts/ui-polish/editor-python.png`，確認 Python 範例、執行結果、環境說明與進階設定入口排版正常。此輪未執行混合 DPI 或額外外部 App 的 Python 替換 smoke；未跑完整 Release 套件，也未發布或替換 artifacts/p0。
+
+### 2026-11-13 ActionRunner 發布門檻與診斷
+
+Release／All 新增必跑 ActionRunner，嚴格模式要求 Node 與 Python 都實際執行。check.ps1 也加入不需前景視窗的 runner，CI 與發布 workflow 明確設定 Python 3.13、Node 24 並啟用 RequireActionRuntimes。原始測試報告及精簡 Git note 保留 skipped 與 runtimesRequired；本機發布、receipt 驗證與雲端匯入拒絕缺少執行環境、可選模式、有略過或缺少新欄位的 ActionRunner 證據。這些是開發／發布驗證變更，未改動 App 行為。
+
+嚴格桌面入口 `scripts/test-desktop.ps1 -Suite ActionRunner -RequireActionRuntimes` 通過 Build、Core 530、Preflight 1、ActionRunner 35，零失敗、零略過。報告：`artifacts/checks/desktop/20261113T134219853Z-0cfff3a12acd41a29874f05beb678eef/report.json`。新增斷言的自我驗證故意製造非零退出、CRCRLF 與 EOF 差異，確認訊息包含狀態、退出碼、串流長度、第一個差異的 UTF-16 索引及可讀字元標記，不傾倒整段 fixture 輸出。
+
+另以空 PATH 實測缺少 Node／Python：日常模式 22 通過、2 則 SKIP、退出 0；嚴格模式 22 通過、2 個預期失敗、零略過、退出 1。整體政策驗證成功，且 PATH 已復原。紀錄：`artifacts/checks/runtime-policy/20261113T134258874Z-1bbde52eef594090b87ec7f4132ff8a1/report.json`。未執行完整 Release 桌面套件或雲端 workflow，未發布套件。
+
+最終 `scripts/check.ps1 -RequireActionRuntimes` 通過 actionlint、工具契約 24、push／receipt 11、自動發布工具 18、Core 530 與嚴格 ActionRunner 35，全部零失敗；runner 零略過。runner 報告：`artifacts/checks/action-runner/20261113T134417786Z-5e722fc426774beca63a72ee988f5822/report.json`。修改的中文 Markdown 已以嚴格 UTF-8 無 BOM 讀回確認。

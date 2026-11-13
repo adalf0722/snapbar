@@ -9,6 +9,48 @@ internal static class ActionCatalogTests
         var target = new TargetIdentity(1, 2, 3);
         var selection = new SelectionSnapshot("s", target, "hello", null, true, 1, 5);
         var settings = new ActionSettings { CustomActions = [action] };
+        check("local menu joins visible placements and excludes editing commands", () =>
+        {
+            var configured = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar);
+            configured = ActionCatalog.SetPlacement(configured, "path", ActionPlacement.Hidden);
+            var ids = ActionCatalog.GetLocalActions(configured).Select(a => a.Id).ToArray();
+            return ids.Contains("search") && ids.Contains(action.Id) && ids.Contains("link")
+                && !ids.Any(id => id is "copy" or "cut" or "paste" or "path");
+        });
+        check("local applicability uses content policies and allows blank no-input scripts", () =>
+        {
+            var items = ActionCatalog.GetLocalActions(new());
+            return !ActionCatalog.IsApplicableLocal(items.Single(a => a.Id == "link"), "bad link")
+                && !ActionCatalog.IsApplicableLocal(items.Single(a => a.Id == "path"), "bad path")
+                && !ActionCatalog.IsApplicableLocal(items.Single(a => a.Id == "lookup"), "123")
+                && ActionCatalog.IsApplicableLocal(items.Single(a => a.Custom is { UseSelection: false }), "");
+        });
+        check("local tickets capture selected or full corrected text and reject stale replacement", () =>
+        {
+            var card = Guid.NewGuid();
+            var selected = LocalActionTicket.Create(card, 1, "corrected text", 10, 4, true);
+            var full = LocalActionTicket.Create(card, 1, "corrected text", 0, 0, true);
+            var independent = LocalActionTicket.Create(card, 1, "corrected text", 10, 4, false);
+            return selected.Input == "text" && full.Input == "corrected text" && independent.Input == ""
+                && selected.TryReplace(card, 1, "corrected text", 10, 4, "word", out var changed) && changed == "corrected word"
+                && !selected.TryReplace(card, 2, "corrected text", 10, 4, "word", out _)
+                && !selected.TryReplace(card, 1, "corrected text", 0, 0, "word", out _)
+                && !selected.TryReplace(Guid.NewGuid(), 1, "corrected text", 10, 4, "word", out _);
+        });
+        check("local full text ticket replaces the entire editor", () =>
+        {
+            var card = Guid.NewGuid();
+            var ticket = LocalActionTicket.Create(card, 4, "corrected text", 3, 0, true);
+            return ticket.TryReplace(card, 4, "corrected text", 3, 0, "replacement", out var changed)
+                && changed == "replacement";
+        });
+        check("local ticket rejects changed text even if the revision is unchanged", () =>
+        {
+            var card = Guid.NewGuid();
+            var ticket = LocalActionTicket.Create(card, 4, "corrected text", 0, 4, true);
+            return !ticket.IsCurrent(card, 4, "different text", 0, 4)
+                && !ticket.TryReplace(card, 4, "different text", 0, 4, "replacement", out _);
+        });
         bool Reject(Action test) { try { test(); return false; } catch (ArgumentException) { return true; } }
         ActionSettings PinFiveMore(ActionSettings value) => ActionCatalog.GetMore(value, selection)
             .Where(item => item.Id != action.Id).Take(5)
@@ -228,6 +270,15 @@ internal static class ActionCatalogTests
             var script = action with { Kind = CustomActionKind.PowerShell, Content = "Write-Output $text", InterpreterPath = @"C:\Tools\pwsh.exe" };
             var imported = CustomActionPolicy.Import(CustomActionPolicy.Export(script));
             return imported.Id != script.Id && imported with { Id = script.Id } == script;
+        });
+        check("Python roundtrip preserves environment output and no-selection settings", () =>
+        {
+            var python = action with { Kind = CustomActionKind.Python, Content = "print('fixture')", InterpreterPath = @"C:\Tools\venv\Scripts\python.exe", UseSelection = false, Output = ActionOutput.ReplaceSelection };
+            var imported = CustomActionPolicy.Import(CustomActionPolicy.Export(python));
+            var configured = ActionCatalog.Normalize(new() { CustomActions = [imported] });
+            return imported.Id != python.Id && imported with { Id = python.Id } == python
+                && ActionCatalog.GetLocalActions(configured, "python").Any(a => a.Id == imported.Id)
+                && ActionCatalog.GetLocalActions(configured, "py").Any(a => a.Id == imported.Id);
         });
         check("import rejects duplicate case-insensitive envelope properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 2", "\"version\": 2, \"Version\": 2"))));
         check("import rejects duplicate action properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"name\":", "\"name\": \"other\", \"name\":"))));

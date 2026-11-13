@@ -53,10 +53,28 @@ Check-Tooling 'Release build detects App and Probe output locks before MSBuild' 
     Expect-ToolingFailure { Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path $probeOutput 'SnapBar.Probe.exe'; ProcessName = 'SnapBar.Probe'; Id = 124 }) }
     Assert-SnapBarBuildIdle -Processes @([pscustomobject]@{ Path = Join-Path "$appOutput-other" 'SnapBar.App.exe'; ProcessName = 'SnapBar.App'; Id = 125 })
 }
-$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @($script:SnapBarReleaseSuites) | ForEach-Object { @{ name = $_; success = $true; exitCode = 0 } } }
+$valid = @{ schema = 1; success = $true; sourceFingerprint = 'current'; results = @($script:SnapBarReleaseSuites) | ForEach-Object { @{ name = $_; success = $true; exitCode = 0; passed = 1; failed = 0; skipped = 0; runtimesRequired = ($_ -eq 'ActionRunner') } } }
 Check-Tooling 'publish accepts complete current desktop evidence' {
     Write-SnapBarJson $evidence $valid
     Assert-SnapBarDesktopReport $evidence 'current'
+}
+Check-Tooling 'publish rejects missing optional skipped and legacy ActionRunner evidence' {
+    foreach ($variant in @('missing', 'optional', 'skipped', 'legacy')) {
+        $report = $valid | ConvertTo-Json -Depth 10 | ConvertFrom-Json
+        $entry = $report.results | Where-Object name -eq 'ActionRunner'
+        switch ($variant) {
+            'missing' { $report.results = @($report.results | Where-Object name -ne 'ActionRunner') }
+            'optional' { $entry.runtimesRequired = $false }
+            'skipped' { $entry.skipped = 1 }
+            'legacy' { $entry.PSObject.Properties.Remove('skipped') }
+        }
+        Write-SnapBarJson $evidence $report
+        Expect-ToolingFailure { Assert-SnapBarDesktopReport $evidence 'current' }
+    }
+}
+Check-Tooling 'native command records skips separately from failures' {
+    $result = Invoke-SnapBarCommand 'SkippedFixture' (Get-Command pwsh).Source @('-NoProfile', '-Command', "Write-Output 'SKIP fixture'; Write-Output '1 passed, 0 failed'; exit 0") $run
+    Assert-Tooling ($result.success -and $result.passed -eq 1 -and $result.failed -eq 0 -and $result.skipped -eq 1)
 }
 Check-Tooling 'publish rejects missing stale failed or incomplete evidence' {
     Expect-ToolingFailure { Assert-SnapBarDesktopReport (Join-Path $run 'missing.json') 'current' }

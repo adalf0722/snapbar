@@ -264,6 +264,8 @@ Results appear here after running.</value>
   <data name="ActionEditorWindow_078" xml:space="preserve">
     <value>Show a formatted Markdown result where you can copy or apply it.</value>
   </data>
+  <data name="Ocr_ApplyHint" xml:space="preserve"><value>Apply replaces the captured range in recognized text. Changed text or selection cannot be replaced; the clipboard is unchanged.</value></data>
+  <data name="Ocr_ApplyStaleHint" xml:space="preserve"><value>The recognized text target is no longer available. You can still copy the output.</value></data>
   <data name="ActionResultWindow_000" xml:space="preserve">
     <value>Manage dictionaries</value>
   </data>
@@ -1835,10 +1837,10 @@ Its enabled state will be preserved.</value>
     <value>Shortcut set · </value>
   </data>
   <data name="MainWindow_Ocr_000" xml:space="preserve">
-    <value>Capture OCR · SnapBar</value>
+    <value>Capture text · SnapBar</value>
   </data>
   <data name="MainWindow_Ocr_001" xml:space="preserve">
-    <value>Correct the recognized text, or select part of it to run an action.</value>
+    <value>Edit text, then copy or choose an action.</value>
   </data>
   <data name="MainWindow_Ocr_002" xml:space="preserve">
     <value>No text recognized. Capture a clearer area and try again.</value>
@@ -2631,5 +2633,56 @@ Its enabled state will be preserved.</value>
   </data>
   <data name="Validation_dictionary-manifest-invalid" xml:space="preserve">
     <value>The dictionary list is damaged. Restore a backup of library.json.</value>
+  </data>
+  <data name="Ocr_Processing" xml:space="preserve"><value>Recognizing text…</value></data>
+  <data name="Ocr_Editor" xml:space="preserve"><value>Recognized text</value></data>
+  <data name="Ocr_Copy" xml:space="preserve"><value>Copy text</value></data>
+  <data name="Ocr_CopySelected" xml:space="preserve"><value>Copy selected text</value></data>
+  <data name="Ocr_Copied" xml:space="preserve"><value>Copied ✓</value></data>
+  <data name="Ocr_Reselect" xml:space="preserve"><value>Reselect</value></data>
+  <data name="Ocr_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Ocr_Empty" xml:space="preserve"><value>No text found. Try selecting just the text area.</value></data>
+  <data name="Ocr_Timeout" xml:space="preserve"><value>Recognition took too long. Select a smaller area and try again.</value></data>
+  <data name="Ocr_CaptureError" xml:space="preserve"><value>Could not capture the screen. Please try again.</value></data>
+  <data name="Ocr_WorkerError" xml:space="preserve"><value>Could not start the recognition worker. Please try again.</value></data>
+  <data name="Ocr_ProtocolError" xml:space="preserve"><value>Could not read the recognition response. Please try again.</value></data>
+  <data name="Ocr_Apply" xml:space="preserve"><value>Apply to recognized text</value></data>
+  <data name="Ocr_More" xml:space="preserve"><value>Actions</value></data>
+  <data name="Ocr_ActionSearch" xml:space="preserve"><value>Search actions</value></data>
+  <data name="Ocr_ActionUnavailable" xml:space="preserve"><value>Action unavailable for this text.</value></data>
+  <data name="Ocr_ActionChanged" xml:space="preserve"><value>Action changed. Open Actions and select it again.</value></data>
+  <data name="Ocr_ManageActions" xml:space="preserve"><value>Manage actions</value></data>
+  <data name="Ocr_ActionRunning" xml:space="preserve"><value>Running action…</value></data>
+  <data name="Ocr_ActionComplete" xml:space="preserve"><value>Action completed.</value></data>
+  <data name="Ocr_ActionSaveFailed" xml:space="preserve"><value>Could not save recent action.</value></data>
+  <data name="Ocr_ActionCancel" xml:space="preserve"><value>Cancel action</value></data>
+  <data name="Ocr_InvalidLink" xml:space="preserve"><value>Select a valid web link.</value></data>
+  <data name="Ocr_InvalidPath" xml:space="preserve"><value>Select a valid file path.</value></data>
+  <data name="Ocr_InvalidLookup" xml:space="preserve"><value>Select a word to look up.</value></data>
+  <data name="Ocr_ActionFailed" xml:space="preserve"><value>Could not run this action.</value></data>
+  <data name="Ocr_ActionCancelled" xml:space="preserve"><value>Action cancelled.</value></data>
+  <data name="Ocr_ActionTargetChanged" xml:space="preserve"><value>Recognized text or action changed; result was discarded.</value></data>
+  <data name="Ocr_ActionSearchPlaceholder" xml:space="preserve"><value>Search actions…</value></data>
+  <data name="Ocr_ActionSourceSelection" xml:space="preserve"><value>Using selected text</value></data>
+  <data name="Ocr_ActionSourceAll" xml:space="preserve"><value>Using all text</value></data>
+  <data name="Ocr_ActionRecent" xml:space="preserve"><value>Recent</value></data>
+  <data name="Ocr_ActionOther" xml:space="preserve"><value>Other actions</value></data>
+  <data name="Ocr_ActionResults" xml:space="preserve"><value>Search results</value></data>
+  <data name="Ocr_ActionNoResults" xml:space="preserve"><value>No matching actions</value></data>
+  <data name="Ocr_ReasonLink" xml:space="preserve"><value>Needs a valid URL</value></data>
+  <data name="Ocr_ReasonPath" xml:space="preserve"><value>Needs a full path</value></data>
+  <data name="Ocr_ReasonLookup" xml:space="preserve"><value>Needs a word</value></data>
+  <data name="Ocr_ReasonUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="ActionEditorWindow_PythonName" xml:space="preserve">
+    <value>Clean up whitespace (Python)</value>
+  </data>
+  <data name="ActionEditorWindow_PythonHelp" xml:space="preserve">
+    <value>Read selected text from os.environ.get('POPCLIP_TEXT', ''). Requires Python 3 on PATH, or set the full path to python.exe (including a virtual environment) in Advanced settings.</value>
+  </data>
+  <data name="Runtime_PythonMissing" xml:space="preserve">
+    <value>Python 3 was not found on PATH. Install Python 3 or set the full path to an existing python.exe in Advanced settings. You can use a virtual environment's python.exe.</value>
+  </data>
+  <data name="ScriptDiagnostic_PythonModuleMissing" xml:space="preserve">
+    <value>A Python module is missing. Install the required package in the selected Python environment, or select the python.exe of an environment that already has it. See details for the module name.</value>
   </data>
 </root>
