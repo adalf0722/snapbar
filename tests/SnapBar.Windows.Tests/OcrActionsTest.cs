@@ -84,7 +84,13 @@ internal static class OcrActionsTest
                 await Task.Delay(50); Snapshot(urlCard, "zh-card.png"); Snapshot(urlMore.ContextMenu, "zh-more.png");
                 var cardPoint = urlCard.PointToScreen(new Point()); var menuPoint = urlMore.ContextMenu.PointToScreen(new Point());
                 var displayScale = PresentationSource.FromVisual(urlCard)!.CompositionTarget!.TransformToDevice.M11;
-                Check("expanded menu is beside card", menuPoint.X + urlMore.ContextMenu.ActualWidth * displayScale <= cardPoint.X + 1 || cardPoint.X + urlCard.ActualWidth * displayScale <= menuPoint.X + 1);
+                Check("expanded menu does not cover card", menuPoint.X + urlMore.ContextMenu.ActualWidth * displayScale <= cardPoint.X + 1
+                    || cardPoint.X + urlCard.ActualWidth * displayScale <= menuPoint.X + 1
+                    || menuPoint.Y + urlMore.ContextMenu.ActualHeight * displayScale <= cardPoint.Y + 1
+                    || cardPoint.Y + urlCard.ActualHeight * displayScale <= menuPoint.Y + 1);
+                Check("action popup is anchored to its button", ReferenceEquals(urlMore.ContextMenu.PlacementTarget, urlMore));
+                var copyButton = Children<Button>(urlCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrCopy");
+                Check("copy remains primary while actions stay available", copyButton.Background == ActionUi.Accent && urlMore.IsEnabled);
                 if (physicalInput)
                 {
                     var foreground = GetForegroundWindow();
@@ -200,6 +206,16 @@ internal static class OcrActionsTest
                 presentation = (OcrActionMenu)urlMore.ContextMenu;
                 Snapshot(presentation, "zh-recent-other.png");
                 Check("recent group has no duplicate actions", Children<TextBlock>((DependencyObject)presentation.Tag).Any(x => AutomationProperties.GetAutomationId(x) == "OcrActionRecent") && presentation.Rows.Select(AutomationProperties.GetAutomationId).Distinct().Count() == presentation.Rows.Count());
+                var recentSettings = live;
+                live = live with { RecentIds = ActionCatalog.GetLocalActions(live).Take(5).Select(item => item.Id).ToArray() };
+                OpenUrl(); presentation = (OcrActionMenu)urlMore.ContextMenu;
+                var recentRows = ((StackPanel)presentation.ActionList.Content).Children.OfType<FrameworkElement>()
+                    .SkipWhile(element => AutomationProperties.GetAutomationId(element) != "OcrActionRecent").Skip(1)
+                    .TakeWhile(element => element is MenuItem).Count();
+                Check("three recent actions keep the full catalog without duplicates", recentRows == 3
+                    && presentation.Rows.Count() == ActionCatalog.GetLocalActions(live).Count
+                    && presentation.Rows.Select(AutomationProperties.GetAutomationId).Distinct().Count() == presentation.Rows.Count());
+                live = recentSettings; urlRow = OpenUrl();
                 urlRow.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); await Task.Delay(30);
                 Check("configured URL uses corrected selected input and saves once", launched.Count == 1 && Uri.UnescapeDataString(launched[0].Query[3..]) == "words" && saves == 1);
                 urlEditor.Select(0, 0); OpenUrl().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); await Task.Delay(30);
@@ -226,6 +242,35 @@ internal static class OcrActionsTest
                 searchBox.Text = "";
                 ((OcrActionMenu)urlMore.ContextMenu).Manage.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Check("management preserves editor", managed == 1 && urlEditor.Text == "corrected words"); urlCard.Close();
+
+                var preview = new OcrResultWindow("", null);
+                preview.SetResult(new OcrResult("ok", "今天你完成了什麼？\n\n讓工具接手重複的工作，把注意力留給真正重要的事。\n\nMake room for the work that matters."));
+                preview.Show(); await Task.Delay(50);
+                Snapshot(preview, "zh-polished-card.png");
+                var previewMore = Children<Button>(preview).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
+                var previewHandle = new WindowInteropHelper(preview).Handle;
+                var previewScale = Native.GetDpiForWindow(previewHandle) / 96d;
+                var previewOrigin = preview.PointToScreen(new Point());
+                var previewWork = Native.WorkArea((int)previewOrigin.X, (int)previewOrigin.Y);
+                foreach (var corner in new[] { (false, false), (true, false), (false, true), (true, true) })
+                {
+                    preview.Left = (corner.Item1 ? previewWork.Right - preview.ActualWidth * previewScale - 20 : previewWork.X + 20) / previewScale;
+                    preview.Top = (corner.Item2 ? previewWork.Bottom - preview.ActualHeight * previewScale - 20 : previewWork.Y + 20) / previewScale;
+                    await Task.Delay(30);
+                    previewMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(50);
+                    var popup = (OcrActionMenu)previewMore.ContextMenu;
+                    var popupOrigin = popup.PointToScreen(new Point());
+                    var popupRect = new Rect(popupOrigin, new Size(popup.ActualWidth * previewScale, popup.ActualHeight * previewScale));
+                    var editorBounds = Children<TextBox>(preview).Single();
+                    var editorRect = new Rect(editorBounds.PointToScreen(new Point()), new Size(editorBounds.ActualWidth * previewScale, editorBounds.ActualHeight * previewScale));
+                    Check($"corner {corner} popup stays visible without covering text",
+                        popupRect.Left >= previewWork.X - 1 && popupRect.Right <= previewWork.Right + 1
+                        && popupRect.Top >= previewWork.Y - 1 && popupRect.Bottom <= previewWork.Bottom + 1
+                        && !popupRect.IntersectsWith(editorRect));
+                    if (corner == (true, true)) Snapshot(popup, "zh-polished-actions.png");
+                    popup.IsOpen = false;
+                }
+                preview.Close();
                 var escapeCard = new OcrResultWindow("", null); escapeCard.SetResult(new OcrResult("ok", "fixture")); escapeCard.Show();
                 var escapeEditor = Children<TextBox>(escapeCard).Single(); escapeEditor.Select(0, 3);
                 var escapeMore = Children<Button>(escapeCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
@@ -372,6 +417,8 @@ internal static class OcrActionsTest
                 englishCard.SetResult(new OcrResult("ok", "fixture text")); englishCard.Show();
                 WindowWorkArea.SetWorkAreaOverride(englishCard, new Rect(0, 0, 360, 240)); englishCard.UpdateLayout();
                 Check("OCR card remains within restricted work area", englishCard.ActualWidth <= 360 && englishCard.ActualHeight <= 240);
+                var compactEditor = Children<TextBox>(englishCard).Single();
+                Check("compact English card leaves a full line of text visible", compactEditor.ActualHeight - compactEditor.Padding.Top - compactEditor.Padding.Bottom >= compactEditor.FontSize * 1.5);
                 Snapshot(englishCard, "en-restricted.png");
                 WindowWorkArea.SetWorkAreaOverride(englishCard, null);
                 var englishMore = Children<Button>(englishCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");

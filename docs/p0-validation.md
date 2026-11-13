@@ -988,3 +988,11 @@ OCR 使用進入框選時的螢幕快照，框選與辨識共用同一張影像�
 動作列與管理入口依目前焦點顯示反白。桌面測試把游標留在上一列，按向下鍵後確認只有新焦點列反白，再按向上鍵確認反白返回上一列。測試視窗渲染位於 `artifacts/ocr-shared-actions/zh-keyboard-highlight.png`。
 
 OcrActions 87 項全數通過，報告位於 `artifacts/checks/desktop/20261109T130226077Z-e7fbf2937cbf42c6a12ccfeccdf85978/report.json`。相同產品程式的合跑也通過 Language 50 項與 Appearance 174 項，報告位於 `artifacts/checks/desktop/20261109T130107476Z-14c07e2c16004b17ad01e012d7807875/report.json`。
+
+### 2026-11-13 擷取文字結果卡與動作面板
+
+結果卡改為白色表面、16 DIP 文字與明確的複製主按鈕。「更多」改為「動作」，選單以按鈕為定位基準，提供結果卡下、右、左、上四種候選方向。最近動作最多三筆，其他動作與完整搜尋仍保留。原有動作票證、焦點、文字範圍與過期結果拒絕保持不變。
+
+最終桌面報告為 `artifacts/checks/desktop/20261113T130556905Z-b6ab4e12e82e405387974e376bd8d4b7/report.json`，Build、Preflight、OcrActions 95、Ocr 36、Language 50、Appearance 174 全數通過；該次 Build 亦通過 Core 529 項。OcrActions 啟用實體鍵盤，驗證 Tab、Shift-Tab、方向鍵與 Enter；在目前螢幕四角確認動作面板完整位於工作區且未覆蓋文字編輯區。受限 360 × 240 DIP 的英文結果卡另驗證至少能完整顯示一行文字，200 × 240 DIP 的動作面板仍可捲動並操作管理入口。
+
+已檢視 `artifacts/ocr-shared-actions/zh-polished-card.png`、`zh-polished-actions.png` 及 `en-restricted.png`。環境為 1920 × 1080、96 DPI（100%）單螢幕；尚未執行 125%／150%／200% 與跨螢幕實機組合。本次沒有改變跨應用選取流程，沒有新增真實外部應用 smoke 驗證。尚未發布或替換發行套件。

@@ -137,7 +137,7 @@ internal static class ScreenOcrTest
                 keybd_event(0x1B, 0, 2, 0);
                 await Task.Delay(100);
                 Check(!app.Windows.OfType<OcrOverlay>().Any(window => window.IsVisible)
-                    && !app.Windows.OfType<Window>().Any(window => window.Title == "框選 OCR · SnapBar"),
+                    && !app.Windows.OfType<OcrResultWindow>().Any(),
                     "Escape cancels capture without opening results");
 
                 Trigger(); await Ready();
@@ -207,7 +207,7 @@ internal static class ScreenOcrTest
                 var buttons = body.Children.OfType<WrapPanel>().Single().Children.OfType<Button>()
                     .Where(button => button.IsVisible)
                     .Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
-                Check(buttons.SequenceEqual(new[] { "複製文字", "重新框選", "更多" }),
+                Check(buttons.SequenceEqual(new[] { "Ocr_Copy", "Ocr_More", "Ocr_Reselect" }.Select(key => UiText.Get(key))),
                     "OCR result offers text actions without a write-back action");
                 UiAppearanceTest.Snapshot(result, "ocr-result-card.png");
                 WindowWorkArea.SetWorkAreaOverride(result, new Rect(0, 0, 360, 240));

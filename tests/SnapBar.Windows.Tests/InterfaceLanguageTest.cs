@@ -198,7 +198,7 @@ internal static class InterfaceLanguageTest
                 Check("saving bundled AI name and category preserves original content", savedPrompt?.Name == prompt.Name && savedPrompt.Category == prompt.Category && savedPrompt.Instruction == prompt.Instruction);
                 typeof(MainWindow).GetMethod("ShowOcrResult", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(main, [new SnapBar.Windows.Ocr.OcrResult("ok", "OCR user 原文")]);
                 var ocrWindow = (Window)Field(main, "ocrResultWindow")!;
-                Check("English OCR result preserves recognized content", ocrWindow.Title == "Capture OCR · SnapBar"
+                Check("English OCR result preserves recognized content", ocrWindow.Title == "Capture text · SnapBar"
                     && Children<TextBox>(ocrWindow).Single().Text == "OCR user 原文"
                     && Children<TextBlock>(ocrWindow).Where(text => text.IsVisible).All(text => !HasChinese(text.Text)));
                 UiAppearanceTest.Snapshot(ocrWindow, "language-ocr-en.png");

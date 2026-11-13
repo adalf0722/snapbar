@@ -4,6 +4,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using SnapBar.Core;
 using SnapBar.Windows;
@@ -30,21 +31,27 @@ internal sealed partial class OcrResultWindow : Window
     {
         this.region = region;
         InitializeActions(actionDependencies ?? OcrActionDependencies.Default(searchTemplate));
-        ActionUi.Setup(this, language.Get("MainWindow_Ocr_000"), 420, 180);
+        ActionUi.Setup(this, language.Get("MainWindow_Ocr_000"), 480, 220);
+        Background = Brushes.White;
         MinWidth = 320; MinHeight = 120; Topmost = true; ResizeMode = ResizeMode.NoResize;
-        var body = new DockPanel { Margin = new(18) }; Content = body;
-        status = ActionUi.Text(language.Get("Ocr_Processing"), 13, ActionUi.Muted);
-        status.Margin = new(0, 0, 0, 10);
+        var body = new DockPanel { Margin = new(20) }; Content = body;
+        var heading = ActionUi.Heading(language.Get("Ocr_Editor"), 16);
+        heading.Margin = new(0, 0, 0, 6);
+        DockPanel.SetDock(heading, Dock.Top); body.Children.Add(heading);
+        status = ActionUi.Text(language.Get("Ocr_Processing"), 12, ActionUi.Muted);
+        status.Margin = new(0, 0, 0, 12);
         AutomationProperties.SetAutomationId(status, "OcrStatus");
         DockPanel.SetDock(status, Dock.Top); body.Children.Add(status);
         progress = new ProgressBar { Height = 4, IsIndeterminate = SystemParameters.ClientAreaAnimation,
             Minimum = 0, Maximum = 1, Value = 0, Visibility = Visibility.Collapsed, Margin = new(0, 0, 0, 10) };
         AutomationProperties.SetName(progress, language.Get("Ocr_Processing"));
         DockPanel.SetDock(progress, Dock.Top); body.Children.Add(progress);
-        var buttons = new WrapPanel { Margin = new(0, 10, 0, 0) };
+        var buttons = new WrapPanel { Margin = new(0, 12, 0, 0) };
         DockPanel.SetDock(buttons, Dock.Bottom); body.Children.Add(buttons);
         editor = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new(8), Visibility = Visibility.Collapsed };
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new(12), FontSize = 16,
+            VerticalContentAlignment = VerticalAlignment.Top, Background = ActionUi.Canvas,
+            BorderBrush = ActionUi.Line, Visibility = Visibility.Collapsed };
         AutomationProperties.SetAutomationId(editor, "OcrEditor");
         AutomationProperties.SetName(editor, language.Get("Ocr_Editor"));
         KeyboardNavigation.SetTabIndex(editor, 0);
@@ -58,9 +65,11 @@ internal sealed partial class OcrResultWindow : Window
                 copyTimer!.Stop(); copyTimer.Start();
             }
             catch (ExternalException) { copied = false; status.Text = language.Get("MainWindow_Ocr_009"); UpdateActions(); }
-        }, 1);
-        reselect = AddButton("Ocr_Reselect", "OcrReselect", () => Reselect?.Invoke(), 2);
-        more = AddButton("Ocr_More", "OcrMore", OpenActions, 3, "more");
+        }, 1, "copy", primary: true);
+        more = AddButton("Ocr_More", "OcrMore", OpenActions, 2, "more");
+        more.BorderBrush = ActionUi.Line;
+        reselect = AddButton("Ocr_Reselect", "OcrReselect", () => Reselect?.Invoke(), 3);
+        reselect.Background = Brushes.Transparent; reselect.BorderBrush = Brushes.Transparent;
         // Context menus are opened only through OpenActions, which checks current state and settings.
         ContextMenuService.SetIsEnabled(more, false);
         cancel = AddButton("Ocr_Cancel", "OcrCancel", Close, 4);
@@ -83,9 +92,10 @@ internal sealed partial class OcrResultWindow : Window
         Closed += (_, _) => { DisposeActions(); progressTimer.Stop(); copyTimer.Stop(); editor.Clear(); };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; if (!CloseActions()) Close(); } };
 
-        Button AddButton(string key, string id, Action action, int tab, string? icon = null)
+        Button AddButton(string key, string id, Action action, int tab, string? icon = null, bool primary = false)
         {
-            var button = ActionUi.Button(language.Get(key), action, icon);
+            var button = ActionUi.Button(language.Get(key), action, icon, primary);
+            button.Margin = new(0, 0, 8, 6);
             AutomationProperties.SetAutomationId(button, id); KeyboardNavigation.SetTabIndex(button, tab);
             buttons.Children.Add(button); return button;
         }
@@ -120,7 +130,7 @@ internal sealed partial class OcrResultWindow : Window
         });
         if (result.Status == "ok" && result.Text != null)
         {
-            MinHeight = 220; Height = 300; ResizeMode = ResizeMode.CanResize;
+            MinHeight = 260; Height = 360; ResizeMode = ResizeMode.CanResize;
             editor.Text = result.Text; editor.Visibility = Visibility.Visible;
             copy.Visibility = more.Visibility = Visibility.Visible;
             UpdateActions(); editor.Focus();
@@ -141,7 +151,7 @@ internal sealed partial class OcrResultWindow : Window
             var scale = Math.Max(96, Native.GetDpiForWindow(handle)) / 96d;
             var work = Native.WorkArea((int)anchor.X, (int)anchor.Y);
             MinWidth = Math.Min(320, work.Width / scale);
-            MinHeight = Math.Min(editor.Visibility == Visibility.Visible ? 220 : 120, work.Height / scale);
+            MinHeight = Math.Min(editor.Visibility == Visibility.Visible ? 260 : 120, work.Height / scale);
             var width = Math.Min(Width * scale, work.Width); var height = Math.Min(Height * scale, work.Height);
             var gap = 12 * scale;
             var x = anchor.Right + gap; var y = anchor.Bottom + gap;

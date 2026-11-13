@@ -35,8 +35,14 @@ internal sealed class OcrActionMenu : ContextMenu
     {
         this.language = language; this.dependencies = dependencies; this.selectedText = selectedText;
         this.hasSelection = hasSelection; this.invoke = invoke;
-        PlacementTarget = Window.GetWindow(target); Placement = PlacementMode.Right;
-        var handle = new WindowInteropHelper(Window.GetWindow(target)).Handle;
+        var owner = Window.GetWindow(target);
+        PlacementTarget = target; Placement = PlacementMode.Custom;
+        CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
+        {
+            var origin = owner.TranslatePoint(new Point(), target);
+            return GetPlacements(popupSize, targetSize, new Rect(origin, owner.RenderSize));
+        };
+        var handle = new WindowInteropHelper(owner).Handle;
         var point = target.PointToScreen(new Point(0, 0));
         var work = Native.WorkArea((int)point.X, (int)point.Y);
         var scale = Math.Max(96, Native.GetDpiForWindow(handle)) / 96d;
@@ -45,11 +51,15 @@ internal sealed class OcrActionMenu : ContextMenu
         Width = bounds.Width; MaxHeight = bounds.Height;
         Background = Brushes.White; BorderBrush = ActionUi.Line; BorderThickness = new(1);
         FontFamily = ActionUi.Font; FontSize = 13;
+        UseLayoutRounding = true; SnapsToDevicePixels = true;
+        // Popups have a separate visual tree; use the result card's control styles.
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/SnapBar.App;component/Themes/Controls.xaml", UriKind.Relative) });
 
         // ContextMenu's default item containers are selectable; use a content template instead.
         var border = new FrameworkElementFactory(typeof(Border));
         border.SetValue(Border.BackgroundProperty, Brushes.White); border.SetValue(Border.BorderBrushProperty, ActionUi.Line);
-        border.SetValue(Border.BorderThicknessProperty, new Thickness(1)); border.SetValue(Border.PaddingProperty, new Thickness(8));
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1)); border.SetValue(Border.PaddingProperty, new Thickness(10));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(10));
         var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
         presenter.SetBinding(ContentPresenter.ContentProperty, new Binding(nameof(Tag)) { RelativeSource = RelativeSource.TemplatedParent });
         border.AppendChild(presenter); Template = new ControlTemplate(typeof(ContextMenu)) { VisualTree = border };
@@ -59,7 +69,7 @@ internal sealed class OcrActionMenu : ContextMenu
         var searchGrid = new Grid(); searchGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); searchGrid.ColumnDefinitions.Add(new ColumnDefinition());
         var icon = ActionUi.Icon("search", ActionUi.Muted, 16); icon.Margin = new(0, 0, 8, 0); searchGrid.Children.Add(icon);
         var inputGrid = new Grid(); Grid.SetColumn(inputGrid, 1); searchGrid.Children.Add(inputGrid);
-        Search = new TextBox { BorderThickness = new(0), Background = Brushes.Transparent, Padding = new(0, 4, 0, 4), FontSize = 13 };
+        Search = new TextBox { BorderThickness = new(0), Background = Brushes.Transparent, Padding = new(0, 4, 0, 4), FontSize = 13, MinHeight = 30 };
         rowTemplate = CreateRowTemplate(Search);
         AutomationProperties.SetAutomationId(Search, "OcrActionSearch"); AutomationProperties.SetName(Search, language.Get("Ocr_ActionSearch"));
         placeholder = ActionUi.Text(language.Get("Ocr_ActionSearchPlaceholder"), 13, ActionUi.Muted); placeholder.IsHitTestVisible = false;
@@ -67,12 +77,13 @@ internal sealed class OcrActionMenu : ContextMenu
         inputGrid.Children.Add(Search); inputGrid.Children.Add(placeholder); searchBorder.Child = searchGrid; header.Children.Add(searchBorder);
         Search.GotKeyboardFocus += (_, _) => searchBorder.BorderBrush = ActionUi.Accent;
         Search.LostKeyboardFocus += (_, _) => searchBorder.BorderBrush = ActionUi.Line;
-        source = ActionUi.Text("", 12, ActionUi.Muted); source.Margin = new(4, 8, 4, 5);
+        source = ActionUi.Text("", 12, ActionUi.Muted); source.Margin = new(8, 10, 8, 6);
         AutomationProperties.SetAutomationId(source, "OcrActionSource"); header.Children.Add(source);
         var footer = new Border { BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 0, 0), Padding = new(0, 4, 0, 0) };
         DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
         Manage = new MenuItem { Header = new TextBlock { Text = language.Get("Ocr_ManageActions"), TextWrapping = TextWrapping.Wrap },
-            Template = rowTemplate, MinHeight = 36, Padding = new(8, 6, 8, 6) };
+            Template = rowTemplate, MinHeight = 36, Padding = new(8, 6, 8, 6), Foreground = ActionUi.Muted,
+            Icon = ActionUi.Icon("settings", ActionUi.Muted, 16) };
         AutomationProperties.SetName(Manage, language.Get("Ocr_ManageActions"));
         AutomationProperties.SetAutomationId(Manage, "OcrManageActions"); Manage.Click += (_, _) => { IsOpen = false; dependencies.Manage(); };
         footer.Child = Manage;
@@ -83,7 +94,19 @@ internal sealed class OcrActionMenu : ContextMenu
         Render();
     }
 
-    internal static Size ClampSize(double width, double height) => new(Math.Max(1, Math.Min(320, width)), Math.Max(1, Math.Min(420, height)));
+    internal static Size ClampSize(double width, double height) => new(Math.Max(1, Math.Min(300, width)), Math.Max(1, Math.Min(360, height)));
+
+    internal static CustomPopupPlacement[] GetPlacements(Size popup, Size target, Rect card)
+    {
+        const double gap = 8;
+        var x = Math.Max(card.Left, target.Width - popup.Width);
+        var y = Math.Clamp(0, card.Top, Math.Max(card.Top, card.Bottom - popup.Height));
+        // WPF selects the candidate with the most visible area; each avoids the editor.
+        return [new(new Point(x, card.Bottom + gap), PopupPrimaryAxis.Horizontal),
+            new(new Point(card.Right + gap, y), PopupPrimaryAxis.Vertical),
+            new(new Point(card.Left - popup.Width - gap, y), PopupPrimaryAxis.Vertical),
+            new(new Point(x, card.Top - popup.Height - gap), PopupPrimaryAxis.Horizontal)];
+    }
 
     private static ControlTemplate CreateRowTemplate(TextBox search)
     {
@@ -142,7 +165,7 @@ internal sealed class OcrActionMenu : ContextMenu
         }
         else
         {
-            var recent = settings.RecentIds.ToHashSet(StringComparer.Ordinal);
+            var recent = settings.RecentIds.Take(3).ToHashSet(StringComparer.Ordinal);
             var first = filtered.Where(item => recent.Contains(item.Id)).ToArray();
             var other = filtered.Where(item => !recent.Contains(item.Id)).ToArray();
             if (first.Length > 0) { AddLabel("Ocr_ActionRecent", "OcrActionRecent"); foreach (var item in first) AddRow(item); }
