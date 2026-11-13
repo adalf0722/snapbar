@@ -40,6 +40,7 @@ internal sealed class ActionEditorWindow : Window
     private readonly TextBlock outputHelp = ActionUi.Text("", 12, ActionUi.Muted);
     private readonly TextBlock resultHeading = ActionUi.Heading(UiText.Get("ActionEditorWindow_004"), 14), contentHeading = ActionUi.Heading(UiText.Get("ActionEditorWindow_005"), 14);
     private readonly Dictionary<CustomActionKind, (string Name, string Content, string Sample, bool UseSelection)> drafts = new();
+    private readonly Dictionary<CustomActionKind, string> runtimeDrafts = new();
     private CustomActionKind currentKind;
     private CancellationTokenSource? testing;
     private bool ready, iconChosen;
@@ -69,7 +70,7 @@ internal sealed class ActionEditorWindow : Window
         DockPanel.SetDock(footer, Dock.Bottom); outer.Children.Add(footer);
         var grid = new Grid(); grid.ColumnDefinitions.Add(new() { Width = new(1.1, GridUnitType.Star) }); grid.ColumnDefinitions.Add(new() { Width = new(20) }); grid.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         var form = new StackPanel(); var formHeading = ActionUi.Heading(language.Get("ActionEditorWindow_020")); formHeading.Margin = new(0, 0, 0, 12); form.Children.Add(formHeading);
-        kind.ItemsSource = new[] { language.Get("ActionEditorWindow_021"), "PowerShell", "JavaScript" }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
+        kind.ItemsSource = new[] { language.Get("ActionEditorWindow_021"), "PowerShell", "JavaScript", "Python" }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
         AutomationProperties.SetName(kind, language.Get("ActionEditorWindow_022")); Field(form, language.Get("ActionEditorWindow_023"), kind);
         var identity = new Grid(); identity.ColumnDefinitions.Add(new() { Width = new(44) });
         identity.ColumnDefinitions.Add(new() { Width = new(12) }); identity.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -144,7 +145,7 @@ internal sealed class ActionEditorWindow : Window
         var rightCard = ActionUi.Card(new ScrollViewer { Content = right, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }); Grid.SetColumn(rightCard, 2); grid.Children.Add(rightCard); outer.Children.Add(grid); Content = outer;
         currentKind = (CustomActionKind)kind.SelectedIndex;
         LoadKind(currentKind, existing); ready = true;
-        kind.SelectionChanged += (_, _) => { if (!ready) return; testing?.Cancel(); drafts[currentKind] = (name.Text, content.Text, sample.Text, useSelection.IsChecked == true); currentKind = (CustomActionKind)kind.SelectedIndex; LoadKind(currentKind); };
+        kind.SelectionChanged += (_, _) => { if (!ready) return; testing?.Cancel(); drafts[currentKind] = (name.Text, content.Text, sample.Text, useSelection.IsChecked == true); runtimeDrafts[currentKind] = runtime.Text; currentKind = (CustomActionKind)kind.SelectedIndex; LoadKind(currentKind); };
         foreach (var input in new[] { name, content, sample, runtime, timeout }) input.TextChanged += (_, _) => { if (ready) UpdatePreview(); };
         output.SelectionChanged += (_, _) => { if (ready) UpdatePreview(); };
         useSelection.Checked += (_, _) => { if (ready) UpdatePreview(); };
@@ -174,6 +175,7 @@ internal sealed class ActionEditorWindow : Window
         {
             CustomActionKind.Url => (language.Get("ActionEditorWindow_047"), "https://translate.google.com/?sl=auto&tl=zh-TW&text=***&op=translate", "Make something wonderful.", true),
             CustomActionKind.PowerShell => (language.Get("ActionEditorWindow_048"), "($env:POPCLIP_TEXT -replace '\\s+', ' ').Trim()", "  Make   something    wonderful.  ", true),
+            CustomActionKind.Python => (language.Get("ActionEditorWindow_PythonName"), "import os\n\ntext = os.environ.get('POPCLIP_TEXT', '')\nprint(' '.join(text.split()), end='')", "  Make   something    wonderful.  ", true),
             _ => (language.Get("ActionEditorWindow_049"), "const text = process.env.POPCLIP_TEXT;\nconsole.log(JSON.stringify(JSON.parse(text), null, 2));", "{\"product\":\"SnapBar\",\"focus\":\"next action\"}", true)
         };
         var draft = drafts.GetValueOrDefault(type, defaults); name.Text = existing != null ? initialDisplayName! : draft.Item1; content.Text = existing?.Content ?? draft.Item2; sample.Text = draft.Item3;
@@ -183,7 +185,8 @@ internal sealed class ActionEditorWindow : Window
             selectedIcon = type == CustomActionKind.Url ? "globe" : "terminal";
             iconPreview.IconId = selectedIcon;
         }
-        if (existing != null) { runtime.Text = existing.InterpreterPath ?? ""; timeout.Text = existing.TimeoutSeconds.ToString(); }
+        runtime.Text = existing != null ? existing.InterpreterPath ?? "" : runtimeDrafts.GetValueOrDefault(type, "");
+        if (existing != null) timeout.Text = existing.TimeoutSeconds.ToString();
         scriptOptions.Visibility = type == CustomActionKind.Url ? Visibility.Collapsed : Visibility.Visible;
         UpdatePreview();
     }
@@ -205,6 +208,7 @@ internal sealed class ActionEditorWindow : Window
         variable.IsEnabled = usesInput;
         outputHelp.Text = language.Run(() => OutputDescription((ActionOutput)Math.Max(0, output.SelectedIndex)));
         help.Text = urlMode ? language.Get("ActionEditorWindow_051") : !usesInput ? language.Get("ActionEditorWindow_052")
+            : currentKind == CustomActionKind.Python ? language.Get("ActionEditorWindow_PythonHelp")
             : currentKind == CustomActionKind.PowerShell ? language.Get("ActionEditorWindow_053") : language.Get("ActionEditorWindow_054");
         var testLabel = urlMode ? language.Get("ActionEditorWindow_055") : language.Get("ActionEditorWindow_056");
         ((StackPanel)test.Content).Children.OfType<TextBlock>().Single().Text = testLabel;
@@ -213,14 +217,14 @@ internal sealed class ActionEditorWindow : Window
         preview.Height = urlMode ? 144 : 80;
         if (currentKind == CustomActionKind.Url)
         { var url = CustomActionPolicy.ResolveUrl(sample.Text, content.Text); destination.Text = url.Success ? UiText.Join(language.Get("ActionEditorWindow_061"), url.Uri!.Host) : language.Get("ActionEditorWindow_062"); preview.Text = url.Success ? url.Uri!.AbsoluteUri : language.Get("ActionEditorWindow_063"); }
-        else { destination.Text = $"{(currentKind == CustomActionKind.JavaScript ? "Node.js" : "PowerShell")} · {(usesInput ? language.Get("ActionEditorWindow_079") : language.Get("ActionEditorWindow_080"))}";
+        else { destination.Text = $"{(currentKind == CustomActionKind.JavaScript ? "Node.js" : currentKind == CustomActionKind.Python ? "Python 3" : "PowerShell")} · {(usesInput ? language.Get("ActionEditorWindow_079") : language.Get("ActionEditorWindow_080"))}";
             preview.Text = usesInput ? language.Get("ActionEditorWindow_064") : language.Get("ActionEditorWindow_065"); }
         testStatus.Text = "";
     }
     private void InsertVariable()
     {
         if (currentKind != CustomActionKind.Url && useSelection.IsChecked != true) return;
-        var variable = currentKind switch { CustomActionKind.Url => "***", CustomActionKind.PowerShell => "$env:POPCLIP_TEXT", _ => "process.env.POPCLIP_TEXT" };
+        var variable = currentKind switch { CustomActionKind.Url => "***", CustomActionKind.PowerShell => "$env:POPCLIP_TEXT", CustomActionKind.Python => "__import__('os').environ.get('POPCLIP_TEXT', '')", _ => "process.env.POPCLIP_TEXT" };
         var start = content.SelectionStart; content.SelectedText = variable; content.Select(start + variable.Length, 0); content.Focus();
     }
     private void Save()

@@ -87,19 +87,37 @@ function Invoke-SnapBarCommand([string]$Name, [string]$Executable, [string[]]$Ar
     finally { $writer.Dispose(); $timer.Stop() }
     $passed = @($lines | Where-Object { $_ -match '^PASS\b' }).Count
     $failed = @($lines | Where-Object { $_ -match '^FAIL\b' }).Count
+    $skipped = @($lines | Where-Object { $_ -match '^SKIP\b' }).Count
     foreach ($line in $lines) {
         if ($line -match '^(\d+) passed, (\d+) failed') { $passed = [int]$Matches[1]; $failed = [int]$Matches[2] }
     }
-    Write-Host "$Name`: exit $exitCode; $passed passed, $failed failed; log: $log"
+    Write-Host "$Name`: exit $exitCode; $passed passed, $failed failed, $skipped skipped; log: $log"
     if ($exitCode -ne 0) { $lines | Select-Object -Last 12 | ForEach-Object { Write-Host $_ } }
-    return [pscustomobject]@{ name = $Name; exitCode = $exitCode; success = ($exitCode -eq 0 -and $failed -eq 0); passed = $passed; failed = $failed; seconds = [math]::Round($timer.Elapsed.TotalSeconds, 3); log = $log }
+    return [pscustomobject]@{ name = $Name; exitCode = $exitCode; success = ($exitCode -eq 0 -and $failed -eq 0); passed = $passed; failed = $failed; skipped = $skipped; seconds = [math]::Round($timer.Elapsed.TotalSeconds, 3); log = $log }
 }
 
 function Assert-SnapBarCommand($Result) {
     if (-not $Result.success) { throw "$($Result.name) failed. See $($Result.log)" }
 }
 
-$script:SnapBarReleaseSuites = @('Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup', 'Language')
+function Invoke-SnapBarActionRunner([string]$Directory, [switch]$RequireRuntimes) {
+    $runner = Join-Path $script:SnapBarRepo 'tests/SnapBar.Windows.Tests/bin/Release/net10.0-windows/SnapBar.Windows.Tests.dll'
+    $arguments = @($runner, '--custom-action-runner')
+    if ($RequireRuntimes) { $arguments += '--require-runtimes' }
+    $result = Invoke-SnapBarCommand 'ActionRunner' (Get-SnapBarSdk) $arguments $Directory
+    $result | Add-Member -NotePropertyName runtimesRequired -NotePropertyValue ([bool]$RequireRuntimes)
+    return $result
+}
+
+function Assert-SnapBarActionRunnerEvidence($Result) {
+    if ($Result.runtimesRequired -isnot [bool] -or -not $Result.runtimesRequired -or
+        ($Result.skipped -isnot [int] -and $Result.skipped -isnot [long]) -or $Result.skipped -ne 0 -or
+        $Result.passed -lt 1 -or $Result.failed -ne 0) {
+        throw 'ActionRunner evidence requires strict Python/Node execution with zero skips. Run Release with Python 3 and Node.js on PATH.'
+    }
+}
+
+$script:SnapBarReleaseSuites = @('ActionRunner', 'Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup', 'Language')
 
 function Test-SnapBarInstanceRunning {
     $instance = $null
@@ -151,6 +169,7 @@ function Assert-SnapBarDesktopReport([string]$Path, [string]$Fingerprint) {
     foreach ($suite in $script:SnapBarReleaseSuites) {
         $results = @($report.results | Where-Object { $_.name -eq $suite })
         if ($results.Count -ne 1 -or $results[0].success -isnot [bool] -or -not $results[0].success -or $results[0].exitCode -ne 0) { throw "Desktop evidence is missing a successful $suite suite." }
+        if ($suite -eq 'ActionRunner') { Assert-SnapBarActionRunnerEvidence $results[0] }
     }
 }
 

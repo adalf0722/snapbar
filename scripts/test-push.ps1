@@ -48,7 +48,7 @@ $report = @{
     schema = 1; sourceFingerprint = Get-SnapBarFingerprint; success = $true
     startedUtc = [DateTime]::UtcNow.ToString('o'); finishedUtc = [DateTime]::UtcNow.ToString('o')
     results = (@('Build', 'Preflight') + $script:SnapBarReleaseSuites) | ForEach-Object {
-        @{ name = $_; success = $true; exitCode = 0; passed = $(if ($_ -eq 'Build') { 0 } else { 1 }); failed = 0; seconds = 0; log = 'private-local-path' }
+        @{ name = $_; success = $true; exitCode = 0; passed = $(if ($_ -eq 'Build') { 0 } else { 1 }); failed = 0; skipped = 0; runtimesRequired = ($_ -eq 'ActionRunner'); seconds = 0; log = 'private-local-path' }
     }
 }
 if (Test-Path (Join-Path $script:SnapBarRepo 'artifacts/fail')) { exit 7 }
@@ -117,6 +117,20 @@ Write-SnapBarJson (Join-Path (Split-Path $run -Parent) 'latest.json') $report
         Reject-Push { Assert-SnapBarDesktopReceipt $receipt $commit $receipt.tree }
         $receipt.report.results = @($saved) + @($saved[1])
         Reject-Push { Assert-SnapBarDesktopReceipt $receipt $commit $receipt.tree }
+    }
+    Check-Push 'receipt rejects missing optional skipped and legacy ActionRunner evidence' {
+        $json = & git --git-dir=$remote notes --ref=refs/notes/snapbar-desktop show $commit
+        foreach ($variant in @('missing', 'optional', 'skipped', 'legacy')) {
+            $receipt = ($json -join "`n") | ConvertFrom-Json
+            $entry = $receipt.report.results | Where-Object name -eq 'ActionRunner'
+            switch ($variant) {
+                'missing' { $receipt.report.results = @($receipt.report.results | Where-Object name -ne 'ActionRunner') }
+                'optional' { $entry.runtimesRequired = $false }
+                'skipped' { $entry.skipped = 1 }
+                'legacy' { $entry.PSObject.Properties.Remove('runtimesRequired') }
+            }
+            Reject-Push { Assert-SnapBarDesktopReceipt $receipt $commit $receipt.tree }
+        }
     }
     Check-Push 'cloud import accepts exact clean commit and rejects missing notes' {
         $null = Invoke-FixtureGit @('fetch', '--no-tags', $remote, 'refs/notes/snapbar-desktop:refs/notes/snapbar-desktop')

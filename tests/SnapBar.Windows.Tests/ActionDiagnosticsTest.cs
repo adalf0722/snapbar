@@ -65,6 +65,12 @@ internal static class ActionDiagnosticsTest
                 Check(ScriptDiagnostic.Create(action, new("ok", Error: clixml, ExitCode: 0)).IsFailure,
                     "recognized unavailable prompt is a failure even when PowerShell exits zero");
                 Check(ScriptDiagnostic.Create(action, result with { Error = "#< CLIXML\n<Objs><S" }).Details.Contains("<Objs><S"), "truncated CLIXML safely falls back to original text");
+                var python = action with { Kind = CustomActionKind.Python };
+                var moduleError = "Traceback (most recent call last):\nModuleNotFoundError: No module named 'snapbar_missing_fixture'";
+                var moduleDiagnostic = ScriptDiagnostic.Create(python, new("script-failed", Error: moduleError, ExitCode: 1));
+                Check(moduleDiagnostic.IsFailure && moduleDiagnostic.Summary.Contains("環境缺少模組") && moduleDiagnostic.Details.Contains(moduleError), "Python missing module explains environment and retains traceback");
+                Check(ScriptDiagnostic.Create(python, new("runtime-unavailable", ProductErrorCode: "Runtime_PythonMissing")).Summary.Contains("python.exe"), "Python missing runtime explains setup");
+                Check(!ScriptDiagnostic.Create(python, new("script-timeout", Error: moduleError)).Summary.Contains("環境缺少模組"), "Python module hint does not hide timeouts");
                 var successful = ScriptDiagnostic.Create(action, new("ok", "output", "additional diagnostic", 0));
                 Check(!successful.IsFailure && successful.Summary.Contains("程序已結束") && !successful.Summary.Contains("失敗"), "stderr alone does not label successful process as failed");
                 var truncated = ScriptDiagnostic.Create(action, new("script-output-too-large", "partial output", "partial error", OutputTruncated: true, ErrorTruncated: true, CaptureIncomplete: true));

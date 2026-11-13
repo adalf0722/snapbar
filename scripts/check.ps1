@@ -1,4 +1,4 @@
-param([switch]$Staged)
+param([switch]$Staged, [switch]$RequireActionRuntimes)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'workflow-checks.ps1')
@@ -41,6 +41,11 @@ try {
         & (Join-Path $PSScriptRoot 'test-push.ps1')
         & (Join-Path $PSScriptRoot 'test-auto-release.ps1')
         & (Join-Path $PSScriptRoot 'build.ps1')
+        $run = New-SnapBarRun 'action-runner'
+        $result = Invoke-SnapBarActionRunner $run -RequireRuntimes:$RequireActionRuntimes
+        Write-SnapBarJson (Join-Path $run 'report.json') $result
+        Assert-SnapBarCommand $result
+        if ($RequireActionRuntimes) { Assert-SnapBarActionRunnerEvidence $result }
     }
     Write-Host 'Repository checks passed.'
 }

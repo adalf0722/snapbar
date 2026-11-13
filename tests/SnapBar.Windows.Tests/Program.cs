@@ -90,8 +90,9 @@ internal static class Program
             "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language", "--ocr-actions"];
         if (args.SequenceEqual(["--list-tests"])) { foreach (var test in tests) Console.WriteLine(test); return 0; }
         var worker = args.Any(a => a is "--clipboard-compatibility-fixture" or "--path-worker" or "--clipboard-race-writer");
+        var requireActionRuntimes = args.SequenceEqual(["--custom-action-runner", "--require-runtimes"]);
         if (!worker && (args.Count(a => tests.Contains(a)) != 1
-            || (!args.Contains("--sublime-action") && args.Length != 1)))
+            || (!args.Contains("--sublime-action") && args.Length != 1 && !requireActionRuntimes)))
         {
             Console.Error.WriteLine("Choose exactly one test. Use --list-tests or scripts/test-desktop.ps1 -List.");
             return 2;
@@ -109,7 +110,7 @@ internal static class Program
         if (args.Contains("--action-layout")) return ActionLayoutTest.Run();
         if (args.Contains("--menu-keyboard")) return MenuKeyboardTest.Run();
         if (args.Contains("--custom-actions")) return CustomActionsTest.Run();
-        if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync(requireActionRuntimes).GetAwaiter().GetResult();
         if (args.Contains("--action-diagnostics")) return ActionDiagnosticsTest.Run();
         if (args.Contains("--path-worker")) return PathWorkerTest.RunFake();
         if (args.Contains("--path-worker-tests")) return PathWorkerTest.RunAsync().GetAwaiter().GetResult();

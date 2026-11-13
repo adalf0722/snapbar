@@ -2673,4 +2673,16 @@ Its enabled state will be preserved.</value>
   <data name="Ocr_ReasonPath" xml:space="preserve"><value>Needs a full path</value></data>
   <data name="Ocr_ReasonLookup" xml:space="preserve"><value>Needs a word</value></data>
   <data name="Ocr_ReasonUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="ActionEditorWindow_PythonName" xml:space="preserve">
+    <value>Clean up whitespace (Python)</value>
+  </data>
+  <data name="ActionEditorWindow_PythonHelp" xml:space="preserve">
+    <value>Read selected text from os.environ.get('POPCLIP_TEXT', ''). Requires Python 3 on PATH, or set the full path to python.exe (including a virtual environment) in Advanced settings.</value>
+  </data>
+  <data name="Runtime_PythonMissing" xml:space="preserve">
+    <value>Python 3 was not found on PATH. Install Python 3 or set the full path to an existing python.exe in Advanced settings. You can use a virtual environment's python.exe.</value>
+  </data>
+  <data name="ScriptDiagnostic_PythonModuleMissing" xml:space="preserve">
+    <value>A Python module is missing. Install the required package in the selected Python environment, or select the python.exe of an environment that already has it. See details for the module name.</value>
+  </data>
 </root>

@@ -15,10 +15,13 @@ internal sealed record ScriptDiagnostic(string Summary, string Details, bool IsF
         var readableError = action.Kind == CustomActionKind.PowerShell ? ReadPowerShellError(result.Error) : result.Error;
         var isFailure = !result.Success;
         var summary = StatusText(result.Status);
-        if (result.ProductErrorCode is "Runtime_DefaultMissing" or "Runtime_PathInvalid")
+        if (result.ProductErrorCode is "Runtime_DefaultMissing" or "Runtime_PathInvalid" or "Runtime_PythonMissing")
             summary = UiText.Get(result.ProductErrorCode, result.ProductErrorArgument);
         if (result.Success && !string.IsNullOrWhiteSpace(result.Error))
             summary = UiText.Get("ScriptDiagnostic_000");
+        if (action.Kind == CustomActionKind.Python && result.Status == "script-failed"
+            && Regex.IsMatch(readableError, @"(?m)^ModuleNotFoundError: No module named ", RegexOptions.CultureInvariant))
+            summary = UiText.Get("ScriptDiagnostic_PythonModuleMissing");
         if (action.Kind == CustomActionKind.PowerShell && (result.Status is "ok" or "script-failed")
             && (readableError.Contains("NonInteractive", StringComparison.OrdinalIgnoreCase) || readableError.Contains("非互動") || readableError.Contains("非交互"))
             && (readableError.Contains("Prompt", StringComparison.OrdinalIgnoreCase) || readableError.Contains("提示")

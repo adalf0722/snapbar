@@ -9,7 +9,11 @@ pwsh -NoProfile -File scripts/check.ps1
 pwsh -NoProfile -File scripts/install-hooks.ps1
 ```
 
-`check.ps1` 驗證 Git 管理及未忽略的新 Markdown／PowerShell 檔案的 UTF-8 無 BOM 編碼、PowerShell 語法、差異空白，以及全部 GitHub workflow 的 actionlint，再跑工具契約測試、Release 建置與 Core 測試。建置會把 Probe 和 fixture README 複製到 App 輸出目錄。GitHub Actions 在 Windows 上執行同一入口並保存日誌；互動式桌面測試需在本機執行。
+`check.ps1` 驗證 Git 管理及未忽略的新 Markdown／PowerShell 檔案的 UTF-8 無 BOM 編碼、PowerShell 語法、差異空白，以及全部 GitHub workflow 的 actionlint，再跑工具契約測試、Release 建置、Core 與 ActionRunner 測試。建置會把 Probe 和 fixture README 複製到 App 輸出目錄。GitHub Actions 在 Windows 上執行同一入口並保存日誌；互動式桌面測試需在本機執行。
+
+ActionRunner 不需要前景視窗或剪貼簿。日常 `check.ps1` 與單獨 `test-desktop.ps1 -Suite ActionRunner` 在缺少 Node／Python 時保留 SKIP 訊息及報告的 skipped 數量，數量按 SKIP 訊息計算。使用 `-RequireActionRuntimes` 可強制兩種環境都實際執行；CI 與發布 workflow 安裝 Python 3.13、Node 24 並啟用此旗標。Release／All 桌面套件自動啟用嚴格模式，請先確保 PATH 中有可用的 python.exe 與 node.exe。
+
+發布證據必須包含成功的 ActionRunner，且明示 runtimesRequired=true、skipped=0。缺少新欄位的舊報告與 Git note 不能滿足新門檻，需重新測試。自訂動作測試的文字斷言會顯示狀態、退出碼、串流長度、第一個差異的 UTF-16 索引及 CR／LF／TAB／EOF 標記；只使用測試 fixture，產品日誌不輸出選取或剪貼簿文字。
 
 雙語版本以英文中性資源和 `zh-Hant/SnapBar.App.resources.dll` 提供介面。發布套件必須包含繁中資源與 `README.en.md`。發布前以 `scripts/test-startup.ps1 -Executable <套件內的 App.exe> -Check LanguageResources` 執行無設定、無系統匣的資源檢查；解壓後也以相同入口確認兩種語言可載入，不會以英文回退掩蓋繁中資源缺漏。
 
@@ -61,7 +65,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 
-`Release` = Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel + Lookup。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel + Lookup + Language。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
 
 原生 runner 可以用以下命令列舉所有旗標；未知或多個測試旗標回傳非零。
 

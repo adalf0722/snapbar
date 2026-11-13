@@ -2673,4 +2673,16 @@
   <data name="Ocr_ReasonPath" xml:space="preserve"><value>需完整路徑</value></data>
   <data name="Ocr_ReasonLookup" xml:space="preserve"><value>需單字</value></data>
   <data name="Ocr_ReasonUnavailable" xml:space="preserve"><value>目前不適用</value></data>
+  <data name="ActionEditorWindow_PythonName" xml:space="preserve">
+    <value>整理空白（Python）</value>
+  </data>
+  <data name="ActionEditorWindow_PythonHelp" xml:space="preserve">
+    <value>從 os.environ.get('POPCLIP_TEXT', '') 讀取選取文字。需要 PATH 中的 Python 3，或在進階設定指定 python.exe 完整路徑，也可使用虛擬環境。</value>
+  </data>
+  <data name="Runtime_PythonMissing" xml:space="preserve">
+    <value>PATH 中找不到 Python 3。請安裝 Python 3，或在進階設定指定既有 python.exe 的完整路徑，也可指定虛擬環境的 python.exe。</value>
+  </data>
+  <data name="ScriptDiagnostic_PythonModuleMissing" xml:space="preserve">
+    <value>目前的 Python 環境缺少模組。請在所選環境安裝所需套件，或改用已安裝套件的環境之 python.exe；模組名稱請見詳細資訊。</value>
+  </data>
 </root>

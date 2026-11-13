@@ -996,3 +996,23 @@ OcrActions 87 項全數通過，報告位於 `artifacts/checks/desktop/20261109T
 最終桌面報告為 `artifacts/checks/desktop/20261113T130556905Z-b6ab4e12e82e405387974e376bd8d4b7/report.json`，Build、Preflight、OcrActions 95、Ocr 36、Language 50、Appearance 174 全數通過；該次 Build 亦通過 Core 529 項。OcrActions 啟用實體鍵盤，驗證 Tab、Shift-Tab、方向鍵與 Enter；在目前螢幕四角確認動作面板完整位於工作區且未覆蓋文字編輯區。受限 360 × 240 DIP 的英文結果卡另驗證至少能完整顯示一行文字，200 × 240 DIP 的動作面板仍可捲動並操作管理入口。
 
 已檢視 `artifacts/ocr-shared-actions/zh-polished-card.png`、`zh-polished-actions.png` 及 `en-restricted.png`。環境為 1920 × 1080、96 DPI（100%）單螢幕；尚未執行 125%／150%／200% 與跨螢幕實機組合。本次沒有改變跨應用選取流程，沒有新增真實外部應用 smoke 驗證。尚未發布或替換發行套件。
+
+### 2026-11-13 Python 自訂動作
+
+新增 Python 類型，使用 PATH 中的 python.exe 或使用者指定的完整路徑，包含虛擬環境。輸入沿用 POPCLIP_TEXT，結果沿用既有輸出模式；逾時、取消、輸出上限與 Job Object 子程序清理共用原有 runner。編輯器提供整理空白範例、Python 變數插入及雙語環境提示，切換語言時分別保留解譯器路徑。缺模組顯示環境修復建議並保留 traceback。
+
+Core 通過 530 項。原生 ActionRunner 33、Diagnostics 28 通過，報告為 `artifacts/checks/desktop/20261113T132720526Z-88453e85facf48ca913afb51148b3783/report.json`；該報告整體因後續 Actions 的原生 Copy 點擊檢查失敗而未通過，不能作為發布證據。Actions 重跑 68、Language 50 通過，報告為 `artifacts/checks/desktop/20261113T132850849Z-110424c217e7491b9bcbca1d888faf9b/report.json`。最終 Appearance 180 通過，報告為 `artifacts/checks/desktop/20261113T132958452Z-6426c957cc8e40f3bd8c258cf3761daf/report.json`。
+
+實際使用本機 Python 3.10，驗證中文、emoji、特殊字元與 CRLF 原樣輸出、不傳入選取、非零結束與 Unicode stderr、缺模組、逾時、取消、雙流輸出上限，以及正常結束／逾時／取消後的子程序清理。另建立含中文及空白路徑的暫存虛擬環境，載入該環境 site-packages 的 fixture 模組，確認完整解譯器路徑及套件來源有效。最初 roundtrip 發現 Windows 換行轉換造成 CRCRLF，修正 stdout／stderr 換行設定後通過。
+
+已檢視 `artifacts/ui-polish/editor-python.png`，確認 Python 範例、執行結果、環境說明與進階設定入口排版正常。此輪未執行混合 DPI 或額外外部 App 的 Python 替換 smoke；未跑完整 Release 套件，也未發布或替換 artifacts/p0。
+
+### 2026-11-13 ActionRunner 發布門檻與診斷
+
+Release／All 新增必跑 ActionRunner，嚴格模式要求 Node 與 Python 都實際執行。check.ps1 也加入不需前景視窗的 runner，CI 與發布 workflow 明確設定 Python 3.13、Node 24 並啟用 RequireActionRuntimes。原始測試報告及精簡 Git note 保留 skipped 與 runtimesRequired；本機發布、receipt 驗證與雲端匯入拒絕缺少執行環境、可選模式、有略過或缺少新欄位的 ActionRunner 證據。這些是開發／發布驗證變更，未改動 App 行為。
+
+嚴格桌面入口 `scripts/test-desktop.ps1 -Suite ActionRunner -RequireActionRuntimes` 通過 Build、Core 530、Preflight 1、ActionRunner 35，零失敗、零略過。報告：`artifacts/checks/desktop/20261113T134219853Z-0cfff3a12acd41a29874f05beb678eef/report.json`。新增斷言的自我驗證故意製造非零退出、CRCRLF 與 EOF 差異，確認訊息包含狀態、退出碼、串流長度、第一個差異的 UTF-16 索引及可讀字元標記，不傾倒整段 fixture 輸出。
+
+另以空 PATH 實測缺少 Node／Python：日常模式 22 通過、2 則 SKIP、退出 0；嚴格模式 22 通過、2 個預期失敗、零略過、退出 1。整體政策驗證成功，且 PATH 已復原。紀錄：`artifacts/checks/runtime-policy/20261113T134258874Z-1bbde52eef594090b87ec7f4132ff8a1/report.json`。未執行完整 Release 桌面套件或雲端 workflow，未發布套件。
+
+最終 `scripts/check.ps1 -RequireActionRuntimes` 通過 actionlint、工具契約 24、push／receipt 11、自動發布工具 18、Core 530 與嚴格 ActionRunner 35，全部零失敗；runner 零略過。runner 報告：`artifacts/checks/action-runner/20261113T134417786Z-5e722fc426774beca63a72ee988f5822/report.json`。修改的中文 Markdown 已以嚴格 UTF-8 無 BOM 讀回確認。

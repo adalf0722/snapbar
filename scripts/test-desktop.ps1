@@ -1,7 +1,8 @@
 param(
     [switch]$List,
     [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr', 'OcrActions', 'Language')]
-    [string[]]$Suite = @('Release')
+    [string[]]$Suite = @('Release'),
+    [switch]$RequireActionRuntimes
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
@@ -23,6 +24,7 @@ if ($List) {
     exit 0
 }
 $selected = [Collections.Generic.List[string]]::new()
+$strictRuntimes = $RequireActionRuntimes -or $Suite -contains 'Release' -or $Suite -contains 'All'
 foreach ($name in $Suite) {
     $expanded = switch ($name) {
         'Release' { $script:SnapBarReleaseSuites }
@@ -52,8 +54,10 @@ try {
     $results.Add($preflight); Assert-SnapBarCommand $preflight
     Write-Host 'Desktop tests temporarily use the clipboard and foreground windows. Avoid typing/copying until completion.'
     foreach ($name in $selected) {
-        $result = Invoke-SnapBarCommand $name $sdk @($runner, $catalog[$name]) $run
+        $result = if ($name -eq 'ActionRunner') { Invoke-SnapBarActionRunner $run -RequireRuntimes:$strictRuntimes }
+            else { Invoke-SnapBarCommand $name $sdk @($runner, $catalog[$name]) $run }
         $results.Add($result); Assert-SnapBarCommand $result
+        if ($name -eq 'ActionRunner' -and $strictRuntimes) { Assert-SnapBarActionRunnerEvidence $result }
     }
     if ($report.sourceFingerprint -ne (Get-SnapBarFingerprint)) { throw 'Source changed during desktop tests; results cannot authorize publishing.' }
     $report.success = $true

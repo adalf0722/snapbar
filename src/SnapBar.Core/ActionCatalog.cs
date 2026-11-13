@@ -120,7 +120,7 @@ public static class ActionCatalog
     private static string Aliases(ActionItem item) => item.Custom?.Kind switch
     {
         CustomActionKind.Url => "url web 網址 網頁", CustomActionKind.PowerShell => "powershell ps 腳本 指令",
-        CustomActionKind.JavaScript => "javascript js 腳本", _ => item.BuiltIn?.ToString() ?? ""
+        CustomActionKind.JavaScript => "javascript js 腳本", CustomActionKind.Python => "python py 腳本", _ => item.BuiltIn?.ToString() ?? ""
     };
 
     public static ActionSettings SetPlacement(ActionSettings settings, string id, ActionPlacement placement)

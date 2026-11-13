@@ -271,6 +271,15 @@ internal static class ActionCatalogTests
             var imported = CustomActionPolicy.Import(CustomActionPolicy.Export(script));
             return imported.Id != script.Id && imported with { Id = script.Id } == script;
         });
+        check("Python roundtrip preserves environment output and no-selection settings", () =>
+        {
+            var python = action with { Kind = CustomActionKind.Python, Content = "print('fixture')", InterpreterPath = @"C:\Tools\venv\Scripts\python.exe", UseSelection = false, Output = ActionOutput.ReplaceSelection };
+            var imported = CustomActionPolicy.Import(CustomActionPolicy.Export(python));
+            var configured = ActionCatalog.Normalize(new() { CustomActions = [imported] });
+            return imported.Id != python.Id && imported with { Id = python.Id } == python
+                && ActionCatalog.GetLocalActions(configured, "python").Any(a => a.Id == imported.Id)
+                && ActionCatalog.GetLocalActions(configured, "py").Any(a => a.Id == imported.Id);
+        });
         check("import rejects duplicate case-insensitive envelope properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 2", "\"version\": 2, \"Version\": 2"))));
         check("import rejects duplicate action properties", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"name\":", "\"name\": \"other\", \"name\":"))));
         check("import rejects future version", () => Reject(() => CustomActionPolicy.Import(CustomActionPolicy.Export(action).Replace("\"version\": 2", "\"version\": 3"))));
