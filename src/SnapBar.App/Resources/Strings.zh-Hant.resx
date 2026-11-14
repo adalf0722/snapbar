@@ -314,8 +314,9 @@
   <data name="ActionResultWindow_015" xml:space="preserve">
     <value>離線詞典</value>
   </data>
+  <data name="ActionResultWindow_Heading" xml:space="preserve"><value>結果</value></data>
   <data name="ActionResultWindow_016" xml:space="preserve">
-    <value>原選取已失效；請複製結果後自行貼上。</value>
+    <value>原選取已失效，可複製結果後貼上。</value>
   </data>
   <data name="ActionSettingsPanel_000" xml:space="preserve">
     <value>新增動作</value>
@@ -2711,4 +2712,6 @@
   <data name="Onboarding_Skip" xml:space="preserve"><value>稍後再說</value></data>
   <data name="Onboarding_Entry" xml:space="preserve"><value>使用入門</value></data>
   <data name="Onboarding_StartFailed" xml:space="preserve"><value>無法開啟練習，請從「關於與支援 → 使用入門」再試一次。</value></data>
+  <data name="ActionResult_KeepOnTop" xml:space="preserve"><value>保持置頂</value></data>
+  <data name="ActionResult_KeepOnTopHint" xml:space="preserve"><value>此結果會保留到你關閉視窗或結束 SnapBar。取消置頂後可讓其他視窗覆蓋。</value></data>
 </root>

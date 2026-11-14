@@ -1,5 +1,19 @@
 # P0 驗證紀錄
 
+## 2026-11-14 自訂動作多結果保留
+
+依使用者確認，這次只處理從選取文字執行自訂動作的結果視窗。文字／Markdown 與錯誤視窗可同時保留，不因下一次查詢或來源焦點變更而關閉；個別視窗可取消置頂。明確取消、設定變更、新 capture 與結束程式仍拒絕晚到結果。每張卡的套用回呼綁定自身視窗與原 selection ticket；重新查詢後舊 Apply 即使被強制觸發，也不可寫原文或剪貼簿。既有 HUD 自動關閉與詞典生命週期保持不變。未修改地圖啟動、GeoIP 匯出腳本、1.5 秒等待或 Job Object。
+
+Release 建置及 Core 540／0 通過。桌面 Preflight 1／0、PersistentResults 47／0、Diagnostics 28／0、Lookup 16／0、Compatibility 21／0、Language 63／0，無跳過。報告：`artifacts/checks/desktop/20261114T133127686Z-640a959eac0d457481c34ddb692a9c74/report.json`；來源指紋：`1F3B862615AA5C9A525F4174EC5B4562B81D644772FC60A660B703E5BD4C51B7`。測試包含真實 PowerShell Runner 與專用外部 fixture，確認跨前景計時器的唯讀結果、剪貼簿輸出仍取消、兩張結果獨立閱讀／複製、有效 Apply 與結束清理；未呼叫外部 API 或開地圖。
+
+`scripts/check.ps1` 通過：UTF-8／PowerShell／差異與 workflow 檢查、工具 24／0、推送流程 fixture 11／0、自動發布 fixture 18／0、Core 540／0、ActionRunner 35／0，ActionRunner 無跳過。工具測試內的預期失敗並非整體檢查失敗；未對真實遠端推送或發布。
+
+Actions 套件另有兩次失敗，均停在新功能執行前的「native scroll outside toolbar dismisses the old selection session」，各 9／1；保留報告於 `artifacts/checks/desktop/20261114T132409796Z-b7d10920eb8243bba8418fbc837841e0/report.json` 與 `artifacts/checks/desktop/20261114T132509014Z-fbb2548f0af4407e98acf7efe2b05339/report.json`。沒有放寬該測試，也未宣稱完整 Release 通過。新套件初期遇到 Windows 前景授權，已讓可丟棄 fixture 明確授權該 runner PID，並用 computer-use 啟用測試 fixture；正式通過的測試確認確實發生前景切換。
+
+已檢閱 `artifacts/ui-polish/action-result-retained-zh.png` 與 `action-result-retained-en.png`，確認繁英置頂控制、文字、按鈕與提示完整可見，既有視窗維持建立時語言。尚未執行跨實體 DPI、多螢幕、長時間大量結果，以及真實 GeoIP／瀏覽器互動驗收；不保存跨重啟結果。新增使用者發布說明及 `docs/2026-11-14-persistent-action-results.md`，未替換發布套件。
+
+後續使用者要求自行實測，另以忽略的 `artifacts/live-geoip-smoke/` 獨立測試入口載入現有 GeoIP 匯出動作，使用公開且可丟棄的 fixture，呼叫目前建置的 SelectionController、Probe 與真實 CustomActionRunner；沒有改動已匯入動作或產品原始碼。連續兩次真實 API 查詢皆成功，確認兩張結果同時保留且含查詢資訊，並以瀏覽器分頁確認兩次 Google Maps 都載入與 API 相符的座標。透過 computer-use 觀察完整結果、切換其中一張的置頂控制，來源失效後 Apply 已停用且資訊仍保留。兩張測試結果留供使用者檢閱，尚未執行瀏覽器冷啟動與不同負載條件；此單次 smoke 不代表 1.5 秒延遲已成為可靠交接機制。
+
 ## 2026-11-14 使用入門選字對象辨識
 
 移除白卡內「試著選取這段文字」，改由區外說明明確指向下方句子。白色表面只包含真正唯讀 TextBox，鍵帽與搜尋指引移到外側；整個教材表面使用 I-beam 游標，滑入、聚焦及選取有穩定邊界回饋。真正反白後提示「現在按」，清空選取則還原。提示位置固定，選取不改 Completed、不送出協定訊息、不寫入選字內容。
@@ -1056,3 +1070,11 @@ Release／All 新增必跑 ActionRunner，嚴格模式要求 Node 與 Python 都
 另以空 PATH 實測缺少 Node／Python：日常模式 22 通過、2 則 SKIP、退出 0；嚴格模式 22 通過、2 個預期失敗、零略過、退出 1。整體政策驗證成功，且 PATH 已復原。紀錄：`artifacts/checks/runtime-policy/20261113T134258874Z-1bbde52eef594090b87ec7f4132ff8a1/report.json`。未執行完整 Release 桌面套件或雲端 workflow，未發布套件。
 
 最終 `scripts/check.ps1 -RequireActionRuntimes` 通過 actionlint、工具契約 24、push／receipt 11、自動發布工具 18、Core 530 與嚴格 ActionRunner 35，全部零失敗；runner 零略過。runner 報告：`artifacts/checks/action-runner/20261113T134417786Z-5e722fc426774beca63a72ee988f5822/report.json`。修改的中文 Markdown 已以嚴格 UTF-8 無 BOM 讀回確認。
+
+### 2026-11-14 自訂動作結果視窗排版
+
+結果視窗改為 560 DIP 預設寬度、依內容縮排；七行欄位 fixture 的視窗高度為 457 DIP。位置值優先呈現，次要欄位保留完整文字；複製仍取得原始順序與換行。置頂改為標頭右側圖釘，失效套用按鈕隱藏且停用。已檢視 `artifacts/ui-polish/action-result-layout-zh.png` 與 `action-result-layout-narrow.png`，確認一般及 320 DIP 窄版文字可讀、按鈕未裁切。長文與手動縮短至 280 DIP 的視窗仍可捲動。
+
+Release 建置成功（11 項既有測試程式警告），Core 540 項通過。原生 `--persistent-results` 最終 55 項全數通過，涵蓋完整原文複製、長文捲動、原選取失效、強制舊按鈕事件拒絕寫回、正常套用、多結果保留、置頂與英／繁中語言保留。日誌為 `artifacts/result-layout-tests.log`。原生 `--clipboard-compatibility` 首次在結果視窗顯示前遇到剪貼簿讀取競態；重跑 21 項全數通過，日誌為 `artifacts/result-layout-compatibility-retry.log`。以隨附 SDK 執行 App DLL 的 `--language-resources-check` 通過。
+
+標準桌面腳本入口被先前 GeoIP smoke host 所持有的 Probe 程序擋下，故以上為直接執行原生 runner 的局部回歸證據，不是完整 Release 發布報告。未強制終止舊程序。乾淨環境的 standalone 開發版啟動檢查因系統未安裝 .NET 10 而失敗；開發版需沿用隨附 SDK／`run-dev.ps1`，發行版需另外執行自含式打包。此輪未執行完整 Release、35 秒慢速相容性案例、跨 App 或混合 DPI 驗證，未發布或替換 `artifacts/p0`。

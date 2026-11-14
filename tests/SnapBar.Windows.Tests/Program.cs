@@ -87,7 +87,7 @@ internal static class Program
             "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics", "--ai-panel", "--ai-preview",
             "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--lookup", "--screen-ocr", "--browser-launch-smoke",
             "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
-            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language", "--ocr-actions"];
+            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language", "--ocr-actions", "--persistent-results"];
         if (args.SequenceEqual(["--list-tests"])) { foreach (var test in tests) Console.WriteLine(test); return 0; }
         var worker = args.Any(a => a is "--clipboard-compatibility-fixture" or "--path-worker" or "--clipboard-race-writer");
         var requireActionRuntimes = args.SequenceEqual(["--custom-action-runner", "--require-runtimes"]);
@@ -110,6 +110,7 @@ internal static class Program
         if (args.Contains("--action-layout")) return ActionLayoutTest.Run();
         if (args.Contains("--menu-keyboard")) return MenuKeyboardTest.Run();
         if (args.Contains("--custom-actions")) return CustomActionsTest.Run();
+        if (args.Contains("--persistent-results")) return PersistentActionResultsTest.Run();
         if (args.Contains("--custom-action-runner")) return CustomActionRunnerTest.RunAsync(requireActionRuntimes).GetAwaiter().GetResult();
         if (args.Contains("--action-diagnostics")) return ActionDiagnosticsTest.Run();
         if (args.Contains("--path-worker")) return PathWorkerTest.RunFake();

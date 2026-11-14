@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -17,6 +18,7 @@ internal sealed class ActionResultWindow : Window
     private readonly Button? applyButton;
     private readonly TextBlock? hint;
     private readonly bool diagnosticOnly;
+    private readonly bool compactResult;
     private readonly string? staleApplyHint;
     private nint handle;
     private readonly DispatcherTimer? timer;
@@ -25,15 +27,41 @@ internal sealed class ActionResultWindow : Window
         ScriptDiagnostic? diagnostic = null, bool diagnosticOnly = false, bool lookup = false, bool messageOnly = false,
         Action? openSettings = null, string? openSettingsLabel = null,
         IReadOnlyList<DictionaryMatch>? lookupMatches = null, string? lookupWarning = null, string? applyLabel = null,
-        string? applyHint = null, string? staleApplyHint = null)
+        string? applyHint = null, string? staleApplyHint = null, bool persistent = false)
     {
         this.diagnosticOnly = diagnosticOnly;
+        compactResult = !hud && !lookup && !diagnosticOnly && diagnostic == null && !messageOnly;
         this.staleApplyHint = staleApplyHint;
         if (diagnostic != null) hud = false;
         ActionUi.Setup(this, UiText.Join(name, (diagnosticOnly ? language.Get("ActionResultWindow_001") : language.Get("ActionResultWindow_002"))),
-            hud || lookup ? 420 : 650, hud ? 180 : 520);
-        MinHeight = hud ? 120 : 280; MinWidth = 320; ShowActivated = false; ShowInTaskbar = !hud && !lookup; Topmost = true;
-        var body = new DockPanel { Margin = new(20) }; var heading = ActionUi.Text(name, 18); heading.Margin = new(0, 0, 0, 15); DockPanel.SetDock(heading, Dock.Top); body.Children.Add(heading);
+            hud || lookup ? 420 : compactResult ? 560 : 650, hud ? 180 : 520);
+        MinHeight = hud ? 120 : compactResult ? 200 : 280; MinWidth = 320; ShowActivated = false; ShowInTaskbar = !hud && !lookup; Topmost = true;
+        if (compactResult)
+        {
+            Height = double.NaN;
+            SizeToContent = SizeToContent.Height;
+            MaxHeight = 620;
+        }
+        var body = new DockPanel { Margin = new(20) };
+        var header = new DockPanel { Margin = new(0, 0, 0, 12), LastChildFill = true };
+        var heading = ActionUi.Text(compactResult ? language.Get("ActionResultWindow_Heading") : name, compactResult ? 14 : 18);
+        heading.FontWeight = FontWeights.SemiBold;
+        DockPanel.SetDock(header, Dock.Top); body.Children.Add(header);
+        if (persistent)
+        {
+            var onTop = new ToggleButton
+            {
+                Content = ActionUi.Icon("pin", ActionUi.Accent, 16), IsChecked = true,
+                Style = (Style)FindResource("AiCommandPin"), Margin = new(12, 0, 0, 0),
+                ToolTip = language.Get("ActionResult_KeepOnTopHint")
+            };
+            AutomationProperties.SetAutomationId(onTop, "KeepActionResultOnTop");
+            AutomationProperties.SetName(onTop, language.Get("ActionResult_KeepOnTop"));
+            onTop.Checked += (_, _) => Topmost = true;
+            onTop.Unchecked += (_, _) => Topmost = false;
+            DockPanel.SetDock(onTop, Dock.Right); header.Children.Add(onTop);
+        }
+        header.Children.Add(heading);
         if (lookup)
         {
             WindowStyle = WindowStyle.None;
@@ -60,14 +88,17 @@ internal sealed class ActionResultWindow : Window
         }
         if (!diagnosticOnly)
         {
-            var footer = new StackPanel { Margin = new(0, 12, 0, 0) }; var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            hint = ActionUi.Text(canApply ? applyHint ?? language.Get("ActionResultWindow_004") : staleApplyHint ?? language.Get("ActionResultWindow_005"), 11, ActionUi.Muted);
+            var footer = new StackPanel { Margin = new(0, 12, 0, 0) };
+            Panel buttons = compactResult ? new WrapPanel() : new StackPanel { Orientation = Orientation.Horizontal };
+            hint = ActionUi.Text(canApply ? applyHint ?? language.Get("ActionResultWindow_004") : staleApplyHint ?? language.Get("ActionResultWindow_005"), 12, ActionUi.Muted);
+            hint.Margin = new(0, 8, 0, 0);
             if (!messageOnly) buttons.Children.Add(ActionUi.Button(language.Get("ActionResultWindow_006"), () =>
-            { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); } }, "copy"));
+            { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); } }, "copy", primary: compactResult));
             if (!lookup)
             {
                 applyButton = ActionUi.Button(applyLabel ?? language.Get("ActionResultWindow_009"), () => { applyButton!.IsEnabled = false; apply?.Invoke(); });
                 applyButton.IsEnabled = canApply;
+                if (compactResult && !canApply) applyButton.Visibility = Visibility.Collapsed;
                 buttons.Children.Add(applyButton);
             }
             if (openSettings != null) buttons.Children.Add(ActionUi.Button(openSettingsLabel ?? language.Get("ActionResultWindow_000"), () => { Close(); openSettings(); }));
@@ -91,9 +122,11 @@ internal sealed class ActionResultWindow : Window
             DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
             if (lookup) body.Children.Add(lookupMatches is { Count: > 0 }
                 ? CreateLookupGroups(lookupMatches, lookupWarning) : CreateLookupContent(name, text, messageOnly));
+            else if (compactResult) body.Children.Add(ActionResultContent.Create(text, markdown, RenderMarkdown));
             else if (markdown) body.Children.Add(new FlowDocumentScrollViewer { Document = RenderMarkdown(text), IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, IsSelectionEnabled = true });
             else body.Children.Add(new TextBox { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto, BorderThickness = new(0), Padding = new(10), FontSize = 14,
+                VerticalContentAlignment = VerticalAlignment.Top,
                 Background = Brushes.White, FontFamily = new("Consolas, Microsoft JhengHei UI") });
             if (hud) { footer.Visibility = Visibility.Collapsed; timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) }; timer.Tick += (_, _) => Close(); Loaded += (_, _) => timer.Start(); }
         }
@@ -110,7 +143,11 @@ internal sealed class ActionResultWindow : Window
     public void InvalidateTarget()
     {
         if (diagnosticOnly) return;
-        if (applyButton != null) applyButton.IsEnabled = false;
+        if (applyButton != null)
+        {
+            applyButton.IsEnabled = false;
+            if (compactResult) applyButton.Visibility = Visibility.Collapsed;
+        }
         if (hint != null) hint.Text = staleApplyHint ?? language.Get("ActionResultWindow_016");
     }
     public bool Contains(int x, int y) => IsVisible && Native.GetWindowRect(handle, out var r) && x >= r.Left && x < r.Right && y >= r.Top && y < r.Bottom;

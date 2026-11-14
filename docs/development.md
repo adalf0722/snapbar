@@ -57,6 +57,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | Clipboard / ClipboardRaces | `--clipboard-roundtrip` / `--clipboard-races` | 格式還原與競態 |
 | UiaReadiness / UiaDeepTree | `--uia-readiness` / `--uia-deep-tree` | 延遲 provider 與深層樹 |
 | Actions / ActionRunner / Diagnostics | `--custom-actions` / `--custom-action-runner` / `--action-diagnostics` | 自訂動作與結果 |
+| PersistentResults | `--persistent-results` | 選取文字自訂動作的多結果保留、跨焦點完成、個別置頂、舊結果寫回拒絕與結束清理；只使用可丟棄 fixture，不查外部 API 或開地圖 |
 | Layout / Keyboard | `--action-layout` / `--menu-keyboard` | 動作列與鍵盤 |
 | PathWorker / PathActions | `--path-worker-tests` / `--path-actions` | 路徑 worker 與動作 |
 | WebActions / Exclusions | `--web-actions` / `--app-exclusions` | 網址與排除政策 |

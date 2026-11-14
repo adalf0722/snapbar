@@ -314,6 +314,7 @@ Results appear here after running.</value>
   <data name="ActionResultWindow_015" xml:space="preserve">
     <value>Offline dictionary</value>
   </data>
+  <data name="ActionResultWindow_Heading" xml:space="preserve"><value>Result</value></data>
   <data name="ActionResultWindow_016" xml:space="preserve">
     <value>The original selection is no longer valid. Copy the result and paste it yourself.</value>
   </data>
@@ -2711,4 +2712,6 @@ Its enabled state will be preserved.</value>
   <data name="Onboarding_Skip" xml:space="preserve"><value>Maybe later</value></data>
   <data name="Onboarding_Entry" xml:space="preserve"><value>Get started</value></data>
   <data name="Onboarding_StartFailed" xml:space="preserve"><value>Practice could not open. Use Get started in About &amp; support to try again.</value></data>
+  <data name="ActionResult_KeepOnTop" xml:space="preserve"><value>Keep on top</value></data>
+  <data name="ActionResult_KeepOnTopHint" xml:space="preserve"><value>This result stays open until you close it or exit SnapBar. Turn this off to let other windows cover it.</value></data>
 </root>

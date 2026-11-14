@@ -14,8 +14,9 @@ public sealed class FixtureWindow : Window
     public const string LookupFixtureText = "take off";
     public FixtureWindow(bool delayedUia = false, bool deepUia = false, string? webActionMode = null, string? pathFixture = null)
     {
-        if (webActionMode == "lookup"
-            && int.TryParse(Environment.GetEnvironmentVariable("SNAPBAR_LOOKUP_TEST_RUNNER_PID"), out var runnerPid) && runnerPid > 0)
+        var runner = Environment.GetEnvironmentVariable("SNAPBAR_FOREGROUND_TEST_RUNNER_PID")
+            ?? (webActionMode == "lookup" ? Environment.GetEnvironmentVariable("SNAPBAR_LOOKUP_TEST_RUNNER_PID") : null);
+        if (int.TryParse(runner, out var runnerPid) && runnerPid > 0)
         {
             Activated += (_, _) => AllowSetForegroundWindow(runnerPid);
             // Automation input can consume the one-time foreground grant after activation.
