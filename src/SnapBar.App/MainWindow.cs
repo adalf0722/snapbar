@@ -35,13 +35,14 @@ public sealed partial class MainWindow : Window
     internal IReadOnlyList<ExcludedApplication> ExcludedApplications => preferences.ExcludedApplications;
 
     public MainWindow(SettingsStore? settingsStore = null, Action? configureSublime = null, Func<bool>? sublimeIsReady = null,
-        StartupRegistration? startupRegistration = null, Func<string>? systemUiLanguage = null)
+        StartupRegistration? startupRegistration = null, Func<string>? systemUiLanguage = null, bool enableFirstRun = false)
     {
         this.configureSublime = configureSublime ?? SublimeCompatibility.InstallBinding;
         this.sublimeIsReady = sublimeIsReady ?? SublimeCompatibility.Ready;
         this.startupRegistration = startupRegistration ?? new StartupRegistration(Path.Combine(AppContext.BaseDirectory, "SnapBar.App.exe"));
         this.settingsStore = settingsStore ?? new SettingsStore(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "settings.json"));
+        var settingsExisted = File.Exists(this.settingsStore.FilePath);
         var loaded = this.settingsStore.Load();
         aiPreferences = new(Path.GetDirectoryName(this.settingsStore.FilePath)!);
         offlineDictionary = new(Path.Combine(Path.GetDirectoryName(this.settingsStore.FilePath)!, "offline-dictionary.bin"));
@@ -51,6 +52,7 @@ public sealed partial class MainWindow : Window
         if (loaded.Warning != null && loaded.Warning != "hotkey-invalid") preferences = preferences with { ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false };
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
         preferences = preferences with { SublimeCompatibilityEnabled = preferences.SublimeCompatibilityEnabled ?? this.sublimeIsReady() };
+        InitializeOnboarding(enableFirstRun, settingsExisted, loaded.Warning);
         BuildSettingsPages();
         generalPage.ConfigureLanguage(preferences.InterfaceLanguage, ChangeInterfaceLanguage);
         UiText.Changed += RefreshInterfaceLanguage;
@@ -67,6 +69,7 @@ public sealed partial class MainWindow : Window
                     initialOcrHotkey: preferences.OcrHotkey);
                 controller.OcrRequested += StartOcr;
                 controller.Status += AddStatus;
+                controller.OnboardingSearchFinished += result => _ = onboarding.SearchFinishedAsync(result);
                 controller.HotkeyRecorded += generalPage.Record;
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
@@ -105,7 +108,7 @@ public sealed partial class MainWindow : Window
             Hide();
             if (!hiddenNoticeShown) { hiddenNoticeShown = true; tray.NotifyHidden(); }
         };
-        Closed += (_, _) => { UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
+        Closed += (_, _) => { _ = onboarding.StopAsync(); UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
     }
 
     internal void ToggleAutomatic()
@@ -241,6 +244,7 @@ public sealed partial class MainWindow : Window
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
+        if (firstRunEligible && IsLoaded && !backgroundInitialization) _ = OfferOnboardingAsync();
     }
 
     internal bool ChangeInterfaceLanguage(string preference)
@@ -260,6 +264,7 @@ public sealed partial class MainWindow : Window
         aiCommandsPanel.Refresh();
         UpdateAutomaticControls();
         tray?.RefreshLanguage();
+        _ = onboarding.ConfigureAsync();
     }
 
     internal async Task ExitAsync()
@@ -273,6 +278,7 @@ public sealed partial class MainWindow : Window
         }
         finally { exitResolutionInProgress = false; }
         IsEnabled = false;
+        await onboarding.StopAsync();
         StopOcr();
         controller?.BeginShutdown();
         foreach (var draft in aiPreferences.Drafts.ToArray()) draft.Discard();
@@ -284,6 +290,7 @@ public sealed partial class MainWindow : Window
     public void PrepareSessionEnd()
     {
         exitRequested = true;
+        _ = onboarding.StopAsync();
         StopOcr();
         controller?.BeginShutdown();
     }

@@ -49,6 +49,16 @@ public sealed partial class SelectionController : IDisposable
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
     internal event Action? OcrRequested;
+    internal event Action<OnboardingSearchResult>? OnboardingSearchFinished;
+    private void NotifyOnboardingSearch(SelectionSnapshot current, bool launched)
+    {
+        if (OnboardingSearchFinished == null) return;
+        foreach (Action<OnboardingSearchResult> handler in OnboardingSearchFinished.GetInvocationList())
+        {
+            try { handler(new(current.Id, current.Target, launched)); }
+            catch (Exception) { /* Optional observers must not change the action result. */ }
+        }
+    }
     internal void CancelSelection() => Invalidate();
     internal SelectionSnapshot? ActiveSelection => selection;
     public string SearchUrlTemplate
@@ -94,9 +104,9 @@ public sealed partial class SelectionController : IDisposable
         {
             if (selection == null) return;
             if (Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasCaptureForeground != true)
-                Invalidate();
+                Invalidate(preserveReadonlyAction: true);
             else if (popup.ShouldDismissForPointer())
-                Invalidate();
+                Invalidate(preserveReadonlyAction: true);
         }, dispatcher);
     }
 
@@ -107,8 +117,9 @@ public sealed partial class SelectionController : IDisposable
         if (input.Kind == "hotkey" && aiWindow?.HasCaptureForeground == true) return;
         if (input.Action == TextAction.Ocr) { OcrRequested?.Invoke(); return; }
         if ((input.Kind is "click" or "selection" or "scroll")
-            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true || aiWindow?.ContainsCaptureSurface(input.X, input.Y) == true)) return;
-        if (input.Kind is "key" or "click" or "scroll") { Invalidate(); return; }
+            && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true
+                || customResults.Contains(input.X, input.Y) || aiWindow?.ContainsCaptureSurface(input.X, input.Y) == true)) return;
+        if (input.Kind is "key" or "click" or "scroll") { Invalidate(preserveReadonlyAction: true); return; }
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
         {
             if (executing) return;
@@ -249,11 +260,12 @@ public sealed partial class SelectionController : IDisposable
                 try
                 {
                     launchWeb(destination.Uri!);
+                    if (action == TextAction.Search) NotifyOnboardingSearch(current, true);
                     Status?.Invoke(action == TextAction.Search ? UiText.Get("SelectionController_006") : UiText.Get("SelectionController_007"));
                     RememberBuiltIn(action);
                 }
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException)
-                { Report("browser-unavailable"); }
+                { if (action == TextAction.Search) NotifyOnboardingSearch(current, false); Report("browser-unavailable"); }
             }
             else
             {
@@ -316,10 +328,13 @@ public sealed partial class SelectionController : IDisposable
         "busy" => UiText.Get("SelectionController_044"),
         _ => UiText.Get("SelectionController_045",(status))    });
 
-    private void Invalidate()
+    private void Invalidate() => Invalidate(preserveReadonlyAction: false);
+
+    private void Invalidate(bool preserveReadonlyAction)
     {
         aiWindow?.InvalidateTarget();
-        customAction?.Cancel();
+        if (!preserveReadonlyAction || !customActionAllowsDetachedResult) customAction?.Cancel();
+        customResults.InvalidateTargets();
         if (lookupResult)
         {
             if (resultWindow is { IsLookupPinned: false }) resultWindow.Close();
@@ -337,12 +352,13 @@ public sealed partial class SelectionController : IDisposable
         stopping = true;
         Invalidate();
         resultWindow?.Close();
+        customResults.CloseAll();
         aiWindow?.Close();
     }
 
     public void Dispose()
     {
         if (disposed) return;
-        disposed = true; Invalidate(); resultWindow?.Close(); aiWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
+        disposed = true; Invalidate(); resultWindow?.Close(); customResults.CloseAll(); aiWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
     }
 }

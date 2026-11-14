@@ -10,6 +10,8 @@ public sealed partial class SelectionController
     private ActionSettings actions = ActionCatalog.Normalize(new());
     private readonly Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>> runCustom;
     private CancellationTokenSource? customAction;
+    private bool customActionAllowsDetachedResult;
+    private readonly ActionResultWindows customResults = new();
     private ActionResultWindow? resultWindow;
     public event Action<ActionSettings>? ActionsChanged;
     public event Action? ManageActionsRequested;
@@ -51,6 +53,10 @@ public sealed partial class SelectionController
         if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
         executing = true; var current = selection; var ticket = generation.Next(); popup.Dismiss();
         using var cancellation = new CancellationTokenSource(); customAction = cancellation; var keepResult = false; var clipboardLease = false;
+        var readonlyResult = action.Kind != CustomActionKind.Url && action.Output is ActionOutput.Window or ActionOutput.Markdown;
+        bool CanPresent() => !disposed && !stopping && !cancellation.IsCancellationRequested
+            && ReferenceEquals(customAction, cancellation)
+            && (readonlyResult || Current(current, ticket));
         try
         {
             var writes = action.Kind != CustomActionKind.Url && action.Output == ActionOutput.ReplaceSelection;
@@ -73,28 +79,35 @@ public sealed partial class SelectionController
                 if (!lease.Success) { Report(lease.Status); return; }
             }
             Status?.Invoke(UiText.Get("SelectionController_CustomActions_001"));
+            customActionAllowsDetachedResult = readonlyResult;
             var result = await runCustom(action, action.UseSelection ? current.Text : "", cancellation.Token);
-            if (!Current(current, ticket) || cancellation.IsCancellationRequested) return;
+            if (!CanPresent() || result.Status == "cancelled") return;
             var diagnostic = ScriptDiagnostic.Create(action, result);
-            SelectionSnapshot? validatedSelection = current;
+            SelectionSnapshot? validatedSelection = null;
             if (diagnostic.IsFailure)
             {
                 keepResult = ActionOutputRouter.Route(action.Output, result.Output, true, false, CreateOutputHost());
                 return;
             }
-            var final = await ValidateCustomAsync(current, ticket, writes);
-            if (!final.Success) { if (generation.IsCurrent(ticket)) Report(final.Status); return; }
-            validatedSelection = final.Selection;
+            // Readonly presentation belongs to this invocation, not to the foreground window.
+            // Revalidation still controls Apply and every automatic clipboard/source write.
+            if (!readonlyResult || Current(current, ticket))
+            {
+                var final = await ValidateCustomAsync(current, ticket, writes);
+                if (!CanPresent()) return;
+                if (!final.Success && !readonlyResult) { if (generation.IsCurrent(ticket)) Report(final.Status); return; }
+                if (final.Success) validatedSelection = final.Selection;
+            }
             RememberAction(id);
             keepResult = ActionOutputRouter.Route(action.Output, result.Output, false, !string.IsNullOrWhiteSpace(result.Error), CreateOutputHost());
 
             ActionOutputHost CreateOutputHost() => new(
-                () => Current(current, ticket) && !cancellation.IsCancellationRequested,
+                CanPresent,
                 () => Status?.Invoke(UiText.Get("SelectionController_CustomActions_002")),
                 text => { Clipboard.SetText(text, TextDataFormat.UnicodeText); Status?.Invoke(UiText.Get("SelectionController_CustomActions_003")); },
                 text => TryPasteResult(current, ticket, text),
                 (text, allowApply) => ShowResult(action, text, current, ticket,
-                    allowApply && SessionPolicy.CanWrite(validatedSelection, current.Target),
+                    allowApply && Current(current, ticket) && SessionPolicy.CanWrite(validatedSelection, current.Target),
                     allowApply && !string.IsNullOrWhiteSpace(result.Error) ? diagnostic : null),
                 () => ShowDiagnostic(action, result));
         }
@@ -105,31 +118,32 @@ public sealed partial class SelectionController
         finally
         {
             if (clipboardLease) await probe.RequestAsync(new("clipboard-release", SessionId: current.Id));
-            customAction = null; executing = false; if (!keepResult) Invalidate();
+            customAction = null; customActionAllowsDetachedResult = false;
+            executing = false; if (!keepResult) Invalidate();
         }
     }
 
     private void ShowDiagnostic(CustomActionDefinition action, ScriptExecutionResult result)
     {
         var diagnostic = ScriptDiagnostic.Create(action, result);
-        resultWindow?.Close();
-        resultWindow = new ActionResultWindow(UiNames.Action(action), "", false, false, diagnostic: diagnostic, diagnosticOnly: true);
-        resultWindow.Show(); Status?.Invoke(diagnostic.Summary);
+        var window = new ActionResultWindow(UiNames.Action(action), "", false, false,
+            diagnostic: diagnostic, diagnosticOnly: true, persistent: true);
+        customResults.Show(window); Status?.Invoke(diagnostic.Summary);
     }
 
     private void ShowResult(CustomActionDefinition action, string text, SelectionSnapshot current, long ticket, bool editable,
         ScriptDiagnostic? diagnostic = null)
     {
-        resultWindow?.Close();
-        var window = new ActionResultWindow(UiNames.Action(action), text, action.Output == ActionOutput.Markdown, editable,
-            () => _ = ApplyResultAsync(current, ticket, text), action.Output == ActionOutput.Hud, diagnostic);
-        resultWindow = window; window.Closed += (_, _) => { if (resultWindow == window) resultWindow = null; };
-        window.Show(); Status?.Invoke(UiText.Get("SelectionController_CustomActions_005"));
+        ActionResultWindow? window = null;
+        window = new ActionResultWindow(UiNames.Action(action), text, action.Output == ActionOutput.Markdown, editable,
+            () => _ = ApplyResultAsync(current, ticket, text, window!), action.Output == ActionOutput.Hud, diagnostic,
+            persistent: action.Output != ActionOutput.Hud || diagnostic != null);
+        customResults.Show(window); Status?.Invoke(UiText.Get("SelectionController_CustomActions_005"));
     }
 
-    private async Task ApplyResultAsync(SelectionSnapshot current, long ticket, string text)
+    private async Task ApplyResultAsync(SelectionSnapshot current, long ticket, string text, ActionResultWindow window)
     {
-        if (executing || !Current(current, ticket)) { resultWindow?.InvalidateTarget(); return; }
+        if (executing || !Current(current, ticket)) { window.InvalidateTarget(); return; }
         executing = true;
         try
         {

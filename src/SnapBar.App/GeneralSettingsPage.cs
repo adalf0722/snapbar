@@ -199,6 +199,13 @@ internal sealed class GeneralSettingsPage : ContentControl
         { startupMessage.Text = UiText.Get("GeneralSettingsPage_040"); }
     }
 
+    internal void BeginToolbarRecording()
+    {
+        CancelRecording();
+        shortcutTarget.SelectedIndex = 0;
+        BeginRecording();
+    }
+
     internal void BeginRecording()
     {
         draft = current; IsRecording = true; save.IsEnabled = false;

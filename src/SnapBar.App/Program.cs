@@ -7,6 +7,11 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == "--onboarding-practice")
+        {
+            Environment.ExitCode = OnboardingPracticeWindow.Run(args[1]);
+            return;
+        }
         if (args.SequenceEqual(["--ocr-worker"]) || args.SequenceEqual(["--ocr-worker", "--english"]))
         {
             Environment.ExitCode = SnapBar.Windows.Ocr.OcrWorker.RunAsync(args.Length == 2).GetAwaiter().GetResult();
@@ -40,7 +45,7 @@ internal static class Program
         var background = args.Contains("--background");
         if (!first) { if (!background) showSettings.Set(); return; }
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-        var window = new MainWindow();
+        var window = new MainWindow(enableFirstRun: true);
         var wait = ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) =>
         {
             if (!app.Dispatcher.HasShutdownStarted)

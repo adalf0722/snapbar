@@ -50,18 +50,19 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 
 | 套件 | 原生旗標 | 範圍 |
 | --- | --- | --- |
-| Lifecycle | `--tray-lifecycle` | 系統匣、開關、熱鍵與儲存設定 |
-| Appearance | `--ui-appearance` | 外觀、捲動與拖曳把手 |
+| Lifecycle | `--tray-lifecycle` | 系統匣、開關、熱鍵與儲存設定；使用入門的獨立程序、受限通訊、真實 UIA／工具列搜尋、完成來源驗證、背景後首次呈現與清理 |
+| Appearance | `--ui-appearance` | 外觀、捲動與拖曳把手；使用入門單一畫面、原處完成、偏好回復與小視窗截圖 |
 | Compatibility | `--clipboard-compatibility` | 快速剪貼簿相容性與焦點安全 |
 | CompatibilitySlow | `--clipboard-compatibility-long` | 相容性全套，包含真正等待 35 秒的腳本 |
 | Clipboard / ClipboardRaces | `--clipboard-roundtrip` / `--clipboard-races` | 格式還原與競態 |
 | UiaReadiness / UiaDeepTree | `--uia-readiness` / `--uia-deep-tree` | 延遲 provider 與深層樹 |
 | Actions / ActionRunner / Diagnostics | `--custom-actions` / `--custom-action-runner` / `--action-diagnostics` | 自訂動作與結果 |
+| PersistentResults | `--persistent-results` | 選取文字自訂動作的多結果保留、跨焦點完成、個別置頂、舊結果寫回拒絕與結束清理；只使用可丟棄 fixture，不查外部 API 或開地圖 |
 | Layout / Keyboard | `--action-layout` / `--menu-keyboard` | 動作列與鍵盤 |
 | PathWorker / PathActions | `--path-worker-tests` / `--path-actions` | 路徑 worker 與動作 |
 | WebActions / Exclusions | `--web-actions` / `--app-exclusions` | 網址與排除政策 |
 | Lookup | `--lookup` | 多詞典分組查詢、停用來源、複製來源與釋義、重複詞頭、釘住與焦點變更。畫面存於 `artifacts/ui-polish/lookup-*.png` |
-| Language | `--interface-language` | 雙語資源、語言切換與保存、系統語言回復、隨附項目名稱、工作內容與視窗語言保留。納入 Release 必要證據 |
+| Language | `--interface-language` | 雙語資源、語言切換與保存、系統語言回復、隨附項目名稱、工作內容與視窗語言保留；使用入門英／繁及動態快捷鍵。納入 Release 必要證據 |
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 

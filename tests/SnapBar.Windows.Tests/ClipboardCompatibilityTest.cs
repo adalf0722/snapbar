@@ -217,13 +217,17 @@ internal static class ClipboardCompatibilityTest
                     };
                     await Capture(); await controller.ExecuteCustomAsync(longScript.Id);
                     resultWindow = app.Windows.OfType<ActionResultWindow>().SingleOrDefault(w => w.IsVisible);
-                    Check(resultWindow != null && Children<TextBox>(resultWindow).Any(t => t.Text == "long script completed")
+                    Check(resultWindow != null && Children<FlowDocumentScrollViewer>(resultWindow).Any(viewer => new System.Windows.Documents.TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text.TrimEnd() == "long script completed")
                         && Clipboard.GetText() == "original clipboard", "35-second script retains result after original candidate deadline and preserves clipboard");
                     resultWindow!.Close();
                 }
-                runner = async (_, _, _) => { await Command("other"); return new("ok", "must not display"); };
+                runner = async (_, _, _) => { await Command("other"); return new("ok", "retained readonly result"); };
                 await Capture(); await controller.ExecuteCustomAsync(longScript.Id);
-                Check(!app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "extended lease still rejects focus changes during script execution");
+                resultWindow = app.Windows.OfType<ActionResultWindow>().SingleOrDefault(w => w.IsVisible);
+                Check(resultWindow != null && Children<FlowDocumentScrollViewer>(resultWindow).Any(viewer => new System.Windows.Documents.TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text.TrimEnd() == "retained readonly result")
+                    && !Children<Button>(resultWindow).Single(b => AutomationProperties.GetName(b) == "套用至原文").IsEnabled
+                    && Clipboard.GetText() == "original clipboard", "extended lease retains readonly output after focus change without source write permission");
+                resultWindow!.Close();
                 await Command("select"); await Capture(); controller.ClipboardCompatibilityEnabled = false;
                 before = await Command("stats"); await controller.ExecuteAsync(TextAction.Search);
                 Check(controller.ActiveSelection == null && launched.Count == 1 && before == await Command("stats"), "disabling compatibility immediately invalidates prior generic session");

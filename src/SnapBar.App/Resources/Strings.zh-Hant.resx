@@ -314,8 +314,9 @@
   <data name="ActionResultWindow_015" xml:space="preserve">
     <value>離線詞典</value>
   </data>
+  <data name="ActionResultWindow_Heading" xml:space="preserve"><value>結果</value></data>
   <data name="ActionResultWindow_016" xml:space="preserve">
-    <value>原選取已失效；請複製結果後自行貼上。</value>
+    <value>原選取已失效，可複製結果後貼上。</value>
   </data>
   <data name="ActionSettingsPanel_000" xml:space="preserve">
     <value>新增動作</value>
@@ -2685,4 +2686,32 @@
   <data name="ScriptDiagnostic_PythonModuleMissing" xml:space="preserve">
     <value>目前的 Python 環境缺少模組。請在所選環境安裝所需套件，或改用已安裝套件的環境之 python.exe；模組名稱請見詳細資訊。</value>
   </data>
+  <data name="Onboarding_Title" xml:space="preserve"><value>SnapBar · 使用入門</value></data>
+  <data name="Onboarding_Language" xml:space="preserve"><value>語言</value></data>
+  <data name="Onboarding_Headline" xml:space="preserve"><value>選取文字，動作就在手邊。</value></data>
+  <data name="Onboarding_Instructions" xml:space="preserve"><value>在下方句子上拖曳，選取幾個字。</value></data>
+  <data name="Onboarding_BeforeKeys" xml:space="preserve"><value>選好後按</value></data>
+  <data name="Onboarding_SelectedBeforeKeys" xml:space="preserve"><value>現在按</value></data>
+  <data name="Onboarding_AfterKeys" xml:space="preserve"><value>再點「搜尋」（或 ⋯）。</value></data>
+  <data name="Onboarding_ReadyHeadline" xml:space="preserve"><value>已經上手了。</value></data>
+  <data name="Onboarding_SkipHint" xml:space="preserve"><value>略過練習並開啟設定</value></data>
+  <data name="Onboarding_Sample" xml:space="preserve"><value>SnapBar，讓文字操作更順手。</value></data>
+  <data name="Onboarding_SampleLabel" xml:space="preserve"><value>練習文字：試著選取幾個字</value></data>
+  <data name="Onboarding_Browser" xml:space="preserve"><value>搜尋會開啟瀏覽器，並將選取的範例文字交給目前的搜尋服務。</value></data>
+  <data name="Onboarding_Hint" xml:space="preserve"><value>試著反白幾個字，再按快捷鍵。工具列消失時，重新選字即可。</value></data>
+  <data name="Onboarding_Success" xml:space="preserve"><value>已開啟搜尋。</value></data>
+  <data name="Onboarding_SearchFailed" xml:space="preserve"><value>無法開啟瀏覽器。請確認預設瀏覽器，重新選字再試一次。</value></data>
+  <data name="Onboarding_SaveFailed" xml:space="preserve"><value>無法儲存偏好，目前仍使用先前的設定。</value></data>
+  <data name="Onboarding_ProgressFailed" xml:space="preserve"><value>無法儲存練習進度，仍可繼續練習或略過。</value></data>
+  <data name="Onboarding_ChangeShortcut" xml:space="preserve"><value>更換快捷鍵</value></data>
+  <data name="Onboarding_HotkeyFailed" xml:space="preserve"><value>目前的快捷鍵無法使用。請到一般設定更換，再從「使用入門」回到這裡。</value></data>
+  <data name="Onboarding_Automatic" xml:space="preserve"><value>選字後自動顯示工具列</value></data>
+  <data name="Onboarding_Tray" xml:space="preserve"><value>SnapBar 會在系統匣待命。點圖示回到設定，右鍵可暫停或結束。</value></data>
+  <data name="Onboarding_Finish" xml:space="preserve"><value>開始使用</value></data>
+  <data name="Onboarding_Settings" xml:space="preserve"><value>開啟設定</value></data>
+  <data name="Onboarding_Skip" xml:space="preserve"><value>稍後再說</value></data>
+  <data name="Onboarding_Entry" xml:space="preserve"><value>使用入門</value></data>
+  <data name="Onboarding_StartFailed" xml:space="preserve"><value>無法開啟練習，請從「關於與支援 → 使用入門」再試一次。</value></data>
+  <data name="ActionResult_KeepOnTop" xml:space="preserve"><value>保持置頂</value></data>
+  <data name="ActionResult_KeepOnTopHint" xml:space="preserve"><value>此結果會保留到你關閉視窗或結束 SnapBar。取消置頂後可讓其他視窗覆蓋。</value></data>
 </root>

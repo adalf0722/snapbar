@@ -60,6 +60,7 @@ public sealed partial class MainWindow
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
         { return UiText.Get("MainWindow_General_008"); }
         preferences = updated; UpdateAutomaticControls();
+        _ = onboarding.ConfigureAsync();
         if (hotkeyNotice) { notice.Visibility = System.Windows.Visibility.Collapsed; hotkeyNotice = false; }
         AddStatus(UiText.Join(UiText.Get("MainWindow_General_009"), value.Display));
         return null;
@@ -67,7 +68,12 @@ public sealed partial class MainWindow
 
     internal void InitializeBackground()
     {
-        new WindowInteropHelper(this).EnsureHandle();
-        if (tray == null) ShowSettings();
+        backgroundInitialization = true;
+        try
+        {
+            new WindowInteropHelper(this).EnsureHandle();
+            if (tray == null) ShowSettings();
+        }
+        finally { Dispatcher.BeginInvoke(() => backgroundInitialization = false); }
     }
 }
