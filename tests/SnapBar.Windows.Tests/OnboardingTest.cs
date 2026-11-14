@@ -34,10 +34,19 @@ internal static class OnboardingTest
                 && !Children<Button>(window).Any(b => AutomationProperties.GetAutomationId(b) is "OnboardingStart" or "OnboardingContinue"),
                 "onboarding opens directly with unselected practice text and no start or continue gate");
             if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-en.png");
+            window.Receive(new(1, "configure", Language: "zh-Hant", Shortcut: "Ctrl + Alt + B", Automatic: false, HotkeyRegistered: true));
+            var keycaps = Find<WrapPanel>(window, "OnboardingShortcutKeys");
+            check(AutomationProperties.GetName(keycaps) == "Ctrl + Alt + B"
+                && Children<TextBlock>(keycaps).Any(t => t.Text == "B"),
+                "onboarding keycaps display the actual saved shortcut with a complete accessible name");
+            window.UpdateLayout();
+            if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-zh.png");
+            window.Receive(new(1, "configure", Language: "en", Shortcut: "Ctrl + Alt + V", Automatic: false, HotkeyRegistered: true));
             window.Receive(new(1, "search-failed", Error: "browser-unavailable"));
             check(!window.Completed && Find<TextBlock>(window, "OnboardingProgress").Text.Contains("browser"),
                 "failed browser launch does not complete onboarding");
             window.Receive(new(1, "search-launched"));
+            window.UpdateLayout();
             check(window.Completed && Find<CheckBox>(window, "OnboardingAutomatic").IsVisible
                 && !Find<Button>(window, "OnboardingSkip").IsVisible,
                 "real search completion expands preferences in the same window");
@@ -54,12 +63,15 @@ internal static class OnboardingTest
             window.Receive(new(1, "configure", Language: "zh-Hant", Shortcut: "Ctrl + Alt + B", Automatic: false, HotkeyRegistered: false));
             window.Width = 580; window.Height = 470; window.UpdateLayout();
             check(Find<TextBox>(window, "OnboardingSample").Text.Contains("文字操作")
-                && Find<Button>(window, "OnboardingChangeShortcut").IsVisible
-                && Children<TextBlock>(window).Any(t => t.Text.Contains("Ctrl + Alt + B")),
-                "Chinese onboarding uses the current shortcut and offers conflict recovery");
+                && Find<Button>(window, "OnboardingChangeShortcut").IsVisible,
+                "completed Chinese onboarding still offers shortcut conflict recovery");
+            var finish = Find<Button>(window, "OnboardingFinish");
+            var finishBounds = finish.TransformToAncestor(window).TransformBounds(new Rect(finish.RenderSize));
+            check(finish.IsVisible && finishBounds.Bottom <= window.ActualHeight && finishBounds.Top >= 0,
+                "onboarding primary action remains in view when the content must scroll");
             if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-small-conflict.png");
             window.Receive(new(1, "configure", Language: "zh-Hant", Shortcut: "Ctrl + Alt + V", Automatic: false, HotkeyRegistered: true));
-            window.Width = 640; window.Height = 660; window.UpdateLayout();
+            window.Width = 660; window.Height = 590; window.UpdateLayout();
             if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-complete-zh.png");
         }
         finally { window.CloseFromParent(); UiText.SetLanguage(culture); }
@@ -130,6 +142,8 @@ internal static class OnboardingTest
                 if (sample == null) throw new InvalidOperationException("Practice text not available");
                 async Task Select()
                 {
+                    sample = root.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, "OnboardingSample"))
+                        ?? throw new InvalidOperationException("Current practice text not available");
                     session.Activate(); sample.SetFocus();
                     ((TextPattern)sample.GetCurrentPattern(TextPattern.Pattern)).DocumentRange.Select();
                     var wait = DateTime.UtcNow.AddSeconds(5);
@@ -147,6 +161,13 @@ internal static class OnboardingTest
                 check("actual toolbar search reports original source after browser launch and isolates observers",
                     launches == 1 && results is [{ Launched: true }] && results[0].Target == target);
                 await session.SendAsync(new(1, "search-launched"));
+                deadline = DateTime.UtcNow.AddSeconds(5);
+                while (root.FindFirst(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.AutomationIdProperty, "OnboardingFinish")) is not { Current.IsOffscreen: false })
+                {
+                    if (DateTime.UtcNow > deadline) throw new InvalidOperationException("Completed practice layout not ready");
+                    await Task.Delay(25);
+                }
                 browserFails = true;
                 await Select(); await controller.ExecuteAsync(TextAction.Search, direct: true);
                 check("browser exception emits failure rather than successful onboarding", results.Count == 2 && !results[1].Launched && launches == 1);

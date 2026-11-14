@@ -1,5 +1,15 @@
 # P0 驗證紀錄
 
+## 2026-11-14 使用入門視覺精修
+
+教學改為較緊湊的 660 × 590 DIP 原生視窗，品牌及語言置頂，可選文字與目前快捷鍵鍵帽集中在輕量練習表面，底部固定操作區。「稍後再說」為低調文字操作，仍返回設定。成功後原處顯示勾選標記、精簡教材與偏好，收起已完成的操作步驟，主要按鈕保持可見。訊息處理與實際選字流程未變更，排版獨立至 `OnboardingPracticeWindow.Presentation.cs`。
+
+Core 540／0、Lifecycle 103／0、Appearance 188／0、Language 58／0，無跳過。Lifecycle 報告：`artifacts/checks/desktop/20261114T003956508Z-321ed11b19f14777a0435e1966807308/report.json`；Appearance／Language 報告：`artifacts/checks/desktop/20261114T004050900Z-a2ad3edde3e1445098e10d891d9a9b63/report.json`。兩份成功報告來源指紋相同：`CBD4095FE169D1278AD665FE0DA868DEADED0EEB4B079F4212FD9666AF5DF8F6`。此次執行相關桌面套件，未重跑完整 Release。
+
+已逐張檢閱 `artifacts/ui-polish/onboarding-en.png`、`onboarding-zh.png`、`onboarding-complete-zh.png`、`onboarding-small-conflict.png`。案例覆蓋動態鍵帽、保存失敗回復、過期回應拒絕，以及小視窗捲動時底部主要操作仍在可見範圍。完成狀態會重建版面；整合測試因此在重排完成後重新取得 UIA 文字控制項，再驗證真正工具列搜尋與啟動器失敗，不沿用已替換的舊控制項。
+
+另以正常設定入口開啟實際開發版使用入門，確認標題、真正可選教材、Ctrl／Alt／V 鍵帽與略過操作；結束時保留新版教學視窗，沿用使用者現有英文偏好。實體多 DPI 及此版的新手真人試做未執行，不以程式化尺寸測試替代。新增唯一發布說明，未改既有說明，未推送或替換發布套件。
+
 ## 2026-11-14 略過使用入門返回設定
 
 「稍後再說」及未完成練習的關閉／Esc 現在返回原本的設定視窗；完成後「開始使用」仍回到系統匣待命。保留偏好與 Completed 進度不降級。新增兩項獨立 Lifecycle 斷言，分別驗證略過後設定可見，以及完成後設定隱藏。
