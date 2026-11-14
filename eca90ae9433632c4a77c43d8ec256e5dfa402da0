@@ -7,8 +7,8 @@
     "schema": 1,
     "success": true,
     "sourceFingerprint": "B6AA1DAE013B7D3121903DEC8BB502DA13918D0F616E2E08E24A1F06CB617671",
-    "startedUtc": "2026-11-14T22:34:28.6901125Z",
-    "finishedUtc": "2026-11-14T22:36:23.40856Z",
+    "startedUtc": "2026-11-14T22:40:11.6988613Z",
+    "finishedUtc": "2026-11-14T22:42:03.3694299Z",
     "results": [
       {
         "name": "Build",
@@ -18,7 +18,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 8.396
+        "seconds": 8.43
       },
       {
         "name": "Preflight",
@@ -28,7 +28,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 0.22
+        "seconds": 0.222
       },
       {
         "name": "ActionRunner",
@@ -38,7 +38,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": true,
-        "seconds": 12.541
+        "seconds": 12.768
       },
       {
         "name": "Lifecycle",
@@ -48,7 +48,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 6.222
+        "seconds": 6.108
       },
       {
         "name": "Appearance",
@@ -58,7 +58,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 6.445
+        "seconds": 6.353
       },
       {
         "name": "CompatibilitySlow",
@@ -68,7 +68,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 61.062
+        "seconds": 61.102
       },
       {
         "name": "AiRuntime",
@@ -78,7 +78,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 0.184
+        "seconds": 0.192
       },
       {
         "name": "AiPanel",
@@ -88,7 +88,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 11.9
+        "seconds": 9.431
       },
       {
         "name": "Lookup",
@@ -98,7 +98,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 5.706
+        "seconds": 5.049
       },
       {
         "name": "Language",
@@ -108,7 +108,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 1.812
+        "seconds": 1.792
       }
     ]
   }
