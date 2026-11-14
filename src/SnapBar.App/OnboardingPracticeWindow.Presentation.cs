@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Shapes;
@@ -13,6 +14,8 @@ internal sealed partial class OnboardingPracticeWindow
     private FrameworkElement progressSurface = null!;
     private ComboBox language = null!;
     private CheckBox automatic = null!;
+    private TextBox practiceText = null!;
+    private TextBlock? selectionCue;
 
     private void Render()
     {
@@ -21,6 +24,7 @@ internal sealed partial class OnboardingPracticeWindow
         {
             UiText.SetLanguage(SnapBar.Core.InterfaceLanguage.Resolve(configuration.Language, UiText.SystemLanguageSource()));
             Title = UiText.Get("Onboarding_Title");
+            selectionCue = null;
             var shell = new Grid { Margin = new(32, 24, 32, 22) };
             shell.RowDefinitions.Add(new() { Height = GridLength.Auto });
             shell.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
@@ -38,6 +42,7 @@ internal sealed partial class OnboardingPracticeWindow
             body.Children.Add(practice);
             if (!completed)
             {
+                body.Children.Add(BuildShortcut());
                 var browser = ActionUi.Text(UiText.Get("Onboarding_Browser"), 12, ActionUi.Muted);
                 browser.Margin = new(2, 12, 2, 0); body.Children.Add(browser);
             }
@@ -69,6 +74,7 @@ internal sealed partial class OnboardingPracticeWindow
         language = new ComboBox { ItemsSource = new[] { "Language · System", "English", "繁體中文" },
             SelectedIndex = configuration.Language switch { "en" => 1, "zh-Hant" => 2, _ => 0 },
             MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Right };
+        KeyboardNavigation.SetTabIndex(language, 3);
         Identify(language, "OnboardingLanguage", UiText.Get("Onboarding_Language"));
         language.SelectionChanged += (_, _) =>
         {
@@ -83,42 +89,65 @@ internal sealed partial class OnboardingPracticeWindow
 
     private Border BuildPractice()
     {
-        var content = new StackPanel();
-        if (!completed)
-            content.Children.Add(ActionUi.Text(UiText.Get("Onboarding_PracticeLabel"), 12, ActionUi.Muted));
         var sample = new TextBox { Text = UiText.Get("Onboarding_Sample"), IsReadOnly = true,
             TextWrapping = TextWrapping.Wrap, FontSize = completed ? 22 : 25,
-            Padding = new(0, completed ? 3 : 14, 0, completed ? 3 : 18), MinHeight = completed ? 48 : 88,
+            Padding = new(22, completed ? 16 : 24, 22, completed ? 16 : 24), MinHeight = completed ? 80 : 116,
             BorderThickness = new(0), Background = Brushes.Transparent, Foreground = ActionUi.Ink,
-            VerticalContentAlignment = VerticalAlignment.Center };
+            VerticalContentAlignment = VerticalAlignment.Center, Cursor = Cursors.IBeam,
+            IsInactiveSelectionHighlightEnabled = true };
+        practiceText = sample;
+        KeyboardNavigation.SetTabIndex(sample, 0);
         Identify(sample, "OnboardingSample", UiText.Get("Onboarding_SampleLabel"));
-        content.Children.Add(sample);
-        if (!completed)
-        {
-            var shortcut = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
-            Identify(shortcut, "OnboardingShortcutKeys", configuration.Shortcut!);
-            var before = ActionUi.Text(UiText.Get("Onboarding_BeforeKeys"), 13, ActionUi.Muted);
-            before.Margin = new(0, 0, 12, 0); shortcut.Children.Add(before);
-            var keys = configuration.Shortcut!.Split(" + ", StringSplitOptions.None);
-            for (var index = 0; index < keys.Length; index++)
-            {
-                if (index > 0)
-                {
-                    var plus = ActionUi.Text("+", 12, ActionUi.Muted); plus.Margin = new(5, 0, 5, 0);
-                    shortcut.Children.Add(plus);
-                }
-                shortcut.Children.Add(new Border { Background = ActionUi.Canvas, BorderBrush = ActionUi.Line,
-                    BorderThickness = new(1, 1, 1, 2), CornerRadius = new(5), Padding = new(9, 5, 9, 5),
-                    Margin = new(0, 2, 0, 2), Child = ActionUi.Text(keys[index], 13) });
-            }
-            var after = ActionUi.Text(UiText.Get("Onboarding_AfterKeys"), 13);
-            after.Margin = new(12, 0, 0, 0); shortcut.Children.Add(after);
-            content.Children.Add(new Border { BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 0, 0),
-                Padding = new(0, 14, 0, 0), Child = shortcut });
-        }
-        return new Border { Background = Brushes.White, BorderBrush = ActionUi.Line, BorderThickness = new(1),
-            CornerRadius = new(14), Padding = new(22, completed ? 14 : 18, 22, completed ? 14 : 18), Child = content,
+        AutomationProperties.SetHelpText(sample, UiText.Get("Onboarding_Instructions"));
+        var surface = new Border { Background = Brushes.White, BorderBrush = ActionUi.Line, BorderThickness = new(1),
+            CornerRadius = new(14), Child = sample, Cursor = Cursors.IBeam,
             Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 2, Opacity = 0.045, Color = Colors.Black } };
+        Identify(surface, "OnboardingSelectionSurface", UiText.Get("Onboarding_SampleLabel"));
+        void RefreshSurface()
+        {
+            var active = sample.IsKeyboardFocusWithin || sample.SelectionLength > 0;
+            surface.BorderBrush = active ? ActionUi.Accent : surface.IsMouseOver ? ActionUi.Brush("#AEC2EB") : ActionUi.Line;
+            surface.Background = surface.IsMouseOver && !active ? ActionUi.Brush("#F3F6FD") : Brushes.White;
+        }
+        surface.MouseEnter += (_, _) => RefreshSurface();
+        surface.MouseLeave += (_, _) => RefreshSurface();
+        sample.IsKeyboardFocusWithinChanged += (_, _) => RefreshSurface();
+        sample.SelectionChanged += (_, _) =>
+        {
+            RefreshSurface();
+            if (updating || completed || sample != practiceText || selectionCue == null) return;
+            var selected = sample.SelectionLength > 0;
+            selectionCue.Text = UiText.Get(selected ? "Onboarding_SelectedBeforeKeys" : "Onboarding_BeforeKeys");
+            selectionCue.Foreground = selected ? ActionUi.Accent : ActionUi.Muted;
+            AutomationProperties.SetName(selectionCue, selectionCue.Text);
+        };
+        return surface;
+    }
+
+    private FrameworkElement BuildShortcut()
+    {
+        var shortcut = new WrapPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new(2, 18, 0, 0) };
+        Identify(shortcut, "OnboardingShortcutKeys", configuration.Shortcut!);
+        selectionCue = ActionUi.Text(UiText.Get("Onboarding_BeforeKeys"), 13, ActionUi.Muted);
+        selectionCue.Width = 78; selectionCue.Margin = new(0, 0, 8, 0);
+        Identify(selectionCue, "OnboardingSelectionCue", selectionCue.Text);
+        AutomationProperties.SetLiveSetting(selectionCue, AutomationLiveSetting.Polite);
+        shortcut.Children.Add(selectionCue);
+        var keys = configuration.Shortcut!.Split(" + ", StringSplitOptions.None);
+        for (var index = 0; index < keys.Length; index++)
+        {
+            if (index > 0)
+            {
+                var plus = ActionUi.Text("+", 12, ActionUi.Muted); plus.Margin = new(5, 0, 5, 0);
+                shortcut.Children.Add(plus);
+            }
+            shortcut.Children.Add(new Border { Background = ActionUi.Canvas, BorderBrush = ActionUi.Line,
+                BorderThickness = new(1, 1, 1, 2), CornerRadius = new(5), Padding = new(9, 5, 9, 5),
+                Margin = new(0, 2, 0, 2), Child = ActionUi.Text(keys[index], 13) });
+        }
+        var after = ActionUi.Text(UiText.Get("Onboarding_AfterKeys"), 13);
+        after.Margin = new(12, 0, 0, 0); shortcut.Children.Add(after);
+        return shortcut;
     }
 
     private FrameworkElement BuildProgress()
@@ -145,6 +174,7 @@ internal sealed partial class OnboardingPracticeWindow
     {
         var preferences = new StackPanel { Margin = new(0, 18, 0, 0), Visibility = completed ? Visibility.Visible : Visibility.Collapsed };
         automatic = new CheckBox { IsChecked = configuration.Automatic, Style = (Style)FindResource("Switch") };
+        KeyboardNavigation.SetTabIndex(automatic, 1);
         Identify(automatic, "OnboardingAutomatic", UiText.Get("Onboarding_Automatic"));
         automatic.Click += (_, _) => { if (!updating) _ = PreferenceAsync("set-automatic", automatic: automatic.IsChecked == true); };
         var row = new DockPanel(); DockPanel.SetDock(automatic, Dock.Right); row.Children.Add(automatic);
@@ -160,12 +190,15 @@ internal sealed partial class OnboardingPracticeWindow
         var row = new Grid(); row.ColumnDefinitions.Add(new()); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
         var skip = MakeButton("Onboarding_Skip", "OnboardingSkip", "skip");
         MakeQuiet(skip); skip.HorizontalAlignment = HorizontalAlignment.Left;
+        KeyboardNavigation.SetTabIndex(skip, 4);
         skip.ToolTip = UiText.Get("Onboarding_SkipHint"); skip.Visibility = completed ? Visibility.Collapsed : Visibility.Visible;
         row.Children.Add(skip);
         var actions = new WrapPanel { Visibility = completed ? Visibility.Visible : Visibility.Collapsed };
         var settings = MakeButton("Onboarding_Settings", "OnboardingOpenSettings", "open-settings");
+        KeyboardNavigation.SetTabIndex(settings, 4);
         MakeQuiet(settings); actions.Children.Add(settings);
         var finish = MakeButton("Onboarding_Finish", "OnboardingFinish", "finish", true);
+        KeyboardNavigation.SetTabIndex(finish, 2);
         finish.Margin = new(6, 0, 0, 0); finish.IsDefault = completed; actions.Children.Add(finish);
         Grid.SetColumn(actions, 1); row.Children.Add(actions);
         return new Border { BorderBrush = ActionUi.Line, BorderThickness = new(0, 1, 0, 0), Padding = new(0, 16, 0, 0), Child = row };

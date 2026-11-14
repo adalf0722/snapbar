@@ -2688,9 +2688,9 @@ Its enabled state will be preserved.</value>
   <data name="Onboarding_Title" xml:space="preserve"><value>SnapBar · Get started</value></data>
   <data name="Onboarding_Language" xml:space="preserve"><value>Language</value></data>
   <data name="Onboarding_Headline" xml:space="preserve"><value>Select text. Keep actions close.</value></data>
-  <data name="Onboarding_Instructions" xml:space="preserve"><value>Select a few words. Try your first search.</value></data>
-  <data name="Onboarding_PracticeLabel" xml:space="preserve"><value>Try selecting this text</value></data>
+  <data name="Onboarding_Instructions" xml:space="preserve"><value>Drag across a few words in the sentence below.</value></data>
   <data name="Onboarding_BeforeKeys" xml:space="preserve"><value>Then press</value></data>
+  <data name="Onboarding_SelectedBeforeKeys" xml:space="preserve"><value>Now press</value></data>
   <data name="Onboarding_AfterKeys" xml:space="preserve"><value>and choose Search (or ⋯).</value></data>
   <data name="Onboarding_ReadyHeadline" xml:space="preserve"><value>You're ready.</value></data>
   <data name="Onboarding_SkipHint" xml:space="preserve"><value>Skip practice and open settings</value></data>

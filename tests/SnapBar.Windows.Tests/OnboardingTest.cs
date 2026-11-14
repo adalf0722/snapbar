@@ -5,6 +5,8 @@ using System.Windows.Automation;
 using System.Windows.Automation.Text;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Input;
+using System.Windows.Threading;
 using SnapBar.App;
 using SnapBar.Core;
 using SnapBar.Windows;
@@ -19,6 +21,13 @@ internal static class OnboardingTest
     }
     private static T Find<T>(DependencyObject root, string id) where T : DependencyObject =>
         Children<T>(root).Single(c => AutomationProperties.GetAutomationId(c) == id);
+    private static void Snapshot(Window window, string file)
+    {
+        window.UpdateLayout();
+        // TextBox selection adorners and its text view finish drawing at dispatcher render priority.
+        window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+        UiAppearanceTest.Snapshot(window, file);
+    }
 
     internal static void Ui(Action<bool, string> check, bool snapshots = true)
     {
@@ -33,14 +42,39 @@ internal static class OnboardingTest
                 && !Find<CheckBox>(window, "OnboardingAutomatic").IsVisible
                 && !Children<Button>(window).Any(b => AutomationProperties.GetAutomationId(b) is "OnboardingStart" or "OnboardingContinue"),
                 "onboarding opens directly with unselected practice text and no start or continue gate");
-            if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-en.png");
+            window.Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
+            var englishSample = Find<TextBox>(window, "OnboardingSample");
+            var firstCharacter = englishSample.GetRectFromCharacterIndex(0);
+            var lastCharacter = englishSample.GetRectFromCharacterIndex(englishSample.Text.Length - 1);
+            check(!firstCharacter.IsEmpty && !lastCharacter.IsEmpty && firstCharacter.Left >= 0
+                && lastCharacter.Right <= englishSample.ActualWidth && lastCharacter.Bottom <= englishSample.ActualHeight,
+                "the complete practice sentence stays visible without horizontal scrolling");
+            if (snapshots) Snapshot(window, "onboarding-en.png");
             window.Receive(new(1, "configure", Language: "zh-Hant", Shortcut: "Ctrl + Alt + B", Automatic: false, HotkeyRegistered: true));
             var keycaps = Find<WrapPanel>(window, "OnboardingShortcutKeys");
             check(AutomationProperties.GetName(keycaps) == "Ctrl + Alt + B"
                 && Children<TextBlock>(keycaps).Any(t => t.Text == "B"),
                 "onboarding keycaps display the actual saved shortcut with a complete accessible name");
             window.UpdateLayout();
-            if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-zh.png");
+            var sampleSurface = Find<Border>(window, "OnboardingSelectionSurface");
+            var sample = Find<TextBox>(window, "OnboardingSample");
+            check(sample.IsReadOnly && sample.Cursor == Cursors.IBeam
+                && Children<TextBox>(sampleSurface).Single() == sample && !Children<TextBlock>(sampleSurface).Any()
+                && !sampleSurface.IsAncestorOf(keycaps),
+                "only the actual selectable sentence occupies the selection surface and instructions stay outside");
+            if (snapshots) Snapshot(window, "onboarding-zh.png");
+            var sampleBounds = sample.TransformToAncestor(window).TransformBounds(new Rect(sample.RenderSize));
+            sample.Focus(); sample.Select(9, 4); window.UpdateLayout();
+            check(sample.SelectionLength == 4
+                && Find<TextBlock>(window, "OnboardingSelectionCue").Text == UiText.Get("Onboarding_SelectedBeforeKeys")
+                && !window.Completed && messages.Count == 0,
+                "real selection updates the next-step cue without faking completion or sending a command");
+            check(sample.TransformToAncestor(window).TransformBounds(new Rect(sample.RenderSize)) == sampleBounds,
+                "selection feedback never moves the sentence while the user is dragging");
+            if (snapshots) Snapshot(window, "onboarding-selected-zh.png");
+            sample.Select(0, 0);
+            check(Find<TextBlock>(window, "OnboardingSelectionCue").Text == UiText.Get("Onboarding_BeforeKeys"),
+                "clearing the selection restores the initial shortcut cue");
             window.Receive(new(1, "configure", Language: "en", Shortcut: "Ctrl + Alt + V", Automatic: false, HotkeyRegistered: true));
             window.Receive(new(1, "search-failed", Error: "browser-unavailable"));
             check(!window.Completed && Find<TextBlock>(window, "OnboardingProgress").Text.Contains("browser"),
@@ -69,10 +103,10 @@ internal static class OnboardingTest
             var finishBounds = finish.TransformToAncestor(window).TransformBounds(new Rect(finish.RenderSize));
             check(finish.IsVisible && finishBounds.Bottom <= window.ActualHeight && finishBounds.Top >= 0,
                 "onboarding primary action remains in view when the content must scroll");
-            if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-small-conflict.png");
+            if (snapshots) Snapshot(window, "onboarding-small-conflict.png");
             window.Receive(new(1, "configure", Language: "zh-Hant", Shortcut: "Ctrl + Alt + V", Automatic: false, HotkeyRegistered: true));
             window.Width = 660; window.Height = 590; window.UpdateLayout();
-            if (snapshots) UiAppearanceTest.Snapshot(window, "onboarding-complete-zh.png");
+            if (snapshots) Snapshot(window, "onboarding-complete-zh.png");
         }
         finally { window.CloseFromParent(); UiText.SetLanguage(culture); }
     }

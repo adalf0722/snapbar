@@ -2688,9 +2688,9 @@
   <data name="Onboarding_Title" xml:space="preserve"><value>SnapBar · 使用入門</value></data>
   <data name="Onboarding_Language" xml:space="preserve"><value>語言</value></data>
   <data name="Onboarding_Headline" xml:space="preserve"><value>選取文字，動作就在手邊。</value></data>
-  <data name="Onboarding_Instructions" xml:space="preserve"><value>選幾個字，試一次真正的搜尋。</value></data>
-  <data name="Onboarding_PracticeLabel" xml:space="preserve"><value>試著選取這段文字</value></data>
-  <data name="Onboarding_BeforeKeys" xml:space="preserve"><value>接著按</value></data>
+  <data name="Onboarding_Instructions" xml:space="preserve"><value>在下方句子上拖曳，選取幾個字。</value></data>
+  <data name="Onboarding_BeforeKeys" xml:space="preserve"><value>選好後按</value></data>
+  <data name="Onboarding_SelectedBeforeKeys" xml:space="preserve"><value>現在按</value></data>
   <data name="Onboarding_AfterKeys" xml:space="preserve"><value>再點「搜尋」（或 ⋯）。</value></data>
   <data name="Onboarding_ReadyHeadline" xml:space="preserve"><value>已經上手了。</value></data>
   <data name="Onboarding_SkipHint" xml:space="preserve"><value>略過練習並開啟設定</value></data>

@@ -1,5 +1,15 @@
 # P0 驗證紀錄
 
+## 2026-11-14 使用入門選字對象辨識
+
+移除白卡內「試著選取這段文字」，改由區外說明明確指向下方句子。白色表面只包含真正唯讀 TextBox，鍵帽與搜尋指引移到外側；整個教材表面使用 I-beam 游標，滑入、聚焦及選取有穩定邊界回饋。真正反白後提示「現在按」，清空選取則還原。提示位置固定，選取不改 Completed、不送出協定訊息、不寫入選字內容。
+
+Core 540／0，Appearance 193／0、Language 63／0、Lifecycle 103／0，Preflight 1／0，無跳過。報告：`artifacts/checks/desktop/20261114T030507261Z-29ba5e364b62455f8c37d24b63316993/report.json`；來源指紋：`29EEFCF61825B252D97AAD39BE1D6B95506A752B57E8B7554A154ABD4F004DCD`。新增斷言涵蓋可選區沒有其他提示、鍵帽位於區外、I-beam、真實選取／清除回饋、不誤判完成、拖曳時教材位置固定，以及英文首尾字元均在可見範圍。此次跑相關套件，未重跑完整 Release。
+
+檢閱 `artifacts/ui-polish/onboarding-en.png`、`onboarding-zh.png`、`onboarding-selected-zh.png`、`onboarding-complete-zh.png` 與 `onboarding-small-conflict.png`。TextBox 的選取裝飾與文字重繪有 dispatcher 時序，擷取前改為等待 ApplicationIdle，避免圖片停留在重繪前而缺少反白或字元。已確認實際反白截圖包含原生選取色，沒有預畫選取。
+
+另在實際開發版使用滑鼠拖曳教材，觀察到真正反白、聚焦邊界與「現在按」提示；Esc 返回設定，正常結束後重建並完成最終回歸。未更改使用者語言、快捷鍵或自動偵測偏好。實體多 DPI、新手盲測與真實瀏覽器載入仍未執行，不以程式化測試替代。新增唯一發布說明，未修改舊說明，未推送或替換發布套件。
+
 ## 2026-11-14 使用入門視覺精修
 
 教學改為較緊湊的 660 × 590 DIP 原生視窗，品牌及語言置頂，可選文字與目前快捷鍵鍵帽集中在輕量練習表面，底部固定操作區。「稍後再說」為低調文字操作，仍返回設定。成功後原處顯示勾選標記、精簡教材與偏好，收起已完成的操作步驟，主要按鈕保持可見。訊息處理與實際選字流程未變更，排版獨立至 `OnboardingPracticeWindow.Presentation.cs`。
