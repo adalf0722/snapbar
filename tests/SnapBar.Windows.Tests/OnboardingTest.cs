@@ -200,9 +200,12 @@ internal static class OnboardingTest
                 while (Native.GetIdentity((nint)identity.Window) != null && DateTime.UtcNow < limit) await Task.Delay(25);
             }
             await InvokeChild("OnboardingFinish", practiceTarget);
+            var visibilityDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (host.IsVisible && DateTime.UtcNow < visibilityDeadline) await Task.Delay(25);
             check("practice finish closes the child and keeps completed progress", !host.Onboarding.Active
                 && Native.GetIdentity((nint)practiceTarget.Window) == null
                 && new OnboardingStore(Path.Combine(directory, "onboarding.json")).Load().State?.Status == OnboardingStatus.Completed);
+            check("start using SnapBar returns to tray without opening settings", !host.IsVisible);
             host.OpenOnboarding();
             hostDeadline = DateTime.UtcNow.AddSeconds(7);
             while (host.Onboarding.Target == null && DateTime.UtcNow < hostDeadline) await Task.Delay(25);
@@ -210,8 +213,12 @@ internal static class OnboardingTest
             await host.Onboarding.SearchFinishedAsync(new("late-old-session", practiceTarget, true));
             check("replaying practice rejects the previous session's late search", !host.Onboarding.Completed && replayTarget != practiceTarget);
             await InvokeChild("OnboardingSkip", replayTarget);
+            visibilityDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!host.IsVisible && DateTime.UtcNow < visibilityDeadline) await Task.Delay(25);
             check("skipping a replay never downgrades completed progress", !host.Onboarding.Active
                 && new OnboardingStore(Path.Combine(directory, "onboarding.json")).Load().State?.Status == OnboardingStatus.Completed);
+            check("maybe later closes practice and reveals the existing settings window", host.IsVisible
+                && Native.GetIdentity((nint)replayTarget.Window) == null);
             await host.Onboarding.StopAsync(); host.PrepareSessionEnd(); host.Close(); host = null;
             host = new MainWindow(new SettingsStore(path), enableFirstRun: true); host.Show(); await Task.Delay(150);
             check("completed or existing users reopen settings without another automatic tutorial", !host.Onboarding.Active && host.IsVisible);

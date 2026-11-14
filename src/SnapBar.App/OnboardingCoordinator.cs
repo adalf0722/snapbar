@@ -54,7 +54,7 @@ internal sealed class OnboardingCoordinator(MainWindow host, OnboardingStore sto
             case "skip":
             case "finish":
                 if (!completed) Save(OnboardingStatus.Skipped);
-                await EndAsync(source, showSettings: false);
+                await EndAsync(source, showSettings: message.Kind == "skip");
                 break;
             case "open-settings": host.OnboardingShowSettings(false); break;
             case "change-shortcut": host.OnboardingShowSettings(true); break;

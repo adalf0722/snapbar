@@ -13,7 +13,7 @@ SnapBar is a text-selection toolbar for Windows. Select text in the app you are 
 1. Open a preview release, expand **Assets**, and download `SnapBar-*-win-x64.zip`.
 2. Extract the entire ZIP to one folder, then open `SnapBar.App.exe`. The unsigned, portable preview includes the .NET runtime.
 3. Your first manual launch opens a practice window. Select a few sample words, press the shortcut shown, then click **Search** in the real toolbar (or **⋯**). Search sends those sample words to your search service and opens your browser. No AI account is needed.
-4. After searching, the same window shows a completion message, an optional automatic-toolbar switch and tray instructions. Choose **Maybe later** to skip; reopen practice under **About and support → Get started**. Upgrades and background login launches do not automatically show it.
+4. After searching, the same window shows a completion message, an optional automatic-toolbar switch and tray instructions. **Maybe later** closes practice and opens settings; **Start using SnapBar** returns to the system tray. Reopen practice under **About and support → Get started**. Upgrades and background login launches do not automatically show it.
 5. To use SnapBar in your work, select a sentence in Notepad or a browser, press **Ctrl + Alt + V** (or your configured shortcut), then choose **Copy** or **Search**.
 
 Choose your language directly in practice or under **General → 語言 / Language**. New installations follow your Windows display language, with English used for unsupported languages. Existing installations keep Traditional Chinese until you change it.
