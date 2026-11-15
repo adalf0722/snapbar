@@ -11,6 +11,7 @@
   <ItemGroup><ProjectReference Include="../SnapBar.Windows.Ocr/SnapBar.Windows.Ocr.csproj" /></ItemGroup>
   <ItemGroup><Using Remove="System.Drawing" /><Using Remove="System.Windows.Forms" /></ItemGroup>
   <ItemGroup>
+    <Content Include="../../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Resource Include="Assets/Branding/*.ico" />
     <Resource Include="Assets/Branding/snapbar.png" />
     <Resource Include="Assets/FluentIcons/FluentSystemIcons-Regular.ttf" />

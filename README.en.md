@@ -51,6 +51,10 @@ SnapBar first tries Windows UI Automation. Compatibility capture can temporarily
 
 Search and URL actions send text to the chosen browser destination. Scripts receive text when executed. AI requests send text only when you explicitly run an instruction; keys are encrypted for your Windows account. OCR images stay in local memory, and dictionary lookup stays local.
 
+## License
+
+SnapBar is licensed under the [MIT License](LICENSE), which permits use, modification, distribution, and commercial use provided the copyright and license notices are retained. Third-party components and assets remain under their respective licenses; their notices are included in the distribution.
+
 ## Help and development
 
 - [Report an issue](https://github.com/adalf0722/snapbar/issues)

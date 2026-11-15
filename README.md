@@ -52,6 +52,10 @@ SnapBar 優先使用 Windows UI Automation 讀取選取文字。相容模式可�
 
 框選 OCR 的影像在本機記憶體處理。結果視窗只在你執行搜尋時，把所選的結果文字交給搜尋引擎。
 
+## 授權
+
+SnapBar 採用 [MIT License](LICENSE)，允許使用、修改、散布與商用，須保留版權及授權聲明。第三方元件與素材依各自授權條款提供；發布套件內附相關聲明。
+
 ## 支援與開發
 
 - [回報問題](https://github.com/adalf0722/snapbar/issues)

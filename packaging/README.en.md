@@ -2,6 +2,8 @@
 
 [繁體中文](README.md) · English
 
+SnapBar is licensed under the [MIT License](LICENSE). Use, modification, distribution, and commercial use are permitted provided the copyright and license notices are retained. Third-party components and assets remain under their respective terms; see the notices in `Assets/FluentIcons/` and `OcrData/`.
+
 ## Start with Copy or Search
 
 1. Extract every file in this ZIP to one folder. Open `SnapBar.App.exe` on Windows x64. The .NET runtime is included.

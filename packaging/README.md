@@ -2,6 +2,8 @@
 
 繁體中文 · [English](README.en.md)
 
+SnapBar 採用 [MIT License](LICENSE)，允許使用、修改、散布與商用，須保留版權及授權聲明。第三方元件與素材依各自條款提供，相關聲明位於 `Assets/FluentIcons/` 與 `OcrData/`。
+
 「一般 → 語言 / Language」可切換跟隨系統、繁體中文或 English。新安裝跟隨 Windows 顯示語言，未支援語言使用英文；既有使用者保留繁中。設定與系統匣立即更新，已開啟的編輯／結果視窗重新開啟後採新語言。
 
 這是 Windows 選字工具，提供系統匣、設定保存、排除 App、搜尋、開啟連結、檔案位置、自訂動作與 AI 改寫。更新前先完整結束舊版；請完整解壓縮，再開啟 `SnapBar.App.exe`。Windows x64 執行環境已包含在套件中。
