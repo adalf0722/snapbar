@@ -148,6 +148,17 @@ Check-Tooling 'staged checks inspect index blobs even when working files are rep
     finally { $env:GIT_INDEX_FILE = $oldIndex; Pop-Location }
 }
 $releaseFixture = Join-Path $run 'release-fixture'
+Check-Tooling 'self-contained runtime pin matches reviewed Windows Desktop notice sources and publish guard' {
+    $props = [xml][IO.File]::ReadAllText((Join-Path $script:SnapBarRepo 'Directory.Build.props'))
+    $runtimeVersion = $props.Project.PropertyGroup.RuntimeFrameworkVersion.InnerText
+    Assert-Tooling ($runtimeVersion -cmatch '^[0-9]+\.[0-9]+\.[0-9]+$')
+    $sources = Get-Content -LiteralPath (Join-Path $script:SnapBarRepo 'licenses/WindowsDesktop/SOURCES.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Tooling ($sources.Count -eq 2)
+    foreach ($entry in $sources) { Assert-Tooling ($entry.source -cmatch "/v$([regex]::Escape($runtimeVersion))/THIRD-PARTY-NOTICES[.]TXT$") }
+    $targets = [xml][IO.File]::ReadAllText((Join-Path $script:SnapBarRepo 'Directory.Build.targets'))
+    $guard = @($targets.Project.Target.Error | Where-Object { $_.Text -like 'Review and update licenses/WindowsDesktop*' })
+    Assert-Tooling ($guard.Count -eq 1 -and $guard[0].Condition.Contains("!= '$runtimeVersion'"))
+}
 Check-Tooling 'vendored third-party notices match their recorded upstream hashes' {
     foreach ($manifest in Get-ChildItem -LiteralPath (Join-Path $script:SnapBarRepo 'licenses') -Filter SOURCES.json -Recurse -File) {
         $entries = Get-Content -LiteralPath $manifest.FullName -Raw -Encoding UTF8 | ConvertFrom-Json

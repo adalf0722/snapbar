@@ -4,5 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <Deterministic>true</Deterministic>
+    <!-- Keep self-contained packages on the runtime reviewed in licenses/WindowsDesktop. -->
+    <RuntimeFrameworkVersion Condition="'$(SelfContained)' == 'true' and '$(RuntimeFrameworkVersion)' == ''">10.0.15</RuntimeFrameworkVersion>
   </PropertyGroup>
 </Project>

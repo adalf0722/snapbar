@@ -13,6 +13,8 @@ pwsh -NoProfile -File scripts/install-hooks.ps1
 
 ActionRunner 不需要前景視窗或剪貼簿。日常 `check.ps1` 與單獨 `test-desktop.ps1 -Suite ActionRunner` 在缺少 Node／Python 時保留 SKIP 訊息及報告的 skipped 數量，數量按 SKIP 訊息計算。使用 `-RequireActionRuntimes` 可強制兩種環境都實際執行；CI 與發布 workflow 安裝 Python 3.13、Node 24 並啟用此旗標。Release／All 桌面套件自動啟用嚴格模式，請先確保 PATH 中有可用的 python.exe 與 node.exe。
 
+子程序終止測試會等待 PID 標記完成寫入且可讀，不能僅以檔案存在判斷就緒；失敗時也會取消並等待該請求退出，才刪除標記並繼續測試，避免未結束的請求干擾暫存目錄檢查。
+
 發布證據必須包含成功的 ActionRunner，且明示 runtimesRequired=true、skipped=0。缺少新欄位的舊報告與 Git note 不能滿足新門檻，需重新測試。自訂動作測試的文字斷言會顯示狀態、退出碼、串流長度、第一個差異的 UTF-16 索引及 CR／LF／TAB／EOF 標記；只使用測試 fixture，產品日誌不輸出選取或剪貼簿文字。
 
 雙語版本以英文中性資源和 `zh-Hant/SnapBar.App.resources.dll` 提供介面。發布套件必須包含繁中資源與 `README.en.md`。發布前以 `scripts/test-startup.ps1 -Executable <套件內的 App.exe> -Check LanguageResources` 執行無設定、無系統匣的資源檢查；解壓後也以相同入口確認兩種語言可載入，不會以英文回退掩蓋繁中資源缺漏。
@@ -90,6 +92,8 @@ pwsh -NoProfile -File scripts/build.ps1 -Publish -DesktopReport artifacts/checks
 ```
 
 發佈在建置前檢查套件內 App／Probe 程序，含沒有視窗的系統匣程序。腳本不會強制終止它們。Release 桌面報告必須成功並符合目前原始碼指紋；修改 `src/`、`tests/`、`scripts/`、workflow、hooks 或根目錄建置設定後需重跑。文件變更不使二進位測試證據失效。
+
+自含式發布預設固定使用 `Directory.Build.props` 指定且經授權核對的 .NET `10.0.15` runtime。`global.json` 的 SDK patch 更新不應自行改變交付的 runtime；需要升級 runtime 時，同步核對 `licenses/WindowsDesktop/SOURCES.json`、來源文件雜湊及 `Directory.Build.targets` 的版本限制。若明確指定未核對的 Windows Desktop runtime，發布仍會拒絕。
 
 App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通過 Probe 協定 smoke 後，再檢查程序與指紋並以目錄搬移切換。舊套件保留在同次 `previous`，第二次搬移失敗會嘗試回復舊目錄；搬移、備份路徑必須在本 repository 的 artifacts 內，且不能穿過 junction／symlink。任一步失敗不會以部分新檔覆寫既有套件。保存的報告是本機回歸證據，不是簽章或防竄改證明；跨應用程式、DPI 與真實長腳本仍需按變更內容判斷驗證範圍。
 

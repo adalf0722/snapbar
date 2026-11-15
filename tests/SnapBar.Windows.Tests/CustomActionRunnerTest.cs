@@ -47,6 +47,45 @@ internal static class CustomActionRunnerTest
         });
         var root = Path.Combine(Path.GetTempPath(), "SnapBar.Actions");
         var before = Directory.Exists(root) ? Directory.GetDirectories(root).ToHashSet(StringComparer.OrdinalIgnoreCase) : [];
+        await Check("child readiness waits until the PID marker writer closes", async () =>
+        {
+            var marker = Path.Combine(Path.GetTempPath(), "SnapBar.PidReady-" + Guid.NewGuid().ToString("N"));
+            var running = new TaskCompletionSource<ScriptExecutionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                await using var writer = new FileStream(marker, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                await writer.WriteAsync("1234"u8.ToArray());
+                var reading = WaitForChildPidAsync(marker, running.Task);
+                await Task.Delay(80);
+                Require(!reading.IsCompleted);
+                await writer.DisposeAsync();
+                Require(await reading == 1234);
+            }
+            finally { running.TrySetResult(new("cancelled")); File.Delete(marker); }
+        });
+        await Check("child readiness waits for a complete PID and reports early script failure", async () =>
+        {
+            var marker = Path.Combine(Path.GetTempPath(), "SnapBar.PidReady-" + Guid.NewGuid().ToString("N"));
+            var running = new TaskCompletionSource<ScriptExecutionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                await File.WriteAllTextAsync(marker, "");
+                var reading = WaitForChildPidAsync(marker, running.Task);
+                await Task.Delay(80);
+                Require(!reading.IsCompleted);
+                await File.WriteAllTextAsync(marker, "1234");
+                Require(await reading == 1234);
+                File.Delete(marker);
+                try { await WaitForChildPidAsync(marker, Task.FromResult(new ScriptExecutionResult("script-failed", ExitCode: 7))); }
+                catch (InvalidOperationException error)
+                {
+                    Require(error.Message.Contains("status=script-failed, exit=7"));
+                    return;
+                }
+                throw new Exception("Expected early script failure diagnostic");
+            }
+            finally { running.TrySetResult(new("cancelled")); File.Delete(marker); }
+        });
         await Check("PowerShell Unicode and malicious selection remain data", async () =>
         {
             const string text = "中文 😀 '; $(throw 'injected'); `\" & | \r\n";
@@ -106,24 +145,27 @@ internal static class CustomActionRunnerTest
         await Check("job terminates descendant on " + mode, async () =>
         {
             var marker = Path.Combine(Path.GetTempPath(), "SnapBar.Child-" + Guid.NewGuid().ToString("N"));
+            using var cancellation = new CancellationTokenSource();
+            Task<ScriptExecutionResult>? running = null;
             try
             {
                 // Unredirected child inherits the interpreter's output handles. Its PID is
                 // recorded independently so a stranded pipe cannot hide a surviving child.
                 var script = "$s=New-Object Diagnostics.ProcessStartInfo;$s.FileName=Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe';$s.UseShellExecute=$false;$s.CreateNoWindow=$true;$s.Arguments='-NoProfile -NonInteractive -Command Start-Sleep 60';$p=[Diagnostics.Process]::Start($s);[IO.File]::WriteAllText($env:POPCLIP_TEXT,[string]$p.Id);" + (mode == "exit" ? "exit 0" : "Start-Sleep 60");
-                using var cancellation = new CancellationTokenSource();
-                var running = CustomActionRunner.RunAsync(Action(script, mode == "timeout" ? 2 : 10), marker, cancellation.Token);
-                var deadline = DateTime.UtcNow.AddSeconds(8);
-                while (!File.Exists(marker) && !running.IsCompleted && DateTime.UtcNow < deadline) await Task.Delay(20);
-                Require(File.Exists(marker));
-                var pid = int.Parse(await File.ReadAllTextAsync(marker));
+                running = CustomActionRunner.RunAsync(Action(script, mode == "timeout" ? 2 : 10), marker, cancellation.Token);
+                var pid = await WaitForChildPidAsync(marker, running);
                 if (mode == "cancel") cancellation.Cancel();
                 var result = await running;
                 ScriptExecutionAssert.Result(result, mode == "exit" ? "ok" : mode == "timeout" ? "script-timeout" : "cancelled", null);
                 try { using var child = Process.GetProcessById(pid); Require(child.WaitForExit(3000)); }
                 catch (ArgumentException) { /* Already reaped. */ }
             }
-            finally { File.Delete(marker); }
+            finally
+            {
+                cancellation.Cancel();
+                if (running != null) await running;
+                File.Delete(marker);
+            }
         });
         await Check("invalid actions and interpreter paths rejected", async () =>
         {
@@ -196,22 +238,25 @@ internal static class CustomActionRunnerTest
             await Check("Python job terminates descendant on " + mode, async () =>
             {
                 var marker = Path.Combine(Path.GetTempPath(), "SnapBar.PythonChild-" + Guid.NewGuid().ToString("N"));
+                using var cancellation = new CancellationTokenSource();
+                Task<ScriptExecutionResult>? running = null;
                 try
                 {
-                    using var cancellation = new CancellationTokenSource();
                     var content = "import os, subprocess, sys, time\np = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\nwith open(os.environ['POPCLIP_TEXT'], 'w') as f:\n    f.write(str(p.pid))\n" + (mode == "exit" ? "sys.exit(0)" : "time.sleep(60)");
-                    var running = CustomActionRunner.RunAsync(pythonAction with { Content = content, TimeoutSeconds = mode == "timeout" ? 2 : 10 }, marker, cancellation.Token);
-                    var deadline = DateTime.UtcNow.AddSeconds(8);
-                    while (!File.Exists(marker) && !running.IsCompleted && DateTime.UtcNow < deadline) await Task.Delay(20);
-                    Require(File.Exists(marker));
-                    var pid = int.Parse(await File.ReadAllTextAsync(marker));
+                    running = CustomActionRunner.RunAsync(pythonAction with { Content = content, TimeoutSeconds = mode == "timeout" ? 2 : 10 }, marker, cancellation.Token);
+                    var pid = await WaitForChildPidAsync(marker, running);
                     if (mode == "cancel") cancellation.Cancel();
                     var result = await running;
                     ScriptExecutionAssert.Result(result, mode == "exit" ? "ok" : mode == "timeout" ? "script-timeout" : "cancelled", null);
                     try { using var child = Process.GetProcessById(pid); Require(child.WaitForExit(3000)); }
                     catch (ArgumentException) { }
                 }
-                finally { File.Delete(marker); }
+                finally
+                {
+                    cancellation.Cancel();
+                    if (running != null) await running;
+                    File.Delete(marker);
+                }
             });
         }
         await Check("Python missing runtime and invalid path explain setup", async () =>
@@ -236,5 +281,25 @@ internal static class CustomActionRunnerTest
         });
         Console.WriteLine($"{passed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
+    }
+
+    private static async Task<int> WaitForChildPidAsync(string marker, Task<ScriptExecutionResult> running)
+    {
+        var elapsed = Stopwatch.StartNew();
+        while (elapsed.Elapsed < TimeSpan.FromSeconds(8))
+        {
+            try
+            {
+                // Existence alone is not readiness: the interpreter may still hold
+                // its write handle or may have created an empty, buffered file.
+                var text = await File.ReadAllTextAsync(marker);
+                if (int.TryParse(text, out var pid) && pid > 0) return pid;
+            }
+            catch (IOException) { /* Retry missing files and active writers until the deadline. */ }
+            if (running.IsCompleted)
+                throw new InvalidOperationException("Child PID marker was not ready; " + ScriptExecutionAssert.Describe(await running));
+            await Task.Delay(20);
+        }
+        throw new TimeoutException("Child PID marker was not readable within 8 seconds.");
     }
 }

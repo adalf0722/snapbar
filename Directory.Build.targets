@@ -10,7 +10,7 @@
                            Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' or '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.WindowsDesktop.App'" />
     </ItemGroup>
     <Error Condition="'@(_SnapBarRuntimePack)' == ''" Text="Cannot resolve runtime packs for third-party notices." />
-    <Error Condition="'%(_SnapBarRuntimePack.FrameworkName)' == 'Microsoft.WindowsDesktop.App' and '%(_SnapBarRuntimePack.NuGetPackageVersion)' != '10.0.13'"
+    <Error Condition="'%(_SnapBarRuntimePack.FrameworkName)' == 'Microsoft.WindowsDesktop.App' and '%(_SnapBarRuntimePack.NuGetPackageVersion)' != '10.0.15'"
            Text="Review and update licenses/WindowsDesktop for runtime %(_SnapBarRuntimePack.NuGetPackageVersion) before publishing." />
     <Error Condition="!Exists('%(_SnapBarRuntimePack.PackageDirectory)/LICENSE.TXT') and !Exists('%(_SnapBarRuntimePack.PackageDirectory)/LICENSE')"
            Text="Runtime license missing: %(_SnapBarRuntimePack.NuGetPackageId)" />
