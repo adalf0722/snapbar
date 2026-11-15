@@ -16,6 +16,8 @@ public sealed partial class MainWindow
     private AiSettingsPanel aiSettingsPanel = null!;
     private AiCommandsPanel aiCommandsPanel = null!;
     private GeneralSettingsPage generalPage = null!;
+    private ShortcutsSettingsPage shortcutsPage = null!;
+    internal ShortcutsSettingsPage ShortcutsPage => shortcutsPage;
     private TextBlock pageHeading = null!;
     private FrameworkElement searchEditor = null!;
     private Grid pageHost = null!;
@@ -32,7 +34,7 @@ public sealed partial class MainWindow
 
     private static string CategoryName(SettingsCategory category) => category switch
     {
-        SettingsCategory.General => UiText.Get("MainWindow_Settings_000"), SettingsCategory.Actions => UiText.Get("MainWindow_Settings_001"), SettingsCategory.AiCommands => UiText.Get("MainWindow_Settings_002"),
+        SettingsCategory.General => UiText.Get("MainWindow_Settings_000"), SettingsCategory.Shortcuts => UiText.Get("Shortcuts_Title"), SettingsCategory.Actions => UiText.Get("MainWindow_Settings_001"), SettingsCategory.AiCommands => UiText.Get("MainWindow_Settings_002"),
         SettingsCategory.AiServices => UiText.Get("MainWindow_Settings_003"), SettingsCategory.Compatibility => UiText.Get("MainWindow_Settings_004"), _ => UiText.Get("MainWindow_Settings_005")
     };
     private void BuildSettingsPages()
@@ -51,7 +53,7 @@ public sealed partial class MainWindow
         {
             var content = new StackPanel { Orientation = Orientation.Horizontal };
             var icon = new AiIconPresenter { Width = 19, Height = 19, Margin = new(0, 0, 10, 0), IconId = category switch
-            { SettingsCategory.General => "settings", SettingsCategory.Actions => "copy", SettingsCategory.AiCommands => "spark", SettingsCategory.AiServices => "globe", SettingsCategory.Compatibility => "shield_20_regular", _ => "info_20_regular" } };
+            { SettingsCategory.General => "settings", SettingsCategory.Shortcuts => "keyboard_20_regular", SettingsCategory.Actions => "copy", SettingsCategory.AiCommands => "spark", SettingsCategory.AiServices => "globe", SettingsCategory.Compatibility => "shield_20_regular", _ => "info_20_regular" } };
             content.Children.Add(icon); content.Children.Add(ActionUi.Text(CategoryName(category), 14));
             var button = new RadioButton { GroupName = "SettingsNavigation", Content = content, Margin = new(0, 0, 0, 5), Padding = new(12, 11, 8, 11),
                 Style = (Style)FindResource("ActionPlacementTab"), HorizontalContentAlignment = HorizontalAlignment.Left };
@@ -82,12 +84,18 @@ public sealed partial class MainWindow
         notice = ActionUi.Text("", 12, Brushes.Firebrick); notice.Margin = new(0, 0, 0, 12); notice.Visibility = Visibility.Collapsed;
         AutomationProperties.SetAutomationId(notice, "SettingsNotice"); Grid.SetRow(notice, 1); workspace.Children.Add(notice);
         pageHost = new Grid(); Grid.SetRow(pageHost, 2); workspace.Children.Add(pageHost);
-        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic, preferences.Hotkey,
-            SaveShortcut, ReadShortcut, action => controller?.IsActionHotkeyRegistered(action) == true, startupRegistration,
+        generalPage = new(preferences.AutomaticDetectionEnabled, ToggleAutomatic, startupRegistration,
             preferences.OcrPreferEnglish, SetOcrLanguagePriority);
-        generalPage.RecordingChanged = recording => { if (controller != null) controller.SetHotkeyRecording(recording); };
         toggle = generalPage.AutomaticToggle;
         AddPage(SettingsCategory.General, generalPage);
+        shortcutsPage = new(ReadShortcut, SaveShortcut, action => controller?.IsActionHotkeyRegistered(action) == true,
+            action => action == TextAction.Ai
+                ? aiPreferences.Settings.Prompts.Select(p => new ShortcutsSettingsPage.ShortcutChoice(p.Id, UiNames.Prompt(p))).ToArray()
+                : AvailableShortcutActions().Select(a => new ShortcutsSettingsPage.ShortcutChoice(a.Id, UiNames.Action(a))).ToArray(),
+            action => action == TextAction.Ai ? preferences.AiHotkeyPromptId : preferences.CustomHotkeyActionId,
+            action => NavigateTo(action == TextAction.Ai ? SettingsCategory.AiCommands : SettingsCategory.Actions));
+        shortcutsPage.EditingChanged = editing => controller?.SetHotkeyRecording(editing);
+        AddPage(SettingsCategory.Shortcuts, shortcutsPage);
         actionSettingsPanel = new(preferences.Actions, SaveActionSettings, ShowSearchSettings,
             ShowDictionarySettings, offlineDictionary.IsInstalled);
         searchSettingsPanel = new(); searchSettingsPanel.ShowTemplate(preferences.SearchUrlTemplate);
@@ -148,6 +156,7 @@ public sealed partial class MainWindow
         if (!settingsPages.ContainsKey(category)) return;
         var moveFocus = settingsPages.TryGetValue(CurrentCategory, out var previous) && previous.IsKeyboardFocusWithin && CurrentCategory != category;
         CurrentCategory = category;
+        if (category == SettingsCategory.Shortcuts) shortcutsPage.Refresh();
         lifetimeHint.Visibility = category == SettingsCategory.General || trayUnavailable ? Visibility.Visible : Visibility.Collapsed;
         foreach (var (key, page) in settingsPages) page.Visibility = key == category ? Visibility.Visible : Visibility.Collapsed;
         foreach (var (key, button) in navigation) if (button.IsChecked != (key == category)) button.IsChecked = key == category;

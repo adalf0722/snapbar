@@ -1540,7 +1540,7 @@
     <value>拖曳或雙擊選字後，顯示動作列。</value>
   </data>
   <data name="GeneralSettingsPage_012" xml:space="preserve">
-    <value>叫出動作列</value>
+    <value>顯示動作列</value>
   </data>
   <data name="GeneralSettingsPage_013" xml:space="preserve">
     <value>直接搜尋選字</value>
@@ -1555,10 +1555,51 @@
     <value>選擇快捷鍵動作</value>
   </data>
   <data name="GeneralSettingsPage_017" xml:space="preserve">
-    <value>選字快捷鍵</value>
+    <value>全域快捷鍵</value>
   </data>
   <data name="GeneralSettingsPage_018" xml:space="preserve">
-    <value>按快捷鍵執行所選動作。框選 OCR 可直接啟動。</value>
+    <value>在任何應用程式中啟動所選動作。</value>
+  </data>
+  <data name="GeneralSettings_ShortcutAction" xml:space="preserve">
+    <value>執行動作</value>
+  </data>
+  <data name="Shortcuts_Title" xml:space="preserve"><value>快捷鍵</value></data>
+  <data name="Shortcuts_Intro" xml:space="preserve"><value>在任何應用程式中使用。</value></data>
+  <data name="Shortcuts_Search" xml:space="preserve"><value>搜尋選字</value></data>
+  <data name="Shortcuts_Set" xml:space="preserve"><value>設定</value></data>
+  <data name="Shortcuts_Change" xml:space="preserve"><value>更改</value></data>
+  <data name="Shortcuts_RemoveBinding" xml:space="preserve"><value>移除綁定</value></data>
+  <data name="Shortcuts_NotSet" xml:space="preserve"><value>尚未設定</value></data>
+  <data name="Shortcuts_TargetUnavailable" xml:space="preserve"><value>項目已無法使用，請重新選擇</value></data>
+  <data name="Shortcuts_EditTitle" xml:space="preserve"><value>設定快捷鍵 · {0}</value></data>
+  <data name="Shortcuts_AiHelp" xml:space="preserve"><value>選字後執行指定命令，結果顯示於 AI 面板。請先設定 AI 服務。</value></data>
+  <data name="Shortcuts_CustomHelp" xml:space="preserve"><value>設定按鍵與要執行的自訂動作，先填哪一項都可以。</value></data>
+  <data name="Shortcuts_ClickToRecord" xml:space="preserve"><value>點此錄製快捷鍵</value></data>
+  <data name="Shortcuts_RecordingPrompt" xml:space="preserve"><value>請按下按鍵組合</value></data>
+  <data name="Shortcuts_NeedBoth" xml:space="preserve"><value>請設定快捷鍵並選擇執行項目，順序不限。</value></data>
+  <data name="Shortcuts_NeedTarget" xml:space="preserve"><value>已記錄按鍵，請選擇要執行的項目。</value></data>
+  <data name="Shortcuts_NeedKey" xml:space="preserve"><value>請設定快捷鍵，儲存後生效。</value></data>
+  <data name="Shortcuts_Ready" xml:space="preserve"><value>設定完成，儲存後生效。</value></data>
+  <data name="Shortcuts_LookupHelp" xml:space="preserve"><value>選取單字後直接查詢。請先在動作列設定安裝並啟用離線詞典。</value></data>
+  <data name="Shortcuts_OcrHelp" xml:space="preserve"><value>按下快捷鍵後，拖曳框選要辨識的範圍。</value></data>
+  <data name="Shortcuts_KeyHelp" xml:space="preserve"><value>按一下下方區域，輸入要使用的按鍵組合。</value></data>
+  <data name="Shortcuts_KeyLabel" xml:space="preserve"><value>快捷鍵</value></data>
+  <data name="Shortcuts_PressKeys" xml:space="preserve"><value>按下新的按鍵組合，儲存後生效。</value></data>
+  <data name="Shortcuts_NoItems" xml:space="preserve"><value>尚無可用項目，請先新增或啟用一個項目。</value></data>
+  <data name="Shortcuts_CreateItem" xml:space="preserve"><value>前往新增</value></data>
+  <data name="GeneralSettings_ShortcutLookup" xml:space="preserve"><value>查字典</value></data>
+  <data name="GeneralSettings_ShortcutAi" xml:space="preserve"><value>執行指定 AI 命令</value></data>
+  <data name="GeneralSettings_ShortcutCustom" xml:space="preserve"><value>執行指定自訂動作</value></data>
+  <data name="GeneralSettings_ShortcutItem" xml:space="preserve"><value>選擇快捷鍵執行的項目</value></data>
+  <data name="GeneralSettings_ShortcutChooseItem" xml:space="preserve"><value>請選擇項目</value></data>
+  <data name="GeneralSettings_ShortcutTargetMissing" xml:space="preserve"><value>項目無法使用，請在全域快捷鍵重新選擇。</value></data>
+  <data name="GeneralSettings_ShortcutPrompt" xml:space="preserve"><value>AI 命令</value></data>
+  <data name="GeneralSettings_ShortcutCustomItem" xml:space="preserve"><value>自訂動作</value></data>
+  <data name="GeneralSettings_LookupShortcutHint" xml:space="preserve"><value>選取單字後按快捷鍵查詢；請先在動作列設定安裝並啟用離線詞典。</value></data>
+  <data name="GeneralSettings_AiShortcutHint" xml:space="preserve"><value>選字後直接執行所選命令，結果顯示於 AI 面板；請先設定 AI 服務。</value></data>
+  <data name="GeneralSettings_CustomShortcutHint" xml:space="preserve"><value>直接執行所選動作；需要選字的動作會先讀取並驗證目前選取的文字。</value></data>
+  <data name="GeneralSettings_OcrShortcutHint" xml:space="preserve">
+    <value>按下快捷鍵後，拖曳框選要辨識的範圍。</value>
   </data>
   <data name="GeneralSettingsPage_019" xml:space="preserve">
     <value>快捷鍵組合；更換時在此按下新組合</value>
@@ -1811,10 +1852,10 @@
     <value>輸入監聽尚未就緒，請重新啟動 SnapBar。</value>
   </data>
   <data name="MainWindow_General_001" xml:space="preserve">
-    <value>SnapBar 已使用這組快捷鍵，請換一組。</value>
+    <value>SnapBar 已使用這組快捷鍵，請直接按另一組。</value>
   </data>
   <data name="MainWindow_General_002" xml:space="preserve">
-    <value>這組快捷鍵無法使用，請換一組。原設定已保留。</value>
+    <value>這組快捷鍵無法使用，請直接按另一組。原設定已保留。</value>
   </data>
   <data name="MainWindow_General_003" xml:space="preserve">
     <value>無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。</value>
@@ -1826,10 +1867,10 @@
     <value>這組快捷鍵不支援，請換一組。</value>
   </data>
   <data name="MainWindow_General_006" xml:space="preserve">
-    <value>這組快捷鍵無法使用，請換一組。原快捷鍵仍有效。</value>
+    <value>這組快捷鍵無法使用，請直接按另一組。原快捷鍵仍有效。</value>
   </data>
   <data name="MainWindow_General_007" xml:space="preserve">
-    <value>這組快捷鍵無法使用，請換一組。目前快捷鍵仍不可用。</value>
+    <value>這組快捷鍵無法使用，請直接按另一組。目前快捷鍵仍不可用。</value>
   </data>
   <data name="MainWindow_General_008" xml:space="preserve">
     <value>無法儲存快捷鍵，請檢查設定檔權限。原快捷鍵設定已保留。</value>

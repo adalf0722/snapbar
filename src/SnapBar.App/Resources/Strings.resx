@@ -1555,10 +1555,51 @@ Results appear here after running.</value>
     <value>Select shortcut action</value>
   </data>
   <data name="GeneralSettingsPage_017" xml:space="preserve">
-    <value>Selection shortcut</value>
+    <value>Global shortcut</value>
   </data>
   <data name="GeneralSettingsPage_018" xml:space="preserve">
-    <value>Press the shortcut to run the selected action. Capture OCR starts directly.</value>
+    <value>Run the selected action from any application.</value>
+  </data>
+  <data name="GeneralSettings_ShortcutAction" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Shortcuts_Title" xml:space="preserve"><value>Shortcuts</value></data>
+  <data name="Shortcuts_Intro" xml:space="preserve"><value>Use these shortcuts from any application.</value></data>
+  <data name="Shortcuts_Search" xml:space="preserve"><value>Search selected text</value></data>
+  <data name="Shortcuts_Set" xml:space="preserve"><value>Set up</value></data>
+  <data name="Shortcuts_Change" xml:space="preserve"><value>Change</value></data>
+  <data name="Shortcuts_RemoveBinding" xml:space="preserve"><value>Remove binding</value></data>
+  <data name="Shortcuts_NotSet" xml:space="preserve"><value>Not set</value></data>
+  <data name="Shortcuts_TargetUnavailable" xml:space="preserve"><value>Item unavailable. Choose another item.</value></data>
+  <data name="Shortcuts_EditTitle" xml:space="preserve"><value>Set shortcut · {0}</value></data>
+  <data name="Shortcuts_AiHelp" xml:space="preserve"><value>Run the chosen command on selected text and show the result in the AI panel. Set up an AI service first.</value></data>
+  <data name="Shortcuts_CustomHelp" xml:space="preserve"><value>Set the shortcut and choose a custom action, in either order.</value></data>
+  <data name="Shortcuts_ClickToRecord" xml:space="preserve"><value>Click to record a shortcut</value></data>
+  <data name="Shortcuts_RecordingPrompt" xml:space="preserve"><value>Press a key combination</value></data>
+  <data name="Shortcuts_NeedBoth" xml:space="preserve"><value>Set a shortcut and choose an item, in either order.</value></data>
+  <data name="Shortcuts_NeedTarget" xml:space="preserve"><value>Shortcut recorded. Choose the item to run.</value></data>
+  <data name="Shortcuts_NeedKey" xml:space="preserve"><value>Set a shortcut, then save to apply it.</value></data>
+  <data name="Shortcuts_Ready" xml:space="preserve"><value>Ready. Save to apply these settings.</value></data>
+  <data name="Shortcuts_LookupHelp" xml:space="preserve"><value>Look up a selected word directly. Install and enable an offline dictionary in Toolbar settings first.</value></data>
+  <data name="Shortcuts_OcrHelp" xml:space="preserve"><value>Press the shortcut, then drag to select the area to recognize.</value></data>
+  <data name="Shortcuts_KeyHelp" xml:space="preserve"><value>Click the area below and press the key combination you want to use.</value></data>
+  <data name="Shortcuts_KeyLabel" xml:space="preserve"><value>Shortcut</value></data>
+  <data name="Shortcuts_PressKeys" xml:space="preserve"><value>Press a new key combination, then save to apply it.</value></data>
+  <data name="Shortcuts_NoItems" xml:space="preserve"><value>No items are available. Add or enable an item first.</value></data>
+  <data name="Shortcuts_CreateItem" xml:space="preserve"><value>Add an item</value></data>
+  <data name="GeneralSettings_ShortcutLookup" xml:space="preserve"><value>Look up in dictionary</value></data>
+  <data name="GeneralSettings_ShortcutAi" xml:space="preserve"><value>Run selected AI command</value></data>
+  <data name="GeneralSettings_ShortcutCustom" xml:space="preserve"><value>Run selected custom action</value></data>
+  <data name="GeneralSettings_ShortcutItem" xml:space="preserve"><value>Select the item to run with this shortcut</value></data>
+  <data name="GeneralSettings_ShortcutChooseItem" xml:space="preserve"><value>Choose an item</value></data>
+  <data name="GeneralSettings_ShortcutTargetMissing" xml:space="preserve"><value>Item unavailable. Choose it again in Global shortcut.</value></data>
+  <data name="GeneralSettings_ShortcutPrompt" xml:space="preserve"><value>AI command</value></data>
+  <data name="GeneralSettings_ShortcutCustomItem" xml:space="preserve"><value>Custom action</value></data>
+  <data name="GeneralSettings_LookupShortcutHint" xml:space="preserve"><value>Select a word and press the shortcut. Install and enable an offline dictionary in Toolbar settings first.</value></data>
+  <data name="GeneralSettings_AiShortcutHint" xml:space="preserve"><value>Run the chosen command on selected text and show the result in the AI panel. Set up an AI service first.</value></data>
+  <data name="GeneralSettings_CustomShortcutHint" xml:space="preserve"><value>Run the chosen action directly. Actions that use selected text first capture and validate the current selection.</value></data>
+  <data name="GeneralSettings_OcrShortcutHint" xml:space="preserve">
+    <value>Press the shortcut, then drag to select the area to recognize.</value>
   </data>
   <data name="GeneralSettingsPage_019" xml:space="preserve">
     <value>Shortcut combination; press a new combination here when changing it</value>
@@ -1811,10 +1852,10 @@ Its enabled state will be preserved.</value>
     <value>Input monitoring is not ready. Restart SnapBar.</value>
   </data>
   <data name="MainWindow_General_001" xml:space="preserve">
-    <value>SnapBar already uses this shortcut. Choose another combination.</value>
+    <value>SnapBar already uses this shortcut. Press another key combination.</value>
   </data>
   <data name="MainWindow_General_002" xml:space="preserve">
-    <value>This shortcut is unavailable. Choose another combination. Your previous settings are preserved.</value>
+    <value>This shortcut is unavailable. Press another key combination. Your previous settings are preserved.</value>
   </data>
   <data name="MainWindow_General_003" xml:space="preserve">
     <value>Could not save the shortcut. Check settings file permissions. Your previous shortcut is preserved.</value>
@@ -1826,10 +1867,10 @@ Its enabled state will be preserved.</value>
     <value>This shortcut is not supported. Choose another combination.</value>
   </data>
   <data name="MainWindow_General_006" xml:space="preserve">
-    <value>This shortcut is unavailable. Choose another combination. Your previous shortcut still works.</value>
+    <value>This shortcut is unavailable. Press another key combination. Your previous shortcut still works.</value>
   </data>
   <data name="MainWindow_General_007" xml:space="preserve">
-    <value>This shortcut is unavailable. Choose another combination. Your current shortcut is still unavailable.</value>
+    <value>This shortcut is unavailable. Press another key combination. Your current shortcut is still unavailable.</value>
   </data>
   <data name="MainWindow_General_008" xml:space="preserve">
     <value>Could not save the shortcut. Check settings file permissions. Your previous shortcut is preserved.</value>

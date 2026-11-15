@@ -34,8 +34,8 @@ internal static class SettingsNavigationTest
         check(main.Content is not ScrollViewer, "settings navigation uses a fixed root rather than a scrolling settings document");
         main.NavigateTo(SettingsCategory.General); await Layout(main);
         check(!Children<FrameworkElement>(main).Any(element => AutomationProperties.GetAutomationId(element) is "GeneralActionPreview" or "ManageActions")
-            && Find<StackPanel>(main, "GeneralShortcutKeys").Children.OfType<Border>().Count() == 3,
-            "settings general page contains actual settings and distinct shortcut keycaps without an inert toolbar");
+            && !Children<FrameworkElement>(main.GeneralPage).Any(element => AutomationProperties.GetAutomationId(element).StartsWith("Shortcut")),
+            "settings general page contains basic settings without a shortcut editor or inert toolbar");
         check(!Find<TextBlock>(main, "SettingsMode").IsVisible,
             "settings general page avoids repeating normal detection status beside the switch");
         var sixActions = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(ActionCatalog.Normalize(new()), "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);

@@ -44,17 +44,20 @@ public sealed partial class SelectionController
         return validation;
     }
 
-    internal async Task ExecuteCustomAsync(string id)
+    internal async Task ExecuteCustomAsync(string id, bool direct = false)
     {
         if (executing || selection == null || disposed || stopping) return;
         var action = actions.CustomActions.FirstOrDefault(a => a.Id == id);
         if (action == null || actions.Layout.Any(e => e.Id == id && e.Placement == ActionPlacement.Hidden)) { Report("invalid-action"); return; }
         if (CustomActionPolicy.Validate(action) != null) { Report("invalid-action"); return; }
-        if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
+        var focused = direct ? Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target : popup.TryRestoreSourceFocus();
+        if (!focused) { Invalidate(); Report("target-changed"); return; }
         executing = true; var current = selection; var ticket = generation.Next(); popup.Dismiss();
         using var cancellation = new CancellationTokenSource(); customAction = cancellation; var keepResult = false; var clipboardLease = false;
         var readonlyResult = action.Kind != CustomActionKind.Url && action.Output is ActionOutput.Window or ActionOutput.Markdown;
-        bool CanPresent() => !disposed && !stopping && !cancellation.IsCancellationRequested
+        bool DefinitionCurrent() => actions.CustomActions.FirstOrDefault(a => a.Id == id) == action
+            && !actions.Layout.Any(e => e.Id == id && e.Placement == ActionPlacement.Hidden);
+        bool CanPresent() => !disposed && !stopping && !cancellation.IsCancellationRequested && DefinitionCurrent()
             && ReferenceEquals(customAction, cancellation)
             && (readonlyResult || Current(current, ticket));
         try
@@ -62,6 +65,7 @@ public sealed partial class SelectionController
             var writes = action.Kind != CustomActionKind.Url && action.Output == ActionOutput.ReplaceSelection;
             var initial = await ValidateCustomAsync(current, ticket, writes);
             if (!initial.Success) { if (generation.IsCurrent(ticket)) Report(initial.Status); return; }
+            if (!CanPresent()) return;
             if (action.Kind == CustomActionKind.Url)
             {
                 var destination = CustomActionPolicy.ResolveUrl(current.Text, action.Content);

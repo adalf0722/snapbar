@@ -45,6 +45,8 @@ public sealed partial class SelectionController : IDisposable
     internal bool TryChangeActionHotkey(TextAction action, HotkeySettings? candidate, Action persist) =>
         monitor.TryChangeActionHotkey(action, candidate, persist);
     internal bool IsActionHotkeyRegistered(TextAction action) => monitor.IsActionHotkeyRegistered(action);
+    internal string? AiShortcutPromptId { get; set; }
+    internal string? CustomShortcutActionId { get; set; }
     public void SetHotkeyRecording(bool recording) { monitor.HotkeySuppressed = recording; Invalidate(); }
     public bool ClipboardReadPending => clipboardReader.IsBusy;
     public event Action<string>? Status;
@@ -81,7 +83,8 @@ public sealed partial class SelectionController : IDisposable
         Func<IPathRevealSession>? createPathSession = null,
         Func<CustomActionDefinition, string, CancellationToken, Task<ScriptExecutionResult>>? runCustom = null,
         HotkeySettings? initialHotkey = null, HotkeySettings? initialSearchHotkey = null, HotkeySettings? initialCopyHotkey = null,
-        HotkeySettings? initialOcrHotkey = null)
+        HotkeySettings? initialOcrHotkey = null, HotkeySettings? initialLookupHotkey = null,
+        HotkeySettings? initialAiHotkey = null, HotkeySettings? initialCustomHotkey = null)
     {
         this.launchWeb = launchWeb ?? BrowserLauncher.Open;
         this.createPathSession = createPathSession ?? (() => new PathRevealSession(probeExecutable));
@@ -89,7 +92,8 @@ public sealed partial class SelectionController : IDisposable
         dispatcher = source.Dispatcher;
         probe = new(probeExecutable);
         clipboardReader = new(source.Handle);
-        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialOcrHotkey);
+        monitor = new(source, initialHotkey, initialSearchHotkey, initialCopyHotkey, initialOcrHotkey,
+            initialLookupHotkey, initialAiHotkey, initialCustomHotkey);
         monitor.HotkeyRecorded += value => HotkeyRecorded?.Invoke(value);
         // Low-level hooks run on this installing UI thread. Invalidate immediately so a queued
         // click/key cannot leave an old selection valid during an async action continuation.
@@ -123,13 +127,25 @@ public sealed partial class SelectionController : IDisposable
         if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
         {
             if (executing) return;
-            _ = CaptureAsync(input.Kind == "selection", input.X, input.Y, input.Action);
+            var targetId = input.Action == TextAction.Ai ? AiShortcutPromptId : CustomShortcutActionId;
+            if (input.Action == TextAction.Ai && aiPreferences?.Settings.Prompts.Any(p => p.Id == targetId) != true
+                || input.Action == TextAction.Custom && !actions.CustomActions.Any(a => a.Id == targetId
+                    && !actions.Layout.Any(e => e.Id == a.Id && e.Placement == ActionPlacement.Hidden)))
+            { Status?.Invoke(UiText.Get("GeneralSettings_ShortcutTargetMissing")); return; }
+            if (input.Action == TextAction.Custom && actions.CustomActions.FirstOrDefault(a => a.Id == targetId)
+                is { UseSelection: false, Kind: not CustomActionKind.Url, Output: not ActionOutput.ReplaceSelection })
+            { _ = ExecuteStandaloneCustomAsync(targetId!); return; }
+            _ = CaptureAsync(input.Kind == "selection", input.X, input.Y, input.Action, targetId);
         }
     }
 
-    internal async Task CaptureAsync(bool pointer, int x, int y, TextAction? directAction = null)
+    internal async Task CaptureAsync(bool pointer, int x, int y, TextAction? directAction = null, string? directTargetId = null)
     {
         if (disposed || stopping) return;
+        var directPrompt = directAction == TextAction.Ai && directTargetId != null
+            ? aiPreferences?.Settings.Prompts.FirstOrDefault(p => p.Id == directTargetId) : null;
+        var directCustom = directAction == TextAction.Custom
+            ? actions.CustomActions.FirstOrDefault(a => a.Id == directTargetId) : null;
         Invalidate();
         var ticket = generation.Next();
         delay = new CancellationTokenSource();
@@ -173,7 +189,17 @@ public sealed partial class SelectionController : IDisposable
             selection = result.Selection;
             if (directAction is { } action)
             {
-                await ExecuteAsync(action, direct: true);
+                if (directTargetId != null && (action == TextAction.Ai && (directPrompt == null
+                    || aiPreferences?.Settings.Prompts.FirstOrDefault(p => p.Id == directTargetId) != directPrompt)
+                    || action == TextAction.Custom && (directCustom == null
+                        || actions.CustomActions.FirstOrDefault(a => a.Id == directTargetId) != directCustom)))
+                { Status?.Invoke(UiText.Get("GeneralSettings_ShortcutTargetMissing")); return; }
+                if (action == TextAction.Ai) await OpenAiAsync(direct: true, promptId: directTargetId);
+                else if (action == TextAction.Custom)
+                {
+                    if (directTargetId != null) await ExecuteCustomAsync(directTargetId, direct: true);
+                }
+                else await ExecuteAsync(action, direct: true);
                 return;
             }
             popup.Present(selection, x, y, searchUrlTemplate, actions);
@@ -189,7 +215,7 @@ public sealed partial class SelectionController : IDisposable
 
     internal async Task ExecuteAsync(TextAction action, bool direct = false)
     {
-        if (action == TextAction.Ai) { await OpenAiAsync(); return; }
+        if (action == TextAction.Ai) { await OpenAiAsync(direct); return; }
         if (action == TextAction.Lookup) { await LookupAsync(direct); return; }
         if (executing || selection == null || disposed || stopping) return;
         var sourceFocused = direct
@@ -202,7 +228,7 @@ public sealed partial class SelectionController : IDisposable
         popup.Dismiss();
         try
         {
-            if (!Enum.IsDefined(action) || action == TextAction.Ocr) { Report("invalid-action"); return; }
+            if (!Enum.IsDefined(action) || action is TextAction.Ocr or TextAction.Custom) { Report("invalid-action"); return; }
             var compatibility = current.Source == "sublime-clipboard";
             var genericCompatibility = current.Source == ClipboardSelectionAdapter.Source;
             var writes = action is TextAction.Cut or TextAction.Paste;

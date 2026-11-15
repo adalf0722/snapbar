@@ -55,6 +55,43 @@ internal static class SettingsStoreTests
                 var cleared = new SettingsStore(path).Load().Settings;
                 return cleared.SearchHotkey == null && cleared.CopyHotkey == copy && cleared.Hotkey == HotkeySettings.Default;
             });
+            check("dictionary AI and custom shortcuts preserve keys and stable target IDs across reload", () =>
+            {
+                var store = new SettingsStore(path); store.Load();
+                var settings = new ApplicationSettings { LookupHotkey = new(3, 0x4B), AiHotkey = new(3, 0x4D),
+                    CustomHotkey = new(3, 0x4E), AiHotkeyPromptId = "summary", CustomHotkeyActionId = "custom-missing" };
+                store.Save(settings);
+                var loaded = new SettingsStore(path).Load().Settings;
+                if (loaded.LookupHotkey != settings.LookupHotkey || loaded.AiHotkey != settings.AiHotkey
+                    || loaded.CustomHotkey != settings.CustomHotkey || loaded.AiHotkeyPromptId != "summary"
+                    || loaded.CustomHotkeyActionId != "custom-missing") return false;
+                store.Save(loaded with { AiHotkey = null });
+                loaded = new SettingsStore(path).Load().Settings;
+                return loaded.AiHotkey == null && loaded.LookupHotkey == settings.LookupHotkey
+                    && loaded.CustomHotkey == settings.CustomHotkey && loaded.AiHotkeyPromptId == "summary";
+            });
+            check("retired copy preference does not reserve an active shortcut combination", () =>
+            {
+                var store = new SettingsStore(path); store.Load();
+                var key = new HotkeySettings(3, 0x4B);
+                store.Save(new() { CopyHotkey = key, OcrHotkey = key });
+                var loaded = new SettingsStore(path).Load().Settings;
+                return loaded.CopyHotkey == key && loaded.OcrHotkey == key;
+            });
+            check("duplicate new shortcuts are disabled on load without rewriting the original file", () =>
+            {
+                Seed("{\"schemaVersion\":8,\"lookupHotkey\":{\"modifiers\":3,\"key\":75},\"aiHotkey\":{\"modifiers\":3,\"key\":75},\"customHotkey\":{\"modifiers\":3,\"key\":86}}");
+                var before = File.ReadAllBytes(path); var loaded = new SettingsStore(path).Load();
+                return loaded.Warning == null && loaded.Settings.LookupHotkey == new HotkeySettings(3, 0x4B)
+                    && loaded.Settings.AiHotkey == null && loaded.Settings.CustomHotkey == null && before.SequenceEqual(File.ReadAllBytes(path));
+            });
+            check("saving duplicate new shortcuts preserves the existing settings", () =>
+            {
+                var store = new SettingsStore(path); var settings = store.Load().Settings;
+                var before = File.ReadAllBytes(path);
+                try { store.Save(settings with { AiHotkey = settings.LookupHotkey }); return false; }
+                catch (InvalidOperationException) { return before.SequenceEqual(File.ReadAllBytes(path)); }
+            });
             foreach (var invalid in new[] { "{bad", "null", "{\"automaticDetectionEnabled\":\"yes\"}" })
                 check("invalid settings preserve original bytes: " + invalid, () =>
                 {

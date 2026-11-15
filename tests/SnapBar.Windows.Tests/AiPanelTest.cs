@@ -209,6 +209,17 @@ internal static class AiPanelTest
                 var value = (ValuePattern)element.GetCurrentPattern(ValuePattern.Pattern); var before = value.Current.Value;
                 client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, "AI fixture replacement"));
                 controller = new(owner, TestPaths.ProbeExecutable); controller.ConfigureAi(preferences, client);
+                var shortcutPrompt = preferences.Settings.Prompts.First();
+                string? shortcutInstruction = null;
+                client.Handler = (_, instruction, _) => { shortcutInstruction = instruction; return Task.FromResult(new AiTextResult(true, "Direct AI fixture result")); };
+                await controller.CaptureAsync(false, 0, 0, TextAction.Ai, shortcutPrompt.Id);
+                panel = controller.ActiveAiWindow ?? throw new InvalidOperationException("Direct AI shortcut did not open the panel");
+                var directDeadline = DateTime.UtcNow.AddSeconds(4);
+                while (panel.Session.Busy && DateTime.UtcNow < directDeadline) await Task.Delay(20);
+                Check(shortcutInstruction == shortcutPrompt.Instruction && panel.Session.Current?.Text == "Direct AI fixture result"
+                    && value.Current.Value == before, "direct AI shortcut runs only the selected command and leaves the source unchanged");
+                panel.Close(); panel = null; await ForegroundFixture(); element.SetFocus();
+                client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, "AI fixture replacement"));
                 await controller.CaptureAsync(false, 0, 0); Check(controller.ActiveSelection is { Editable: true }, "AI captures an editable original selection");
                 var selectedText = controller.ActiveSelection!.Text;
                 await controller.ExecuteAsync(TextAction.Ai); panel = controller.ActiveAiWindow ?? throw new InvalidOperationException("AI panel did not open");

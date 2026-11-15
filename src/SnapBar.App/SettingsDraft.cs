@@ -9,5 +9,5 @@ internal interface ISettingsDraft
     void Reveal();
 }
 
-internal enum SettingsCategory { General, Actions, AiCommands, AiServices, Compatibility, About }
+internal enum SettingsCategory { General, Shortcuts, Actions, AiCommands, AiServices, Compatibility, About }
 internal enum ExitChoice { Save, Discard, Cancel }

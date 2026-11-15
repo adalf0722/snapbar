@@ -83,13 +83,16 @@ internal static class LookupTest
                     lookup.OpenDictionarySettings = () => settingsRequested = true;
                     lookup.ConfigureActions(ActionCatalog.SetPlacement(new(), "lookup", ActionPlacement.Bar));
 
-                    async Task<ActionResultWindow> RunLookup()
+                    async Task<ActionResultWindow> RunLookup(bool direct = false)
                     {
-                        await lookup.CaptureAsync(false, 0, 0);
-                        var popup = app.Windows.OfType<PopupWindow>().Single(window => window.IsVisible);
-                        var button = popup.FindActionButton(TextAction.Lookup);
-                        if (!button.IsVisible || !button.IsEnabled) throw new InvalidOperationException("Lookup button is unavailable");
-                        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        await lookup.CaptureAsync(false, 0, 0, direct ? TextAction.Lookup : null);
+                        if (!direct)
+                        {
+                            var popup = app.Windows.OfType<PopupWindow>().Single(window => window.IsVisible);
+                            var button = popup.FindActionButton(TextAction.Lookup);
+                            if (!button.IsVisible || !button.IsEnabled) throw new InvalidOperationException("Lookup button is unavailable");
+                            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        }
                         var deadline = DateTime.UtcNow.AddSeconds(4);
                         while (DateTime.UtcNow < deadline)
                         {
@@ -104,7 +107,8 @@ internal static class LookupTest
                         LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>().SelectMany(Elements<T>)
                             .Concat(root is T element ? [element] : []).ToArray();
 
-                    var missing = await RunLookup();
+                    var missing = await RunLookup(direct: true);
+                    Require(!app.Windows.OfType<PopupWindow>().Any(window => window.IsVisible), "dictionary shortcut runs directly without presenting the toolbar");
                     TextBlock LookupContent(ActionResultWindow window) =>
                         Elements<TextBlock>(window).Single(text => text.Name == "LookupContent");
 

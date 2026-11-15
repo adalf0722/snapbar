@@ -80,9 +80,10 @@ internal static class InterfaceLanguageTest
                 var selector = Find<ComboBox>(main, "InterfaceLanguageSelector");
                 Check("language selector choices follow Traditional Chinese interface", selector.Items.Cast<string>().SequenceEqual(new[] { "跟隨系統", "繁體中文", "英文" }));
                 var ocrPriority = Find<ComboBox>(main, "OcrLanguagePriority"); ocrPriority.SelectedIndex = 1;
-                var shortcut = Find<ComboBox>(main, "ShortcutTarget"); shortcut.SelectedIndex = 1;
-                main.GeneralPage.BeginRecording(); main.GeneralPage.Record(new(3, 0x4A));
-                var recorded = AutomationProperties.GetName(Find<StackPanel>(main, "GeneralShortcutKeys"));
+                main.NavigateTo(SettingsCategory.Shortcuts); main.ShortcutsPage.Edit(TextAction.Search);
+                var shortcutEditor = main.ShortcutsPage.Editor!;
+                Find<Border>(shortcutEditor, "ShortcutCapture").Focus(); shortcutEditor.BeginRecording(); shortcutEditor.Record(new(3, 0x4A));
+                var recorded = AutomationProperties.GetName(Find<StackPanel>(shortcutEditor, "ShortcutDraftKeys"));
                 var preferencesBefore = new SettingsStore(path).Load().Settings;
                 var search = main.SearchPanel; Find<ComboBox>(search, "SearchProvider").SelectedIndex = 2;
                 Find<TextBox>(search, "SearchUrlTemplate").Text = "https://example.org/search?q={query}&draft=保留";
@@ -106,8 +107,9 @@ internal static class InterfaceLanguageTest
                     && selector.SelectedIndex == 2 && new SettingsStore(path).Load().Settings.InterfaceLanguage == "en"
                     && AutomationProperties.GetName(selector) == "Language");
                 Check("controller identity and selection policies are preserved", controller != null && ReferenceEquals(controller, Field(main, "controller")));
-                Check("OCR priority and hotkey draft survive refresh without callback writes", ocrPriority.SelectedIndex == 1 && shortcut.SelectedIndex == 1
-                    && main.GeneralPage.IsRecording && AutomationProperties.GetName(Find<StackPanel>(main, "GeneralShortcutKeys")) == recorded
+                Check("OCR priority and hotkey draft survive refresh without callback writes", ocrPriority.SelectedIndex == 1 && shortcutEditor.Action == TextAction.Search
+                    && AutomationProperties.GetName(Find<StackPanel>(shortcutEditor, "ShortcutDraftKeys")) == recorded
+                    && shortcutEditor.Title.StartsWith("Set shortcut", StringComparison.Ordinal)
                     && new SettingsStore(path).Load().Settings.OcrPreferEnglish);
                 Check("search and AI drafts survive in-place language refresh", search.IsDirty && search.DraftTemplate.EndsWith("draft=保留", StringComparison.Ordinal)
                     && ai.IsDirty && Find<ComboBox>(ai, "AiModel").Text == "draft-model-保留" && ReferenceEquals(draftsBefore, main.AiPreferences.Settings));
@@ -130,7 +132,7 @@ internal static class InterfaceLanguageTest
                 main.NavigateTo(SettingsCategory.General); main.UpdateLayout(); UiAppearanceTest.Snapshot(main, "language-save-failure-en.png");
                 selector.SelectedIndex = 0; selector.SelectedIndex = 2;
 
-                main.GeneralPage.CancelRecording();
+                main.ShortcutsPage.CloseEditor();
                 // Restore fixture-only drafts so the representative English audit contains no intentional user CJK.
                 search.Discard(); ai.Discard();
                 Check("saving an old-language editor leaves shared settings in the current language", oldPrompt.TrySave()

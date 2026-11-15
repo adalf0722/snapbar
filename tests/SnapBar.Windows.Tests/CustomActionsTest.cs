@@ -115,6 +115,9 @@ internal static class CustomActionsTest
                     "closing More restores the original foreground");
                 await controller.ExecuteCustomAsync(url.Id);
                 Check(launched.Count == 1 && Uri.UnescapeDataString(launched[0].Query[3..]) == FixtureWindow.SearchFixtureText, "custom URL revalidates and encodes full Unicode selection");
+                await controller.CaptureAsync(false, 0, 0, TextAction.Custom, url.Id);
+                Check(launched.Count == 2 && !app.Windows.OfType<PopupWindow>().Any(w => w.IsVisible),
+                    "direct custom shortcut validates selection and runs its target without presenting the toolbar");
                 await Capture(); await controller.ExecuteCustomAsync(script.Id);
                 Check(calls == 1 && app.Windows.OfType<ActionResultWindow>().Any(w => w.IsVisible), "script result routes to actual result window");
                 Check(Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id, "result window preserves original foreground");
@@ -129,6 +132,10 @@ internal static class CustomActionsTest
                 runner = (_, text, _) => { suppliedInput = text; return Task.FromResult(new ScriptExecutionResult("ok", "fixture")); };
                 await Capture(); await controller.ExecuteCustomAsync(script.Id);
                 Check(suppliedInput == "", "controller omits selected text for explicitly independent script");
+                suppliedInput = null;
+                await controller.ExecuteStandaloneCustomAsync(script.Id);
+                Check(suppliedInput == "" && controller.ActiveSelection == null,
+                    "independent custom shortcut runs without capturing or reading any selection");
                 suppliedInput = null;
                 controller.ConfigureActions(actions with { CustomActions = [url, independent with { Output = ActionOutput.ReplaceSelection }, replace] });
                 await Capture(); await controller.ExecuteCustomAsync(script.Id);
@@ -174,7 +181,7 @@ internal static class CustomActionsTest
                     await completion.Task.WaitAsync(TimeSpan.FromSeconds(4));
                 }
                 finally { controller.Status -= Completed; }
-                Check(launched.Count == 2 && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
+                Check(launched.Count == 3 && Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id,
                     "search result action restores original foreground and revalidates before URL launch");
                 await Capture(); popup = Popup();
                 Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -187,9 +194,9 @@ internal static class CustomActionsTest
                 var changedRange = originalRange.Clone(); changedRange.MoveEndpointByUnit(System.Windows.Automation.Text.TextPatternRangeEndpoint.End,
                     System.Windows.Automation.Text.TextUnit.Character, -1); changedRange.Select();
                 await controller.ExecuteCustomAsync(url.Id);
-                Check(launched.Count == 2, "source range changed during search is rejected after focus restoration"); originalRange.Select();
+                Check(launched.Count == 3, "source range changed during search is rejected after focus restoration"); originalRange.Select();
                 await Capture(); controller.Automatic = false; await controller.ExecuteCustomAsync(url.Id);
-                Check(launched.Count == 2, "stale URL action never launches");
+                Check(launched.Count == 3, "stale URL action never launches");
 
                 await Capture(); popup = Popup();
                 Children<Button>(popup).Single(b => AutomationProperties.GetAutomationId(b) == "MoreActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -201,7 +208,7 @@ internal static class CustomActionsTest
                 var unrelatedHandle = new WindowInteropHelper(unrelated).Handle;
                 Check(controller.ActiveSelection == null && !popup.IsVisible, "leaving focused search invalidates session and closes popup");
                 await controller.ExecuteCustomAsync(url.Id);
-                Check(launched.Count == 2 && Native.GetForegroundWindow() == unrelatedHandle, "stale search action cannot pull focus away from unrelated window"); unrelated.Close();
+                Check(launched.Count == 3 && Native.GetForegroundWindow() == unrelatedHandle, "stale search action cannot pull focus away from unrelated window"); unrelated.Close();
 
                 fixture.CloseMainWindow(); await fixture.WaitForExitAsync(); fixture.Dispose();
                 var editableStart = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };

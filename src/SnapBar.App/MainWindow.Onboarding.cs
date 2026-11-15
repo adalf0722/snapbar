@@ -39,7 +39,7 @@ public sealed partial class MainWindow
     {
         firstRunEligible = false;
         ShowSettings();
-        if (shortcut) { NavigateTo(SettingsCategory.General); generalPage.BeginToolbarRecording(); }
+        if (shortcut) { NavigateTo(SettingsCategory.Shortcuts); shortcutsPage.Edit(null); }
     }
 
     internal void OnboardingEnded(bool showSettings, bool failed, bool progressFailed = false)

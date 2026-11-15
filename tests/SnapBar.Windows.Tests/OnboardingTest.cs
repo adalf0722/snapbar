@@ -234,11 +234,11 @@ internal static class OnboardingTest
                 check("onboarding automatic preference save failure preserves active state", !host.ApplyOnboardingPreference(new(1, "set-automatic", RequestId: 2, Automatic: true))
                     && !host.AutomaticDetectionEnabled);
             check("failed onboarding save preserves settings file", before.SequenceEqual(File.ReadAllBytes(path)));
-            Find<ComboBox>(host, "ShortcutTarget").SelectedIndex = 1;
+            host.NavigateTo(SettingsCategory.Shortcuts); host.ShortcutsPage.Edit(TextAction.Search);
             host.OnboardingShowSettings(true);
-            check("onboarding shortcut recovery always records the toolbar binding", host.GeneralPage.IsRecording
-                && Find<ComboBox>(host, "ShortcutTarget").SelectedIndex == 0);
-            host.GeneralPage.CancelRecording();
+            check("onboarding shortcut recovery always opens the toolbar editor", host.CurrentCategory == SettingsCategory.Shortcuts
+                && host.ShortcutsPage.Editor is { Action: null });
+            host.ShortcutsPage.CloseEditor();
             async Task InvokeChild(string id, TargetIdentity identity)
             {
                 var root = AutomationElement.FromHandle((nint)identity.Window);

@@ -101,6 +101,21 @@ internal static class GeneralSettingsTest
                     && !monitor.IsActionHotkeyRegistered(TextAction.Search) && monitor.HotkeyRegistered);
                 SendMessage(source.Handle, Native.WM_HOTKEY, 3, Combination(new(3, 0x4A)));
                 check("cleared Search registration ignores queued messages", actions == 2);
+                foreach (var binding in new[] { (TextAction.Lookup, 11, 0x4B), (TextAction.Ai, 13, 0x4D), (TextAction.Custom, 15, 0x4E) })
+                {
+                    var key = new HotkeySettings(3, binding.Item3);
+                    check(binding.Item1 + " shortcut registers independently", monitor.TryChangeActionHotkey(binding.Item1, key, () => { }));
+                    var count = actions;
+                    monitor.HotkeySuppressed = true;
+                    SendMessage(source.Handle, Native.WM_HOTKEY, binding.Item2 + 1, Combination(key));
+                    check(binding.Item1 + " shortcut records while suppressed", recorded == key && actions == count);
+                    monitor.HotkeySuppressed = false;
+                    SendMessage(source.Handle, Native.WM_HOTKEY, binding.Item2 + 1, Combination(key));
+                    check(binding.Item1 + " shortcut dispatches the correct action", actions == count + 1 && action == binding.Item1);
+                    monitor.TryChangeActionHotkey(binding.Item1, null, () => { });
+                    SendMessage(source.Handle, Native.WM_HOTKEY, binding.Item2 + 1, Combination(key));
+                    check(binding.Item1 + " cleared shortcut ignores queued messages", actions == count + 1);
+                }
             }
 
             window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup);
@@ -125,78 +140,7 @@ internal static class GeneralSettingsTest
             }
             startup.SetEnabled(false); page.RefreshStartup();
 
-            window.Title = "SnapBar general keyboard fixture"; window.Activate();
-            var handle = new WindowInteropHelper(window).Handle;
-            Console.WriteLine("WAITING: activate the dedicated SnapBar general keyboard fixture (up to 60 seconds)");
-            var deadline = DateTime.UtcNow.AddSeconds(60);
-            while (Native.GetForegroundWindow() != handle && DateTime.UtcNow < deadline) await Task.Delay(50);
-            if (Native.GetForegroundWindow() != handle) throw new InvalidOperationException("Activate the General settings fixture before native recording tests");
-            Click(page, "ChangeShortcut");
-            try
-            {
-                keybd_event(0x11, 0, 0, 0); keybd_event(0x12, 0, 0, 0); keybd_event(0x42, 0, 0, 0);
-                await Task.Delay(50);
-            }
-            finally { keybd_event(0x42, 0, 2, 0); keybd_event(0x12, 0, 2, 0); keybd_event(0x11, 0, 2, 0); }
-            await Task.Delay(50);
-            check("native Ctrl Alt B is recorded through WPF keyboard input", page.IsRecording && Find<Button>(page, "SaveShortcut").IsEnabled
-                && AutomationProperties.GetName(Find<StackPanel>(page, "GeneralShortcutKeys")) == "Ctrl + Alt + B");
-            keybd_event(0x1B, 0, 0, 0); keybd_event(0x1B, 0, 2, 0); await Task.Delay(50);
-            check("native Escape cancels recording without saving", !page.IsRecording && !File.Exists(path));
-
-            Click(page, "ChangeShortcut"); page.Record(new(3, 0x42));
-            check("recorded candidate stays a draft before saving", page.IsRecording && window.CurrentHotkey == HotkeySettings.Default && !File.Exists(path));
-            UiAppearanceTest.Snapshot(window, "settings-shortcut-recording.png");
-            Click(page, "CancelShortcut");
-            check("cancel restores previous display without saving", !page.IsRecording && AutomationProperties.GetName(Find<StackPanel>(page, "GeneralShortcutKeys")) == HotkeySettings.Default.Display && !File.Exists(path));
-            Click(page, "ChangeShortcut"); page.Record(new(2, 0x56));
-            check("reserved combination disables save", !Find<Button>(page, "SaveShortcut").IsEnabled);
-            page.Record(new(3, 0x42)); Click(page, "SaveShortcut");
-            check("shortcut UI saves and commits immediately", !page.IsRecording && window.CurrentHotkey == new HotkeySettings(3, 0x42)
-                && new SettingsStore(path).Load().Settings.Hotkey == new HotkeySettings(3, 0x42));
-            Click(page, "ChangeShortcut"); page.Record(new(3, 0x4A));
-            var before = File.ReadAllBytes(path);
-            using (var locked = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)) Click(page, "SaveShortcut");
-            check("failed UI save preserves draft old key and disk bytes", page.IsRecording && window.CurrentHotkey == new HotkeySettings(3, 0x42) && before.SequenceEqual(File.ReadAllBytes(path)));
-            Click(page, "CancelShortcut");
-            using (var blocker = new HwndSource(new HwndSourceParameters("SnapBar UI hotkey conflict") { Width = 1, Height = 1, WindowStyle = 0 }))
-            {
-                if (!Native.RegisterHotKey(blocker.Handle, 91, 0x4003, 0x4A)) throw new InvalidOperationException("UI conflict fixture key occupied");
-                try
-                {
-                    Click(page, "ChangeShortcut"); page.Record(new(3, 0x4A)); Click(page, "SaveShortcut");
-                    check("conflict UI retains old key and explains recovery", page.IsRecording && window.CurrentHotkey == new HotkeySettings(3, 0x42)
-                        && Find<TextBlock>(page, "ShortcutStatus").Text.Contains("原快捷鍵仍有效"));
-                    UiAppearanceTest.Snapshot(window, "settings-shortcut-conflict.png");
-                }
-                finally { Native.UnregisterHotKey(blocker.Handle, 91); }
-            }
-            window.NavigateTo(SettingsCategory.About);
-            check("leaving general settings cancels shortcut recording", !page.IsRecording);
-            window.NavigateTo(SettingsCategory.General); Click(page, "ChangeShortcut"); page.Record(new(3, 0x4A));
-            var other = new Window { Width = 180, Height = 100, ShowInTaskbar = false, Title = "Shortcut deactivation fixture" };
-            other.Show(); other.Activate(); await Task.Delay(80); other.Close();
-            check("deactivation cancels recording without saving", !page.IsRecording && window.CurrentHotkey == new HotkeySettings(3, 0x42));
-            window.PrepareSessionEnd(); window.Close();
-            window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup); window.Show(); await Task.Delay(50);
-            check("saved shortcut survives a new session and UI display", window.CurrentHotkey == new HotkeySettings(3, 0x42)
-                && AutomationProperties.GetName(Find<StackPanel>(window.GeneralPage, "GeneralShortcutKeys")) == "Ctrl + Alt + B");
-            Click(window.GeneralPage, "ResetShortcut");
-            check("restore default commits and saves default shortcut", window.CurrentHotkey == HotkeySettings.Default
-                && new SettingsStore(path).Load().Settings.Hotkey == HotkeySettings.Default);
-            var shortcuts = Find<ComboBox>(window.GeneralPage, "ShortcutTarget");
-            shortcuts.SelectedIndex = 1;
-            Click(window.GeneralPage, "ChangeShortcut"); window.GeneralPage.Record(HotkeySettings.Default);
-            Click(window.GeneralPage, "SaveShortcut");
-            check("Search shortcut rejects the existing toolbar combination", window.GeneralPage.IsRecording
-                && new SettingsStore(path).Load().Settings.SearchHotkey == null);
-            var searchBinding = new HotkeySettings(3, 0x4A);
-            window.GeneralPage.Record(searchBinding); Click(window.GeneralPage, "SaveShortcut");
-            check("Search shortcut saves separately from toolbar shortcut", !window.GeneralPage.IsRecording
-                && new SettingsStore(path).Load().Settings.SearchHotkey == searchBinding);
-            Click(window.GeneralPage, "ResetShortcut");
-            check("clear action shortcut preserves toolbar shortcut", new SettingsStore(path).Load().Settings is
-                { SearchHotkey: null } cleared && cleared.Hotkey == HotkeySettings.Default);
+            await ShortcutSettingsTest.Run(window, path, check);
             var ocrLanguage = Find<ComboBox>(window.GeneralPage, "OcrLanguagePriority");
             check("OCR defaults to Traditional Chinese priority", ocrLanguage.SelectedIndex == 0);
             ocrLanguage.SelectedIndex = 1;

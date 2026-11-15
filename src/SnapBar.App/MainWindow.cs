@@ -65,12 +65,15 @@ public sealed partial class MainWindow : Window
             {
                 var executable = Path.Combine(AppContext.BaseDirectory, "Probe", "SnapBar.Probe.exe");
                 controller = new(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), executable, initialHotkey: preferences.Hotkey,
-                    initialSearchHotkey: preferences.SearchHotkey, initialCopyHotkey: preferences.CopyHotkey,
-                    initialOcrHotkey: preferences.OcrHotkey);
+                    initialSearchHotkey: preferences.SearchHotkey, initialOcrHotkey: preferences.OcrHotkey,
+                    initialLookupHotkey: preferences.LookupHotkey, initialAiHotkey: preferences.AiHotkey,
+                    initialCustomHotkey: preferences.CustomHotkey);
+                controller.AiShortcutPromptId = preferences.AiHotkeyPromptId;
+                controller.CustomShortcutActionId = preferences.CustomHotkeyActionId;
                 controller.OcrRequested += StartOcr;
                 controller.Status += AddStatus;
                 controller.OnboardingSearchFinished += result => _ = onboarding.SearchFinishedAsync(result);
-                controller.HotkeyRecorded += generalPage.Record;
+                controller.HotkeyRecorded += shortcutsPage.Record;
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
@@ -97,8 +100,7 @@ public sealed partial class MainWindow : Window
             }
             else if (loaded.Warning != null) ShowNotice(UiText.Get("MainWindow_007"));
         };
-        Activated += (_, _) => { generalPage.RefreshStartup(); generalPage.RefreshShortcut(); };
-        Deactivated += (_, _) => generalPage.CancelRecording();
+        Activated += (_, _) => { generalPage.RefreshStartup(); shortcutsPage.Refresh(); };
         Closing += (_, e) =>
         {
             if (exitRequested) return;
@@ -108,7 +110,7 @@ public sealed partial class MainWindow : Window
             Hide();
             if (!hiddenNoticeShown) { hiddenNoticeShown = true; tray.NotifyHidden(); }
         };
-        Closed += (_, _) => { _ = onboarding.StopAsync(); UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
+        Closed += (_, _) => { shortcutsPage.CloseEditor(); _ = onboarding.StopAsync(); UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
     }
 
     internal void ToggleAutomatic()
@@ -234,7 +236,7 @@ public sealed partial class MainWindow : Window
         tray?.Update(automatic, controller != null);
     }
 
-    private void UpdateModeVisibility() => mode.Visibility = CurrentCategory == SettingsCategory.General && controller?.HotkeyRegistered == true
+    private void UpdateModeVisibility() => mode.Visibility = (CurrentCategory is SettingsCategory.General or SettingsCategory.Shortcuts) && controller?.HotkeyRegistered == true
         ? Visibility.Collapsed : Visibility.Visible;
 
     public void ShowSettings()
@@ -261,6 +263,7 @@ public sealed partial class MainWindow : Window
     private void RefreshInterfaceLanguage()
     {
         UiText.Refresh(this);
+        shortcutsPage.RefreshLanguage();
         aiCommandsPanel.Refresh();
         UpdateAutomaticControls();
         tray?.RefreshLanguage();

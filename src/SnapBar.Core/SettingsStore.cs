@@ -14,6 +14,16 @@ public sealed record ApplicationSettings(int SchemaVersion = 8, bool AutomaticDe
     public HotkeySettings? CopyHotkey { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public HotkeySettings? OcrHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? LookupHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? AiHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public HotkeySettings? CustomHotkey { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AiHotkeyPromptId { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CustomHotkeyActionId { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool OcrPreferEnglish { get; init; }
     public bool ClipboardCompatibilityEnabled { get; init; } = true;
@@ -98,10 +108,17 @@ public sealed class SettingsStore(string path)
     {
         var search = settings.SearchHotkey is { IsValid: true } && settings.SearchHotkey != settings.Hotkey
             ? settings.SearchHotkey : null;
-        var copy = settings.CopyHotkey is { IsValid: true } && settings.CopyHotkey != settings.Hotkey && settings.CopyHotkey != search
-            ? settings.CopyHotkey : null;
+        var copy = settings.CopyHotkey is { IsValid: true } ? settings.CopyHotkey : null;
         var ocr = settings.OcrHotkey is { IsValid: true } && settings.OcrHotkey != settings.Hotkey
-            && settings.OcrHotkey != search && settings.OcrHotkey != copy ? settings.OcrHotkey : null;
-        return settings with { SearchHotkey = search, CopyHotkey = copy, OcrHotkey = ocr };
+            && settings.OcrHotkey != search ? settings.OcrHotkey : null;
+        // CopyHotkey remains readable for old settings; the app no longer registers it.
+        var used = new HashSet<HotkeySettings> { settings.Hotkey };
+        if (search != null) used.Add(search);
+        if (ocr != null) used.Add(ocr);
+        HotkeySettings? Unique(HotkeySettings? value) => value is { IsValid: true } && used.Add(value) ? value : null;
+        static string? TargetId(string? value) => value == null || (value.Length is > 0 and <= 64 && !string.IsNullOrWhiteSpace(value)) ? value : null;
+        return settings with { SearchHotkey = search, CopyHotkey = copy, OcrHotkey = ocr,
+            LookupHotkey = Unique(settings.LookupHotkey), AiHotkey = Unique(settings.AiHotkey), CustomHotkey = Unique(settings.CustomHotkey),
+            AiHotkeyPromptId = TargetId(settings.AiHotkeyPromptId), CustomHotkeyActionId = TargetId(settings.CustomHotkeyActionId) };
     }
 }

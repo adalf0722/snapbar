@@ -1,5 +1,39 @@
 # P0 驗證紀錄
 
+## 2026-11-15 衝突直接重錄與完整移除綁定
+
+儲存時區分按鍵衝突與其他錯誤：SnapBar 內部重複綁定或原生註冊衝突，會保留已選項目並將焦點自動移回錄製區，可直接按下一組。磁碟寫入失敗保留儲存按鈕焦點及草稿，不要求重新輸入按鍵。「移除綁定」取代原本的清除，成功時同時移除按鍵與目標 ID，關閉編輯視窗並刷新清單；AI 命令與自訂動作定義保留。沒有按鍵但仍保存目標的舊設定也能移除綁定；主要快捷鍵仍使用恢復預設。
+
+桌面 Lifecycle 141、Appearance 228、Language 64，共 433 項通過，零失敗、零略過；同步 Release 建置及 Core 551 通過。報告：`artifacts/checks/desktop/20261115T121312461Z-c05000069aa34580804f54e5d86f24a6/report.json`。測試會先讓儲存按鈕取得焦點，再觸發衝突，以確認焦點真的回到錄製區；涵蓋不再點擊就接受新組合、保留所選動作、AI 與自訂動作完整解除、重新開啟後沒有殘留目標，以及磁碟鎖定時移除失敗不改設定。
+
+已檢視 `artifacts/ui-polish/settings-shortcut-conflict.png` 與 `settings-shortcuts-after-removal.png`，確認紅字提供直接重試提示，完整移除後清單不殘留執行項目。未變更來源選字與動作執行權限，未重新進行真實跨應用程式或混合 DPI 人工驗收，未執行完整 Release 套件或替換 `artifacts/p0`。
+
+## 2026-11-15 快捷鍵輸入順序與狀態提示
+
+AI 與自訂動作不再要求先選執行項目：錄製區始終可操作，可先輸入按鍵或先選項目，切換項目保留按鍵草稿。未取得焦點的空白錄製區顯示「點此錄製快捷鍵」，取得焦點後顯示「請按下按鍵組合」。下方提示依狀態說明還缺按鍵、還缺執行項目，或已可儲存。僅儲存操作要求按鍵有效且執行項目完整，衝突與磁碟錯誤仍以錯誤訊息呈現。
+
+桌面 Lifecycle 131、Appearance 228、Language 64，共 423 項通過，零失敗、零略過；同步 Release 建置及 Core 551 通過。報告：`artifacts/checks/desktop/20261115T112529721Z-c78392eef66346adade9d90dc83ac574/report.json`。新增檢查涵蓋 AI 與自訂動作先錄按鍵、先選命令時的缺漏提示、切換項目保留按鍵，以及未儲存草稿不落盤。已檢視 `artifacts/ui-polish/settings-shortcut-ai-key-first.png` 與 `settings-shortcut-custom-key-first.png`，確認按鍵已錄製、尚未選項目時仍清楚顯示缺漏提示並停用儲存。
+
+本次只調整設定視窗的輸入流程，未改變按鍵註冊、選字擷取或動作執行權限。未進行真實跨應用程式或混合 DPI 人工驗收，未執行完整 Release 套件或替換 `artifacts/p0`。
+
+## 2026-11-15 獨立快捷鍵設定頁與編輯視窗
+
+依使用者確認，在一般下方新增「快捷鍵」。六種動作使用一張細分隔線清單，固定顯示動作、按鍵與設定／更改入口，AI 與自訂動作另顯示已選項目。移除一般頁內的動作切換選單及常駐編輯欄位。小型編輯視窗只為需要的動作顯示目標選單；目標與按鍵皆為草稿，儲存時一起生效，取消、關閉或切換編輯項目不寫設定。空清單提供前往新增的入口，新手引導修復固定開啟顯示動作列的編輯視窗。
+
+`scripts/check.ps1` 通過 actionlint、工具契約 26、推送契約 11、自動發布 18、Core 551 與 ActionRunner 35，零失敗且 ActionRunner 零略過。最後一次桌面報告包含後續的新手引導切換編輯目標修正：`artifacts/checks/desktop/20261115T111540118Z-1cbe3fd5bb3e401f94ec8120c74008e7/report.json`，Lifecycle 126、Appearance 228、Language 64，共 418 項通過、零失敗、零略過；同步 Release 建置及 Core 551 通過。首輪衝突提示測試比對了錯誤的訊息代碼，已更正並重跑通過。
+
+測試涵蓋原生按鍵錄製、Escape 取消、衝突與磁碟失敗回復、項目與按鍵取消不落盤、刪除目標、空清單新增入口、失焦停止錄製，以及語言切換保留草稿。已檢視 `artifacts/ui-polish/settings-shortcuts-configured.png`、`settings-shortcut-ai-editor.png`、`settings-shortcut-recording.png`、`settings-shortcut-conflict.png`、`settings-small.png` 與 `settings-constrained-shortcuts.png`；最後一張使用模擬受限工作區，並非實際切換顯示器 DPI。本次未變更選字與動作執行流程，未重新進行真實跨應用程式或混合 DPI 人工驗收，未執行完整 Release 套件或替換 `artifacts/p0`。
+
+## 2026-11-15 全域快捷鍵直接執行動作
+
+新增查字典、指定 AI 命令與指定自訂動作的獨立快捷鍵。新項目預設不綁定按鍵；AI 與自訂動作使用穩定 ID，需先選定目標才能錄製按鍵。刪除或隱藏目標時不會自動選用其他項目；失敗保存會還原畫面與檔案。直接複製選字已從選單移除，舊 CopyHotkey 設定保留但不註冊、不佔用新功能的按鍵。
+
+`scripts/check.ps1` 通過工具契約 26、推送契約 11、自動發布 18、Core 551、ActionRunner 35，零失敗、ActionRunner 零略過。最後一次桌面建置包含後續的內建自訂動作選單修正，Core 551 仍通過。桌面 Lookup 17、AiPanel 254、Actions 70、Lifecycle 123、Appearance 227、Language 63 全數通過，合計 754 項、零失敗、零略過。最終報告：`artifacts/checks/desktop/20261115T104911564Z-bc6880bf154740aa97250f2c7b1ae5cb/report.json`。較早一次 Lookup 因測試視窗未取得前景而逾時，最終重跑已通過。
+
+專用外部 fixture 驗證直接查字典、AI 自動執行所選命令且不自動覆寫來源、網址動作重新驗證選字、無需選字的腳本不讀取來源，以及唯讀來源不能藉快捷鍵取得寫入權限。AI 測試使用假回應，自訂網址測試使用注入的啟動器，未傳送選字至外部 AI 或實際開啟搜尋網站。
+
+已檢視 `settings-shortcut-ai.png`、`settings-shortcut-custom.png`、前輪的查字典與基本小視窗截圖；皆位於 `artifacts/ui-polish/`。未進行跨實際應用程式或混合 DPI 的人工驗收，也未執行完整 Release 套件或替換 `artifacts/p0`。
+
 ## 2026-11-15 設定清單減框與圖示操作
 
 最終 `scripts/check.ps1 -RequireActionRuntimes` 通過 actionlint、工具契約 26、推送契約 11、自動發布 18、Core 547 與嚴格 ActionRunner 35，全部零失敗；ActionRunner 零略過。中文 Markdown 已以嚴格 UTF-8 無 BOM 讀回確認。

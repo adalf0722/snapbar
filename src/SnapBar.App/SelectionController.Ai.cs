@@ -13,16 +13,21 @@ public sealed partial class SelectionController
     internal void ConfigureAi(AiPreferences preferences, IAiTextClient? client = null)
     { aiPreferences = preferences; aiClient = client; }
 
-    private async Task OpenAiAsync()
+    private async Task OpenAiAsync(bool direct = false, string? promptId = null)
     {
         if (executing || selection == null || disposed || stopping) return;
         if (aiPreferences == null) { Status?.Invoke(UiText.Get("SelectionController_Ai_000")); return; }
-        if (!popup.TryRestoreSourceFocus()) { Invalidate(); Report("target-changed"); return; }
+        var prompt = promptId == null ? null : aiPreferences.Settings.Prompts.FirstOrDefault(p => p.Id == promptId);
+        if (promptId != null && prompt == null) { Status?.Invoke(UiText.Get("GeneralSettings_ShortcutTargetMissing")); return; }
+        var focused = direct ? Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target : popup.TryRestoreSourceFocus();
+        if (!focused) { Invalidate(); Report("target-changed"); return; }
         executing = true; var current = selection; var ticket = generation.Next(); popup.Dismiss();
         try
         {
             var validation = await ValidateCustomAsync(current, ticket, false);
             if (!validation.Success) { if (generation.IsCurrent(ticket)) Report(validation.Status); return; }
+            if (prompt != null && aiPreferences.Settings.Prompts.FirstOrDefault(p => p.Id == promptId) != prompt)
+            { Status?.Invoke(UiText.Get("GeneralSettings_ShortcutTargetMissing")); return; }
             aiWindow?.Close();
             if (!Current(current, ticket)) return;
             AiPanelWindow? window = null;
@@ -36,6 +41,7 @@ public sealed partial class SelectionController
             };
             RememberBuiltIn(TextAction.Ai); window.Show(); window.Activate();
             Status?.Invoke(UiText.Get("SelectionController_Ai_001"));
+            if (prompt != null) _ = window.SubmitAsync(prompt.Instruction, prompt.Id);
         }
         catch (ExternalException) { Report("clipboard-busy"); }
         finally { executing = false; }
