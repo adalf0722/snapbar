@@ -3,67 +3,79 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="SnapBar is a Windows text-selection toolbar. Copy, search, rewrite with AI, and run custom actions beside selected text.">
+  <meta name="description" content="See a term you want to look up? Select it and search with SnapBar, the Windows text-selection toolbar. Try your first search with built-in guidance, then connect your own AI service to rewrite drafts.">
   <meta name="theme-color" content="#f7f8fb">
-  <title>SnapBar — Select text. Keep your next action close.</title>
+  <title>SnapBar — Select text. Search straight away.</title>
   <link rel="icon" href="../icon.png">
   <link rel="stylesheet" href="../style.css">
-  <script src="../download.js" defer></script>
+  <script src="../selection-demo.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav wrap">
   <a class="brand" href="./"><img src="../icon.png" width="32" height="32" alt="">SnapBar</a>
-  <nav aria-label="Main navigation"><a href="../" lang="zh-Hant" hreflang="zh-Hant">繁體中文</a><a href="#experience">Features</a><a class="blue" href="#download">Download preview ↓</a></nav>
+  <nav aria-label="Main navigation"><a href="../" lang="zh-Hant" hreflang="zh-Hant">繁體中文</a><a href="#experience">AI rewrite</a><a class="blue" href="#download">Download preview ↓</a></nav>
 </header>
 <main id="main">
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
       <p class="eyebrow">TEXT-SELECTION TOOLBAR FOR WINDOWS</p>
-      <h1 id="headline">Select text.<br><span>Your actions are right there.</span></h1>
-      <p class="lead">Copy, search, or rewrite with AI beside your selection, in the app you are already using.</p>
-      <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">Download Windows preview <span aria-hidden="true">↓</span></a></div>
-      <p class="small">Windows x64 · Portable ZIP · Unsigned preview</p>
+      <h1 id="headline">See a term?<br><span>Select it. Search it.</span></h1>
+      <p class="lead">Skip copying, opening a browser and pasting. Select text, press the shortcut to bring up SnapBar, then choose Search. Your browser opens the search for you.</p>
+      <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows preview <span aria-hidden="true">↓</span></a></div>
+      <p class="small">Windows x64 · No sign-in to download · Portable ZIP · Unsigned preview</p>
+      <p class="hero-onboarding">Built-in guidance walks you through your first search. <strong>No AI setup needed.</strong></p>
     </div>
-    <figure class="hero-figure">
-      <div class="demo-window"><div class="demo-titlebar" aria-hidden="true"><span class="demo-tab">Notepad</span><span class="demo-window-controls">─ □ ×</span></div><div class="selection-example"><p class="demo-line"><mark>We will confirm and get back to you.</mark></p><img src="../assets/selection-toolbar-en.png" width="351" height="50" alt="SnapBar's English toolbar with Copy, Cut, Paste, Search and More actions."></div></div>
-      <figcaption>Illustrative selection with an actual English SnapBar toolbar screenshot.</figcaption>
+    <figure class="hero-figure workflow-demo" data-step="3" aria-labelledby="demo-caption">
+      <div class="demo-intro"><span class="demo-badge">01 / SELECT AND SEARCH</span><p>Keep reading. Look up the unfamiliar bit.</p></div>
+      <div class="demo-window" id="selection-preview">
+        <div class="demo-titlebar" aria-hidden="true"><span class="demo-tab">Reading notes</span><span class="demo-window-controls">─ □ ×</span></div>
+        <div class="workflow-content">
+          <p class="draft-label">How does this work?</p>
+          <p class="draft-text">I just read about <span>Windows clipboard history</span>. How do I use it?</p>
+          <p class="workflow-shortcut"><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd><span>Bring up SnapBar</span></p>
+          <div class="workflow-toolbar" aria-label="Illustrative toolbar"><span>Copy</span><span class="workflow-search">Search <span aria-hidden="true">↗</span></span><span>⋯</span></div>
+          <div class="workflow-result"><p class="browser-label">Default browser · Illustrative search results</p><p class="search-query">Windows clipboard history <span aria-hidden="true">⌕</span></p><p class="result-text">How to use Windows clipboard history</p><p class="result-hint">Learn how to enable, view and manage clipboard history.</p></div>
+        </div>
+      </div>
+      <ol class="demo-progress" aria-label="Demo steps"><li>Select text</li><li>Use shortcut</li><li>Choose Search</li><li>Browser opens</li></ol>
+      <div class="demo-footer"><figcaption id="demo-caption">Illustrative workflow. Search sends selected text to your configured search service.</figcaption><div class="demo-controls" hidden><button type="button" class="demo-toggle" data-play="Play" data-pause="Pause" aria-controls="selection-preview">Pause</button><button type="button" class="demo-replay" aria-controls="selection-preview">Replay</button></div></div>
     </figure>
   </section>
   <section id="experience" class="experience section" aria-labelledby="experience-title">
     <div class="wrap">
-      <div class="section-heading"><h2 id="experience-title">Start with a selection.</h2></div>
       <article class="story">
-        <div class="story-copy"><span class="number">01 / REWRITE</span><h3>Get closer to what you mean.</h3><p>Open AI rewrite from More. Review the result, copy it, or replace the original when the source is still editable and passes revalidation.</p></div>
-        <figure class="rewrite-example"><figcaption>Example: make a draft shorter</figcaption><dl><dt>Original</dt><dd><mark>We will need to check this on our side, and we will get back to you once we have confirmed it.</mark></dd><dt><span class="action-label">AI rewrite → Shorten</span></dt><dd>We will confirm and get back to you.</dd></dl><p class="rewrite-note">Bring your own AI endpoint, model and any required API key. Text is sent only when you run an instruction. Provider charges may apply.</p></figure>
-      </article>
-      <article class="story reverse">
-        <div class="story-copy"><span class="number">02 / CUSTOMIZE</span><h3>Put frequent actions within reach.</h3><p>Pin up to nine actions, reorder them, or keep them in More. Add URL, PowerShell or JavaScript actions for your own workflow.</p><p class="detail">JavaScript actions require Node.js. Basic Copy and Search work independently.</p></div>
-        <figure class="app-figure"><div class="pin-example"><p>Your toolbar, your order.</p><div class="demo-toolbar"><span>Copy</span><span>Cut</span><span>Paste</span><span class="demo-active">Search</span><span class="demo-more">⋯</span></div><p>Use labels or keep only the icons.</p></div></figure>
+        <div class="story-copy"><p class="eyebrow">02 / AI REWRITE · OPTIONAL</p><h2 id="experience-title">Reply too wordy?<br>Select it. Shorten it.</h2><p>Select your draft and open AI rewrite from SnapBar’s More menu. Review the result, then copy it or replace the original when the source is editable and passes revalidation.</p><p class="detail">Set up your own AI service, model and any required API key. Provider charges may apply. Selected text is sent only when you run an AI instruction.</p></div>
+        <figure class="rewrite-example"><figcaption>Keep the point. Lose the extra words.</figcaption><dl><dt>Your draft</dt><dd><mark>We will need to check this on our side, and we will get back to you once we have confirmed it.</mark></dd><dt><span class="action-label">AI rewrite → Shorten</span></dt><dd>We will confirm and get back to you.</dd></dl><p class="rewrite-note">Illustrative result. Compare it with your draft before deciding to use it.</p></figure>
       </article>
     </div>
   </section>
   <section id="download" class="download section wrap" aria-labelledby="download-title">
     <div class="download-panel">
       <div class="section-heading">
-        <h2 id="download-title">Download. Select a sentence. Try it.</h2>
-        <div class="download-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases/download/v0.1.0-rc.8/SnapBar-v0.1.0-rc.8-win-x64.zip">Download Windows preview <span aria-hidden="true">↓</span></a><a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases/tag/v0.1.0-rc.8">Release notes ↗</a></div>
+        <p class="eyebrow">03 / GET STARTED</p>
+        <h2 id="download-title">Try your first search.<br>No AI setup needed.</h2>
+        <p>Your first launch includes practice text and guidance to help you complete a search.</p>
+        <div class="download-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows preview <span aria-hidden="true">↓</span></a><a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases">Release notes ↗</a></div>
         <p>Windows x64 · .NET runtime included · Unsigned package</p>
-        <p class="small"><span id="download-version">v0.1.0-rc.8</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">All releases ↗</a></p>
+        <p class="small"><span id="download-version">View published releases</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">All releases ↗</a></p>
       </div>
       <ol class="steps">
         <li><span class="step-number" aria-hidden="true">1</span><h3>Extract everything</h3><p>Keep all ZIP contents together, including Probe and language folders.</p></li>
-        <li><span class="step-number" aria-hidden="true">2</span><h3>Open SnapBar</h3><p>Run <code>SnapBar.App.exe</code>. In bilingual builds, choose English under General → Language if needed.</p></li>
-        <li><span class="step-number" aria-hidden="true">3</span><h3>Press <kbd>Ctrl+Alt+V</kbd></h3><p>Select a sentence in Notepad, press the shortcut, then choose Copy or Search.</p></li>
+        <li><span class="step-number" aria-hidden="true">2</span><h3>Open the practice guide</h3><p>Run <code>SnapBar.App.exe</code>. Your first manual launch opens the practice text.</p></li>
+        <li><span class="step-number" aria-hidden="true">3</span><h3>Complete a search</h3><p>Select the practice text, press the shortcut shown (default: <kbd>Ctrl+Alt+V</kbd>), then choose Search. It may be under More.</p></li>
       </ol>
     </div>
     <p class="update-note"><strong>Already using SnapBar?</strong> Choose Quit SnapBar from its tray menu before extracting and starting the new version. Saved preferences and AI keys are reused for the same Windows account. Check release notes for the features in your downloaded build.</p>
     <div class="questions">
-      <details><summary>How do I switch the interface language?</summary><p>In bilingual builds, General → Language offers System, Traditional Chinese and English. New installations follow Windows display language, falling back to English for unsupported languages. Existing installations keep Traditional Chinese. Already-open editor and result windows change language when reopened.</p></details>
-      <details><summary>Can the toolbar appear automatically?</summary><p>Enable automatic toolbar display under General. Then drag or double-click to select text. Manual activation is the initial default.</p></details>
-      <details><summary>What else needs setup?</summary><p>AI needs your provider settings and any required key. The Dictionary action needs your own StarDict dictionary. OCR includes English and Traditional Chinese models and also needs the Microsoft Visual C++ x64 runtime. Copy and Search need none of these optional setups.</p></details>
+      <h3>Before you start</h3>
+      <details><summary>What if the toolbar does not appear?</summary><p>Manual activation with <kbd>Ctrl+Alt+V</kbd> is the initial default. Open settings from the system tray and check the shortcut under General, or reopen the practice guide under About &amp; Support → Getting started. Selection support varies between apps.</p></details>
+      <details><summary>Can the toolbar appear automatically?</summary><p>Enable automatic toolbar display under General. Then drag or double-click to select text.</p></details>
       <details><summary>Does closing settings quit the app?</summary><p>No. SnapBar stays in the system tray. Click its icon to return, or choose Quit SnapBar to exit completely.</p></details>
+      <details><summary>How do I switch the interface language?</summary><p>In bilingual builds, General → Language offers System, Traditional Chinese and English. New installations follow Windows display language, falling back to English for unsupported languages. Existing installations keep Traditional Chinese. Already-open editor and result windows change language when reopened.</p></details>
+      <details><summary>Can I use AI rewrite right away?</summary><p>Configure your own provider, model and any required API key first. Provider charges may apply. Copy and Search work independently of AI.</p></details>
       <details><summary>Why can I sometimes only copy a result?</summary><p>Read-only or uncertain sources do not allow replacement. SnapBar revalidates the original window and selection before writing. Selection support varies between apps.</p></details>
+      <details><summary>Can I customize actions?</summary><p>Reorder and pin toolbar actions, set a custom search URL, or add URL, PowerShell and JavaScript actions. JavaScript needs Node.js; scripts run with your Windows user permissions. <a class="blue" href="https://github.com/adalf0722/snapbar/blob/main/README.en.md">See all features and setup instructions ↗</a></p></details>
     </div>
   </section>
 </main>

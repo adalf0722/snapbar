@@ -117,6 +117,12 @@ Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執�
 
 發布先建立對應確切 commit 的草稿，完整上傳兩個附件並核對 digest 後才公開，避免只有原始碼或部分附件的公開版本。整條流程在同一個 workflow 完成；GITHUB_TOKEN 建立的 Release 不會再次觸發 release 事件，避免重複打包。
 
+公開預覽版成功後，`website` 工作直接呼叫可重用的 `.github/workflows/pages.yml`；手動 Release 事件則在 `upload` 成功後呼叫。其他分支／tag push 與手動驗證不部署網站。Pages 必須先在 repository 設定選擇 GitHub Actions 作為來源，`github-pages` environment 的分支／tag 規則也必須允許該發布事件。
+
+官網工作使用目前 `main` 的網站原始碼，執行 `scripts/build-site.ps1`，以唯讀 token 分頁查詢 Releases。依公開時間選取最新且 ZIP 與 `.sha256` 附件均完整的版本，包含預覽版，並在全新的暫存目錄填入中英文下載網址、版本說明與版本號後部署。這是網站原始碼選擇的例外，不影響桌面套件使用確切來源 SHA；重跑舊發布也不會把官網原始碼或下載連結退回舊版。瀏覽器不查詢 Releases API，不需 JavaScript 即可下載。查詢或生成失敗會在上傳 Pages artifact 前停止，保留原站；生成過程不提交或 push，因此不會再觸發預覽版。
+
+網站部署失敗不撤回已公開的 Release；可重跑失敗工作，或手動執行 **Deploy SnapBar website**，不必重建桌面套件。該入口同樣使用目前 `main` 與最新完整公開套件。`scripts/test-site.ps1` 驗證版本選擇、分頁、雙語靜態下載與失敗保護，已納入 `scripts/check.ps1`。完整流程見 [site/README.md](../site/README.md)。
+
 同一 workflow run 透過 Release 說明中的 run ID 與來源 SHA 標記識別。請優先使用 Re-run failed jobs，沿用原始 artifact，缺少的附件會補傳，既有附件必須名稱、大小、SHA-256 全部相符才略過。其他來源／run 占用版本或附件不同時拒絕覆寫。完整重跑會沿用同 run 已建立的版本；若重新建置使 ZIP 位元組不同，會拒絕替換既有下載。人工操作剛好搶先建立同一版本時，請重跑整條流程，讓版本解析重新選擇下一號。
 
 其他 branch／tag push 維持只產生 Actions 的 `windows-release-package` artifact，不公開 Release；版本為 `v0.0.0-ci.<run number>.g<commit 前綴>`。推送後必須保持工作區乾淨，下一次提交會要求自己的桌面測試證據。
@@ -131,7 +137,7 @@ gh workflow run release.yml --repo adalf0722/snapbar --ref main -f version=v0.0.
 
 演練與正式發布共用 package、verify 工作：核對 push 前的桌面證據、全部 repository checks、自含式打包、artifact 上傳至 GitHub，再由另一個 runner 下載並核對 SHA-256。成功後可在該次 Actions 頁面下載 `windows-release-package`；摘要包含來源 commit、版本與校驗碼。演練不建立 tag／Release，不上傳 Release 附件，upload 工作會明確顯示 skipped。
 
-所有事件均 checkout 觸發時的 commit SHA；分支後續移動不會改變此次來源。同一 commit 可重用 push 前的桌面紀錄；不同 commit 即使只有文件變動，也必須先完成該 commit 的 pre-push 驗證。不要在 GitHub 建立未經本機 push 驗證的新來源 commit 後直接發布。
+桌面建置與打包事件均 checkout 觸發時的 commit SHA；分支後續移動不會改變此次套件來源。同一 commit 可重用 push 前的桌面紀錄；不同 commit 即使只有文件變動，也必須先完成該 commit 的 pre-push 驗證。不要在 GitHub 建立未經本機 push 驗證的新來源 commit 後直接發布。
 
 ### 每次發布
 

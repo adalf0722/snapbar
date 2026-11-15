@@ -160,6 +160,15 @@ jobs:
             'Interactive Release desktop tests ran locally before push; their receipt matches this commit.'
           ) -join "`n`n"
           [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, $summary + "`n", [Text.UTF8Encoding]::new($false))
+  website:
+    name: Deploy website after publishing downloads
+    needs: [auto-release, upload]
+    if: ${{ !cancelled() && (needs.auto-release.result == 'success' || needs.upload.result == 'success') }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
   upload:
     name: Attach downloads to GitHub Release
     if: github.event_name == 'release'
