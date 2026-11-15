@@ -2551,6 +2551,12 @@ Its enabled state will be preserved.</value>
   <data name="Prompt_translate-en" xml:space="preserve">
     <value>Translate to English</value>
   </data>
+  <data name="Prompt_translate-zh-en" xml:space="preserve">
+    <value>English ↔ Chinese</value>
+  </data>
+  <data name="Prompt_convert-zh-script" xml:space="preserve">
+    <value>Traditional ↔ Simplified Chinese</value>
+  </data>
   <data name="Category_Writing" xml:space="preserve">
     <value>Writing</value>
   </data>

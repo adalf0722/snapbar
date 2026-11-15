@@ -9,14 +9,17 @@ public sealed record AiPrompt(string Id, string Name, string Instruction, string
 public sealed record AiSettings
 {
     public int SchemaVersion { get; init; } = 1;
+    public int PromptCatalogVersion { get; init; }
     public string SelectedProfileId { get; init; } = "openai";
     public AiProviderProfile[] Profiles { get; init; } = AiProviderCatalog.CreateProfiles();
     public AiPrompt[] Prompts { get; init; } =
     [new("grammar", "修正文法拼字", "Correct grammar and spelling while preserving meaning. Return only the corrected text.", "寫作", "grammar spelling correct"),
-     new("improve", "改善寫作", "Improve clarity and flow while preserving meaning. Return only the revised text.", "寫作", "improve writing rewrite"),
+     AiPromptCatalog.ImproveWriting,
      new("shorten", "縮短", "Make the text more concise while preserving key information. Return only the revised text.", "寫作", "shorten concise"),
      new("summary", "摘要", "Summarize the key ideas in the source language. Return only the summary.", "閱讀", "summary summarize"),
-     new("translate-en", "翻成英文", "Translate the text into natural English. Return only the translation.", "翻譯", "translate english")];
+     new("translate-en", "翻成英文", "Translate the text into natural English. Return only the translation.", "翻譯", "translate english"),
+     AiPromptCatalog.BilingualTranslation,
+     AiPromptCatalog.ChineseScriptConversion];
     public string[] PinnedIds { get; init; } = ["improve", "shorten", "translate-en"];
     public string[] RecentIds { get; init; } = [];
 }
@@ -99,6 +102,7 @@ public sealed class AiSettingsStore(string path)
             if (settings == null) return new(new(), "settings-invalid");
             if (settings.SchemaVersion != 1) return new(new(), "settings-version");
             settings = AiProviderCatalog.MergeMissing(settings);
+            settings = AiPromptCatalog.Upgrade(settings);
             writable = true;
             return new(settings);
         }
@@ -111,7 +115,7 @@ public sealed class AiSettingsStore(string path)
     public void Save(AiSettings settings)
     {
         if (!writable) throw new InvalidOperationException("Existing AI settings must be preserved.");
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(AiPolicy.Normalize(settings), JsonOptions);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(AiPolicy.Normalize(settings with { PromptCatalogVersion = Math.Max(settings.PromptCatalogVersion, AiPromptCatalog.CurrentVersion) }), JsonOptions);
         if (bytes.Length > MaximumBytes) throw new InvalidOperationException("AI settings exceed 512 KiB.");
         var directory = Path.GetDirectoryName(filePath)!;
         Directory.CreateDirectory(directory);

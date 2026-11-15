@@ -19,7 +19,7 @@ internal static class UiNames
     internal static string Category(AiPrompt prompt, UiLanguage? language = null)
     {
         if (!OriginalPrompts.TryGetValue(prompt.Id, out var original) || prompt.Category != original.Category) return UserText(prompt.Category);
-        var key = original.Id switch { "summary" => "Category_Reading", "translate-en" => "Category_Translation", _ => "Category_Writing" };
+        var key = original.Id switch { "summary" => "Category_Reading", "translate-en" or "translate-zh-en" or "convert-zh-script" => "Category_Translation", _ => "Category_Writing" };
         return Get(key, language);
     }
     internal static string Provider(AiProviderProfile profile, UiLanguage? language = null) => profile.Id == "compatible" && profile.Name == "自訂相容服務"

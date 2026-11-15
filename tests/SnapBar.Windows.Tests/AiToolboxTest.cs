@@ -59,9 +59,11 @@ internal static class AiToolboxTest
             Press(commands[0], Key.Right); check(commands[1].IsKeyboardFocused, "AI toolbox Right moves within the first row");
             Press(commands[1], Key.Right); check(commands[1].IsKeyboardFocused, "AI toolbox Right never wraps into the next row");
             Press(commands[1], Key.Down); check(commands[3].IsKeyboardFocused, "AI toolbox Down moves in the same column");
-            Press(commands[3], Key.Down); check(commands[4].IsKeyboardFocused, "AI toolbox Down reaches the lone final-row command");
-            Press(commands[4], Key.Down); check(commands[4].IsKeyboardFocused, "AI toolbox Down stops at the final row");
-            Press(commands[4], Key.Up); check(commands[2].IsKeyboardFocused, "AI toolbox Up follows the final command column");
+            Press(commands[3], Key.Down); check(commands[5].IsKeyboardFocused, "AI toolbox Down reaches the final-row command in the same column");
+            Press(commands[5], Key.Down); check(commands[6].IsKeyboardFocused, "AI toolbox Down reaches the lone final-row command");
+            Press(commands[6], Key.Down); check(commands[6].IsKeyboardFocused, "AI toolbox Down stops at the final row");
+            Press(commands[6], Key.Up); check(commands[4].IsKeyboardFocused, "AI toolbox Up follows the final command column");
+            Press(commands[4], Key.Up); check(commands[2].IsKeyboardFocused, "AI toolbox Up continues in the same column");
             Press(commands[2], Key.Left); check(commands[2].IsKeyboardFocused, "AI toolbox Left stops at the first column");
             Press(commands[2], Key.Up); Press(commands[0], Key.Up);
             check(panel.CommandInput.IsKeyboardFocused, "AI toolbox Up from the top row returns to input");

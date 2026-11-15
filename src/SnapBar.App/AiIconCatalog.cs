@@ -37,7 +37,7 @@ internal static class AiIconCatalog
     private static readonly Dictionary<string, string> Defaults = new()
     {
         ["improve"] = "text_edit_style_20_regular", ["shorten"] = "text_align_left_20_regular", ["translate-en"] = "translate_20_regular",
-        ["grammar"] = "text_grammar_checkmark_20_regular", ["summary"] = "text_bullet_list_20_regular"
+        ["grammar"] = "text_grammar_checkmark_20_regular", ["summary"] = "text_bullet_list_20_regular", ["translate-zh-en"] = "translate_20_regular", ["convert-zh-script"] = "translate_20_regular"
     };
     private static readonly Dictionary<string, AiPrompt> Factory = new AiSettings().Prompts.ToDictionary(p => p.Id);
     internal static IReadOnlyList<AiIconInfo> Browse => Data.Value.Browse;
@@ -82,7 +82,7 @@ internal static class AiIconCatalog
             var info = new AiIconInfo(id, Labels.GetValueOrDefault(name, name.Replace('_', ' ')), category, keywords, point); all[id] = info;
             if (!preferred.TryGetValue(name, out var old) || Rank(id) < Rank(old.Id)) preferred[name] = info;
         }
-        var leading = Defaults.Values.Select((id, n) => (id, n)).ToDictionary(pair => pair.id, pair => pair.n, StringComparer.Ordinal);
+        var leading = Defaults.Values.Distinct(StringComparer.Ordinal).Select((id, n) => (id, n)).ToDictionary(pair => pair.id, pair => pair.n, StringComparer.Ordinal);
         var browse = preferred.Values.OrderBy(i => leading.GetValueOrDefault(i.Id, Labels.Keys.Any(key => preferred.GetValueOrDefault(key)?.Id == i.Id) ? 5 : 6))
             .ThenBy(i => i.Id, StringComparer.Ordinal).Concat(Legacy).ToArray();
         return new(all, preferred, browse);

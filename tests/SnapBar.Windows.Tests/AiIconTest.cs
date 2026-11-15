@@ -81,7 +81,7 @@ internal static class AiIconTest
             "AI Fluent Chinese search crosses categories while browsing filters remain effective");
         var defaults = new AiSettings().Prompts;
         check(defaults.Select(AiIconCatalog.ForPrompt).Distinct().Count() == 5 && defaults.All(p => AiIconCatalog.TryResolve(AiIconCatalog.ForPrompt(p), out _)),
-            "AI five untouched factory commands receive distinct available Fluent icons");
+            "AI factory commands receive available Fluent icons with translation commands sharing one icon");
         var improve = defaults.Single(p => p.Id == "improve");
         check(AiIconCatalog.ForPrompt(improve with { Icon = "legacy:spark" }) == "legacy:spark"
             && AiIconCatalog.ForPrompt(improve with { Instruction = "User custom instruction" }) == "spark"

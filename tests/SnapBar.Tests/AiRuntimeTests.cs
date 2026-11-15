@@ -9,14 +9,14 @@ internal static class AiRuntimeTests
         var defaults = new AiSettings();
         bool Reject(Action action) { try { action(); return false; } catch (ArgumentException) { return true; } }
         check("AI defaults leave models unset and pin stable prompt ids", () => defaults.Profiles.All(p => p.Model == "")
-            && defaults.Profiles.Length == 9 && defaults.Prompts.Length == 5
+            && defaults.Profiles.Length == 9 && defaults.Prompts.Length == 7
             && defaults.PinnedIds.SequenceEqual(new[] { "improve", "shorten", "translate-en" }));
-        check("AI search finds English aliases globally despite browsing category", () => AiPolicy.Search(defaults, "TRANSLATE english", "寫作").Single().Id == "translate-en");
-        check("AI search requires every query word", () => AiPolicy.Search(defaults, "grammar english").Count == 0);
+        check("AI search finds English aliases globally despite browsing category", () => AiPolicy.Search(defaults, "TRANSLATE english", "寫作").Select(p => p.Id).SequenceEqual(new[] { "translate-en", "translate-zh-en" }));
+        check("AI search requires every query word", () => AiPolicy.Search(defaults, "grammar nonexistent-alias").Count == 0);
         check("AI whitespace search restricts browsing to category", () => AiPolicy.Search(defaults, " \t\n", "閱讀").Single().Id == "summary");
         check("AI ordering deduplicates pins then recents then remaining", () => AiPolicy.Search(defaults with
             { PinnedIds = ["shorten", "missing", "shorten"], RecentIds = ["summary", "shorten", "grammar", "summary"] }, "")
-            .Select(p => p.Id).SequenceEqual(new[] { "shorten", "summary", "grammar", "improve", "translate-en" }));
+            .Select(p => p.Id).SequenceEqual(new[] { "shorten", "summary", "grammar", "improve", "translate-en", "translate-zh-en", "convert-zh-script" }));
         check("AI recents normalize to ten known distinct ids", () =>
         {
             var prompts = Enumerable.Range(0, 12).Select(i => new AiPrompt("p" + i, "name", "instruction", "")).ToArray();
@@ -59,12 +59,12 @@ internal static class AiRuntimeTests
             AiPromptCatalog.Search(initial, "").Select(p => p.Id).SequenceEqual(initial.Prompts.Select(p => p.Id)));
         check("AI management combines category and every query word", () =>
             AiPromptCatalog.Search(initial, "TRANSLATE english", "寫作").Count == 0
-            && AiPromptCatalog.Search(initial, "TRANSLATE english", "翻譯").Single().Id == "translate-en");
+            && AiPromptCatalog.Search(initial, "TRANSLATE english", "翻譯").Select(p => p.Id).SequenceEqual(new[] { "translate-en", "translate-zh-en" }));
         check("AI management distinguishes uncategorized from all categories", () =>
         {
             var settings = initial with { Prompts = [.. initial.Prompts, new("other", "自訂", "custom instruction", "")] };
             return AiPromptCatalog.Search(settings, "", "").Single().Id == "other"
-                && AiPromptCatalog.Search(settings, "").Count == 6;
+                && AiPromptCatalog.Search(settings, "").Count == 8;
         });
         check("AI management filtering preserves original order", () =>
             AiPromptCatalog.Search(initial, "", "寫作").Select(p => p.Id).SequenceEqual(new[] { "grammar", "improve", "shorten" }));
@@ -72,7 +72,7 @@ internal static class AiRuntimeTests
         {
             var result = AiPromptCatalog.Delete(initial with { RecentIds = ["improve", "summary"] }, "improve", out var deleted);
             return deleted.Prompt == initial.Prompts[1] && deleted.Index == 1 && deleted.PinnedIndex == 0
-                && result.Prompts.Length == 4 && !result.PinnedIds.Contains("improve")
+                && result.Prompts.Length == 6 && !result.PinnedIds.Contains("improve")
                 && result.RecentIds.SequenceEqual(new[] { "summary" });
         });
         check("AI restore merges latest prompts provider and pin changes", () =>
@@ -101,7 +101,7 @@ internal static class AiRuntimeTests
         });
         bool Reject(Action action) { try { action(); return false; } catch (ArgumentException) { return true; } }
         check("AI deletion rejects unknown identity without mutation", () =>
-            Reject(() => AiPromptCatalog.Delete(initial, "missing", out _)) && initial.Prompts.Length == 5);
+            Reject(() => AiPromptCatalog.Delete(initial, "missing", out _)) && initial.Prompts.Length == 7);
         check("AI restore rejects duplicate identity", () =>
         {
             AiPromptCatalog.Delete(initial, "improve", out var deleted);
@@ -122,6 +122,68 @@ internal static class AiRuntimeTests
         var path = Path.Combine(directory, "ai.json");
         try
         {
+            check("AI legacy settings gain bilingual translation without replacing customizations", () =>
+            {
+                var legacy = new AiSettings { Prompts = [new("custom", "Custom", "Keep this instruction.", "")], PinnedIds = ["custom"], RecentIds = ["custom"] };
+                File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(legacy, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+                var loaded = new AiSettingsStore(path).Load();
+                return loaded.Warning == null && loaded.Settings.PromptCatalogVersion == AiPromptCatalog.CurrentVersion
+                    && loaded.Settings.Prompts.SequenceEqual(new[] { legacy.Prompts[0], AiPromptCatalog.BilingualTranslation, AiPromptCatalog.ChineseScriptConversion })
+                    && loaded.Settings.PinnedIds.SequenceEqual(legacy.PinnedIds) && loaded.Settings.RecentIds.SequenceEqual(legacy.RecentIds);
+            });
+            check("AI deleted bilingual prompt stays deleted after saving and reopening", () =>
+            {
+                var store = new AiSettingsStore(path); var loaded = store.Load();
+                store.Save(loaded.Settings with { Prompts = loaded.Settings.Prompts.Where(p => p.Id != "translate-zh-en").ToArray() });
+                return !new AiSettingsStore(path).Load().Settings.Prompts.Any(p => p.Id == "translate-zh-en");
+            });
+            check("AI bilingual upgrade respects full collections and existing prompt identity", () =>
+            {
+                var full = new AiSettings { Prompts = Enumerable.Range(0, 128).Select(i => new AiPrompt("p" + i, "Name", "Instruction", "")).ToArray() };
+                var custom = AiPromptCatalog.BilingualTranslation with { Instruction = "User instruction" };
+                return AiPromptCatalog.Upgrade(full).Prompts.SequenceEqual(full.Prompts)
+                    && AiPromptCatalog.Upgrade(new() { Prompts = [custom] }).Prompts.First() == custom;
+            });
+            check("AI script conversion upgrades version one without resurrecting deleted translation", () =>
+            {
+                var custom = new AiPrompt("custom", "Custom", "Keep this instruction.", "");
+                var legacy = new AiSettings { PromptCatalogVersion = 1, Prompts = [custom], PinnedIds = ["custom"], RecentIds = ["custom"] };
+                File.WriteAllBytes(path, JsonSerializer.SerializeToUtf8Bytes(legacy, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+                var loaded = new AiSettingsStore(path).Load();
+                return loaded.Warning == null && loaded.Settings.Prompts.SequenceEqual(new[] { custom, AiPromptCatalog.ChineseScriptConversion })
+                    && loaded.Settings.PinnedIds.SequenceEqual(legacy.PinnedIds) && loaded.Settings.RecentIds.SequenceEqual(legacy.RecentIds);
+            });
+            check("AI script conversion respects same-id edits and saved deletion", () =>
+            {
+                var custom = AiPromptCatalog.ChineseScriptConversion with { Name = "My converter", Instruction = "User instruction" };
+                if (AiPromptCatalog.Upgrade(new() { PromptCatalogVersion = 1, Prompts = [custom] }).Prompts.Single() != custom) return false;
+                var store = new AiSettingsStore(path); var loaded = store.Load();
+                store.Save(loaded.Settings with { Prompts = [] });
+                return new AiSettingsStore(path).Load().Settings.Prompts.Length == 0;
+            });
+            check("AI writing upgrade replaces only legacy instruction and preserves metadata and saved choices", () =>
+            {
+                var old = new AiPrompt("improve", "My writing command",
+                    "Improve clarity and flow while preserving meaning. Return only the revised text.", "Custom", "my alias", "heart");
+                var legacy = new AiSettings { PromptCatalogVersion = 2, Prompts = [old], PinnedIds = ["improve"], RecentIds = ["improve"] };
+                var bytes = JsonSerializer.SerializeToUtf8Bytes(legacy, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                File.WriteAllBytes(path, bytes);
+                var store = new AiSettingsStore(path); var loaded = store.Load();
+                if (loaded.Warning != null || loaded.Settings.PromptCatalogVersion != AiPromptCatalog.CurrentVersion
+                    || loaded.Settings.Prompts.Single() != old with { Instruction = AiPromptCatalog.ImproveWriting.Instruction }
+                    || !loaded.Settings.PinnedIds.SequenceEqual(legacy.PinnedIds) || !loaded.Settings.RecentIds.SequenceEqual(legacy.RecentIds)
+                    || !File.ReadAllBytes(path).SequenceEqual(bytes)) return false;
+                store.Save(loaded.Settings);
+                return new AiSettingsStore(path).Load().Settings.Prompts.SequenceEqual(loaded.Settings.Prompts);
+            });
+            check("AI writing upgrade preserves custom instructions and deleted commands", () =>
+            {
+                var custom = AiPromptCatalog.ImproveWriting with { Instruction = "My custom writing rules." };
+                var legacy = new AiSettings { PromptCatalogVersion = 2, Prompts = [custom] };
+                return AiPromptCatalog.Upgrade(legacy).Prompts.Single() == custom
+                    && AiPromptCatalog.Upgrade(legacy with { Prompts = [] }).Prompts.Length == 0;
+            });
+            File.Delete(path);
             check("AI settings cannot save until Load establishes writability", () =>
             {
                 try { new AiSettingsStore(path).Save(new()); return false; } catch (InvalidOperationException) { return !File.Exists(path); }

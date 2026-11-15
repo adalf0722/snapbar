@@ -38,6 +38,8 @@ pre-push 在每次推送 branch／tag 前執行完整 Release 桌面測試。先
 
 Release 開發版建置後，也可在檔案總管雙擊專案根目錄的 `Start-SnapBar.cmd`。啟動失敗時，視窗會保留錯誤訊息。
 
+若希望每次啟動前先重新建置，請雙擊專案根目錄的 `Build-and-Start-SnapBar.cmd`。它會執行 `scripts/build.ps1`，建置及 Core 測試成功後再啟動；失敗時保留錯誤訊息，不啟動舊版本。執行前請先從系統匣或設定正常結束 SnapBar，並確認已安裝 PowerShell 7 及 `global.json` 指定的 .NET SDK。
+
 ```powershell
 pwsh -NoProfile -File scripts/test-desktop.ps1 -List
 pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Compatibility

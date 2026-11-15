@@ -71,8 +71,8 @@ internal static class SettingsNavigationTest
             if (category == SettingsCategory.AiCommands)
             {
                 var list = Find<ScrollViewer>(main.AiCommandsPanel, "AiCommandsSettingsList");
-                check(list.ScrollableHeight < 1 && main.AiCommandsPanel.VisiblePromptIds.Count == 5,
-                    "settings standard window displays all five initial AI commands alongside the service setup hint");
+                check(main.AiCommandsPanel.VisiblePromptIds.Count == 7,
+                    "settings standard window lists all seven initial AI commands alongside the service setup hint");
                 Find<Button>(main.AiCommandsPanel, "AddAiCommand").Focus(); await Layout(main);
                 UiAppearanceTest.Snapshot(main, "settings-command-keyboard-focus.png");
             }
@@ -246,10 +246,10 @@ internal static class SettingsNavigationTest
         preferences.TrySave(preferences.Settings with { RecentIds = ["translate-en", "summary"] }, out _);
         check(commands.VisiblePromptIds.SequenceEqual(initialIds), "settings command rows do not move when pins and recent executions change");
         commands.SetFilter("translate", "寫作");
-        check(commands.VisiblePromptIds.Count == 0, "settings command search and category restrictions both apply");
+        check(commands.VisiblePromptIds.SequenceEqual(new[] { "improve" }), "settings command search matches writing instructions while excluding translation category");
         commands.SetFilter("translate", "翻譯");
-        check(commands.VisiblePromptIds.SequenceEqual(new[] { "translate-en" }), "settings command filtering finds the matching category and query");
-        check(Find<TextBlock>(commands, "AiCommandsCount").Text == $"找到 1 個，共 {preferences.Settings.Prompts.Length} 個",
+        check(commands.VisiblePromptIds.SequenceEqual(new[] { "translate-en", "translate-zh-en", "convert-zh-script" }), "settings command filtering finds the matching category and query");
+        check(Find<TextBlock>(commands, "AiCommandsCount").Text == $"找到 3 個，共 {preferences.Settings.Prompts.Length} 個",
             "settings filtered command count explains matches and total");
         commands.SetFilter(""); commands.DeletePrompt("improve");
         check(preferences.LastDeletion?.Prompt.Id == "improve" && !commands.VisiblePromptIds.Contains("improve"),

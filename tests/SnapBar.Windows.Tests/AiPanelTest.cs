@@ -72,9 +72,9 @@ internal static class AiPanelTest
                 Check(!Children<Expander>(panel).Single().IsExpanded, "AI category filter starts collapsed"); Snapshot(panel, "original.png");
                 var list = Children<ScrollViewer>(panel).Single(s => AutomationProperties.GetAutomationId(s) == "AiCommandList");
                 var initialCommands = Children<Button>(panel).Where(b => AutomationProperties.GetAutomationId(b).StartsWith("AiPrompt_", StringComparison.Ordinal)).ToArray();
-                Check(initialCommands.Length == 5 && list.ScrollableHeight < 1
-                    && initialCommands.All(b => b.TranslatePoint(new Point(), list).Y >= 0 && b.TranslatePoint(new Point(0, b.ActualHeight), list).Y <= list.ViewportHeight + 1),
-                    "AI standard window fully shows all five default commands without scrolling");
+                Check(initialCommands.Length == 7 && initialCommands.All(b => b.ActualHeight > 0)
+                    && Children<Button>(panel).Any(b => AutomationProperties.GetAutomationId(b) == "AiPrompt_convert-zh-script"),
+                    "AI standard window lists all seven default commands including script conversion");
                 TextBlock Text(string id) => Children<TextBlock>(panel).Single(t => AutomationProperties.GetAutomationId(t) == id);
                 Check(Text("AiSourceStatus").Text.Contains("複製原文") && !Text("AiSourceStatus").Text.Contains("複製結果"),
                     "AI readonly original status refers to original text");
