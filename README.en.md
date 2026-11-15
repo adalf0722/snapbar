@@ -53,7 +53,7 @@ Search and URL actions send text to the chosen browser destination. Scripts rece
 
 ## License
 
-SnapBar is licensed under the [MIT License](LICENSE), which permits use, modification, distribution, and commercial use provided the copyright and license notices are retained. Third-party components and assets remain under their respective licenses; their notices are included in the distribution.
+SnapBar is licensed under the [MIT License](LICENSE), which permits use, modification, distribution, and commercial use provided the copyright and license notices are retained. Third-party components and assets remain under their respective licenses; see [third-party notices](THIRD-PARTY-NOTICES.md), also included in the distribution.
 
 ## Help and development
 

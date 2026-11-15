@@ -54,7 +54,7 @@ SnapBar 優先使用 Windows UI Automation 讀取選取文字。相容模式可�
 
 ## 授權
 
-SnapBar 採用 [MIT License](LICENSE)，允許使用、修改、散布與商用，須保留版權及授權聲明。第三方元件與素材依各自授權條款提供；發布套件內附相關聲明。
+SnapBar 採用 [MIT License](LICENSE)，允許使用、修改、散布與商用，須保留版權及授權聲明。第三方元件與素材依各自授權條款提供；請見[第三方聲明](THIRD-PARTY-NOTICES.md)，發布套件亦附上相關文件。
 
 ## 支援與開發
 

@@ -1,0 +1,44 @@
+[
+  {
+    "file": "LIBJPEG-TURBO-LICENSE.md",
+    "source": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/2.1.4/LICENSE.md",
+    "sha256": "ee1eaf194d5924b6360af8a6ba6a4e1554037091f7505943300cdeec65f1aebb"
+  },
+  {
+    "file": "README.ijg",
+    "source": "https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/2.1.4/README.ijg",
+    "sha256": "4b7b9f8c03bb8d60270dfd12684e70ab21e4abfd27e73905cd1a7c4cae6f5cdb"
+  },
+  {
+    "file": "LIBPNG-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/pnggroup/libpng/v1.6.37/LICENSE",
+    "sha256": "bf5e22b9dce8464064ae17a48ea1133c3369ac9e1d80ef9e320e5219aa14ea9b"
+  },
+  {
+    "file": "LIBTIFF-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/libsdl-org/libtiff/v4.4.0/COPYRIGHT",
+    "sha256": "fbd6fed7938541d2c809c0826225fc85e551fdbfa8732b10f0c87e0847acafd7"
+  },
+  {
+    "file": "ZLIB-README.txt",
+    "source": "https://raw.githubusercontent.com/madler/zlib/v1.2.13/README",
+    "sha256": "4bb4d5664fb9d06ef0d47e8ef73104bd545a5a57eb7241be4f2e0be904966322"
+  },
+  {
+    "file": "LIBLZMA-COPYING.txt",
+    "source": "https://raw.githubusercontent.com/tukaani-project/xz/v5.2.7/COPYING",
+    "sha256": "bcb02973ef6e87ea73d331b3a80df7748407f17efdb784b61b47e0e610d3bb5c"
+  },
+  {
+    "file": "GIFLIB-LICENSE.txt",
+    "source": "https://sourceforge.net/p/giflib/code/ci/52b62de83d5facbbbde042b85bf3f61182e3bebd/tree/COPYING",
+    "sha256": "d1c9e11eca6d15fbf718346bb585d72bba7b5f76113bc78d6f01c3d2ff6d391a"
+  },
+  {
+    "file": "LIBTIFF-SOURCE-NOTICES.txt",
+    "source": "https://codeload.github.com/libsdl-org/libtiff/tar.gz/refs/tags/v4.4.0",
+    "sourceArchiveSha256": "4580f8213c62c78b15fd49862bc1b55f390dc06ea31b6332e63c2559f0521cf0",
+    "transformation": "Concatenate unmodified leading copyright/license comments from libtiff/*.c and *.h, sorted by source path, with section labels.",
+    "sha256": "c507462d0de454662e8e4b86fe83eebaba8aca7858d72d939303cebb53475764"
+  }
+]

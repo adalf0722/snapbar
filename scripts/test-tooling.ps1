@@ -148,6 +148,17 @@ Check-Tooling 'staged checks inspect index blobs even when working files are rep
     finally { $env:GIT_INDEX_FILE = $oldIndex; Pop-Location }
 }
 $releaseFixture = Join-Path $run 'release-fixture'
+Check-Tooling 'vendored third-party notices match their recorded upstream hashes' {
+    foreach ($manifest in Get-ChildItem -LiteralPath (Join-Path $script:SnapBarRepo 'licenses') -Filter SOURCES.json -Recurse -File) {
+        $entries = Get-Content -LiteralPath $manifest.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+        Assert-Tooling ($entries.Count -gt 0)
+        foreach ($entry in $entries) {
+            Assert-Tooling ($entry.file -eq [IO.Path]::GetFileName($entry.file))
+            $path = Join-Path $manifest.DirectoryName $entry.file
+            Assert-Tooling ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ieq $entry.sha256)
+        }
+    }
+}
 [IO.Directory]::CreateDirectory((Join-Path $releaseFixture 'Probe')) | Out-Null
 [IO.Directory]::CreateDirectory((Join-Path $releaseFixture 'zh-Hant')) | Out-Null
 $releaseFiles = @(
@@ -157,7 +168,9 @@ $releaseFiles = @(
     'Probe/SnapBar.Probe.exe', 'Probe/SnapBar.Probe.dll', 'Probe/SnapBar.Probe.deps.json',
     'Probe/SnapBar.Probe.runtimeconfig.json', 'Probe/coreclr.dll', 'Probe/hostfxr.dll'
 )
+$releaseFiles += Get-SnapBarRequiredNoticeFiles
 foreach ($file in $releaseFiles) {
+    [IO.Directory]::CreateDirectory((Split-Path (Join-Path $releaseFixture $file) -Parent)) | Out-Null
     [IO.File]::WriteAllText((Join-Path $releaseFixture $file), "fixture: $file", [Text.UTF8Encoding]::new($false))
 }
 Check-Tooling 'release archive rejects unsafe version names before creating output' {
@@ -174,6 +187,19 @@ Check-Tooling 'release archive refuses incomplete self-contained App and Probe p
         try {
             [IO.File]::WriteAllBytes($path, [byte[]]@())
             Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'incomplete-release') }
+        }
+        finally { [IO.File]::WriteAllBytes($path, $bytes) }
+    }
+}
+Check-Tooling 'release archive rejects each missing or empty third-party notice' {
+    foreach ($file in (Get-SnapBarRequiredNoticeFiles)) {
+        $path = Join-Path $releaseFixture $file
+        $bytes = [IO.File]::ReadAllBytes($path)
+        try {
+            Remove-Item -LiteralPath $path
+            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'missing-notice-release') }
+            [IO.File]::WriteAllBytes($path, [byte[]]@())
+            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'empty-notice-release') }
         }
         finally { [IO.File]::WriteAllBytes($path, $bytes) }
     }

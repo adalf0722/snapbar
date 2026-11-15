@@ -1,1 +1,4 @@
 .githooks/* text eol=lf
+licenses/** text eol=lf -whitespace
+# Preserve the upstream GIFLIB bytes used by the provenance hash.
+licenses/Ocr/GIFLIB-LICENSE.txt -text

@@ -2,7 +2,7 @@
 
 [繁體中文](README.md) · English
 
-SnapBar is licensed under the [MIT License](LICENSE). Use, modification, distribution, and commercial use are permitted provided the copyright and license notices are retained. Third-party components and assets remain under their respective terms; see the notices in `Assets/FluentIcons/` and `OcrData/`.
+SnapBar is licensed under the [MIT License](LICENSE). Use, modification, distribution, and commercial use are permitted provided the copyright and license notices are retained. See [third-party notices](THIRD-PARTY-NOTICES.md) for icons, OCR, image libraries, and runtime terms. Keep `Licenses/`, `Assets/FluentIcons/`, `OcrData/`, and `Probe/Licenses/` when sharing the package.
 
 ## Start with Copy or Search
 

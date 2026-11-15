@@ -1,0 +1,10 @@
+{
+  "title": "隨附完整的第三方元件授權說明",
+  "summary": "下載與分享 SnapBar 時，可在套件內查閱圖示、OCR、影像程式庫及執行環境的授權與致謝。",
+  "highlights": [
+    "新增第三方元件索引、OCR 底層影像程式庫授權與 JPEG 致謝。",
+    "自含式套件會附帶實際使用的 .NET 執行環境授權與第三方聲明。",
+    "封裝時檢查必要聲明，避免漏附後交付。"
+  ],
+  "usage": "完整解壓縮 Windows x64 套件後，開啟 THIRD-PARTY-NOTICES.md 查看元件與授權；再分享套件時請保留 LICENSE、Licenses、OcrData 與 Assets 內的相關聲明，無須額外安裝或付費。"
+}

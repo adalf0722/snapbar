@@ -1,3 +1,23 @@
+function Get-SnapBarRequiredNoticeFiles {
+    $files = @(
+        'LICENSE', 'THIRD-PARTY-NOTICES.md', 'Licenses/README.md',
+        'Assets/FluentIcons/LICENSE.txt', 'Assets/FluentIcons/NOTICE.txt', 'Assets/FluentIcons/SOURCE.md',
+        'OcrData/TESSERACT-LICENSE.txt', 'OcrData/LEPTONICA-LICENSE.txt', 'OcrData/INTEROPDOTNET-LICENSE.txt', 'OcrData/SOURCE.md',
+        'Licenses/Ocr/GIFLIB-LICENSE.txt', 'Licenses/Ocr/LIBJPEG-TURBO-LICENSE.md', 'Licenses/Ocr/README.ijg',
+        'Licenses/Ocr/LIBPNG-LICENSE.txt', 'Licenses/Ocr/LIBTIFF-LICENSE.txt', 'Licenses/Ocr/LIBTIFF-SOURCE-NOTICES.txt', 'Licenses/Ocr/ZLIB-README.txt',
+        'Licenses/Ocr/LIBLZMA-COPYING.txt', 'Licenses/Ocr/SOURCES.json',
+        'Licenses/WindowsDesktop/WPF-THIRD-PARTY-NOTICES.txt', 'Licenses/WindowsDesktop/WINFORMS-THIRD-PARTY-NOTICES.txt',
+        'Licenses/WindowsDesktop/SOURCES.json'
+    )
+    foreach ($prefix in @('', 'Probe/')) {
+        $files += "${prefix}Licenses/DotNet/PACKAGES.txt"
+        $files += "${prefix}Licenses/DotNet/Microsoft.NETCore.App.Runtime.win-x64/LICENSE.txt"
+        $files += "${prefix}Licenses/DotNet/Microsoft.NETCore.App.Runtime.win-x64/THIRD-PARTY-NOTICES.txt"
+        $files += "${prefix}Licenses/DotNet/Microsoft.WindowsDesktop.App.Runtime.win-x64/LICENSE.txt"
+    }
+    return $files
+}
+
 function New-SnapBarReleaseArchive {
     param(
         [Parameter(Mandatory)][string]$Package,
@@ -15,6 +35,7 @@ function New-SnapBarReleaseArchive {
         'Probe/SnapBar.Probe.exe', 'Probe/SnapBar.Probe.dll', 'Probe/SnapBar.Probe.deps.json',
         'Probe/SnapBar.Probe.runtimeconfig.json', 'Probe/coreclr.dll', 'Probe/hostfxr.dll'
     )
+    $required += Get-SnapBarRequiredNoticeFiles
     foreach ($file in $required) {
         $path = Join-Path $Package $file
         if (-not [IO.File]::Exists($path) -or (Get-Item -LiteralPath $path).Length -eq 0) {

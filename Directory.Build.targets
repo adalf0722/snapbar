@@ -1,0 +1,32 @@
+<Project>
+  <!-- Use the resolved runtime packs, never the SDK license or a cached version. -->
+  <Target Name="CopySnapBarRuntimeNotices" AfterTargets="Publish"
+          DependsOnTargets="ResolveFrameworkReferences"
+          Condition="'$(SelfContained)' == 'true' and ('$(MSBuildProjectName)' == 'SnapBar.App' or '$(MSBuildProjectName)' == 'SnapBar.Probe')">
+    <ItemGroup>
+      <!-- Both executables use Windows Desktop. WPF profile references do not
+           carry runtime paths on ResolvedFrameworkReference; use runtime packs. -->
+      <_SnapBarRuntimePack Include="@(ResolvedRuntimePack)"
+                           Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' or '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.WindowsDesktop.App'" />
+    </ItemGroup>
+    <Error Condition="'@(_SnapBarRuntimePack)' == ''" Text="Cannot resolve runtime packs for third-party notices." />
+    <Error Condition="'%(_SnapBarRuntimePack.FrameworkName)' == 'Microsoft.WindowsDesktop.App' and '%(_SnapBarRuntimePack.NuGetPackageVersion)' != '10.0.13'"
+           Text="Review and update licenses/WindowsDesktop for runtime %(_SnapBarRuntimePack.NuGetPackageVersion) before publishing." />
+    <Error Condition="!Exists('%(_SnapBarRuntimePack.PackageDirectory)/LICENSE.TXT') and !Exists('%(_SnapBarRuntimePack.PackageDirectory)/LICENSE')"
+           Text="Runtime license missing: %(_SnapBarRuntimePack.NuGetPackageId)" />
+    <Error Condition="'%(_SnapBarRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and !Exists('%(_SnapBarRuntimePack.PackageDirectory)/THIRD-PARTY-NOTICES.TXT')"
+           Text=".NET runtime third-party notices are missing." />
+    <Copy SourceFiles="%(_SnapBarRuntimePack.PackageDirectory)/LICENSE.TXT"
+          DestinationFiles="$(PublishDir)Licenses/DotNet/%(_SnapBarRuntimePack.NuGetPackageId)/LICENSE.txt"
+          Condition="Exists('%(_SnapBarRuntimePack.PackageDirectory)/LICENSE.TXT')" />
+    <Copy SourceFiles="%(_SnapBarRuntimePack.PackageDirectory)/LICENSE"
+          DestinationFiles="$(PublishDir)Licenses/DotNet/%(_SnapBarRuntimePack.NuGetPackageId)/LICENSE.txt"
+          Condition="Exists('%(_SnapBarRuntimePack.PackageDirectory)/LICENSE')" />
+    <Copy SourceFiles="%(_SnapBarRuntimePack.PackageDirectory)/THIRD-PARTY-NOTICES.TXT"
+          DestinationFiles="$(PublishDir)Licenses/DotNet/%(_SnapBarRuntimePack.NuGetPackageId)/THIRD-PARTY-NOTICES.txt"
+          Condition="Exists('%(_SnapBarRuntimePack.PackageDirectory)/THIRD-PARTY-NOTICES.TXT')" />
+    <WriteLinesToFile File="$(PublishDir)Licenses/DotNet/PACKAGES.txt"
+                      Lines="@(_SnapBarRuntimePack->'%(NuGetPackageId) %(NuGetPackageVersion)')"
+                      Overwrite="true" Encoding="UTF-8" />
+  </Target>
+</Project>
