@@ -90,7 +90,7 @@ internal sealed class AiPreferences
     {
         var identity = (IsNew: prompt == null, Id: prompt?.Id ?? "");
         if (editors.TryGetValue(identity, out var active)) { active.Activate(); return active; }
-        var editor = new AiPromptEditorWindow(prompt, changed => TrySavePrompt(changed, prompt == null, out var error) ? null : error);
+        var editor = new AiPromptEditorWindow(prompt, changed => TrySavePrompt(changed, prompt == null, out var error) ? null : error, this);
         if (owner != null) editor.Owner = owner;
         editors.Add(identity, editor); RegisterDraft(editor);
         editor.Closed += (_, _) => { editors.Remove(identity); UnregisterDraft(editor); };

@@ -60,7 +60,7 @@ public sealed partial class MainWindow : Window
         {
             try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); tray.AddOcr(StartOcr); }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
-            { lifetimeHint.Text = UiText.Get("MainWindow_000"); }
+            { lifetimeHint.Text = UiText.Get("MainWindow_000"); trayUnavailable = true; lifetimeHint.Visibility = Visibility.Visible; }
             try
             {
                 var executable = Path.Combine(AppContext.BaseDirectory, "Probe", "SnapBar.Probe.exe");

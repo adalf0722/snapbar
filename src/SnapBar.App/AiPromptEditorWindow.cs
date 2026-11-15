@@ -17,7 +17,7 @@ internal sealed class AiPromptEditorWindow : Window, ISettingsDraft
     public bool TrySave() => saveDraft();
     public void Discard() => Close();
     public void Reveal() { Show(); Activate(); }
-    public AiPromptEditorWindow(AiPrompt? existing, Func<AiPrompt, string?> save)
+    public AiPromptEditorWindow(AiPrompt? existing, Func<AiPrompt, string?> save, AiPreferences? preferences = null)
     {
         ActionUi.Setup(this, existing == null ? language.Get("AiPromptEditorWindow_001") : language.Get("AiPromptEditorWindow_002"), 570, 610); MinWidth = 460;
         var body = new DockPanel { Margin = new(24) };
@@ -101,14 +101,22 @@ internal sealed class AiPromptEditorWindow : Window, ISettingsDraft
         var optional = new StackPanel(); Field(optional, language.Get("AiPromptEditorWindow_025"), category); Field(optional, language.Get("AiPromptEditorWindow_026"), keywords); Field(optional, language.Get("AiPromptEditorWindow_027"), iconFields);
         var advanced = new Expander { Header = language.Get("AiPromptEditorWindow_028"), Content = optional, Margin = new(0, 12, 0, 0), IsExpanded = false };
         AutomationProperties.SetAutomationId(advanced, "AiPromptAdvanced");
+        var secondary = new StackPanel(); secondary.Children.Add(advanced);
+        if (preferences != null)
+        {
+            var trial = new AiCommandTrial(instruction, preferences, language);
+            secondary.Children.Add(trial);
+            trial.Expanded += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => trial.BringIntoView());
+            Closed += (_, _) => trial.Dispose();
+        }
         var form = new Grid(); form.RowDefinitions.Add(new() { Height = GridLength.Auto });
         form.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) }); form.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        form.Children.Add(primary); Grid.SetRow(instruction, 1); form.Children.Add(instruction); Grid.SetRow(advanced, 2); form.Children.Add(advanced);
+        form.Children.Add(primary); Grid.SetRow(instruction, 1); form.Children.Add(instruction); Grid.SetRow(secondary, 2); form.Children.Add(secondary);
         var scroll = new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         AutomationProperties.SetAutomationId(scroll, "AiPromptForm");
         form.SetBinding(HeightProperty, new Binding(nameof(ScrollViewer.ViewportHeight)) { Source = scroll });
-        void UpdateMinimum() => form.MinHeight = primary.DesiredSize.Height + advanced.DesiredSize.Height + instruction.MinHeight;
-        primary.SizeChanged += (_, _) => UpdateMinimum(); advanced.SizeChanged += (_, _) => UpdateMinimum();
+        void UpdateMinimum() => form.MinHeight = primary.DesiredSize.Height + secondary.DesiredSize.Height + instruction.MinHeight;
+        primary.SizeChanged += (_, _) => UpdateMinimum(); secondary.SizeChanged += (_, _) => UpdateMinimum();
         advanced.Expanded += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => category.BringIntoView());
         body.Children.Add(scroll); Content = body; Loaded += (_, _) => name.Focus();
         Closed += (_, _) => dirty = () => false;

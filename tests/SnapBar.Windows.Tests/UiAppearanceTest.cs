@@ -77,6 +77,7 @@ internal static class UiAppearanceTest
                 Check(provider.SelectedIndex == 0 && !template.IsVisible, "reset returns to Google provider and hides custom fields");
                 notice.Visibility = Visibility.Collapsed;
                 await SettingsNavigationTest.RunAsync(main, directory, Check);
+                await SettingsFeedbackTest.RunAsync(directory, Check);
                 main.NavigateTo(SettingsCategory.General);
                 main.Width = main.MinWidth; main.Height = main.MinHeight; main.UpdateLayout(); Snapshot(main, "settings-small.png");
                 Check(main.Content is not ScrollViewer && Children<ScrollViewer>(main).Where(s => s.IsVisible).All(s => s.ScrollableHeight < 1),

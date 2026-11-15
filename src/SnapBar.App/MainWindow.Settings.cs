@@ -19,6 +19,7 @@ public sealed partial class MainWindow
     private TextBlock pageHeading = null!;
     private FrameworkElement searchEditor = null!;
     private Grid pageHost = null!;
+    private bool trayUnavailable;
     internal SettingsCategory CurrentCategory { get; private set; } = SettingsCategory.General;
     internal ActionSettingsPanel ActionPanel => actionSettingsPanel;
     internal SearchSettingsPanel SearchPanel => searchSettingsPanel;
@@ -147,6 +148,7 @@ public sealed partial class MainWindow
         if (!settingsPages.ContainsKey(category)) return;
         var moveFocus = settingsPages.TryGetValue(CurrentCategory, out var previous) && previous.IsKeyboardFocusWithin && CurrentCategory != category;
         CurrentCategory = category;
+        lifetimeHint.Visibility = category == SettingsCategory.General || trayUnavailable ? Visibility.Visible : Visibility.Collapsed;
         foreach (var (key, page) in settingsPages) page.Visibility = key == category ? Visibility.Visible : Visibility.Collapsed;
         foreach (var (key, button) in navigation) if (button.IsChecked != (key == category)) button.IsChecked = key == category;
         pageHeading.Text = CategoryName(category);

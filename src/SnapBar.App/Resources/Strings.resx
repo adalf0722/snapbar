@@ -2714,4 +2714,91 @@ Its enabled state will be preserved.</value>
   <data name="Onboarding_StartFailed" xml:space="preserve"><value>Practice could not open. Use Get started in About &amp; support to try again.</value></data>
   <data name="ActionResult_KeepOnTop" xml:space="preserve"><value>Keep on top</value></data>
   <data name="ActionResult_KeepOnTopHint" xml:space="preserve"><value>This result stays open until you close it or exit SnapBar. Turn this off to let other windows cover it.</value></data>
+  <data name="SettingsFeedback_Capacity" xml:space="preserve">
+    <value>The toolbar holds up to {0} actions. Other actions remain available in More menu.</value>
+  </data>
+  <data name="SettingsFeedback_Reordered" xml:space="preserve">
+    <value>Reordered “{0}”.</value>
+  </data>
+  <data name="SettingsFeedback_More" xml:space="preserve">
+    <value>More actions for {0}</value>
+  </data>
+  <data name="SettingsFeedback_Moved" xml:space="preserve">
+    <value>Moved “{0}” to {1}.</value>
+  </data>
+  <data name="SettingsFeedback_Pinned" xml:space="preserve">
+    <value>Pinned “{0}” to the AI panel.</value>
+  </data>
+  <data name="SettingsFeedback_Unpinned" xml:space="preserve">
+    <value>Unpinned “{0}” from the AI panel.</value>
+  </data>
+  <data name="SettingsFeedback_Connect" xml:space="preserve">
+    <value>Connect an AI service to use these {0} commands.</value>
+  </data>
+  <data name="PromptDescription_grammar" xml:space="preserve">
+    <value>Correct grammar and spelling while preserving meaning.</value>
+  </data>
+  <data name="PromptDescription_improve" xml:space="preserve">
+    <value>Improve clarity and flow while preserving your voice.</value>
+  </data>
+  <data name="PromptDescription_shorten" xml:space="preserve">
+    <value>Keep the key information in fewer words.</value>
+  </data>
+  <data name="PromptDescription_summary" xml:space="preserve">
+    <value>Extract the key ideas in the source language.</value>
+  </data>
+  <data name="PromptDescription_translate-en" xml:space="preserve">
+    <value>Translate into natural English.</value>
+  </data>
+  <data name="PromptDescription_translate-zh-en" xml:space="preserve">
+    <value>Translate between Chinese and English.</value>
+  </data>
+  <data name="PromptDescription_convert-zh-script" xml:space="preserve">
+    <value>Convert between Traditional and Simplified Chinese.</value>
+  </data>
+  <data name="AiTry_Title" xml:space="preserve">
+    <value>Try this command</value>
+  </data>
+  <data name="AiTry_Help" xml:space="preserve">
+    <value>Only the sample below and your draft instruction are sent to the selected AI service. Usage may incur charges. Your command is not saved.</value>
+  </data>
+  <data name="AiTry_Sample" xml:space="preserve">
+    <value>Sample text</value>
+  </data>
+  <data name="AiTry_Default" xml:space="preserve">
+    <value>This is a sample paragraph. It has a few ideas that could be expressed more clearly.</value>
+  </data>
+  <data name="AiTry_Run" xml:space="preserve">
+    <value>Run sample</value>
+  </data>
+  <data name="AiTry_Stop" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="AiTry_Busy" xml:space="preserve">
+    <value>Processing…</value>
+  </data>
+  <data name="AiTry_Ready" xml:space="preserve">
+    <value>Enter sample text and an instruction first.</value>
+  </data>
+  <data name="AiTry_Cancelled" xml:space="preserve">
+    <value>Cancelled.</value>
+  </data>
+  <data name="AiTry_Stale" xml:space="preserve">
+    <value>The draft changed. Run again to see the latest result.</value>
+  </data>
+  <data name="SettingsPolish_Pin" xml:space="preserve">
+    <value>Pin “{0}” to the AI panel</value>
+  </data>
+  <data name="SettingsPolish_Unpin" xml:space="preserve">
+    <value>Unpin “{0}” from the AI panel</value>
+  </data>
+  <data name="SettingsPolish_Capacity" xml:space="preserve">
+    <value>Toolbar · {0}/{1} actions</value>
+  </data>
+  <data name="SettingsPolish_Order" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="SettingsPolish_Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
 </root>

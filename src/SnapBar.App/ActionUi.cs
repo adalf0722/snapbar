@@ -46,6 +46,8 @@ internal static class ActionUi
         ["grip"] = "M8,5 L8.1,5 M16,5 L16.1,5 M8,12 L8.1,12 M16,12 L16.1,12 M8,19 L8.1,19 M16,19 L16.1,19",
         ["plus"] = "M12,4 L12,20 M4,12 L20,12", ["up"] = "M5,15 L12,8 19,15", ["down"] = "M5,9 L12,16 19,9",
         ["pin"] = "M16,3 L21,8 17,10 16,15 13,16 8,11 9,8 14,7 Z M10,14 L4,20",
+        ["delete"] = "M4,6 L20,6 M9,6 L9,3 15,3 15,6 M6,6 L7,21 17,21 18,6 M10,10 L10,17 M14,10 L14,17",
+        ["edit"] = "M4,16 L16,4 20,8 8,20 3,21 Z M13,7 L17,11",
         ["settings"] = "M3,7 L9,7 M15,7 L21,7 M3,17 L13,17 M19,17 L21,17 M15,7 A3,3 0 1 1 9,7 A3,3 0 1 1 15,7 M19,17 A3,3 0 1 1 13,17 A3,3 0 1 1 19,17"
     };
     public static FrameworkElement Icon(string name, Brush? color = null, double size = 18) => new Viewbox

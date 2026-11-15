@@ -2714,4 +2714,91 @@
   <data name="Onboarding_StartFailed" xml:space="preserve"><value>無法開啟練習，請從「關於與支援 → 使用入門」再試一次。</value></data>
   <data name="ActionResult_KeepOnTop" xml:space="preserve"><value>保持置頂</value></data>
   <data name="ActionResult_KeepOnTopHint" xml:space="preserve"><value>此結果會保留到你關閉視窗或結束 SnapBar。取消置頂後可讓其他視窗覆蓋。</value></data>
+  <data name="SettingsFeedback_Capacity" xml:space="preserve">
+    <value>動作列最多顯示 {0} 個動作，其餘動作可放在更多選單。</value>
+  </data>
+  <data name="SettingsFeedback_Reordered" xml:space="preserve">
+    <value>已調整「{0}」的順序。</value>
+  </data>
+  <data name="SettingsFeedback_More" xml:space="preserve">
+    <value>「{0}」的更多操作</value>
+  </data>
+  <data name="SettingsFeedback_Moved" xml:space="preserve">
+    <value>已將「{0}」移至{1}。</value>
+  </data>
+  <data name="SettingsFeedback_Pinned" xml:space="preserve">
+    <value>已將「{0}」固定至 AI 面板。</value>
+  </data>
+  <data name="SettingsFeedback_Unpinned" xml:space="preserve">
+    <value>已取消固定「{0}」。</value>
+  </data>
+  <data name="SettingsFeedback_Connect" xml:space="preserve">
+    <value>連接 AI 服務，即可使用這 {0} 個命令。</value>
+  </data>
+  <data name="PromptDescription_grammar" xml:space="preserve">
+    <value>修正文法與拼字，保留原意。</value>
+  </data>
+  <data name="PromptDescription_improve" xml:space="preserve">
+    <value>改善表達與行文，保留你的語氣。</value>
+  </data>
+  <data name="PromptDescription_shorten" xml:space="preserve">
+    <value>精簡文字，保留關鍵資訊。</value>
+  </data>
+  <data name="PromptDescription_summary" xml:space="preserve">
+    <value>使用原文語言整理重點。</value>
+  </data>
+  <data name="PromptDescription_translate-en" xml:space="preserve">
+    <value>翻譯成自然流暢的英文。</value>
+  </data>
+  <data name="PromptDescription_translate-zh-en" xml:space="preserve">
+    <value>依原文語言進行中英互譯。</value>
+  </data>
+  <data name="PromptDescription_convert-zh-script" xml:space="preserve">
+    <value>在繁體中文與簡體中文之間轉換。</value>
+  </data>
+  <data name="AiTry_Title" xml:space="preserve">
+    <value>試用這個命令</value>
+  </data>
+  <data name="AiTry_Help" xml:space="preserve">
+    <value>僅將下方範例與目前草稿指令傳送至所選 AI 服務，可能產生用量費用；不會儲存命令。</value>
+  </data>
+  <data name="AiTry_Sample" xml:space="preserve">
+    <value>範例文字</value>
+  </data>
+  <data name="AiTry_Default" xml:space="preserve">
+    <value>這是一段範例文字。裡面有幾個想法，可以表達得更清楚。</value>
+  </data>
+  <data name="AiTry_Run" xml:space="preserve">
+    <value>執行試用</value>
+  </data>
+  <data name="AiTry_Stop" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="AiTry_Busy" xml:space="preserve">
+    <value>處理中…</value>
+  </data>
+  <data name="AiTry_Ready" xml:space="preserve">
+    <value>請先輸入範例文字與指令。</value>
+  </data>
+  <data name="AiTry_Cancelled" xml:space="preserve">
+    <value>已取消。</value>
+  </data>
+  <data name="AiTry_Stale" xml:space="preserve">
+    <value>草稿已變更，請重新試用以查看最新結果。</value>
+  </data>
+  <data name="SettingsPolish_Pin" xml:space="preserve">
+    <value>將「{0}」固定至 AI 面板</value>
+  </data>
+  <data name="SettingsPolish_Unpin" xml:space="preserve">
+    <value>將「{0}」從 AI 面板取消固定</value>
+  </data>
+  <data name="SettingsPolish_Capacity" xml:space="preserve">
+    <value>動作列 · {0}/{1} 項</value>
+  </data>
+  <data name="SettingsPolish_Order" xml:space="preserve">
+    <value>排序</value>
+  </data>
+  <data name="SettingsPolish_Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
 </root>

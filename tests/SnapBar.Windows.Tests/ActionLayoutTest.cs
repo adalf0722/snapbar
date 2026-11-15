@@ -44,7 +44,7 @@ internal static class ActionLayoutTest
                     Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
                     window.UpdateLayout();
                 }
-                Check(Preview(window).SequenceEqual(new[] { "copy", "cut", "paste", "search" }) && BarTab() == "動作列 · 4／9",
+                Check(Preview(window).SequenceEqual(new[] { "copy", "cut", "paste", "search" }) && BarTab() == "動作列 · 4/9 項",
                     "settings preview defaults to four pinned actions and shows remaining capacity");
                 Place(fifth.Name, ActionPlacement.Bar);
                 Check(Preview(window).SequenceEqual(new[] { "copy", "cut", "paste", "search", fifth.Id }), "fifth action appends and preview matches visible configured order");
@@ -60,7 +60,7 @@ internal static class ActionLayoutTest
                 var additional = new[] { "AI 改寫", "搜尋 Gmail", "取得公網 IP" };
                 foreach (var name in additional) Place(name, ActionPlacement.Bar);
                 expected = [.. expected, .. additional.Select(name => ActionCatalog.GetItems(current).Single(a => a.Name == name).Id)];
-                Check(Preview(window).SequenceEqual(expected) && BarTab() == "動作列 · 9／9", "settings preview and tab show all nine pins");
+                Check(Preview(window).SequenceEqual(expected) && BarTab() == "動作列 · 9/9 項", "settings preview and tab show all nine pins");
                 Place(tenth.Name, ActionPlacement.Bar);
                 Check(Preview(window).SequenceEqual(expected) && current.Layout.Single(e => e.Id == tenth.Id).Placement == ActionPlacement.More
                     && Children<TextBlock>(window).Any(t => t.Text.Contains("最多可釘選 9 個動作")),
@@ -105,7 +105,7 @@ internal static class ActionLayoutTest
                     Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
                     window.UpdateLayout();
                     var row = Children<Grid>(window).Single(g => AutomationProperties.GetAutomationId(g) == "ActionRow_" + id);
-                    var more = Children<Button>(row).Single(b => AutomationProperties.GetName(b) == "⋯");
+                    var more = Children<Button>(row).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionOptions_" + id);
                     more.ContextMenu.Items.OfType<MenuItem>().Single(i => (string)i.Header == "刪除動作")
                         .RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                     window.UpdateLayout();

@@ -30,11 +30,12 @@ internal sealed class AiCommandsPanel : ContentControl
         add = ActionUi.Button(UiText.Get("AiCommandsPanel_000"), () => preferences.OpenEditor(Window.GetWindow(this), null), "plus", true);
         AutomationProperties.SetAutomationId(add, "AddAiCommand"); DockPanel.SetDock(add, Dock.Right); tools.Children.Add(add);
         count = ActionUi.Text("", 13, ActionUi.Muted); AutomationProperties.SetAutomationId(count, "AiCommandsCount"); tools.Children.Add(count); top.Children.Add(tools);
-        serviceStatus = ActionUi.Text(UiText.Get("AiCommandsPanel_001"), 12, ActionUi.Muted);
+        serviceStatus = ActionUi.Text("", 13);
         var serviceLine = new DockPanel(); var configure = ActionUi.Button(UiText.Get("AiCommandsPanel_002"), () => preferences.RequestSettings(SettingsCategory.AiServices));
         AutomationProperties.SetName(configure, UiText.Get("AiCommandsPanel_003"));
         AutomationProperties.SetAutomationId(configure, "ConfigureAiServiceFromCommands"); DockPanel.SetDock(configure, Dock.Right); serviceLine.Children.Add(configure); serviceLine.Children.Add(serviceStatus);
-        serviceNotice = new Border { Child = serviceLine, Margin = new(0, 0, 0, 8) }; top.Children.Add(serviceNotice);
+        serviceNotice = ActionUi.Card(serviceLine, new Thickness(12)); serviceNotice.Background = ActionUi.Pale;
+        serviceNotice.Margin = new(0, 0, 0, 12); top.Children.Add(serviceNotice);
         top.Children.Add(ActionUi.Text(UiText.Get("AiCommandsPanel_004"), 12, ActionUi.Muted));
         var filters = new Grid { Margin = new(0, 0, 0, 12) }; filters.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); filters.ColumnDefinitions.Add(new() { Width = new(170) });
         search = ActionUi.Input("", 256); search.Margin = new(0, 0, 10, 0); search.ToolTip = UiText.Get("AiCommandsPanel_005");
@@ -46,6 +47,7 @@ internal sealed class AiCommandsPanel : ContentControl
         deletion = ActionUi.Text("", 13); AutomationProperties.SetAutomationId(deletion, "DeletedAiCommandNotice"); undoLine.Children.Add(deletion);
         undoNotice = ActionUi.Card(undoLine, new Thickness(12, 8, 12, 8)); footer.Children.Add(undoNotice);
         status = ActionUi.Text("", 12, ActionUi.Muted); status.Margin = new(0, 8, 0, 0); AutomationProperties.SetAutomationId(status, "AiCommandsStatus"); footer.Children.Add(status);
+        SettingsFeedback.Live(status); SettingsFeedback.Live(deletion);
         DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
         var list = new ScrollViewer { Content = rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         AutomationProperties.SetAutomationId(list, "AiCommandsSettingsList"); body.Children.Add(list); Content = body;
@@ -83,22 +85,33 @@ internal sealed class AiCommandsPanel : ContentControl
         var hasFilter = !string.IsNullOrWhiteSpace(search.Text) || (category.SelectedItem as CategoryItem)?.Value != null;
         count.Text = UiText.Join((hasFilter ? UiText.Get("AiCommandsPanel_011",(filtered.Count),(settings.Prompts.Length)): UiText.Get("AiCommandsPanel_012",(settings.Prompts.Length))), (settings.Prompts.Length >= 128 ? UiText.Get("AiCommandsPanel_013") : ""));
         var profile = preferences.SelectedProfile;
+        serviceStatus.Text = UiText.Get("SettingsFeedback_Connect", settings.Prompts.Length);
         serviceNotice.Visibility = AiPolicy.ValidateProfile(profile) != null || (profile.Protocol == AiProtocol.Responses && preferences.Secrets.Get(profile) == null)
             ? Visibility.Visible : Visibility.Collapsed;
         undoNotice.Visibility = preferences.LastDeletion == null ? Visibility.Collapsed : Visibility.Visible;
         deletion.Text = preferences.LastDeletion is { } removed ? UiText.Get("AiCommandsPanel_014",(UiNames.Prompt(removed.Prompt))): "";
         foreach (var prompt in filtered)
         {
-            var row = new Grid { MinHeight = 56 }; row.ColumnDefinitions.Add(new() { Width = new(42) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
+            var row = new Grid { MinHeight = 52 }; row.ColumnDefinitions.Add(new() { Width = new(42) }); row.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = GridLength.Auto });
             AutomationProperties.SetAutomationId(row, "AiCommandRow_" + prompt.Id);
-            var icon = ActionUi.Button("", () => ChooseIcon(prompt.Id)); icon.Content = new AiIconPresenter { IconId = AiIconCatalog.ForPrompt(prompt), Width = 22, Height = 22 };
-            icon.Padding = new(6); icon.MinWidth = 34; icon.Margin = new(0, 0, 6, 0); icon.VerticalAlignment = VerticalAlignment.Center;
+            var icon = SettingsFeedback.IconButton("", UiText.Join(UiText.Get("AiCommandsPanel_015"), UiNames.Prompt(prompt)), () => ChooseIcon(prompt.Id));
+            var iconPreview = new Grid { Width = 24, Height = 24 };
+            iconPreview.Children.Add(new AiIconPresenter { IconId = AiIconCatalog.ForPrompt(prompt), Width = 22, Height = 22 });
+            var iconHint = new Border { Child = ActionUi.Icon("edit", ActionUi.Accent, 10), Background = System.Windows.Media.Brushes.White,
+                Width = 13, Height = 13, CornerRadius = new(3), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
+                Style = (Style)FindResource("CommandIconHint"), IsHitTestVisible = false };
+            iconPreview.Children.Add(iconHint); icon.Content = iconPreview; icon.Padding = new(5); icon.VerticalAlignment = VerticalAlignment.Center;
             AutomationProperties.SetName(icon, UiText.Join(UiText.Get("AiCommandsPanel_015"), UiNames.Prompt(prompt))); AutomationProperties.SetAutomationId(icon, "AiCommandIcon_" + prompt.Id); row.Children.Add(icon);
-            var text = new StackPanel { Margin = new(8), VerticalAlignment = VerticalAlignment.Center }; text.Children.Add(ActionUi.Text(UiNames.Prompt(prompt), 14));
-            text.Children.Add(ActionUi.Text(prompt.Category.Length == 0 ? UiText.Get("AiCommandsPanel_016") : UiNames.Category(prompt), 12, ActionUi.Muted)); Grid.SetColumn(text, 1); row.Children.Add(text);
+            SettingsFeedback.Hint(icon, UiText.Join(UiText.Get("AiCommandsPanel_015"), UiNames.Prompt(prompt))); SettingsFeedback.Quiet(icon);
+            var text = new StackPanel { Margin = new(8), VerticalAlignment = VerticalAlignment.Center };
+            var name = ActionUi.Heading(UiNames.Prompt(prompt), 14); name.TextWrapping = TextWrapping.NoWrap; name.TextTrimming = TextTrimming.CharacterEllipsis;
+            SettingsFeedback.Hint(name, UiNames.Prompt(prompt)); text.Children.Add(name); Grid.SetColumn(text, 1); row.Children.Add(text);
+            var description = ActionUi.Text(UiNames.PromptDescription(prompt), 12, ActionUi.Muted);
+            description.TextWrapping = TextWrapping.NoWrap; description.TextTrimming = TextTrimming.CharacterEllipsis;
+            SettingsFeedback.Hint(description, prompt.Instruction); text.Children.Add(description);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             var pinned = settings.PinnedIds.Contains(prompt.Id);
-            var pinLabel = UiText.Join((pinned ? UiText.Get("AiCommandsPanel_017") : UiText.Get("AiCommandsPanel_018")), UiNames.Prompt(prompt));
+            var pinLabel = UiText.Get(pinned ? "SettingsPolish_Unpin" : "SettingsPolish_Pin", UiNames.Prompt(prompt));
             var pin = new ToggleButton { Content = ActionUi.Icon("pin", pinned ? ActionUi.Accent : ActionUi.Muted, 16),
                 IsChecked = pinned, Style = (Style)FindResource("AiCommandPin"), ToolTip = pinLabel };
             AutomationProperties.SetName(pin, pinLabel); AutomationProperties.SetAutomationId(pin, "AiCommandPin_" + prompt.Id);
@@ -108,14 +121,17 @@ internal sealed class AiCommandsPanel : ContentControl
                 if (resettingPin) return;
                 if (!preferences.TogglePin(prompt.Id, out var error))
                 { resettingPin = true; pin.IsChecked = pinned; resettingPin = false; status.Text = error; }
+                else status.Text = UiText.Get(pinned ? "SettingsFeedback_Unpinned" : "SettingsFeedback_Pinned", UiNames.Prompt(prompt));
             };
             pin.Checked += changePin; pin.Unchecked += changePin;
             buttons.Children.Add(pin);
-            var edit = ActionUi.Button(UiText.Get("AiCommandsPanel_019"), () => preferences.OpenEditor(Window.GetWindow(this), preferences.Settings.Prompts.FirstOrDefault(p => p.Id == prompt.Id)));
-            AutomationProperties.SetAutomationId(edit, "AiCommandEdit_" + prompt.Id); buttons.Children.Add(edit);
-            var more = ActionUi.Button("⋯", () => { }); AutomationProperties.SetName(more, UiText.Join(UiText.Get("AiCommandsPanel_020"), UiNames.Prompt(prompt))); AutomationProperties.SetAutomationId(more, "AiCommandOptions_" + prompt.Id);
-            var menu = new ContextMenu(); var delete = new MenuItem { Header = UiText.Get("AiCommandsPanel_021") }; delete.Click += (_, _) => DeletePrompt(prompt.Id); menu.Items.Add(delete); more.ContextMenu = menu;
-            more.Click += (_, _) => { menu.PlacementTarget = more; menu.IsOpen = true; }; buttons.Children.Add(more);
+            var edit = SettingsFeedback.IconButton("edit", UiText.Join(UiText.Get("AiCommandsPanel_019"), " · ", UiNames.Prompt(prompt)), () => preferences.OpenEditor(Window.GetWindow(this), preferences.Settings.Prompts.FirstOrDefault(p => p.Id == prompt.Id)));
+            AutomationProperties.SetAutomationId(edit, "AiCommandEdit_" + prompt.Id); SettingsFeedback.Quiet(edit); buttons.Children.Add(edit);
+            var delete = SettingsFeedback.IconButton("delete", UiText.Join(UiText.Get("AiCommandsPanel_021"), " · ", UiNames.Prompt(prompt)), () => DeletePrompt(prompt.Id));
+            AutomationProperties.SetName(delete, UiText.Get("AiCommandsPanel_021") + " · " + UiNames.Prompt(prompt));
+            AutomationProperties.SetAutomationId(delete, "AiCommandDelete_" + prompt.Id);
+            SettingsFeedback.Hint(delete, UiText.Get("AiCommandsPanel_021") + " · " + UiNames.Prompt(prompt)); SettingsFeedback.Quiet(delete);
+            delete.Resources["ControlHover"] = ActionUi.Brush("#FCE8E8"); delete.Resources["ControlAccent"] = System.Windows.Media.Brushes.Firebrick; buttons.Children.Add(delete);
             Grid.SetColumn(buttons, 2); row.Children.Add(buttons);
             var card = ActionUi.Card(row, new Thickness(10, 4, 4, 4)); card.Margin = new(0, 0, 0, 5); rows.Children.Add(card);
         }

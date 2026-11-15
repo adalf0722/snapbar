@@ -1,5 +1,27 @@
 # P0 驗證紀錄
 
+## 2026-11-15 設定清單減框與圖示操作
+
+最終 `scripts/check.ps1 -RequireActionRuntimes` 通過 actionlint、工具契約 26、推送契約 11、自動發布 18、Core 547 與嚴格 ActionRunner 35，全部零失敗；ActionRunner 零略過。中文 Markdown 已以嚴格 UTF-8 無 BOM 讀回確認。
+
+依使用者確認，AI 命令列統一使用圖釘、鉛筆與垃圾桶，操作目標均為 36 DIP；次要操作移除常態框線，保留懸停底色、焦點框、固定藍色與刪除紅色回饋。命令卡片收斂成名稱與用途兩行，名稱略加重，長文字可透過提示閱讀；分類篩選維持原行為。可更換圖示在懸停及鍵盤焦點時顯示小鉛筆，固定提示明示目的地為 AI 面板。
+
+動作列的排序、其他操作、位置使用固定欄寬，搜尋編輯不再推移上下箭頭；搜尋及自訂動作使用鉛筆圖示，詞典管理使用文件圖示並保留完整提示。容量文字直接顯示例如「動作列 · 4/9 項」。新增中英文欄名及更新說明，保留預覽連動、偏好儲存及刪除復原。
+
+Appearance 227、Language 63 通過，報告：`artifacts/checks/desktop/20261115T064419450Z-5808eedbf9df420c98b81ef7400e989d/report.json`。該次 Layout 因預期舊容量文案失敗；更新文案後，另一次執行找出使用舊「⋯」文字定位更多操作的測試，已改為固定 AutomationId。最終 Layout 265、AiPanel 253 全數通過、零略過，報告：`artifacts/checks/desktop/20261115T064557450Z-c5b475f3b9a64c60a87dbc5d2dd08caf/report.json`，同步建置及 Core 547 通過。
+
+已檢視 `artifacts/ui-polish/settings-ai-commands-populated.png`、`feedback-ai-en.png`、`feedback-ai-small-en.png`、`feedback-actions-toolbar-en.png`、`feedback-actions-toolbar-zh-Hant.png` 及 `settings-actions-appearance.png`。新增案例確認搜尋與一般列的排序及位置對齊、圖示編輯的提示、AI 卡片兩行結構、三個等大操作目標及固定目的地說明。未呼叫真實 AI 服務，未進行混合 DPI 或完整 Release 驗證，未發布或替換套件。
+
+## 2026-11-15 動作列與 AI 命令設定回饋
+
+依使用者確認，強化按鈕懸停、按下、固定及鍵盤焦點狀態，降低次要操作邊框的視覺負擔。動作列項目以滑鼠與鍵盤焦點對應預覽，更多選單項目對應預覽的更多圖示；拖曳提供合法落點插入線，位置及順序變更提供訊息，排序到邊界仍保留同項目焦點。英文位置選單依內容配置寬度，容量以提示說明。
+
+AI 命令增加本地化用途簡介、圖示提示與直接刪除，保留復原及焦點還原。未設定服務使用整合提示，背景執行提醒保留於一般頁及系統匣不可用時。編輯介面提供可展開的範例試用：明示目前服務與傳送內容，只使用使用者輸入的範例及草稿指令，不讀取選取文字或剪貼簿、不儲存命令。修改草稿、取消、服務偏好變更及關閉均取消請求並拒絕呈現舊結果。
+
+`scripts/check.ps1 -RequireActionRuntimes` 通過：actionlint、工具契約 26、推送契約 11、自動發布 18、Core 547、ActionRunner 35，全部零失敗。之後修整預覽提示的語言切換及空白模型名稱顯示，再以目前來源完成標準桌面入口驗證：Appearance 219、Language 63、Layout 265、AiPanel 253、AiRuntime 117，共 917 項零失敗、零略過；建置及 Core 547 同步通過。最終報告：`artifacts/checks/desktop/20261115T063100781Z-5cb88fe96a834846a394fdc58e7f2048/report.json`。
+
+已檢視 `artifacts/ui-polish/feedback-actions-en.png`、`feedback-ai-en.png`、`feedback-ai-small-zh-Hant.png`、`feedback-ai-trial.png`、`feedback-ai-editor-trial.png`，確認完整英文選項、一般及小視窗、試用表單及儲存操作可讀可達。AI 試用使用受控 client，驗證草稿內容、取消、修改及關閉後晚到結果拒絕、偏好檔不變；未呼叫真實 AI 服務。未驗證混合 DPI、跨 App 實際滑鼠拖曳手感或完整 Release 套件，未發布及替換 `artifacts/p0`。
+
 ## 2026-11-14 自訂動作多結果保留
 
 依使用者確認，這次只處理從選取文字執行自訂動作的結果視窗。文字／Markdown 與錯誤視窗可同時保留，不因下一次查詢或來源焦點變更而關閉；個別視窗可取消置頂。明確取消、設定變更、新 capture 與結束程式仍拒絕晚到結果。每張卡的套用回呼綁定自身視窗與原 selection ticket；重新查詢後舊 Apply 即使被強制觸發，也不可寫原文或剪貼簿。既有 HUD 自動關閉與詞典生命週期保持不變。未修改地圖啟動、GeoIP 匯出腳本、1.5 秒等待或 Job Object。

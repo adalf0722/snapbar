@@ -24,6 +24,12 @@ internal static class UiNames
     }
     internal static string Provider(AiProviderProfile profile, UiLanguage? language = null) => profile.Id == "compatible" && profile.Name == "自訂相容服務"
         ? Get("Provider_Compatible", language) : UserText(profile.Name);
+    internal static string PromptDescription(AiPrompt prompt)
+    {
+        if (OriginalPrompts.TryGetValue(prompt.Id, out var original) && prompt.Instruction == original.Instruction)
+            return Get("PromptDescription_" + prompt.Id, null);
+        return UserText(prompt.Instruction.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "");
+    }
     internal static string KeepOriginalName(string input, string initialDisplay, string? original) => UserText(original != null && input == initialDisplay ? original : input);
     private static string UserText(string value) => new(value.AsSpan());
     internal static IReadOnlyList<ActionItem> More(ActionSettings settings, SelectionSnapshot selection, string query)
