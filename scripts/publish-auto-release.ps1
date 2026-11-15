@@ -1,5 +1,5 @@
 param(
-    [Parameter(Mandatory)][ValidatePattern('^v0\.1\.0-rc\.[1-9][0-9]*$')][string]$Version,
+    [Parameter(Mandatory)][ValidatePattern('^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[1-9][0-9]*$')][string]$Version,
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-f]{40}$')][string]$Commit,
     [Parameter(Mandatory)][string]$PackageDirectory,
     [string]$PreviousTag,
@@ -18,6 +18,8 @@ foreach ($path in @($archive, $checksum)) {
 }
 $expected = (Get-Content -LiteralPath $checksum -Raw -Encoding utf8).Split(' ')[0]
 if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ine $expected) { throw 'Automatic release ZIP checksum mismatch.' }
+$identity = Get-SnapBarVersion $Version
+Assert-SnapBarArchiveVersion $archive $identity.Version $Commit
 $releases = @(Get-SnapBarReleases $Repository)
 $existing = @($releases | Where-Object { $_.tag_name -ceq $Version })
 if ($existing.Count -gt 1) { throw 'Duplicate Release version.' }
@@ -25,15 +27,12 @@ if ($existing.Count) { $release = $existing[0] }
 else {
     $refs = (Invoke-SnapBarGh @('api', "repos/$Repository/git/matching-refs/tags/$Version")) | ConvertFrom-Json
     if (@($refs | Where-Object { $_.ref -ceq "refs/tags/$Version" }).Count) { throw 'Release tag was reserved by another publisher. Rerun the entire workflow to select a new version.' }
-    $changes = Get-SnapBarReleaseContent -Root $SourceDirectory -Commit $Commit -PreviousTag $PreviousTag
-    $comparison = if ($PreviousTag) { "[$PreviousTag → $Version](https://github.com/$Repository/compare/$PreviousTag...$Version)" }
-        else { "[檢視原始碼](https://github.com/$Repository/tree/$Commit)" }
-    $template = [IO.File]::ReadAllText((Join-Path $PSScriptRoot '../packaging/AUTO-RELEASE-NOTES.md'), [Text.Encoding]::UTF8)
-    $notes = $template.Replace('{version}', $Version).Replace('{commit}', $Commit).Replace('{run}', $RunId).Replace('{repository}', $Repository).Replace('{comparison}', $comparison).Replace('{changes}', $changes)
+    if ($PreviousTag) { $null = Get-SnapBarVersion $PreviousTag }
+    $notes = New-SnapBarReleaseBody -Root $SourceDirectory -Commit $Commit -PreviousTag $PreviousTag -Version $Version -Repository $Repository -RunId $RunId
     $notesPath = Join-Path $PackageDirectory 'release-notes.md'
     [IO.File]::WriteAllText($notesPath, $notes, [Text.UTF8Encoding]::new($false))
     $release = (Invoke-SnapBarGh @('api', '--method', 'POST', "repos/$Repository/releases",
-        '-f', "tag_name=$Version", '-f', "target_commitish=$Commit", '-f', "name=SnapBar $Version",
+        '-f', "tag_name=$Version", '-f', "target_commitish=$Commit", '-f', "name=SnapBar $($identity.Version)",
         '-F', "body=@$notesPath", '-F', 'draft=true', '-F', 'prerelease=true')) | ConvertFrom-Json
 }
 Assert-SnapBarAutoRelease $release $Version $Commit $RunId

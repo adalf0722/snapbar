@@ -1,8 +1,14 @@
-param([switch]$Publish, [string]$DesktopReport)
+param([switch]$Publish, [string]$DesktopReport, [string]$Version, [string]$SourceCommit)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
+. (Join-Path $PSScriptRoot 'version-common.ps1')
 $repo = $script:SnapBarRepo
 $sdk = Get-SnapBarSdk
+if (-not $Version) { $Version = (Get-SnapBarVersionPrefix) + '-dev' }
+$null = Get-SnapBarVersion "v$Version"
+if (-not $SourceCommit) { $SourceCommit = (& git -C $repo rev-parse HEAD) }
+if ($SourceCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Cannot resolve build source commit.' }
+$versionArguments = @("-p:Version=$Version", "-p:SourceRevisionId=$SourceCommit", '-p:IncludeSourceRevisionInInformationalVersion=true')
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 $package = Join-Path $repo 'artifacts/p0'
@@ -18,7 +24,7 @@ $results = [Collections.Generic.List[object]]::new()
 $report = [ordered]@{ schema = 1; sourceFingerprint = $fingerprint; publish = [bool]$Publish; success = $false; results = @(); error = $null }
 Push-Location $repo
 try {
-    $result = Invoke-SnapBarCommand 'Build' $sdk @('build', 'SnapBar.slnx', '-c', 'Release', '--nologo') $run
+    $result = Invoke-SnapBarCommand 'Build' $sdk (@('build', 'SnapBar.slnx', '-c', 'Release', '--nologo') + $versionArguments) $run
     $results.Add($result); Assert-SnapBarCommand $result
     $result = Invoke-SnapBarCommand 'Core' $sdk @('run', '--project', 'tests/SnapBar.Tests', '-c', 'Release', '--no-build') $run
     $results.Add($result); Assert-SnapBarCommand $result
@@ -33,10 +39,10 @@ try {
         $stagingRoot = Join-Path $repo ('artifacts/publish/' + [guid]::NewGuid().ToString('N'))
         $stage = Assert-SnapBarArtifactPath (Join-Path $stagingRoot 'package')
         [IO.Directory]::CreateDirectory($stage) | Out-Null
-        $result = Invoke-SnapBarCommand 'PublishApp' $sdk @('publish', 'src/SnapBar.App', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $stage, '--nologo') $run
+        $result = Invoke-SnapBarCommand 'PublishApp' $sdk (@('publish', 'src/SnapBar.App', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $stage, '--nologo') + $versionArguments) $run
         $results.Add($result); Assert-SnapBarCommand $result
         $probe = Join-Path $stage 'Probe'
-        $result = Invoke-SnapBarCommand 'PublishProbe' $sdk @('publish', 'src/SnapBar.Probe', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $probe, '--nologo') $run
+        $result = Invoke-SnapBarCommand 'PublishProbe' $sdk (@('publish', 'src/SnapBar.Probe', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $probe, '--nologo') + $versionArguments) $run
         $results.Add($result); Assert-SnapBarCommand $result
         $result = Invoke-SnapBarCommand 'ProbeSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-probe.ps1'), '-Executable', (Join-Path $probe 'SnapBar.Probe.exe')) $run
         $results.Add($result); Assert-SnapBarCommand $result
@@ -51,6 +57,7 @@ try {
         if ($fingerprint -ne (Get-SnapBarFingerprint)) { throw 'Source changed during publishing; previous package preserved.' }
         Assert-SnapBarDesktopReport $DesktopReport $fingerprint
         Assert-SnapBarPublishIdle $package
+        Assert-SnapBarPackageVersion $stage $Version $SourceCommit
         $backup = Join-Path $stagingRoot 'previous'
         Move-SnapBarPackage $stage $package $backup
         Write-Host "Published: $package (previous package retained at $backup if present)"

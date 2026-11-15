@@ -2848,4 +2848,8 @@
   <data name="SettingsPolish_Actions" xml:space="preserve">
     <value>操作</value>
   </data>
+  <data name="VersionChannel_Stable" xml:space="preserve"><value>正式版</value></data>
+  <data name="VersionChannel_Preview" xml:space="preserve"><value>預覽版</value></data>
+  <data name="VersionChannel_Development" xml:space="preserve"><value>開發版</value></data>
+  <data name="VersionChannel_Test" xml:space="preserve"><value>測試版</value></data>
 </root>

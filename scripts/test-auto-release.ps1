@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'auto-release-common.ps1')
 . (Join-Path $PSScriptRoot 'release-notes.ps1')
+. (Join-Path $PSScriptRoot 'version-fixtures.ps1')
 $run = New-SnapBarRun 'auto-release-tests'
 $script:autoPassed = 0
 function Check-Auto([string]$Name, [scriptblock]$Test) {
@@ -21,14 +22,20 @@ function New-AutoFixtureRelease([string]$Version, [bool]$Draft = $false) {
 Check-Auto 'automatic version starts at rc.1 and increments numerically across tags and drafts' {
     Assert-Auto ((Get-SnapBarAutoVersion @() @() '123').version -eq 'v0.1.0-rc.1')
     $releases = @((New-AutoFixtureRelease 'v0.1.0-rc.9'), (New-AutoFixtureRelease 'v0.1.0-rc.10' $true))
-    $plan = Get-SnapBarAutoVersion $releases @('v0.1.0-rc.11', 'v1.0.0-rc.99', 'v0.1.0', 'v0.1.0-rc.012') '123'
-    Assert-Auto ($plan.version -eq 'v0.1.0-rc.12' -and $plan.previousTag -eq 'v0.1.0-rc.9')
+    $plan = Get-SnapBarAutoVersion $releases @('v0.1.0-rc.11', 'v1.0.0-rc.99', 'v0.1.0-rc.012') '123'
+    Assert-Auto ($plan.version -eq 'v0.1.0-rc.12' -and -not $plan.recovered)
 }
 Check-Auto 'rerun retains its version and rejects ambiguous ownership' {
     $release = New-AutoFixtureRelease 'v0.1.0-rc.5' $true
-    $release.body = '<!-- snapbar-run: 123 -->'
-    $plan = Get-SnapBarAutoVersion @($release) @('v0.1.0-rc.99') '123'
-    Assert-Auto ($plan.version -eq 'v0.1.0-rc.5')
+    $sha = 'a' * 40
+    $release.target_commitish = $sha
+    $release.body = "<!-- snapbar-run: 123 -->`n<!-- snapbar-source: $sha -->`n<!-- snapbar-previous: v0.1.0-rc.4 -->"
+    $plan = Get-SnapBarAutoVersion @($release) @('v0.1.0-rc.99', 'v0.1.0') '123' -Commit $sha
+    Assert-Auto ($plan.version -eq 'v0.1.0-rc.5' -and $plan.recovered -and $plan.previousKnown -and $plan.previousTag -ceq 'v0.1.0-rc.4')
+    Assert-Auto ((Get-SnapBarAutoVersion @($release) @('v0.2.0') '123' -VersionPrefix '0.2.0' -Commit $sha).version -ceq $release.tag_name)
+    Reject-Auto { Get-SnapBarAutoVersion @($release) @() '123' -Commit ('b' * 40) }
+    $release.draft = $false
+    Assert-Auto (-not (Get-SnapBarAutoVersion @($release) @('v0.1.0') '123' -Commit $sha).draft)
     Reject-Auto { Get-SnapBarAutoVersion @($release, $release) @() '123' }
     Reject-Auto { Get-SnapBarAutoVersion @() @() 'not-a-run' }
 }
@@ -37,7 +44,12 @@ Check-Auto 'a new run skips a draft reserved by an earlier failed run' {
     $draft = New-AutoFixtureRelease 'v0.1.0-rc.6' $true
     $draft.body = '<!-- snapbar-run: 123 -->'
     $plan = Get-SnapBarAutoVersion @($draft, $published) @('v0.1.0-rc.5') '124'
-    Assert-Auto ($plan.version -eq 'v0.1.0-rc.7' -and $plan.previousTag -eq 'v0.1.0-rc.5')
+    Assert-Auto ($plan.version -eq 'v0.1.0-rc.7')
+}
+Check-Auto 'stable series blocks new allocation while another series starts at rc.1' {
+    Reject-Auto { Get-SnapBarAutoVersion @() @('v0.1.0') '124' }
+    Reject-Auto { Get-SnapBarAutoVersion @((New-AutoFixtureRelease 'v0.1.0')) @() '124' }
+    Assert-Auto ((Get-SnapBarAutoVersion @() @('v0.1.0', 'v0.1.0-rc.99') '124' -VersionPrefix '0.2.0').version -ceq 'v0.2.0-rc.1')
 }
 $archive = Join-Path $run 'SnapBar-v0.1.0-rc.5-win-x64.zip'
 [IO.File]::WriteAllText($archive, 'controlled package fixture', [Text.UTF8Encoding]::new($false))
@@ -112,6 +124,7 @@ function Save-NotesFixture {
 }
 $null = Invoke-NotesFixtureGit @('init', '-q')
 Write-NotesFixture 'src/app.txt' 'old desktop'
+Write-NotesFixture 'Version.props' '<Project><PropertyGroup><SnapBarVersionPrefix>0.1.0</SnapBarVersionPrefix></PropertyGroup></Project>'
 $base = Save-NotesFixture
 $null = Invoke-NotesFixtureGit @('tag', 'v0.1.0-rc.4')
 Write-NotesFixture 'src/app.txt' 'new desktop'
@@ -119,9 +132,14 @@ $missing = Save-NotesFixture
 Check-Auto 'desktop changes without notes fail instead of publishing an empty changelog' {
     Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $missing -PreviousTag v0.1.0-rc.4 }
 }
-$validNote = '{"title":"離線查詞","summary":"閱讀時查看釋義。","highlights":["多本詞典一起查詢。"],"usage":"先匯入自己的詞典。"}'
+$validNote = '{"title":"離線查詞","summary":"閱讀時查看釋義。","highlights":["多本詞典一起查詢。"],"usage":"先匯入自己的詞典。","requirements":["dictionary"],"en":{"title":"Offline lookup","summary":"Look up definitions while reading.","highlights":["Search multiple dictionaries."],"usage":"Import your own dictionaries first."}}'
 Write-NotesFixture 'release-notes/lookup.json' $validNote
 $commit = Save-NotesFixture
+$assembly = New-SnapBarVersionFixture (Join-Path $run 'version-fixture') '0.1.0-rc.5' $commit
+[IO.File]::Delete($archive)
+New-SnapBarVersionZip $archive $assembly $assembly
+$hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+[IO.File]::WriteAllText("$archive.sha256", "$hash  $([IO.Path]::GetFileName($archive))`n", [Text.UTF8Encoding]::new($false))
 Check-Auto 'notes use the exact source commit and retain Traditional Chinese' {
     Write-NotesFixture 'release-notes/lookup.json' 'invalid working copy'
     $content = Get-SnapBarReleaseContent -Root $source -Commit $commit -PreviousTag v0.1.0-rc.4
@@ -161,8 +179,23 @@ function Invoke-AutoPublishFixture {
 try {
     Check-Auto 'missing release notes block publishing before any GitHub write' {
         $global:SnapBarFixtureCommands.Clear()
-        Reject-Auto {
-            & (Join-Path $PSScriptRoot 'publish-auto-release.ps1') -Version v0.1.0-rc.5 -Commit $missing -PackageDirectory $run -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo -RunId 123
+        $original = [IO.File]::ReadAllBytes($archive)
+        $missingAssembly = New-SnapBarVersionFixture (Join-Path $run 'missing-notes-version') '0.1.0-rc.5' $missing
+        try {
+            [IO.File]::Delete($archive)
+            New-SnapBarVersionZip $archive $missingAssembly $missingAssembly
+            $missingHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+            [IO.File]::WriteAllText("$archive.sha256", "$missingHash  $([IO.Path]::GetFileName($archive))`n", [Text.UTF8Encoding]::new($false))
+            $reason = ''
+            try {
+                & (Join-Path $PSScriptRoot 'publish-auto-release.ps1') -Version v0.1.0-rc.5 -Commit $missing -PackageDirectory $run -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo -RunId 123
+            }
+            catch { $reason = $_.Exception.Message }
+            Assert-Auto ($reason.Contains('no new user-facing release note'))
+        }
+        finally {
+            [IO.File]::WriteAllBytes($archive, $original)
+            [IO.File]::WriteAllText("$archive.sha256", "$hash  $([IO.Path]::GetFileName($archive))`n", [Text.UTF8Encoding]::new($false))
         }
         Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
     }
@@ -172,7 +205,10 @@ try {
         Assert-Auto (-not $global:SnapBarFixtureRelease.draft -and $global:SnapBarFixtureRelease.assets.Count -eq 2)
         $body = $global:SnapBarFixtureRelease.body
         Assert-Auto ($body.Contains("<!-- snapbar-source: $commit -->") -and $body.Contains('離線查詞'))
-        Assert-Auto ($body.IndexOf('## 本次更新') -lt $body.IndexOf('## 下載與更新'))
+        Assert-Auto ($body.Contains('<!-- snapbar-previous: v0.1.0-rc.4 -->'))
+        Assert-Auto ($body.IndexOf('[下載 Windows x64 / Download Windows x64]') -lt $body.IndexOf('## 繁體中文'))
+        Assert-Auto ($body.IndexOf('## 繁體中文') -lt $body.IndexOf('## English') -and $body.IndexOf('## English') -lt $body.IndexOf('<details>'))
+        Assert-Auto ($body.IndexOf('### 離線查詞') -gt $body.IndexOf('<details>') -and $body.Contains('### Offline lookup'))
         Assert-Auto ($body.Contains('https://github.com/fixture/repo/releases/download/v0.1.0-rc.5/SnapBar-v0.1.0-rc.5-win-x64.zip'))
         Assert-Auto ($body.Contains('compare/v0.1.0-rc.4...v0.1.0-rc.5') -and $body.Contains('<details>'))
         Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like '*generate-notes*' }).Count)
@@ -182,6 +218,12 @@ try {
         $global:SnapBarFixtureCommands.Clear()
         Invoke-AutoPublishFixture
         Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+    }
+    Check-Auto 'resolver recovers a published run before stable checks and preserves its original baseline' {
+        $global:SnapBarFixtureTags = @([pscustomobject]@{ ref = 'refs/tags/v0.1.0' })
+        $plan = & (Join-Path $PSScriptRoot 'resolve-auto-version.ps1') -Repository fixture/repo -RunId 123 -Commit $commit -Root $source
+        Assert-Auto ($plan.recovered -and $plan.version -ceq 'v0.1.0-rc.5' -and $plan.previousTag -ceq 'v0.1.0-rc.4')
+        $global:SnapBarFixtureTags = @()
     }
     Check-Auto 'upload failure leaves a draft and failed-job retry completes it' {
         $global:SnapBarFixtureReleases = @(); $global:SnapBarFixtureCommands.Clear(); $global:SnapBarFixtureFailUpload = $true

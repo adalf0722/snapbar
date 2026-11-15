@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'version-common.ps1')
+
 function Invoke-SnapBarGh([string[]]$Arguments) {
     $output = & gh @Arguments
     if ($LASTEXITCODE -ne 0) { throw "GitHub command failed: $($Arguments[0]) $($Arguments[1])" }
@@ -9,28 +11,39 @@ function Get-SnapBarReleases([string]$Repository) {
     return @($pages | ForEach-Object { foreach ($release in $_) { $release } })
 }
 
-function Get-SnapBarAutoVersion([object[]]$Releases, [string[]]$Tags, [string]$RunId) {
+function Get-SnapBarAutoVersion([object[]]$Releases, [string[]]$Tags, [string]$RunId,
+    [string]$VersionPrefix = (Get-SnapBarVersionPrefix), [string]$Commit) {
     if ($RunId -notmatch '^[0-9]+$') { throw 'Automatic release requires a numeric workflow run ID.' }
+    if ((Get-SnapBarVersion "v$VersionPrefix").Channel -ne 'Stable') { throw 'Automatic version prefix must be stable.' }
     $marker = "<!-- snapbar-run: $RunId -->"
     $existing = @($Releases | Where-Object { $_.body -and $_.body.Contains($marker) })
     if ($existing.Count -gt 1) { throw 'Multiple Releases claim the same workflow run.' }
-    $versions = @(@($Releases | ForEach-Object { $_.tag_name }) + @($Tags) | Where-Object { $_ -cmatch '^v0\.1\.0-rc\.[1-9][0-9]*$' })
-    $maximum = [long]0
-    foreach ($version in $versions) { $maximum = [math]::Max($maximum, [long]($version -replace '^v0\.1\.0-rc\.', '')) }
+    $pattern = '^v' + [regex]::Escape($VersionPrefix) + '-rc\.([1-9][0-9]*)$'
+    $versions = @(@($Releases | ForEach-Object { $_.tag_name }) + @($Tags) | Where-Object { $_ -cmatch $pattern })
     if ($existing.Count) {
         $version = $existing[0].tag_name
-        if ($version -cnotmatch '^v0\.1\.0-rc\.[1-9][0-9]*$') { throw 'Existing automatic Release uses an unexpected version.' }
+        if ($version -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[1-9][0-9]*$') { throw 'Existing automatic Release uses an unexpected version.' }
+        $null = Get-SnapBarVersion $version
+        if ($Commit -cnotmatch '^[0-9a-f]{40}$') { throw 'Recovery requires the exact source commit.' }
+        Assert-SnapBarAutoRelease $existing[0] $version $Commit $RunId
+        $previousMarkers = [regex]::Matches($existing[0].body, '<!-- snapbar-previous: (.*?) -->')
+        if ($previousMarkers.Count -gt 1) { throw 'Release contains ambiguous previous-tag markers.' }
+        $previous = [regex]::Match($existing[0].body, '<!-- snapbar-previous: (.*?) -->')
+        $previousTag = if ($previous.Success) { $previous.Groups[1].Value } else { '' }
+        if ($previousTag) { $null = Get-SnapBarVersion $previousTag }
+        return [pscustomobject]@{ version = $version; previousTag = $previousTag; recovered = $true; previousKnown = $previous.Success; draft = $existing[0].draft }
     }
     else {
+        $maximum = [long]0
+        foreach ($reserved in $versions) { $maximum = [math]::Max($maximum, [long]([regex]::Match($reserved, $pattern).Groups[1].Value)) }
         if ($maximum -eq [long]::MaxValue) { throw 'Release version overflow.' }
-        $version = "v0.1.0-rc.$($maximum + 1)"
+        if (@($Tags | Where-Object { $_ -ceq "v$VersionPrefix" }).Count -or
+            @($Releases | Where-Object { -not $_.draft -and $_.tag_name -ceq "v$VersionPrefix" }).Count) {
+            throw 'This version series already has a stable release/tag. Update Version.props before allocating a new prerelease.'
+        }
+        $version = "v$VersionPrefix-rc.$($maximum + 1)"
     }
-    $number = [long]($version -replace '^v0\.1\.0-rc\.', '')
-    $previous = $Releases | Where-Object {
-        -not $_.draft -and $_.tag_name -cmatch '^v0\.1\.0-rc\.[1-9][0-9]*$' -and
-        [long]($_.tag_name -replace '^v0\.1\.0-rc\.', '') -lt $number
-    } | Sort-Object { [long]($_.tag_name -replace '^v0\.1\.0-rc\.', '') } -Descending | Select-Object -First 1
-    return [pscustomobject]@{ version = $version; previousTag = $(if ($previous) { $previous.tag_name } else { '' }) }
+    return [pscustomobject]@{ version = $version; previousTag = ''; recovered = $false; previousKnown = $false; draft = $true }
 }
 
 function Assert-SnapBarAutoRelease($Release, [string]$Version, [string]$Commit, [string]$RunId) {

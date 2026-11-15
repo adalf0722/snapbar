@@ -1,0 +1,21 @@
+{
+  "title": "下載版本與設定頁版本一致",
+  "summary": "更新後可直接對照下載檔名與「關於與支援」的版本，確認目前執行的是哪一版 SnapBar。",
+  "highlights": [
+    "官網與設定頁顯示相同版本，並清楚標示預覽版、正式版或開發版。",
+    "發布前核對套件內程式的版本與來源，避免檔名和實際內容不同。",
+    "診斷區保留完整版本資訊，方便回報問題。"
+  ],
+  "usage": "先從系統匣正常結束舊版，將新 ZIP 完整解壓縮到新的資料夾並執行 SnapBar.App.exe，再到設定的「關於與支援」對照下載版本；原有個人設定會沿用。",
+  "priority": 80,
+  "en": {
+    "title": "Match your running version to your download",
+    "summary": "Match the version in About & Support to your download and confirm which SnapBar build is running.",
+    "highlights": [
+      "The website and settings show the same version and identify preview, stable and development builds.",
+      "Release checks verify the packaged application's version and source before publication.",
+      "Diagnostics retain the full build information for support requests."
+    ],
+    "usage": "Quit the old version from the system tray, extract the new ZIP to a new folder, and run SnapBar.App.exe. Open Settings > About & Support to compare versions. Your personal settings are kept."
+  }
+}

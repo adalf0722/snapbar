@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -49,6 +50,16 @@ internal static class UiAppearanceTest
             {
                 OnboardingTest.Ui(Check);
                 main = new MainWindow(new SettingsStore(Path.Combine(directory, "settings.json"))); main.Show(); main.UpdateLayout();
+                var informational = typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+                var productVersion = ProductVersion.Parse(informational.Split('+')[0]);
+                Check(Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "SettingsProductVersion").Text.EndsWith(productVersion.Version),
+                    "support page displays the running assembly version including its prerelease suffix");
+                Check(Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "SettingsBuildVersion").Text.EndsWith(informational),
+                    "diagnostics preserve full version and source commit");
+                Check(Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "SettingsVersionChannel").Text == UiText.Get("VersionChannel_" + productVersion.Channel),
+                    "support page displays the localized release channel");
+                main.NavigateTo(SettingsCategory.About); main.UpdateLayout(); Snapshot(main, "settings-version.png");
+                main.NavigateTo(SettingsCategory.General); main.UpdateLayout();
                 Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).Where(e => e.IsVisible).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
                 Check(main.ClipboardCompatibilityEnabled && Children<CheckBox>(main).Single(c => AutomationProperties.GetAutomationId(c) == "ClipboardCompatibilityToggle").IsChecked == true,
                     "compatibility is enabled by default and separated from optional Sublime setup");

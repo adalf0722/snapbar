@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'version-common.ps1')
+
 function Get-SnapBarRequiredNoticeFiles {
     $files = @(
         'LICENSE', 'THIRD-PARTY-NOTICES.md', 'Licenses/README.md',
@@ -22,12 +24,13 @@ function New-SnapBarReleaseArchive {
     param(
         [Parameter(Mandatory)][string]$Package,
         [Parameter(Mandatory)]
-        [ValidatePattern('^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$')]
         [string]$Version,
-        [Parameter(Mandatory)][string]$OutputDirectory
+        [Parameter(Mandatory)][string]$OutputDirectory,
+        [Parameter(Mandatory)][string]$Commit
     )
     $Package = Assert-SnapBarArtifactPath $Package
     $OutputDirectory = Assert-SnapBarArtifactPath $OutputDirectory
+    $identity = Get-SnapBarVersion $Version
     $required = @(
         'SnapBar.App.exe', 'SnapBar.App.dll', 'SnapBar.App.deps.json', 'SnapBar.App.runtimeconfig.json',
         'coreclr.dll', 'hostfxr.dll', 'wpfgfx_cor3.dll', 'README.md', 'VALIDATION.md', 'CLIPBOARD-RECOVERY.md',
@@ -46,6 +49,7 @@ function New-SnapBarReleaseArchive {
     foreach ($item in Get-ChildItem -LiteralPath $Package -Recurse -Force) {
         if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Release package contains a link: $($item.Name)" }
     }
+    Assert-SnapBarPackageVersion $Package $identity.Version $Commit
     if ([IO.Directory]::Exists($OutputDirectory) -or [IO.File]::Exists($OutputDirectory)) {
         throw 'Release output already exists; use a fresh output directory.'
     }
@@ -62,6 +66,7 @@ function New-SnapBarReleaseArchive {
         if (@($zip.Entries | Where-Object { $_.Name }).Count -ne $files.Count) { throw 'Release ZIP file count differs from the package.' }
     }
     finally { $zip.Dispose() }
+    Assert-SnapBarArchiveVersion $archive $identity.Version $Commit
     $checksum = "$archive.sha256"
     $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     [IO.File]::WriteAllText($checksum, "$hash  $([IO.Path]::GetFileName($archive))`n", [Text.UTF8Encoding]::new($false))

@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'version-common.ps1')
+
 function Get-SnapBarWebsiteReleases([string]$Repository) {
     if ($Repository -cnotmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') { throw 'A valid GitHub owner/repository is required.' }
     $headers = @{ Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
@@ -15,7 +17,9 @@ function Get-SnapBarWebsiteReleases([string]$Repository) {
 function Get-SnapBarWebsiteDownload([object[]]$Releases, [string]$Repository) {
     if ($Repository -cnotmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') { throw 'A valid GitHub owner/repository is required.' }
     $candidates = foreach ($release in $Releases) {
-        if ($release.draft -or $release.tag_name -cnotmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?$') { continue }
+        if ($release.draft) { continue }
+        try { $identity = Get-SnapBarVersion $release.tag_name } catch { continue }
+        if (-not $identity.IsPublic -or [bool]$release.prerelease -ne ($identity.Channel -eq 'Preview')) { continue }
         $published = [DateTimeOffset]::MinValue
         if (-not [DateTimeOffset]::TryParse([string]$release.published_at, [ref]$published)) { continue }
         $version = $release.tag_name
@@ -33,7 +37,7 @@ function Get-SnapBarWebsiteDownload([object[]]$Releases, [string]$Repository) {
             }
         }
         if ($complete) {
-            [pscustomobject]@{ Version = $version; DownloadUrl = $downloadUrl; ReleaseUrl = $releaseUrl; PublishedAt = $published }
+            [pscustomobject]@{ Version = $version; Channel = $identity.Channel; DownloadUrl = $downloadUrl; ReleaseUrl = $releaseUrl; PublishedAt = $published }
         }
     }
     # Include prereleases; publication time, not API order or /releases/latest, decides.
@@ -55,10 +59,13 @@ function New-SnapBarWebsite([string]$SourceDirectory, [string]$OutputDirectory, 
     $pages = @{}
     foreach ($relative in @('index.html', 'en/index.html')) {
         $html = ConvertFrom-SnapBarUtf8 ([IO.File]::ReadAllBytes((Join-Path $source $relative))) $relative
+        $channel = if ($relative -eq 'index.html') { if ($download.Channel -eq 'Stable') { '正式版' } else { '預覽版' } }
+            else { $download.Channel }
+        $displayVersion = $download.Version.Substring(1) + ' · ' + $channel
         $patterns = @(
             @{ Pattern = '(?<=data-windows-download href=")[^"]*'; Count = 2; Value = $download.DownloadUrl },
             @{ Pattern = '(?<=id="release-notes" href=")[^"]*'; Count = 1; Value = $download.ReleaseUrl },
-            @{ Pattern = '(?<=<span id="download-version">)[^<]*'; Count = 1; Value = $download.Version }
+            @{ Pattern = '(?<=<span id="download-version">)[^<]*'; Count = 1; Value = $displayVersion }
         )
         foreach ($replacement in $patterns) {
             if ([regex]::Matches($html, $replacement.Pattern).Count -ne $replacement.Count) {

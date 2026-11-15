@@ -2848,4 +2848,8 @@ Its enabled state will be preserved.</value>
   <data name="SettingsPolish_Actions" xml:space="preserve">
     <value>Actions</value>
   </data>
+  <data name="VersionChannel_Stable" xml:space="preserve"><value>Stable</value></data>
+  <data name="VersionChannel_Preview" xml:space="preserve"><value>Preview</value></data>
+  <data name="VersionChannel_Development" xml:space="preserve"><value>Development</value></data>
+  <data name="VersionChannel_Test" xml:space="preserve"><value>Test</value></data>
 </root>

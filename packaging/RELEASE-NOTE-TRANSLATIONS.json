@@ -1,0 +1,194 @@
+{
+  "2026-11-08-dictionary-action-label.json": {
+    "title": "Find offline lookup under Dictionary",
+    "summary": "The action is now called Dictionary, making offline lookup easier to identify.",
+    "highlights": ["The action is labeled Dictionary in English and 字典 in Traditional Chinese."],
+    "usage": "Choose Dictionary in the toolbar or More menu to use offline lookup. Your dictionaries and action order are kept.",
+    "requirements": ["dictionary"]
+  },
+  "2026-11-08-interface-language.json": {
+    "title": "Use SnapBar in Traditional Chinese or English",
+    "summary": "Choose an English interface and getting-started guide, while existing installations keep their language and preferences.",
+    "highlights": ["General settings offer System, Traditional Chinese and English, and save your choice.", "Settings and the tray menu change immediately; open editors and result windows keep their content and use the new language when reopened.", "An English download page and packaged guide explain basic actions and optional prerequisites."],
+    "usage": "Extract the full package, run SnapBar.App.exe, and choose General > Language. New installations follow the Windows display language, falling back to English for unsupported languages; existing installations keep Traditional Chinese. Copy and Search need no AI account, dictionaries or Node.js. See the guide for optional features.",
+    "priority": 70
+  },
+  "2026-11-08-language-label.json": {
+    "title": "Language settings follow the interface language",
+    "summary": "The language heading and choices now use the current interface language consistently.",
+    "highlights": ["Traditional Chinese shows 語言 with 跟隨系統, 繁體中文 and 英文; English shows Language with System, Traditional Chinese and English. Accessible names change too."],
+    "usage": "Open General settings to see the localized heading and choices. Changing language updates them in place without changing your selected preference."
+  },
+  "2026-11-08-ocr-capture-experience.json": {
+    "title": "Capture screen text and copy or recapture it",
+    "summary": "OCR reads the snapshot taken when capture starts and shows progress and results in a nearby card, even if the source screen changes.",
+    "highlights": ["The capture area keeps the original image clear. Recognition status appears after release, with cancellation and safe restart.", "Edit results, copy all or selected text, or recapture the current screen.", "Timeouts, no-text results and missing dependencies provide clear messages and retry options."],
+    "usage": "Install the Microsoft Visual C++ x64 runtime. Start OCR with your shortcut or the tray capture command and drag around the text. Use the result card to copy, search or recapture; press Esc to cancel.",
+    "requirements": ["ocr"], "priority": 40
+  },
+  "2026-11-08-ocr-shared-actions.json": {
+    "title": "Use shared actions on recognized text",
+    "summary": "Run existing actions on corrected OCR text or a selected part of the result.",
+    "highlights": ["The OCR More menu offers Search, custom URLs, scripts, dictionaries and AI actions using your existing settings.", "Scripts can display, copy or replace results according to their configuration; replacing OCR text supports undo."],
+    "usage": "Capture screen text, correct or select it if needed, and open More. Use Manage actions to adjust the list. Scripts need their configured PowerShell or JavaScript interpreter; AI actions need a configured service profile.",
+    "requirements": ["ocr", "ai", "node"]
+  },
+  "2026-11-08-offline-dictionaries.json": {
+    "title": "Select a word to read offline definitions",
+    "summary": "Import your own dictionaries and compare definitions while reading, without switching lookup tools.",
+    "highlights": ["Search multiple enabled dictionaries at once, with results grouped by source.", "Pin the lookup window to keep definitions available while reading, and copy results.", "Import, disable or remove dictionaries in settings to control your sources."],
+    "usage": "Import StarDict dictionaries in Settings > Actions > Manage offline dictionaries, then select text and use the lookup action. Supply your own dictionaries, keeping .ifo, .idx and .dict or .dict.dz files in the same folder.",
+    "requirements": ["dictionary"], "priority": 60
+  },
+  "2026-11-08-translation-retirement.json": {
+    "title": "Before updating: the old translation action is removed",
+    "summary": "The previous Azure translation action and settings are removed. Check your alternatives before updating if you rely on that workflow.",
+    "highlights": ["The text-selection toolbar no longer offers the old translation action.", "The old translation entry is also removed from OCR results.", "Existing toolbar settings skip the removed action while keeping other actions in order."],
+    "usage": "Use another translation tool after updating. Offline dictionary lookup requires your own imported dictionaries and does not replace the previous full-text translation service.",
+    "priority": 100,
+    "notice": {"zh": "本版移除舊版 Azure 翻譯入口與設定；依賴此流程者請先確認替代工具。", "en": "The old Azure translation action and settings are removed. Check an alternative before updating if you rely on this workflow."}
+  },
+  "2026-11-09-ocr-menu-keyboard-highlight.json": {
+    "title": "OCR action highlighting follows keyboard focus",
+    "summary": "Fixes multiple actions appearing highlighted while navigating the OCR More menu with arrow keys.",
+    "highlights": ["Only the focused action is highlighted after moving with Up or Down."],
+    "usage": "Capture screen text, open More, select an action with Up or Down, and press Enter.",
+    "requirements": ["ocr"]
+  },
+  "2026-11-09-ocr-more-menu-polish.json": {
+    "title": "Find actions for recognized text more easily",
+    "summary": "The OCR More menu makes the text source clear and helps you find Search and frequently used actions.",
+    "highlights": ["Search actions, view recent actions, and see why an action is unavailable.", "Long lists scroll while Manage actions stays visible."],
+    "usage": "Capture text, correct or select it if needed, then open More to search or choose an action. Some actions need configured AI services, dictionaries or script runtimes.",
+    "requirements": ["ocr"]
+  },
+  "2026-11-13-ocr-result-card-polish.json": {
+    "title": "Read captured text and find actions more easily",
+    "summary": "A clearer text area and primary button help you correct, copy and act on recognized text.",
+    "highlights": ["Larger text and reading space emphasize Copy text and reduce distraction from recapture controls.", "More becomes Actions, with the menu opening beside the result card in the available space.", "Three recent actions stay compact, with other actions, search and unavailable-action explanations still accessible."],
+    "usage": "Use Windows with the existing OCR dependencies. Capture text with your shortcut or the tray command, then edit the result. Selecting part of the text limits Copy and actions to that selection. AI actions still need service setup.",
+    "requirements": ["ocr"], "priority": 40
+  },
+  "2026-11-13-python-custom-actions.json": {
+    "title": "Run custom actions with Python",
+    "summary": "Run your Python text-processing scripts on selected text, then preview, copy or apply the result.",
+    "highlights": ["A new Python action type includes a whitespace-cleanup example you can test immediately.", "Choose an installed or virtual-environment python.exe, with separate interpreter paths preserved when switching languages.", "Messages explain missing Python and modules, while keeping existing timeouts, cancellation and output limits."],
+    "usage": "Install Python 3, add a Python action in Manage actions, read POPCLIP_TEXT from the environment, and run the test. SnapBar looks for python.exe on PATH by default; you can set a full path in advanced settings. Install extra packages in that interpreter's environment.",
+    "requirements": ["python"], "priority": 60
+  },
+  "2026-11-14-action-result-layout.json": {
+    "title": "Read and copy custom-action results more easily",
+    "summary": "Result windows fit their content, emphasize key information, and reduce empty space and inactive controls.",
+    "highlights": ["Field-based results use clearer text hierarchy and prioritize location information; long content still scrolls.", "Copy result becomes the primary button, with an always-on-top pin beside the title.", "When the original selection expires, Apply is hidden while explanations and Copy remain available."],
+    "usage": "Run a custom action that outputs to a window or Markdown. Use the pin to toggle always-on-top for that window, and Copy result for the full original output. Scripts still need their required runtimes.",
+    "priority": 30
+  },
+  "2026-11-14-first-run-onboarding.json": {
+    "title": "Practice selecting and searching on first launch",
+    "summary": "A single-screen introduction guides new users from sample selection and shortcuts to a real toolbar search.",
+    "highlights": ["Select the sample immediately, then see completion, automatic-display preferences and tray guidance after a successful search.", "Skip and revisit it from About & Support > Get started; upgrades and background login launches do not open it automatically.", "Traditional Chinese and English are supported. Change unavailable shortcuts directly, and keep old settings if saving fails."],
+    "usage": "Extract the package and run SnapBar.App.exe. Select the practice text, press the shown shortcut, and choose Search on the toolbar or its More menu. Search sends the selected sample to your current search provider and requires a default browser; viewing results needs internet, but no AI account.",
+    "priority": 70
+  },
+  "2026-11-14-onboarding-polish.json": {
+    "title": "A clearer first-run experience",
+    "summary": "The introduction uses clearer typography, spacing and controls to focus attention on selecting text and using your shortcut.",
+    "highlights": ["Real selectable text and keycaps showing your current shortcut replace repetitive instructions.", "Search completion and preferences appear in place, with primary controls kept visible below.", "The native desktop style supports Chinese, English and scrolling in small work areas."],
+    "usage": "Open About & Support > Get started. Select the sample, press the displayed shortcut, and choose Search. Not now returns to settings; after completion, Get started returns SnapBar to the tray."
+  },
+  "2026-11-14-onboarding-selection-affordance.json": {
+    "title": "Recognize the practice text at a glance",
+    "summary": "The introduction separates instructions from selectable text so the first selection is more intuitive.",
+    "highlights": ["The white selection area contains only the practice sentence, with instructions and shortcuts outside it.", "Hover and keyboard-focus feedback clearly identify the selectable text area.", "Selecting text prompts you to press the shortcut; clearing it resets the prompt rather than marking Search complete."],
+    "usage": "Open About & Support > Get started, drag across words in the white sentence area, press the shortcut shown below, and choose Search. Existing preferences, skip behavior and completion behavior are preserved."
+  },
+  "2026-11-14-onboarding-skip-settings.json": {
+    "title": "Continue to settings after skipping the introduction",
+    "summary": "Choosing Not now closes the practice screen and opens settings so you can keep exploring SnapBar.",
+    "highlights": ["Not now returns to settings with a clear next step.", "Get started after completing practice still returns SnapBar to the tray."],
+    "usage": "Open About & Support > Get started, then choose Not now to return to settings. No extra setup is needed; your preferences and completed introduction progress are kept."
+  },
+  "2026-11-14-persistent-action-results.json": {
+    "title": "Keep multiple custom-action result windows",
+    "summary": "New custom-action results no longer replace older ones, and remain readable and copyable when you switch apps.",
+    "highlights": ["Window and Markdown results remain open independently until you close them or quit SnapBar.", "Read-only queries no longer cancel solely because the source loses focus; applying results is still blocked after the original selection expires.", "Each result can independently disable always-on-top to work alongside other apps."],
+    "usage": "Update and restart SnapBar, then run actions that output to a window or Markdown. Each result opens separately. Toggle its pin or close it with Close or X. Map-launch behavior is unchanged.",
+    "priority": 60
+  },
+  "2026-11-15-bilingual-ai-translation.json": {
+    "title": "Translate between Chinese and English with AI",
+    "summary": "Translate selected Chinese into English or selected English into Traditional Chinese with one AI command.",
+    "highlights": ["Chinese becomes English, and English becomes Taiwan-style Traditional Chinese, with only the translation returned.", "Meaning, tone and formatting are preserved; mixed-language passages are translated by semantic segment.", "The command is added to existing settings without replacing commands, pins or AI service settings."],
+    "usage": "Configure an AI service, model and any required API key, select text, open the AI panel, and choose English ↔ Chinese in the translation category. You can pin it in command management. If you already have 128 commands, remove an unused one before adding it manually.",
+    "requirements": ["ai"], "priority": 90
+  },
+  "2026-11-15-chinese-script-conversion.json": {
+    "title": "Convert Simplified and Traditional Chinese with AI",
+    "summary": "Convert Chinese text between Simplified and Traditional, with AI choosing the direction automatically.",
+    "highlights": ["Only character forms change; wording, tone and formatting are kept without replacing regional expressions.", "Mixed scripts are converted according to the dominant form; unclear cases keep the original text.", "The command is added without replacing custom content, pins or previously deleted built-in command choices."],
+    "usage": "Configure an AI service, model and any required API key, select text, open the AI panel, and choose Traditional ↔ Simplified Chinese in the translation category. Pin it in command management if desired. Review the AI output. If you already have 128 commands, remove an unused one before adding it manually.",
+    "requirements": ["ai"], "priority": 85
+  },
+  "2026-11-15-improve-writing-prompt.json": {
+    "title": "Improve writing while keeping your voice",
+    "summary": "AI rewriting now focuses on clarity, natural phrasing and flow while keeping the author's meaning and style.",
+    "highlights": ["The prompt explicitly keeps language, Chinese script, facts, tone and formatting, avoiding unnecessary formality or added content.", "Already clear text stays unchanged, and incomplete or ambiguous passages are not filled in without a basis.", "The original built-in prompt updates automatically; edited prompts and command settings are preserved."],
+    "usage": "Update and launch SnapBar, select text, and use Improve writing in the AI panel. Configure an AI service, model and any required API key first, and review the result.",
+    "requirements": ["ai"], "priority": 80
+  },
+  "2026-11-15-mit-license.json": {
+    "title": "Clear permission to use and share SnapBar",
+    "summary": "SnapBar uses the MIT license, clarifying your rights to use, modify, distribute and use it commercially.",
+    "highlights": ["Chinese and English guides link to the MIT license and explain notice-retention requirements.", "Packages include SnapBar's main license and preserve existing third-party notices."],
+    "usage": "Download and fully extract the Windows x64 package. Keep LICENSE and applicable third-party notices when modifying or redistributing it; no separate MIT permission request is needed."
+  },
+  "2026-11-15-release-runtime-consistency.json": {
+    "title": "More reliable Windows preview downloads",
+    "summary": "A consistent packaged .NET runtime fixes cloud releases stopping because of runtime-version differences.",
+    "highlights": ["Self-contained packages use the reviewed .NET 10.0.15 runtime.", "Bundled third-party notices are checked alongside the runtime, preserving release integrity checks."],
+    "usage": "Download and fully extract the Windows x64 ZIP, quit the old version from the tray, and run SnapBar.App.exe. The runtime is included; no separate .NET installation is needed.",
+    "priority": 10
+  },
+  "2026-11-15-settings-compact-icon-actions.json": {
+    "title": "Compact, aligned controls in settings",
+    "summary": "Action and AI-command settings use consistent icon controls with less repetition and visual clutter.",
+    "highlights": ["A pencil icon opens editing; secondary controls have fewer borders while retaining pointer and keyboard feedback.", "Action ordering, other controls and visibility settings align in columns, with item counts and capacity shown directly.", "AI commands show a name and purpose on two lines, clarify icon editing, and label pins as fixing commands to the AI panel."],
+    "usage": "Open Actions or AI Commands in settings. Hover over icons for descriptions or use Tab to move keyboard focus. No additional setup is needed."
+  },
+  "2026-11-15-settings-interaction-feedback.json": {
+    "title": "Clearer settings feedback and live action previews",
+    "summary": "Chinese and English settings make actionable controls, pin states and the effects of your changes easier to recognize.",
+    "highlights": ["Stronger hover, pressed and focus feedback links toolbar previews to the current item and shows drag insertion positions.", "English position labels fit fully; secondary buttons are quieter, and AI commands have purpose descriptions with delete and undo controls.", "Try a draft AI command with sample text while editing, with cancellation and no need to leave settings."],
+    "usage": "Open Actions or AI Commands in settings. AI trials require a configured service and any required key; they send the sample and draft instruction to the current service and may incur usage charges.",
+    "requirements": ["ai"],
+    "notice": {"zh": "AI 試用會將範例與草稿指令傳至目前服務，可能產生用量費用。", "en": "AI trials send the sample and draft instruction to your current service and may incur usage charges."}
+  },
+  "2026-11-15-shortcut-input-order.json": {
+    "title": "Set up shortcuts in your preferred order",
+    "summary": "Record keys before choosing an AI command or custom action, or choose the action first.",
+    "highlights": ["Record keys without selecting an action, and keep them when switching actions.", "Recording guidance explains the interaction and which setting is still missing.", "Save becomes available only when keys and an action are complete; cancelling keeps the original settings."],
+    "usage": "Open Shortcuts in settings and choose Set or Change beside an AI command or custom action. Enter keys or choose the target in either order, then save when both are complete.",
+    "priority": 30
+  },
+  "2026-11-15-shortcut-retry-removal.json": {
+    "title": "Retry shortcut conflicts and remove bindings clearly",
+    "summary": "Enter another key combination immediately after a conflict; removing a binding clears both the keys and action association.",
+    "highlights": ["Conflict warnings return focus to recording while keeping your selected action.", "Remove binding clears the keys and action target, returning the list to Not set.", "AI commands and custom actions remain intact; save or removal failures preserve the previous binding."],
+    "usage": "Edit a binding in Shortcuts. After a red conflict warning, press another combination directly. Use Remove binding to disconnect it. The main toolbar shortcut still uses Restore default.",
+    "priority": 40
+  },
+  "2026-11-15-shortcuts-settings-page.json": {
+    "title": "See all shortcuts on one settings page",
+    "summary": "A dedicated Shortcuts page shows each action, key combination and target, with extra choices appearing only while editing.",
+    "highlights": ["One list contains all shortcuts and keeps General settings simpler.", "New bindings cover dictionaries, selected AI commands and selected custom actions; the redundant direct-copy shortcut is removed.", "A small editor saves the action target and keys together; cancelling leaves settings unchanged."],
+    "usage": "Open Shortcuts in settings and choose Set or Change. For AI and custom actions, select the target and record keys in either order, then save. Existing bindings remain; new actions start unbound. The old copy shortcut is no longer registered; use Ctrl+C or toolbar Copy. Dictionary actions need enabled dictionaries, and AI commands need a configured service.",
+    "priority": 70,
+    "notice": {"zh": "舊版直接複製選字快捷鍵不再註冊，請使用 Ctrl+C 或動作列複製。", "en": "The old direct-copy shortcut is no longer registered. Use Ctrl+C or Copy on the toolbar."}
+  },
+  "2026-11-15-third-party-notices.json": {
+    "title": "Find bundled third-party licenses and notices",
+    "summary": "Packages include licenses and acknowledgments for icons, OCR, image libraries and the runtime, making redistribution requirements easier to find.",
+    "highlights": ["A component index includes OCR image-library licenses and JPEG acknowledgments.", "Self-contained packages include licenses and notices for the runtime actually used.", "Packaging checks required notices before delivery."],
+    "usage": "Extract the Windows x64 package and open THIRD-PARTY-NOTICES.md. When sharing the package, retain LICENSE and the relevant notices in Licenses, OcrData and Assets. No extra installation or payment is required."
+  }
+}

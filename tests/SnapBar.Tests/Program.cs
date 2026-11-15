@@ -265,5 +265,6 @@ OfflineDictionaryTests.Run(Check);
 OfflineDictionaryLibraryTests.Run(Check);
 AiRuntimeTests.Run(Check);
 AiProviderCatalogTests.Run(Check);
+ProductVersionTests.Run(Check);
 Console.WriteLine($"{passed} passed, {failed} failed");
 return failed == 0 ? 0 : 1;

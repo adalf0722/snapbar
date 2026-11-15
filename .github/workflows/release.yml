@@ -40,11 +40,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          SNAPBAR_PREVIOUS_TAG: ${{ vars.SNAPBAR_PREVIOUS_TAG }}
         run: |
           $ErrorActionPreference = 'Stop'
           $plan = ./scripts/resolve-auto-version.ps1
           . ./scripts/release-notes.ps1
-          $null = Get-SnapBarReleaseContent -Commit $env:GITHUB_SHA -PreviousTag $plan.previousTag
+          if (-not $plan.recovered -or $plan.draft) {
+            $null = Get-SnapBarReleaseContent -Commit $env:GITHUB_SHA -PreviousTag $plan.previousTag
+          }
           "version=$($plan.version)" >> $env:GITHUB_OUTPUT
           "previous-tag=$($plan.previousTag)" >> $env:GITHUB_OUTPUT
           Write-Host "Selected automatic prerelease version: $($plan.version)"
@@ -110,7 +113,7 @@ jobs:
             throw 'Automatic prerelease version was not selected.'
           }
           if (-not $version) { $version = "v0.0.0-ci.$env:GITHUB_RUN_NUMBER.g$($env:GITHUB_SHA.Substring(0, 12))" }
-          $package = ./scripts/package-release.ps1 -Version $version -DesktopReport $env:DESKTOP_REPORT
+          $package = ./scripts/package-release.ps1 -Version $version -DesktopReport $env:DESKTOP_REPORT -SourceCommit $env:GITHUB_SHA
           "directory=$($package.directory)" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
       - name: Transfer release package
@@ -134,6 +137,10 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/download-artifact@v7
         with:
           name: windows-release-package
@@ -142,14 +149,13 @@ jobs:
         shell: pwsh
         env:
           PACKAGE_VERSION: ${{ needs.package.outputs.version }}
+          RELEASE_PRERELEASE: ${{ github.event_name == 'release' && toJSON(github.event.release.prerelease) || '' }}
         run: |
           $ErrorActionPreference = 'Stop'
           $archive = Join-Path $PWD "release-package/SnapBar-$env:PACKAGE_VERSION-win-x64.zip"
           $checksum = "$archive.sha256"
+          ./scripts/test-release-package.ps1 -Archive $archive -Version $env:PACKAGE_VERSION -Commit $env:GITHUB_SHA -ReleasePrerelease $env:RELEASE_PRERELEASE
           $expected = (Get-Content -LiteralPath $checksum -Raw -Encoding utf8).Split(' ')[0]
-          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $expected) {
-            throw 'Downloaded release ZIP checksum mismatch.'
-          }
           $summary = @(
             "Package verified: SnapBar-$env:PACKAGE_VERSION-win-x64.zip",
             "Source commit: $env:GITHUB_SHA",
@@ -178,6 +184,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/download-artifact@v7
         with:
           name: windows-release-package
@@ -188,10 +198,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ toJSON(github.event.release.prerelease) }}
         run: |
           $ErrorActionPreference = 'Stop'
           $archive = Join-Path $PWD "release-package/SnapBar-$env:RELEASE_TAG-win-x64.zip"
           $checksum = "$archive.sha256"
+          ./scripts/test-release-package.ps1 -Archive $archive -Version $env:RELEASE_TAG -Commit $env:GITHUB_SHA -ReleasePrerelease $env:RELEASE_PRERELEASE
           & gh release upload $env:RELEASE_TAG $archive $checksum --repo $env:GH_REPO
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed; existing assets were not overwritten.' }
   auto-release:

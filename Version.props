@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <SnapBarVersionPrefix>0.1.0</SnapBarVersionPrefix>
+    <VersionPrefix>$(SnapBarVersionPrefix)</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
+  </PropertyGroup>
+</Project>

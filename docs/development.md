@@ -115,9 +115,17 @@ Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執�
 
 `git push origin main` 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。最後自動建立預覽版 Release，附上 ZIP、SHA-256 與從版本庫彙整的使用者更新說明，一般使用者直接到 Releases 下載。
 
-自動版本固定使用 `v0.1.0-rc.N`，取遠端 tags 與 Releases（含草稿）內同系列最大的整數 N 加一；現有 rc.4 後為 rc.5、rc.6。不同系列與正式版不參與比較，改變系列需另行調整腳本。main push 工作依 concurrency group 序列執行；GitHub 預設只保留一個等待工作，密集連續 push 可能使尚未開始的舊工作被較新的 push 取代。正在執行的工作不會被取消。只有最後發布工作具有 contents write，不需額外 PAT。
+自動版本使用根目錄 `Version.props` 的 `SnapBarVersionPrefix`（目前 `0.1.0`），取遠端 tags 與 Releases（含草稿）內同系列最大的整數 rc 序號加一。每次 main push 仍發布預覽版；修正升 patch、新功能升 minor、1.0 後重大不相容變更升 major。正式版由維護者明確發布；該系列正式 Tag 或已公開正式 Release 存在後，新的 rc 分配會阻擋，須先調整 `Version.props` 為例如 `0.1.1` 或 `0.2.0`，新系列從 rc.1 起。失敗可留空號，已發布版本不可重用。main push 工作依 concurrency group 序列執行；GitHub 預設只保留一個等待工作，密集連續 push 可能使尚未開始的舊工作被較新的 push 取代。正在執行的工作不會被取消。
 
-發布頁先顯示繁中更新價值及使用方法，再提供直接下載、更新步驟與必要限制；來源 SHA、驗證資訊及完整比較連結放在折疊區。桌面或套件變更需新增 `release-notes/<date>-<topic>.json`，格式與撰寫規則見 [使用者更新說明](../release-notes/README.md)。版本選擇階段以完整 Git 歷史和前一公開 tag 檢查說明，缺漏會在打包前失敗；實際發布亦檢查。純網站、文件或工具變動會明確說明沒有桌面功能更新。既有公開 Release 的文字不會被本次修改追溯覆寫。
+同一 run 的恢復優先於正式版阻擋，核對 run ID 與來源 SHA 後沿用既有 Release 版本、更新說明基準與 artifact，不因之後新增的版本重新分配。只有尚未建立 Release 的早期失敗會重新選號。版本選擇與最後發布工作具有 contents write，其餘桌面建置／驗證維持唯讀，不需額外 PAT。
+
+更新說明基準跨系列選擇完整公開套件的最近祖先來源；同 commit 優先正式版，再依公開時間及 Tag ordinal 順序決勝。不同且互非祖先的候選來源、缺少完整歷史或已有公開套件卻找不到祖先時停止，不回退為首次發布。遇到祖先歧義或舊草稿缺少基準標記時，可在 GitHub repository Actions variables 暫設 `SNAPBAR_PREVIOUS_TAG` 為已驗證的公開祖先 Tag，再重跑原失敗工作；成功後移除變數，避免影響後續新發布。解析腳本亦接受 `-PreviousTag`。新草稿會保存基準標記，同 run 後續恢復沿用原值，不受 override 影響。
+
+選定的版本會寫入 App／Probe 的 `InformationalVersion`，格式為 `0.1.0-rc.N+完整來源SHA`。「關於與支援」與官網顯示 `0.1.0-rc.N` 及「預覽版」，ZIP 保持 `SnapBar-v0.1.0-rc.N-win-x64.zip`；診斷區保留完整來源。一般本機 build 顯示 `0.1.0-dev`／「開發版」，CI／validation 顯示「測試版」。其他合法非保留後綴（如 beta、alpha）一律視為預覽版；公開 Release 的 prerelease 旗標必須與通道相符，內部 dev／ci／validation 版本不可公開。無效版本拒絕建置／打包，無法解析的組件資訊不回退成正式版。
+
+版本解析由 Core 與 PowerShell 共用同一份 `ProductVersion` 程式碼。staging 取代舊套件前、ZIP 建立後與跨 runner 發布前，皆使用共用驗證器核對 App／Probe DLL 真實 ProductVersion 中的版本及來源 SHA；另保留 SHA-256 傳輸與附件衝突檢查。`scripts/test-version.ps1` 以真實 SDK 組件驗證版本切換與錯誤／缺漏／重複 ZIP 項目，`scripts/test-release-baseline.ps1` 驗證 Git 祖先與基準選擇，兩者已納入 `scripts/check.ps1`。完整規格見 [統一版本識別設計](superpowers/specs/2026-11-16-unified-version-design.md)。
+
+發布頁將共用 Windows 下載放在最上方，接著依序顯示繁中與英文各最多三項摘要、一次開始使用說明及合併去重的必要條件。重要更新提醒在兩種語言直接顯示，不因未入選前三項而隱藏；完整功能、使用方式、安裝限制、來源 SHA、驗證資訊與比較連結收進預設折疊區。桌面或套件變更需新增含 `en` 英文對應內容的 `release-notes/<date>-<topic>.json`，格式與撰寫規則見 [使用者更新說明](../release-notes/README.md)。版本選擇階段以完整 Git 歷史和前一公開 tag 檢查說明與譯文，缺漏會在打包前失敗；實際發布亦檢查。純網站、文件或工具變動以雙語明確說明沒有桌面功能更新。歷史繁中說明的英文補充另存於 `packaging/RELEASE-NOTE-TRANSLATIONS.json`，不修改已發布來源檔或公開 Release；同 run 重跑沿用既有內容。
 
 發布先建立對應確切 commit 的草稿，完整上傳兩個附件並核對 digest 後才公開，避免只有原始碼或部分附件的公開版本。整條流程在同一個 workflow 完成；GITHUB_TOKEN 建立的 Release 不會再次觸發 release 事件，避免重複打包。
 

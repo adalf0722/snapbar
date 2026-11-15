@@ -36,6 +36,15 @@ Check-Site 'drafts, missing timestamps and unrelated tags cannot replace public 
     $tag = New-SiteRelease 'validation'
     Assert-Site ((Get-SnapBarWebsiteDownload @($draft, $invalid, $tag, $old) 'fixture/repo').Version -ceq $old.tag_name)
 }
+Check-Site 'internal versions and inconsistent Release flags cannot become public downloads' {
+    foreach ($version in @('v0.0.0-validation', 'v0.1.0-dev', 'v0.0.0-ci.123.g012345abcdef', 'v0.1.0-rc.01')) {
+        Assert-Site ((Get-SnapBarWebsiteDownload @((New-SiteRelease $version), $old) 'fixture/repo').Version -ceq $old.tag_name)
+    }
+    $wrongFlag = New-SiteRelease 'v0.2.0'
+    Assert-Site ((Get-SnapBarWebsiteDownload @($wrongFlag, $old) 'fixture/repo').Version -ceq $old.tag_name)
+    $beta = New-SiteRelease 'v0.2.0-beta.1'
+    Assert-Site ((Get-SnapBarWebsiteDownload @($beta, $old) 'fixture/repo').Channel -ceq 'Preview')
+}
 Check-Site 'incomplete, duplicate, empty or foreign assets leave the previous complete release selected' {
     foreach ($kind in @('checksum', 'upload', 'duplicate', 'empty', 'foreign')) {
         $broken = New-SiteRelease 'v0.1.0-rc.11'
@@ -65,7 +74,8 @@ Check-Site 'generated bilingual pages have matching static ZIP, notes and versio
         $html = ConvertFrom-SnapBarUtf8 ([IO.File]::ReadAllBytes((Join-Path $output $relative))) $relative
         Assert-Site ([regex]::Matches($html, [regex]::Escape($selected.DownloadUrl)).Count -eq 2)
         Assert-Site ($html.Contains('id="release-notes" href="' + $selected.ReleaseUrl + '"'))
-        Assert-Site ($html.Contains('<span id="download-version">v0.1.0-rc.10</span>'))
+        $label = if ($relative -eq 'index.html') { '預覽版' } else { 'Preview' }
+        Assert-Site ($html.Contains('<span id="download-version">0.1.0-rc.10 · ' + $label + '</span>'))
         Assert-Site (-not $html.Contains('download.js') -and -not $html.Contains('api.github.com'))
         Assert-Site ((Get-FileHash -LiteralPath (Join-Path $source $relative)).Hash -ceq $before[$relative])
     }

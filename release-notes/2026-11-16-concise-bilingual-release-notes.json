@@ -1,0 +1,19 @@
+{
+  "title": "一眼看懂中英文更新重點",
+  "summary": "發布頁將下載放在最上方，中英文各列精簡重點，完整說明可按需展開。",
+  "highlights": [
+    "繁體中文與英文各顯示最多三項主要更新，減少重複說明。",
+    "所有功能與使用方法保留於折疊區，重要更新提醒仍直接顯示。"
+  ],
+  "usage": "開啟新版 GitHub Release，從頁面上方下載 Windows x64 套件；需要完整功能說明與驗證資訊時，展開下方「完整說明與技術資訊」。",
+  "priority": 60,
+  "en": {
+    "title": "Scan release highlights in Chinese and English",
+    "summary": "Find the Windows download first, scan concise highlights in Chinese or English, and expand the full details when needed.",
+    "highlights": [
+      "Each language shows up to three featured changes with less repetitive text.",
+      "All changes and usage instructions remain in the collapsed details; important update notices stay visible."
+    ],
+    "usage": "Open a new GitHub Release and use the Windows x64 download at the top. Expand Full details & technical information for all changes, instructions and verification information."
+  }
+}

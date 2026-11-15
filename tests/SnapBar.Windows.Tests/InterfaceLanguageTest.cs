@@ -74,6 +74,10 @@ internal static class InterfaceLanguageTest
                 var os = "zh-TW"; int queries = 0;
                 main = new MainWindow(new SettingsStore(path), () => { }, () => false, systemUiLanguage: () => { queries++; return os; });
                 main.Show(); await Task.Delay(80);
+                var informational = typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+                var productVersion = ProductVersion.Parse(informational.Split('+')[0]);
+                Check("support version matches the running assembly in Chinese", Find<TextBlock>(main, "SettingsProductVersion").Text == "版本 " + productVersion.Version);
+                Check("support channel follows Chinese interface", Find<TextBlock>(main, "SettingsVersionChannel").Text == UiText.Get(CultureInfo.GetCultureInfo("zh-Hant"), "VersionChannel_" + productVersion.Channel));
                 Check("new settings follow injected Windows UI language", main.InterfaceLanguagePreference == "system" && main.Title == "SnapBar · 設定");
                 var controller = Field(main, "controller");
                 var tray = (TrayIcon?)Field(main, "tray");
@@ -102,6 +106,8 @@ internal static class InterfaceLanguageTest
                 var scope = UiText.Capture();
                 selector.SelectedIndex = 2;
                 Check("language is saved before settings refresh", new SettingsStore(path).Load().Settings.InterfaceLanguage == "en" && main.Title == "SnapBar · Settings");
+                Check("support version keeps its suffix after switching to English", Find<TextBlock>(main, "SettingsProductVersion").Text == "Version " + productVersion.Version);
+                Check("support channel translates to English", Find<TextBlock>(main, "SettingsVersionChannel").Text == UiText.Get(CultureInfo.GetCultureInfo("en"), "VersionChannel_" + productVersion.Channel));
                 Check("language selector translates all choices in place without changing the selected preference",
                     selector.Items.Cast<string>().SequenceEqual(new[] { "System", "Traditional Chinese", "English" })
                     && selector.SelectedIndex == 2 && new SettingsStore(path).Load().Settings.InterfaceLanguage == "en"

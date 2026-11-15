@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Automation;
+using SnapBar.Core;
 
 namespace SnapBar.App;
 
@@ -24,7 +25,16 @@ internal sealed class SettingsSupportPage : ContentControl
         product.Children.Add(ActionUi.Heading("SnapBar", 22));
         var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? UiText.Get("SettingsSupportPage_001");
-        var versionLabel = ActionUi.Text(UiText.Join(UiText.Get("SettingsSupportPage_002"), version.Split('+')[0]), 14, ActionUi.Muted); versionLabel.ToolTip = version; product.Children.Add(versionLabel);
+        ProductVersion? productIdentity = null;
+        try { productIdentity = ProductVersion.Parse(version.Split('+')[0]); } catch (FormatException) { }
+        var versionLabel = ActionUi.Text(UiText.Join(UiText.Get("SettingsSupportPage_002"), productIdentity?.Version ?? UiText.Get("SettingsSupportPage_001")), 14, ActionUi.Muted);
+        AutomationProperties.SetAutomationId(versionLabel, "SettingsProductVersion");
+        versionLabel.ToolTip = version; product.Children.Add(versionLabel);
+        if (productIdentity != null)
+        {
+            var channel = ActionUi.Text(UiText.Get("VersionChannel_" + productIdentity.Channel), 12, ActionUi.Muted);
+            AutomationProperties.SetAutomationId(channel, "SettingsVersionChannel"); product.Children.Add(channel);
+        }
         identity.Children.Add(product); heading.Children.Add(identity);
         var lifetime = ActionUi.Text(UiText.Get("SettingsSupportPage_003"), 13, ActionUi.Muted); lifetime.Margin = new(0, 16, 0, 16); heading.Children.Add(lifetime);
         if (getStarted != null)

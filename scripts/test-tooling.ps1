@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'release-common.ps1')
+. (Join-Path $PSScriptRoot 'version-fixtures.ps1')
 $run = New-SnapBarRun 'tooling'
 $script:toolingPassed = 0
 function Check-Tooling([string]$Name, [scriptblock]$Test) {
@@ -148,6 +149,8 @@ Check-Tooling 'staged checks inspect index blobs even when working files are rep
     finally { $env:GIT_INDEX_FILE = $oldIndex; Pop-Location }
 }
 $releaseFixture = Join-Path $run 'release-fixture'
+$fixtureCommit = 'a' * 40
+$fixtureAssembly = New-SnapBarVersionFixture (Join-Path $run 'version-fixture') '1.2.3-rc.1' $fixtureCommit
 Check-Tooling 'self-contained runtime pin matches reviewed Windows Desktop notice sources and publish guard' {
     $props = [xml][IO.File]::ReadAllText((Join-Path $script:SnapBarRepo 'Directory.Build.props'))
     $runtimeVersion = $props.Project.PropertyGroup.RuntimeFrameworkVersion.InnerText
@@ -187,7 +190,7 @@ foreach ($file in $releaseFiles) {
 Check-Tooling 'release archive rejects unsafe version names before creating output' {
     $output = Join-Path $run 'invalid-release'
     foreach ($version in @('../escape', 'v1/2/3', 'v1.2', 'v01.2.3', 'v1.2.3 trailing', '-v1.2.3')) {
-        Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture $version $output }
+        Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture $version $output -Commit $fixtureCommit }
     }
     Assert-Tooling (-not (Test-Path -LiteralPath $output))
 }
@@ -197,7 +200,7 @@ Check-Tooling 'release archive refuses incomplete self-contained App and Probe p
         $bytes = [IO.File]::ReadAllBytes($path)
         try {
             [IO.File]::WriteAllBytes($path, [byte[]]@())
-            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'incomplete-release') }
+            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'incomplete-release') -Commit $fixtureCommit }
         }
         finally { [IO.File]::WriteAllBytes($path, $bytes) }
     }
@@ -208,28 +211,33 @@ Check-Tooling 'release archive rejects each missing or empty third-party notice'
         $bytes = [IO.File]::ReadAllBytes($path)
         try {
             Remove-Item -LiteralPath $path
-            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'missing-notice-release') }
+            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'missing-notice-release') -Commit $fixtureCommit }
             [IO.File]::WriteAllBytes($path, [byte[]]@())
-            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'empty-notice-release') }
+            Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3' (Join-Path $run 'empty-notice-release') -Commit $fixtureCommit }
         }
         finally { [IO.File]::WriteAllBytes($path, $bytes) }
     }
 }
 Check-Tooling 'release ZIP preserves root layout and Probe content with a matching SHA-256' {
-    $result = New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' (Join-Path $run 'release-output')
+    Copy-Item -LiteralPath $fixtureAssembly -Destination (Join-Path $releaseFixture 'SnapBar.App.dll')
+    Copy-Item -LiteralPath $fixtureAssembly -Destination (Join-Path $releaseFixture 'Probe/SnapBar.Probe.dll')
+    $result = New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' (Join-Path $run 'release-output') -Commit $fixtureCommit
     $zip = [IO.Compression.ZipFile]::OpenRead($result.archive)
     try {
         Assert-Tooling ($zip.Entries.Count -eq $releaseFiles.Count)
         foreach ($file in $releaseFiles) {
-            $reader = [IO.StreamReader]::new($zip.GetEntry($file).Open())
-            try { Assert-Tooling ($reader.ReadToEnd() -eq "fixture: $file") }
-            finally { $reader.Dispose() }
+            $stream = $zip.GetEntry($file).Open(); $bytes = [IO.MemoryStream]::new()
+            try {
+                $stream.CopyTo($bytes)
+                Assert-Tooling ([Convert]::ToBase64String($bytes.ToArray()) -ceq [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $releaseFixture $file))))
+            }
+            finally { $stream.Dispose(); $bytes.Dispose() }
         }
     }
     finally { $zip.Dispose() }
     $hash = (Get-FileHash -LiteralPath $result.archive -Algorithm SHA256).Hash.ToLowerInvariant()
     Assert-Tooling ([IO.File]::ReadAllText($result.checksum) -eq "$hash  SnapBar-v1.2.3-rc.1-win-x64.zip`n")
-    Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' $result.directory }
+    Expect-ToolingFailure { New-SnapBarReleaseArchive $releaseFixture 'v1.2.3-rc.1' $result.directory -Commit $fixtureCommit }
     Assert-Tooling ((Get-FileHash -LiteralPath $result.archive -Algorithm SHA256).Hash.ToLowerInvariant() -eq $hash)
 }
 $workflowRelative = '.github/workflows/guardrail-' + [guid]::NewGuid().ToString('N') + '.yml'

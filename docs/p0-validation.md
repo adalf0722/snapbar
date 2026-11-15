@@ -1,5 +1,29 @@
 # P0 驗證紀錄
 
+## 2026-11-16 精簡中英雙語發布說明
+
+自動發布頁改為共用 Windows x64 下載置頂，明示預覽版、未簽章與手動更新；下方依序顯示繁中與英文各最多三項摘要，必要條件合併去重。超出的更新仍保留在完整說明，重要功能移除或使用提醒則在兩種語言直接顯示。完整功能、使用方式、安裝限制、來源與驗證資訊預設收合。既有 28 份繁中 JSON 保持原樣，英文及補充提醒另存於 `packaging/RELEASE-NOTE-TRANSLATIONS.json`；新說明直接包含 `en` 欄位。
+
+`scripts/test-release-notes.ps1` 的 10 項檢查通過，涵蓋三項雙語摘要、AI 設定去重、下載及語言順序、完整內容保留、超額更新與重要提醒、優先序、確切 commit 譯文、缺少英文／欄位／必要條件與過長摘要拒絕、維護版本，以及 Git index 與工作目錄隔離。既有自動發布 20 項仍通過，包括草稿、缺漏更新說明、附件保護及公開版本重跑不改寫。
+
+完整 `scripts/check.ps1` 通過：版本 30、工具契約 27、推送契約 11、自動發布 20、雙語說明 10、祖先基準 8、官網 9、Core 568、ActionRunner 37；actionlint 通過。預覽測試紀錄：`artifacts/checks/release-note-tests/20261115T235202255Z-222ba43b5fa34f1a99c321b702f8b4cc/`。
+
+以截圖中的中英互譯、簡繁互轉、改善寫作三項真實說明產生本機範例，使用 CommonMark 確認中英文順序、粗體與收合區語法，再以 Edge headless 擷取並檢視畫面。產物為 `artifacts/release-notes-preview/release-preview.md`、`release-preview.html`、`release-preview.png`；確認下載與雙語重點可直接閱讀，完整內容預設收合。此為本機版型預覽，不是已發布的 rc.14 頁面。
+
+本次未重新執行桌面 Release 或替換 `artifacts/p0`，未 push、修改公開 Release 或部署官網。後續新提交仍依既有 pre-push 流程建立自己的桌面測試證據，既有公開說明與附件保持不變。
+
+## 2026-11-16 下載與程式版本統一
+
+版本系列集中於 `Version.props`；main push 繼續自動產生 rc 預覽版。建置將同一版本及來源 SHA 寫入 App／Probe，設定頁與雙語官網顯示版本及通道；發布前核對 staging 與 ZIP 內的組件資訊。補上跨系列更新說明基準、正式版之後的舊 run 恢復，以及未知合法後綴歸類為預覽版的規則。
+
+最終 `scripts/check.ps1` 通過：版本與真實組件／ZIP 30、工具契約 27、推送契約 11、自動發布 20、祖先基準 8、官網 9、Core 568、ActionRunner 37，另通過 actionlint。錯誤來源、錯誤版本、混用 App／Probe、缺漏或重複組件均拒絕；缺少更新說明的發布測試使用來源相符的真實組件，確認是更新說明門檻阻擋。
+
+桌面 Release 八套件共 887 項通過，零失敗、零略過：ActionRunner 37、Lifecycle 141、Appearance 231、CompatibilitySlow 22、AiRuntime 117、AiPanel 254、Lookup 17、Language 68。另有 Preflight 1。報告：`artifacts/checks/desktop/20261115T232308032Z-e1d0bf847f4145e3a7805b67e30bdf6a/report.json`。中英文設定頁版本與通道均已驗證；畫面截圖：`artifacts/ui-polish/settings-version.png`，本機開發版顯示 `0.1.0-dev`／「開發版」，診斷區保留完整來源。
+
+執行 `scripts/package-release.ps1 -Version v0.0.0-validation`，沿用上述完整桌面證據。App／Probe 自含式發布、Probe smoke 10、Startup smoke 1、Language smoke 1 與 staging 版本核對全部成功。`artifacts/p0` 已替換為這份本機測試版，原套件保留於 `artifacts/publish/239c233ccb304c93adced261b33feaa0/previous`。ZIP 與 SHA-256：`artifacts/releases/e9a26751c5014e729e39c62947c0416d/SnapBar-v0.0.0-validation-win-x64.zip` 及同名 `.sha256`。複製至獨立目錄後再次執行發布前驗證，App／Probe 均為 `0.0.0-validation+9841ff37b8aa9100413100b19c0dd1734c145323`，完整版本、來源與 checksum 相符；測試版不可公開發布的檢查亦通過。該 SHA 為本次本機演練的 HEAD，未提交實作由桌面來源指紋綁定，這份 ZIP 不代表已提交或公開的版本。
+
+本次沒有 push、建立遠端 Release 或部署官網；GitHub CLI 在本機未安裝，GitHub 發布寫入以既有受控 gh 替身測試，尚未進行真實雲端端到端驗證。未重新進行真實跨應用程式或混合 DPI 人工驗收。
+
 ## 2026-11-15 衝突直接重錄與完整移除綁定
 
 儲存時區分按鍵衝突與其他錯誤：SnapBar 內部重複綁定或原生註冊衝突，會保留已選項目並將焦點自動移回錄製區，可直接按下一組。磁碟寫入失敗保留儲存按鈕焦點及草稿，不要求重新輸入按鍵。「移除綁定」取代原本的清除，成功時同時移除按鍵與目標 ID，關閉編輯視窗並刷新清單；AI 命令與自訂動作定義保留。沒有按鍵但仍保存目標的舊設定也能移除綁定；主要快捷鍵仍使用恢復預設。
