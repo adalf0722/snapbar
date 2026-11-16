@@ -23,20 +23,49 @@ internal static class ClipboardCompatibilityTest
     [DllImport("kernel32.dll")] private static extern nint GlobalAlloc(uint flags, nuint size);
     [DllImport("kernel32.dll")] private static extern nint GlobalLock(nint memory);
     [DllImport("kernel32.dll")] private static extern bool GlobalUnlock(nint memory);
+    [DllImport("user32.dll")] private static extern nint GetClipboardData(uint format);
+
+    private static string ReadClipboardText()
+    {
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            if (!OpenClipboard(0)) { Thread.Sleep(10); continue; }
+            try
+            {
+                var memory = GetClipboardData(13);
+                if (memory == 0) throw new InvalidOperationException("Fixture expected Unicode clipboard data");
+                var pointer = GlobalLock(memory);
+                if (pointer == 0) throw new InvalidOperationException("Fixture could not lock Unicode clipboard data");
+                try { return Marshal.PtrToStringUni(pointer) ?? ""; }
+                finally { GlobalUnlock(memory); }
+            }
+            finally { CloseClipboard(); }
+        }
+        throw new InvalidOperationException("Fixture clipboard read remained busy");
+    }
 
     private sealed class OpaqueTextBox : TextBox
     {
+        public bool ExposeValue { get; set; }
         public string? Marker { get; set; }
         public int Copies { get; private set; }
         protected override AutomationPeer OnCreateAutomationPeer() => new OpaquePeer(this);
-        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        protected override async void OnPreviewKeyDown(KeyEventArgs e)
         {
             if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 Copies++;
-                if (Marker != null)
+                if (Marker is { } marker)
                 {
-                    if (!OpenClipboard(new WindowInteropHelper(Window.GetWindow(this)).Handle)) throw new InvalidOperationException("fixture clipboard busy");
+                    e.Handled = true;
+                    var owner = new WindowInteropHelper(Window.GetWindow(this)).Handle;
+                    var opened = false;
+                    for (var attempt = 0; attempt < 20 && !opened; attempt++)
+                    {
+                        opened = OpenClipboard(owner);
+                        if (!opened) await Task.Delay(10);
+                    }
+                    if (!opened) throw new InvalidOperationException("fixture clipboard remained busy after bounded retry");
                     try
                     {
                         EmptyClipboard();
@@ -47,8 +76,8 @@ internal static class ClipboardCompatibilityTest
                             if (SetClipboardData(format, memory) == 0) throw new InvalidOperationException("fixture write failed");
                         }
                         Set(13, Encoding.Unicode.GetBytes(Sample + "\0"));
-                        var metadata = Marker.EndsWith("selection") ? "{\"isFromEmptySelection\":false}" : "{\"isFromEmptySelection\":true}";
-                        if (Marker.StartsWith("chromium"))
+                        var metadata = marker.EndsWith("selection") ? "{\"isFromEmptySelection\":false}" : "{\"isFromEmptySelection\":true}";
+                        if (marker.StartsWith("chromium"))
                         {
                             using var stream = new MemoryStream(); using var writer = new BinaryWriter(stream, Encoding.Unicode, true);
                             writer.Write(0); writer.Write(1);
@@ -57,7 +86,7 @@ internal static class ClipboardCompatibilityTest
                             stream.Position = 0; writer.Write((int)stream.Length - 4);
                             Set(RegisterClipboardFormat("Chromium Web Custom MIME Data Format"), stream.ToArray());
                         }
-                        else Set(RegisterClipboardFormat(Marker.StartsWith("vscode") ? "vscode-editor-data" : Marker), Encoding.UTF8.GetBytes(metadata + "\0"));
+                        else Set(RegisterClipboardFormat(marker.StartsWith("vscode") ? "vscode-editor-data" : marker), Encoding.UTF8.GetBytes(metadata + "\0"));
                     }
                     finally { CloseClipboard(); }
                     e.Handled = true; return;
@@ -68,7 +97,8 @@ internal static class ClipboardCompatibilityTest
         private sealed class OpaquePeer(OpaqueTextBox owner) : TextBoxAutomationPeer(owner)
         {
             public override object? GetPattern(PatternInterface patternInterface) =>
-                patternInterface is PatternInterface.Text or PatternInterface.Value ? null : base.GetPattern(patternInterface);
+                patternInterface == PatternInterface.Text || patternInterface == PatternInterface.Value && !owner.ExposeValue
+                    ? null : base.GetPattern(patternInterface);
         }
     }
 
@@ -89,7 +119,10 @@ internal static class ClipboardCompatibilityTest
                 {
                     switch (command)
                     {
-                        case "select": edit.Marker = null; edit.Text = Sample; edit.Focus(); edit.SelectAll(); break;
+                        case "select": edit.ExposeValue = false; edit.IsReadOnly = false; edit.Marker = null; edit.Text = Sample; edit.Focus(); edit.SelectAll(); break;
+                        case "writable": edit.ExposeValue = true; edit.IsReadOnly = false; edit.Marker = null; edit.Text = Sample; edit.Focus(); edit.SelectAll(); break;
+                        case "readonly": edit.ExposeValue = true; edit.IsReadOnly = true; edit.Marker = null; edit.Text = Sample; edit.Focus(); edit.SelectAll(); break;
+                        case "readonly-state": edit.IsReadOnly = true; break;
                         case "empty": edit.Marker = null; edit.Focus(); edit.Select(0, 0); break;
                         case "other": other.Focus(); other.SelectAll(); break;
                         case "changed": edit.Focus(); edit.Select(0, 7); break;
@@ -99,7 +132,12 @@ internal static class ClipboardCompatibilityTest
                             edit.Marker = command; edit.Focus(); edit.Select(0, 0); break;
                         case "quit": window.Close(); break;
                     }
-                    Console.WriteLine(edit.Copies);
+                    Console.WriteLine(command switch {
+                        "is-sample" => edit.Text == Sample ? 1 : 0,
+                        "is-empty" => edit.Text.Length == 0 ? 1 : 0,
+                        "is-replacement" => edit.Text == "fixture result" ? 1 : 0,
+                        "other-intact" => other.Text == "Other focus" ? 1 : 0,
+                        _ => edit.Copies });
                 });
                 if (command == "quit") break;
             }
@@ -135,7 +173,20 @@ internal static class ClipboardCompatibilityTest
                 {
                     await fixture.StandardInput.WriteLineAsync(command); await fixture.StandardInput.FlushAsync();
                     var response = await fixture.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                    if (response == null) throw new InvalidOperationException("Compatibility fixture exited before replying to the test command");
                     await Task.Delay(50); return int.Parse(response!);
+                }
+                async Task<bool> AwaitFixture(string command)
+                {
+                    // SendInput queues events; wait for the independent fixture to consume
+                    // the single action, without retrying the action or changing expected data.
+                    var deadline = Stopwatch.StartNew();
+                    while (deadline.Elapsed < TimeSpan.FromSeconds(3))
+                    {
+                        if (await Command(command) == 1) return true;
+                        await Task.Delay(25);
+                    }
+                    return false;
                 }
                 fixture.Refresh(); Native.SetForegroundWindow(fixture.MainWindowHandle);
                 Console.WriteLine("WAITING: activate SnapBar Clipboard Compatibility Fixture");
@@ -160,14 +211,14 @@ internal static class ClipboardCompatibilityTest
                 }
                 Clipboard.SetText("original clipboard");
                 await Capture();
-                Check(controller.ActiveSelection == null && await Command("stats") == 0 && Clipboard.GetText() == "original clipboard", "disabled fallback never sends Ctrl+C");
+                Check(controller.ActiveSelection == null && await Command("stats") == 0 && ReadClipboardText() == "original clipboard", "disabled fallback never sends Ctrl+C");
                 controller.ClipboardCompatibilityEnabled = true; await Capture();
                 Check(controller.ActiveSelection is { Source: ClipboardSelectionAdapter.Source, Editable: null, Text: Sample }
-                    && Clipboard.GetText() == "original clipboard", "real Ctrl+C reads Unicode from unsupported provider and restores original clipboard");
+                    && ReadClipboardText() == "original clipboard", "real Ctrl+C reads Unicode from unsupported provider and restores original clipboard");
                 await controller.ExecuteAsync(TextAction.Copy);
-                Check(Clipboard.GetText() == Sample, "Copy revalidates generic selection and copies exact text");
+                Check(ReadClipboardText() == Sample, "Copy revalidates generic selection and copies exact text");
                 Clipboard.SetText("original clipboard"); await Capture(); await controller.ExecuteAsync(TextAction.Search);
-                Check(launched.Count == 1 && Uri.UnescapeDataString(launched[0].Query).Contains(Sample) && Clipboard.GetText() == "original clipboard", "Search revalidates generic selection without retaining temporary clipboard text");
+                Check(launched.Count == 1 && Uri.UnescapeDataString(launched[0].Query).Contains(Sample) && ReadClipboardText() == "original clipboard", "Search revalidates generic selection without retaining temporary clipboard text");
                 var script = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "fixture", CustomActionKind.PowerShell, "terminal", "fixture", ActionOutput.Window);
                 var replace = script with { Id = "custom-" + Guid.NewGuid().ToString("N"), Output = ActionOutput.ReplaceSelection };
                 controller.ConfigureActions(ActionCatalog.Normalize(new() { CustomActions = [script, replace] }));
@@ -182,20 +233,26 @@ internal static class ClipboardCompatibilityTest
                 await Capture(); before = await Command("other"); await controller.ExecuteAsync(TextAction.Search);
                 Check(launched.Count == 1 && before == await Command("stats"), "programmatic focus change inside same window prevents recopy and action");
                 await Command("select"); await Capture(); await Command("changed"); await controller.ExecuteAsync(TextAction.Search);
-                Check(launched.Count == 1 && Clipboard.GetText() == "original clipboard", "changed selection text cancels action and restores clipboard");
+                Check(launched.Count == 1 && ReadClipboardText() == "original clipboard", "changed selection text cancels action and restores clipboard");
                 await Command("empty"); await Capture();
-                Check(controller.ActiveSelection == null && Clipboard.GetText() == "original clipboard", "empty selection with no copy response never reuses stale clipboard contents");
+                Check(controller.ActiveSelection == null && ReadClipboardText() == "original clipboard", "empty selection with no copy response never reuses stale clipboard contents");
                 foreach (var marker in new[] { "MSDEVLineSelect", "VisualStudioEditorOperationsLineCutCopyClipboardTag", "vscode-empty", "chromium-empty" })
                 {
                     await Command(marker); await Capture();
-                    Check(controller.ActiveSelection == null && Clipboard.GetText() == "original clipboard", "empty-line copy marker is rejected after clipboard restoration: " + marker);
+                    var restored = ReadClipboardText();
+                    Check(controller.ActiveSelection == null && restored == "original clipboard",
+                        "empty-line copy marker is rejected after clipboard restoration: " + marker
+                        + $" (selection absent={controller.ActiveSelection == null}, clipboard restored={restored == "original clipboard"}, clipboard length={restored.Length})");
                 }
                 await Command("vscode-selection"); await Capture();
-                Check(controller.ActiveSelection?.Text == Sample && Clipboard.GetText() == "original clipboard", "explicit nonempty editor metadata remains supported");
+                Check(controller.ActiveSelection?.Text == Sample && ReadClipboardText() == "original clipboard", "explicit nonempty editor metadata remains supported");
                 await Command("chromium-selection"); await Capture();
-                Check(controller.ActiveSelection?.Text == Sample && Clipboard.GetText() == "original clipboard", "Chromium UTF-16 custom metadata supports nonempty editor selection");
+                var chromiumClipboard = ReadClipboardText();
+                Check(controller.ActiveSelection?.Text == Sample && chromiumClipboard == "original clipboard",
+                    "Chromium UTF-16 custom metadata supports nonempty editor selection"
+                    + $" (selection matches={controller.ActiveSelection?.Text == Sample}, clipboard restored={chromiumClipboard == "original clipboard"}, clipboard length={chromiumClipboard.Length}, foreground fixture={Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId == fixture.Id})");
                 before = await Command("password"); await Capture();
-                Check(controller.ActiveSelection == null && before == await Command("stats") && Clipboard.GetText() == "original clipboard", "password focus never triggers clipboard fallback");
+                Check(controller.ActiveSelection == null && before == await Command("stats") && ReadClipboardText() == "original clipboard", "password focus never triggers clipboard fallback");
                 before = await Command("button"); await Capture();
                 Check(controller.ActiveSelection == null && before == await Command("stats"), "unsupported non-text focus does not authorize copying");
                 await Command("select");
@@ -218,7 +275,7 @@ internal static class ClipboardCompatibilityTest
                     await Capture(); await controller.ExecuteCustomAsync(longScript.Id);
                     resultWindow = app.Windows.OfType<ActionResultWindow>().SingleOrDefault(w => w.IsVisible);
                     Check(resultWindow != null && Children<FlowDocumentScrollViewer>(resultWindow).Any(viewer => new System.Windows.Documents.TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text.TrimEnd() == "long script completed")
-                        && Clipboard.GetText() == "original clipboard", "35-second script retains result after original candidate deadline and preserves clipboard");
+                        && ReadClipboardText() == "original clipboard", "35-second script retains result after original candidate deadline and preserves clipboard");
                     resultWindow!.Close();
                 }
                 runner = async (_, _, _) => { await Command("other"); return new("ok", "retained readonly result"); };
@@ -226,8 +283,52 @@ internal static class ClipboardCompatibilityTest
                 resultWindow = app.Windows.OfType<ActionResultWindow>().SingleOrDefault(w => w.IsVisible);
                 Check(resultWindow != null && Children<FlowDocumentScrollViewer>(resultWindow).Any(viewer => new System.Windows.Documents.TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text.TrimEnd() == "retained readonly result")
                     && !Children<Button>(resultWindow).Single(b => AutomationProperties.GetName(b) == "套用至原文").IsEnabled
-                    && Clipboard.GetText() == "original clipboard", "extended lease retains readonly output after focus change without source write permission");
+                    && ReadClipboardText() == "original clipboard", "extended lease retains readonly output after focus change without source write permission");
                 resultWindow!.Close();
+                await Command("writable"); Clipboard.SetText("fixture result"); await Capture();
+                Check(controller.ActiveSelection is { Source: "clipboard", Editable: true } writable
+                    && writable.WriteToken == writable.Id && SessionPolicy.CanWrite(writable, writable.Target),
+                    "unsupported text provider with writable ValuePattern receives a bound write token");
+                await controller.ExecuteAsync(TextAction.Paste); await Task.Delay(100);
+                Check(await AwaitFixture("is-replacement") && ReadClipboardText() == "fixture result",
+                    "verified clipboard Paste replaces exact selection and preserves the original paste data");
+                await Command("writable"); await Capture(); await controller.ExecuteAsync(TextAction.Cut); await Task.Delay(100);
+                Check(await AwaitFixture("is-empty") && ReadClipboardText() == Sample,
+                    "verified clipboard Cut removes selection and leaves the cut text on the clipboard");
+                await Command("readonly"); await Capture();
+                Check(controller.ActiveSelection is { Editable: null, WriteToken: null },
+                    "read-only ValuePattern cannot mint a clipboard write token");
+                await Command("writable"); await Capture(); await Command("other");
+                await controller.ExecuteAsync(TextAction.Paste);
+                Check(await Command("is-sample") == 1 && await Command("other-intact") == 1,
+                    "same-window focus change rejects a previously writable clipboard selection");
+                runner = (_, _, _) => Task.FromResult(new ScriptExecutionResult("ok", "fixture result"));
+                await Command("writable"); controller.ConfigureActions(ActionCatalog.Normalize(new() { CustomActions = [replace] }));
+                await Capture(); await controller.ExecuteCustomAsync(replace.Id); await Task.Delay(100);
+                Check(await AwaitFixture("is-replacement"),
+                    "custom replacement revalidates and writes a verified clipboard selection");
+                runner = async (_, _, _) => { await Command("other"); return new("ok", "fixture result"); };
+                await Command("writable"); await Capture(); await controller.ExecuteCustomAsync(replace.Id);
+                Check(await Command("is-sample") == 1 && await Command("other-intact") == 1,
+                    "late replacement result cannot write after a programmatic focus switch");
+                runner = async (_, _, _) => { await Command("changed"); return new("ok", "fixture result"); };
+                await Command("writable"); await Capture(); await controller.ExecuteCustomAsync(replace.Id);
+                Check(await Command("is-sample") == 1,
+                    "late replacement result cannot overwrite changed selection in the same editor");
+                await Command("writable");
+                using (var writeProbe = new ProbeClient(TestPaths.ProbeExecutable))
+                {
+                    var candidate = (await writeProbe.RequestAsync(new("capture", fixture.MainWindowHandle.ToInt64()))).ClipboardTarget;
+                    Check(candidate?.WriteToken == candidate?.Id && candidate != null,
+                        "Probe issues the write capability only on its original candidate");
+                    await Command("readonly-state");
+                    var revoked = await writeProbe.RequestAsync(new("clipboard-validate", SessionId: candidate!.Id));
+                    await Command("writable");
+                    var revived = await writeProbe.RequestAsync(new("clipboard-validate", SessionId: candidate.Id));
+                    Check(revoked.Status == "focus-changed" && revived.Status == "expired",
+                        "revoked write capability cannot revive when the same editor becomes writable again");
+                }
+                Clipboard.SetText("original clipboard");
                 await Command("select"); await Capture(); controller.ClipboardCompatibilityEnabled = false;
                 before = await Command("stats"); await controller.ExecuteAsync(TextAction.Search);
                 Check(controller.ActiveSelection == null && launched.Count == 1 && before == await Command("stats"), "disabling compatibility immediately invalidates prior generic session");

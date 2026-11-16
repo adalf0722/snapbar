@@ -315,9 +315,15 @@ internal static class ClipboardRaceTest
                 });
                 await Check("second write during stability window is preserved", async () =>
                 {
-                    var result = await reader.CaptureAsync(target, () => true, Plan(new(() =>
-                        { Publish("first version"); Later(40, () => Publish("new version")); return true; }, true)));
-                    Require(result.Status == "clipboard-changed" && result.Selection == null, "Unstable clipboard was accepted");
+                    var changed = false;
+                    var result = await reader.CaptureAsync(target, () => true,
+                        Plan(new(() => Publish("first version"), true)), diagnostic: stage =>
+                        {
+                            // Coordinate with the observed update, rather than assuming a 40 ms
+                            // timer runs after the reader's first poll on a loaded desktop.
+                            if (stage == "copy-observed" && !changed) { changed = true; Publish("new version"); }
+                        });
+                    Require(changed && result.Status == "clipboard-changed" && result.Selection == null, "Unstable clipboard was accepted");
                     ExpectClipboard(owner, "new version");
                 });
                 await Check("empty copied text restores original clipboard and yields no selection", async () =>

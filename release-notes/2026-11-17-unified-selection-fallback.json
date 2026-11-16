@@ -1,0 +1,20 @@
+{
+  "title": "統一選字讀取與相容備援",
+  "summary": "優先快速讀取 UIA，介面不支援時共用相容複製流程，並擴大到具備可驗證文字介面的未知應用程式。",
+  "highlights": [
+    "原生選字成功即直接使用，已驗證的相容來源不再等待完整原生重試。",
+    "未知應用程式可透過原生焦點、滑鼠位置及 MSAA 文字角色取得相容讀取資格，無須逐一加入名單。",
+    "沿用密碼欄位拒絕、來源重驗、剪貼簿還原及自動失敗退避；相容讀取不會開放剪下或貼上。"
+  ],
+  "usage": "正常結束舊版後啟動新版，保留「選字相容模式」開啟並選取文字即可。原有關閉偏好會保留；無法驗證來源的應用程式仍可能無法讀取。Sublime 仍需先完成其相容快捷鍵設定。",
+  "en": {
+    "title": "Unified selection reading and compatibility fallback",
+    "summary": "Reads through UIA first, then uses a shared clipboard fallback for verified sources, including previously unknown applications with verifiable text interfaces.",
+    "highlights": [
+      "Successful native reads return directly, while verified compatibility sources skip the full native readiness retries.",
+      "Unknown applications can qualify through native focus, pointer ownership and MSAA text roles without an application allowlist.",
+      "Preserves password rejection, source revalidation, clipboard restoration and automatic failure backoff. Compatibility reads do not authorize Cut or Paste."
+    ],
+    "usage": "Quit the old build normally and start the new build with Selection compatibility enabled, then select text. Existing disabled preferences are preserved. Applications whose source cannot be verified may still be unsupported. Sublime still requires its compatibility key bindings to be configured first."
+  }
+}

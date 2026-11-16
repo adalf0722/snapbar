@@ -16,26 +16,38 @@ internal sealed class SelectionReader
     private int[]? focusedId;
     private ClipboardCaptureTarget? clipboardTarget;
     private int[]? clipboardFocusId;
+    private NativeClipboardSource? clipboardNativeSource;
+    private int clipboardX, clipboardY;
     private readonly ClipboardCandidateLease clipboardLease = new();
+    internal SelectionProbeDiagnostics? Diagnostics { get; private set; }
+    internal void BeginDiagnostics(bool enabled) => Diagnostics = enabled ? new() : null;
+    private void Stage(string stage) { if (Diagnostics != null) Diagnostics = Diagnostics with { Stage = stage }; }
 
     public ProbeResponse Capture(ProbeRequest request)
     {
+        Stage("capture-focus");
         saved = null; savedRanges = null; element = null; focusedId = null; clipboardTarget = null; clipboardFocusId = null;
+        clipboardNativeSource = null;
         clipboardLease.Clear();
         var target = Native.GetIdentity((nint)request.Window);
         if (target == null || Native.GetForegroundWindow() != (nint)request.Window) return new("target-changed");
         var focused = AutomationElement.FocusedElement;
         if (focused == null) return MissingCapability(request, target);
         if (IsPassword(focused)) return new("password");
+        if (Diagnostics != null) Diagnostics = Diagnostics with { FocusType = focused.Current.ControlType.Id };
         var candidates = new List<AutomationElement>();
         AddAncestors(candidates, focused, request.Window);
+        if (Diagnostics != null) Diagnostics = Diagnostics with { FocusCandidates = candidates.Count };
         if (request.UsePointer)
         {
             var pointer = AutomationElement.FromPoint(new Point(request.X, request.Y));
             if (IsPassword(pointer)) return new("password");
+            if (Diagnostics != null) Diagnostics = Diagnostics with { PointerType = pointer.Current.ControlType.Id };
             AddAncestors(candidates, pointer, request.Window);
         }
         bool supportsSelection = false;
+        if (Diagnostics != null) Diagnostics = Diagnostics with { Candidates = candidates.Count };
+        Stage("capture-candidates");
         foreach (var candidate in candidates)
         {
             if (IsPassword(candidate)) return new("password");
@@ -43,12 +55,18 @@ internal sealed class SelectionReader
             var pattern = (TextPattern)raw;
             if (pattern.SupportedTextSelection == SupportedTextSelection.None) continue;
             supportsSelection = true;
+            if (Diagnostics != null) Diagnostics = Diagnostics with { SupportsSelection = true };
             var ranges = pattern.GetSelection();
             if (ranges == null || ranges.Length == 0) continue;
             if (ranges.Length > 16) return new("too-large");
             var parts = ranges.Select(r => r.GetText(MaximumCharacters + 1)).ToArray();
             var text = string.Join("\n", parts);
-            if (text.Length == 0) continue;
+            if (text.Length == 0)
+            {
+                if (Diagnostics != null) Diagnostics = Diagnostics with { EmptySelections = Diagnostics.EmptySelections + 1,
+                    EmptyType = candidate.Current.ControlType.Id };
+                continue;
+            }
             if (text.Length > MaximumCharacters) return new("too-large");
             if (Native.GetForegroundWindow() != (nint)request.Window || Native.GetIdentity((nint)request.Window) != target)
                 return new("target-changed");
@@ -67,13 +85,16 @@ internal sealed class SelectionReader
             savedRanges = ranges.Select(r => r.Clone()).ToArray();
             focusedId = focused.GetRuntimeId();
             saved = new(Guid.NewGuid().ToString("N"), target, text, bounds, editable, ranges.Length, text.Length);
+            Stage("capture-selected");
             return new("ok", saved);
         }
+        Stage("capture-empty");
         return supportsSelection ? new("no-selection") : MissingCapability(request, target);
     }
 
     private ProbeResponse MissingCapability(ProbeRequest request, TargetIdentity target)
     {
+        Stage("missing-capability");
         if (request.PrepareProvider)
         {
             // A read-only, bounded-scope request can cause lazy native providers to initialize.
@@ -85,35 +106,96 @@ internal sealed class SelectionReader
         }
         var focused = AutomationElement.FocusedElement;
         if (focused == null) return new("unsupported");
-        if (request.UsePointer && !focused.Current.BoundingRectangle.Contains(new Point(request.X, request.Y)))
-            return new("unsupported");
+        if (request.UsePointer)
+        {
+            var contains = focused.Current.BoundingRectangle.Contains(new Point(request.X, request.Y));
+            if (Diagnostics != null) Diagnostics = Diagnostics with { PointerInsideFocus = contains };
+            if (!contains) { Stage("fallback-pointer-outside-focus"); return new("unsupported"); }
+        }
+        Stage("fallback-focus-check");
+        NativeClipboardSource? nativeSource = null;
         var status = CheckClipboardFocus(focused, target);
+        if (status == "clipboard-unavailable" && ClipboardSelectionAdapter.IsTarget(target))
+        {
+            nativeSource = NativeClipboardSourceReader.Read(target, request.X, request.Y);
+            status = CheckClipboardFocus(focused, target, nativeSource);
+            if (Diagnostics != null && nativeSource != null)
+                Diagnostics = Diagnostics with { NativeSource = System.Text.Json.JsonSerializer.Serialize(nativeSource) };
+        }
         if (status != "ok") return new(status == "clipboard-unavailable" ? "unsupported" : status);
-        clipboardTarget = new(Guid.NewGuid().ToString("N"), target);
+        var id = Guid.NewGuid().ToString("N");
+        var caret = nativeSource == null ? null : NativeCaretReader.TryBind(target, nativeSource, request.X, request.Y);
+        var writable = IsValueWritable(focused) || caret != null;
+        if (Diagnostics != null) Diagnostics = Diagnostics with { ClipboardWritable = writable };
+        clipboardTarget = new(id, target, writable ? id : null, caret);
         clipboardFocusId = focused.GetRuntimeId(); clipboardLease.Start(clipboardTarget.Id);
+        clipboardNativeSource = nativeSource; clipboardX = request.X; clipboardY = request.Y;
+        Stage("fallback-candidate-ready");
         return new("unsupported", ClipboardTarget: clipboardTarget);
     }
 
     public ProbeResponse ValidateClipboard(string? sessionId)
     {
+        var response = ValidateClipboardCore(sessionId);
+        if (!response.Success && clipboardTarget?.WriteToken != null) clipboardLease.Clear();
+        return response;
+    }
+
+    private ProbeResponse ValidateClipboardCore(string? sessionId)
+    {
+        if (Diagnostics != null) Diagnostics = Diagnostics with { ClipboardWritable = clipboardTarget?.WriteToken != null };
+        Stage("clipboard-validate-lease");
         if (clipboardTarget == null || clipboardFocusId == null || clipboardTarget.Id != sessionId
             || !clipboardLease.IsValid(sessionId)) return new("expired");
         var focused = AutomationElement.FocusedElement;
         if (focused == null) return new("focus-changed");
-        var status = CheckClipboardFocus(focused, clipboardTarget.Target);
+        Stage("clipboard-validate-focus");
+        if (Diagnostics != null) Diagnostics = Diagnostics with { FocusType = focused.Current.ControlType.Id };
+        NativeClipboardSource? nativeSource = null;
+        if (clipboardNativeSource != null)
+        {
+            nativeSource = NativeClipboardSourceReader.Read(clipboardTarget.Target, clipboardX, clipboardY);
+            var nativeStatus = NativeClipboardSourceReader.Check(clipboardTarget.Target, nativeSource);
+            if (nativeStatus != "ok") return new(nativeStatus);
+            if (nativeSource == null || !NativeClipboardSourceReader.SameSource(clipboardNativeSource, nativeSource)) return new("focus-changed");
+        }
+        var status = CheckClipboardFocus(focused, clipboardTarget.Target, nativeSource);
         if (status != "ok") return new(status);
         if (!focused.GetRuntimeId().SequenceEqual(clipboardFocusId)) return new("focus-changed");
+        if (clipboardTarget.WriteToken != null && (clipboardTarget.WriteCaret is { } caret
+            ? !NativeCaretReader.Matches(clipboardTarget.Target, caret) : !IsValueWritable(focused)))
+        {
+            // A failed write binding cannot revive if the user later returns to the same field.
+            clipboardLease.Clear();
+            return new("focus-changed");
+        }
         // A provider may become ready after capture. An explicit empty selection still denies copying.
         var candidates = new List<AutomationElement>(); AddAncestors(candidates, focused, clipboardTarget.Target.Window);
+        if (Diagnostics != null) Diagnostics = Diagnostics with { Candidates = candidates.Count };
+        Stage("clipboard-validate-selection");
         foreach (var candidate in candidates)
         {
             if (!candidate.TryGetCurrentPattern(TextPattern.Pattern, out var raw)) continue;
             var pattern = (TextPattern)raw;
             if (pattern.SupportedTextSelection != SupportedTextSelection.None
-                && !pattern.GetSelection().Any(r => r.GetText(1).Length != 0)) return new("no-selection");
+                && !pattern.GetSelection().Any(r => r.GetText(1).Length != 0))
+            {
+                Stage("clipboard-validate-empty");
+                if (Diagnostics != null) Diagnostics = Diagnostics with { SupportsSelection = true, EmptySelections = 1 };
+                return new("no-selection");
+            }
         }
-        return new("ok");
+        Stage("clipboard-validate-ok");
+        return new("ok", ClipboardTarget: clipboardTarget);
     }
+
+    private static bool IsValueWritable(AutomationElement focused) =>
+        focused.Current.ControlType == ControlType.Edit && focused.Current.HasKeyboardFocus
+        && focused.Current.IsEnabled && !focused.Current.IsOffscreen
+        && focused.GetCurrentPropertyValue(AutomationElement.IsPasswordProperty, true) is false
+        && focused.TryGetCurrentPattern(ValuePattern.Pattern, out _)
+        // Missing provider properties must not be interpreted as the default false value.
+        && focused.GetCurrentPropertyValue(ValuePattern.IsReadOnlyProperty, true) is false;
 
     public ProbeResponse ExtendClipboardLease(string? sessionId, int seconds)
     {
@@ -130,19 +212,28 @@ internal sealed class SelectionReader
         return new(clipboardLease.TryRelease(sessionId) ? "ok" : "expired");
     }
 
-    private static string CheckClipboardFocus(AutomationElement focused, TargetIdentity target)
+    private string CheckClipboardFocus(AutomationElement focused, TargetIdentity target, NativeClipboardSource? nativeSource = null)
     {
         if (Native.GetIdentity(Native.GetForegroundWindow()) != target) return "target-changed";
         var branch = new List<AutomationElement>(); AddAncestors(branch, focused, target.Window);
-        if (branch.Count == 0 || !focused.Current.IsEnabled || focused.Current.IsOffscreen || !focused.Current.HasKeyboardFocus)
-            return "clipboard-unavailable";
+        var nativeStatus = nativeSource == null ? "clipboard-unavailable" : NativeClipboardSourceReader.Check(target, nativeSource);
+        if (nativeStatus == "password") return "password";
+        if (branch.Count == 0 || !focused.Current.IsEnabled || focused.Current.IsOffscreen
+            || !focused.Current.HasKeyboardFocus && nativeStatus != "ok")
+        { Stage("fallback-focus-state-rejected"); return "clipboard-unavailable"; }
         foreach (var candidate in branch)
         {
             var password = candidate.GetCurrentPropertyValue(AutomationElement.IsPasswordProperty, true);
             if (password is true) return "password";
-            if (password is not bool) return "clipboard-unavailable";
+            // A missing property on a proxy root requires independently verified native
+            // text metadata or the scoped opaque adapter. Unknown child fields fail closed.
+            if (password is not bool && !(nativeStatus == "ok"
+                && candidate.Current.NativeWindowHandle == target.Window
+                && candidate.Current.ControlType == ControlType.Window))
+            { Stage("fallback-password-state-unavailable"); return "clipboard-unavailable"; }
         }
         var type = focused.Current.ControlType;
+        if (type == ControlType.Window && nativeStatus == "ok") return "ok";
         return type == ControlType.Edit || type == ControlType.Document || type == ControlType.Text || type == ControlType.Pane
             ? "ok" : "clipboard-unavailable";
     }

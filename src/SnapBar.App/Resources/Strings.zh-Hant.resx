@@ -2169,6 +2169,9 @@
   <data name="SelectionController_002" xml:space="preserve">
     <value>選字相容模式 · {0} 字 · 不提供寫入 · 剪貼簿已還原 · {1} ms</value>
   </data>
+  <data name="SelectionController_ClipboardEditable" xml:space="preserve">
+    <value>選字相容模式 · {0} 字 · 可編輯（寫入前重驗） · 剪貼簿已還原 · {1} ms</value>
+  </data>
   <data name="SelectionController_003" xml:space="preserve">
     <value>已取得 {0} 字 · {1} · {2} ms（UIA {3} ms{4}）</value>
   </data>

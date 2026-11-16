@@ -1,0 +1,20 @@
+{
+  "title": "企業微信也能使用選字工具列",
+  "summary": "新增企業微信相容讀取，並讓已驗證可用的相容來源直接複製，減少重複等待。",
+  "highlights": [
+    "企業微信主視窗可透過相容複製取得選字，不再因只提供視窗層級介面而直接失敗。",
+    "相容來源驗證成功後不再等待完整原生重試，支援原生選字的輸入框仍優先直接讀取。",
+    "連續兩次自動相容讀取沒有文字後暫停十秒；手動快捷鍵與原生讀取仍可使用。"
+  ],
+  "usage": "正常結束舊版後啟動新版，保留「選字相容模式」開啟，在企業微信聊天訊息或輸入框選字即可。相容結果提供讀取用途，不因此開放剪下或貼上；原有相容模式關閉偏好會保留。",
+  "en": {
+    "title": "Use the selection toolbar in WeCom",
+    "summary": "Adds WeCom compatibility reads and skips repeated native waits when a clipboard source has already been verified.",
+    "highlights": [
+      "Reads selections in the WeCom main window through compatibility copying when only a window-level accessibility element is available.",
+      "Verified compatibility sources skip native readiness retries, while native text selection remains the first choice for supported editors.",
+      "Two automatic compatibility reads without text trigger a ten-second pause; hotkeys and native reads remain available."
+    ],
+    "usage": "Quit the old build normally and start the new build with Selection compatibility enabled. Select text in a WeCom message or editor. Compatibility results support read-only actions and do not authorize Cut or Paste. Existing disabled preferences are preserved."
+  }
+}

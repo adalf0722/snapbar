@@ -30,9 +30,11 @@ internal static class Program
         {
             var watch = Stopwatch.StartNew();
             ProbeResponse response;
+            reader.BeginDiagnostics(false);
             try
             {
                 var request = JsonSerializer.Deserialize<ProbeRequest>(line.TrimStart('\uFEFF'));
+                reader.BeginDiagnostics(request?.Diagnostics == true);
                 response = pathMode && request != null ? pathWorker.Handle(request) : request?.Operation switch
                 {
                     "capture" => reader.Capture(request),
@@ -50,7 +52,8 @@ internal static class Program
                 // Provider exceptions often contain user text. Never serialize their messages.
                 response = new("provider-error");
             }
-            Console.WriteLine(JsonSerializer.Serialize(response with { ElapsedMs = watch.Elapsed.TotalMilliseconds }));
+            Console.WriteLine(JsonSerializer.Serialize(response with { ElapsedMs = watch.Elapsed.TotalMilliseconds,
+                Diagnostics = reader.Diagnostics }));
         }
     }
 }

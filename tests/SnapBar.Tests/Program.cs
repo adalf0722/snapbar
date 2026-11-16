@@ -8,6 +8,67 @@ void Check(string name, Func<bool> test)
 }
 var target = new TargetIdentity(42, 123, 999);
 var selection = new SelectionSnapshot("s", target, "original", null, true, 1, 8);
+SelectionCapturePipelineTest.Run(Check, target, selection);
+ClipboardWritePolicyTest.Run(Check, target, selection);
+Check("legacy probe requests leave selection diagnostics disabled", () =>
+    System.Text.Json.JsonSerializer.Deserialize<ProbeRequest>("{\"Operation\":\"capture\"}") is { Diagnostics: false });
+Check("opaque WorkChat source is scoped to its known main window and owned native focus", () =>
+{
+    string Read(bool app, bool owned, bool main) => WorkChatClipboardPolicy.Check(app, owned, main, false, null, null, null, null);
+    return Read(true, true, true) == "ok" && Read(false, true, true) == "clipboard-unavailable"
+        && Read(true, false, true) == "clipboard-unavailable" && Read(true, true, false) == "clipboard-unavailable";
+});
+foreach (var role in new[] { 12, 24, 33, 34, 35, 43, 44, 45 })
+    Check($"WorkChat non-text role {role} denies clipboard capture", () =>
+        WorkChatClipboardPolicy.Check(true, true, true, false, role, 0, null, null) == "clipboard-unavailable"
+        && WorkChatClipboardPolicy.Check(true, true, true, false, null, null, role, 0) == "clipboard-unavailable");
+Check("WorkChat native or accessible password protection always rejects copying", () =>
+    WorkChatClipboardPolicy.Check(true, true, true, true, null, null, null, null) == "password"
+    && WorkChatClipboardPolicy.Check(true, true, true, false, 42, 0x20000000, null, null) == "password"
+    && WorkChatClipboardPolicy.Check(true, true, true, false, null, null, 42, 0x20000000) == "password");
+foreach (var state in new[] { 0x1, 0x8000, 0x10000 })
+    Check($"WorkChat unavailable or hidden accessible state {state} denies copying", () =>
+        WorkChatClipboardPolicy.Check(true, true, true, false, 42, state, null, null) == "clipboard-unavailable"
+        && WorkChatClipboardPolicy.Check(true, true, true, false, null, null, 42, state) == "clipboard-unavailable");
+Check("automatic clipboard backoff isolates targets and expires", () =>
+{
+    var clock = new ManualTimeProvider(); var backoff = new AutomaticClipboardBackoff(clock);
+    backoff.Observe(target, "no-selection", true);
+    if (!backoff.CanAttempt(target)) return false;
+    backoff.Observe(target, "no-selection", true);
+    if (backoff.CanAttempt(target) || !backoff.CanAttempt(target with { ProcessStarted = 1000 })) return false;
+    clock.Advance(AutomaticClipboardBackoff.Pause);
+    return backoff.CanAttempt(target);
+});
+Check("manual failure and cancellation do not throttle automatic clipboard reads", () =>
+{
+    var backoff = new AutomaticClipboardBackoff();
+    for (var i = 0; i < 4; i++)
+    { backoff.Observe(target, "no-selection", false); backoff.Observe(target, "target-changed", true); }
+    return backoff.CanAttempt(target);
+});
+Check("successful manual clipboard read clears automatic backoff", () =>
+{
+    var backoff = new AutomaticClipboardBackoff();
+    backoff.Observe(target, "no-selection", true); backoff.Observe(target, "no-selection", true);
+    backoff.Observe(target, "ok", false); return backoff.CanAttempt(target);
+});
+Check("verified clipboard candidate bypasses native readiness waits", () =>
+{
+    var capture = new NativeSelectionCapture(wait: (_, _) => throw new Exception("Unexpected wait"));
+    var response = new ProbeResponse("unsupported", ClipboardTarget: new("candidate", target));
+    var result = capture.CaptureAsync(_ => Task.FromResult(response), () => true, true, default,
+        useVerifiedFallback: value => value.ClipboardTarget?.Target == target).GetAwaiter().GetResult();
+    return result.Attempts == 1 && result.Response == response;
+});
+Check("probe metadata survives opt-in protocol roundtrip without selection payload", () =>
+{
+    var metadata = new SelectionProbeDiagnostics("clipboard-validate-empty", 50004, 50020, 8, 1, true, false, 4, 50004);
+    var encoded = System.Text.Json.JsonSerializer.Serialize(metadata);
+    return System.Text.Json.JsonSerializer.Deserialize<SelectionProbeDiagnostics>(encoded) == metadata
+        && !encoded.Contains(selection.Text, StringComparison.Ordinal)
+        && !encoded.Contains("Text", StringComparison.Ordinal) && !encoded.Contains("Name", StringComparison.Ordinal);
+});
 Check("valid editable selection allows write", () => SessionPolicy.CanWrite(selection, target));
 Check("unknown editability denies write", () => !SessionPolicy.CanWrite(selection with { Editable = null }, target));
 Check("generic clipboard source cannot authorize writes even with an accidental editable flag", () => !SessionPolicy.CanWrite(selection with { Source = "clipboard" }, target));

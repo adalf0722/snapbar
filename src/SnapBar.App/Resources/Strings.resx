@@ -2169,6 +2169,9 @@ Its enabled state will be preserved.</value>
   <data name="SelectionController_002" xml:space="preserve">
     <value>Selection compatibility · {0} characters · Writing unavailable · Clipboard restored · {1} ms</value>
   </data>
+  <data name="SelectionController_ClipboardEditable" xml:space="preserve">
+    <value>Selection compatibility · {0} characters · Editable (revalidated before writing) · Clipboard restored · {1} ms</value>
+  </data>
   <data name="SelectionController_003" xml:space="preserve">
     <value>Captured {0} characters · {1} · {2} ms (UIA {3} ms{4})</value>
   </data>

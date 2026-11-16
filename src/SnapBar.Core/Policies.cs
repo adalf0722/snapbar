@@ -3,7 +3,8 @@ namespace SnapBar.Core;
 public static class SessionPolicy
 {
     public static bool CanWrite(SelectionSnapshot? selection, TargetIdentity current) =>
-        selection is { Editable: true, RangeCount: 1, Text.Length: > 0 } && selection.Source != "clipboard" && selection.Target == current;
+        selection is { Editable: true, RangeCount: 1, Text.Length: > 0 } && selection.Target == current
+        && (selection.Source != "clipboard" || !string.IsNullOrEmpty(selection.Id) && selection.WriteToken == selection.Id);
 
     public static bool? ResolveEditability(bool? readOnly, bool enabled, bool isFocusedProvider, bool valueReadOnly)
     {

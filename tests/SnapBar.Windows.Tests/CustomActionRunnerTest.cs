@@ -73,7 +73,15 @@ internal static class CustomActionRunnerTest
                 var reading = WaitForChildPidAsync(marker, running.Task);
                 await Task.Delay(80);
                 Require(!reading.IsCompleted);
-                await File.WriteAllTextAsync(marker, "1234");
+                // The polling reader can briefly own a read handle. Wait for that handle
+                // instead of letting this fixture's writer fail on a scheduling collision.
+                var writeDeadline = Stopwatch.StartNew();
+                while (true)
+                {
+                    try { await File.WriteAllTextAsync(marker, "1234"); break; }
+                    catch (IOException) when (writeDeadline.Elapsed < TimeSpan.FromSeconds(2))
+                    { await Task.Delay(10); }
+                }
                 Require(await reading == 1234);
                 File.Delete(marker);
                 try { await WaitForChildPidAsync(marker, Task.FromResult(new ScriptExecutionResult("script-failed", ExitCode: 7))); }

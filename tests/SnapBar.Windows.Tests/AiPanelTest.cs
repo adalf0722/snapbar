@@ -183,7 +183,7 @@ internal static class AiPanelTest
                 }
                 Button(panel, "AiCopy").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 var exactCopy = Clipboard.GetText() == markdown;
-                if (!exactCopy) Console.WriteLine($"COPY DIAGNOSTIC viewing-original={panel.Session.ViewingOriginal}; write-busy={Children<TextBlock>(panel).Any(t => t.Text == "剪貼簿忙碌，請稍後再試。")}");
+                if (!exactCopy) Console.WriteLine($"COPY DIAGNOSTIC viewing-original={panel.Session.ViewingOriginal}; write-busy={Children<TextBlock>(panel).Any(t => t.Text == "剪貼簿忙碌，請稍後再試。")}; result-matches={panel.Session.Current?.Text == markdown}; result-length={panel.Session.Current?.Text.Length}; expected-length={markdown.Length}; clipboard-length={Clipboard.GetText().Length}; session-busy={panel.Session.Busy}");
                 Check(exactCopy, "AI long Markdown copying preserves the exact raw response");
                 panel.Width = 680; panel.Height = 500; panel.UpdateLayout();
                 var smallViewer = Children<FlowDocumentScrollViewer>(panel).Single(); var smallScroll = Children<ScrollViewer>(smallViewer).Single();

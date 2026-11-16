@@ -58,6 +58,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | Appearance | `--ui-appearance` | 外觀、捲動與拖曳把手；使用入門單一畫面、原處完成、偏好回復與小視窗截圖 |
 | Compatibility | `--clipboard-compatibility` | 快速剪貼簿相容性與焦點安全 |
 | CompatibilitySlow | `--clipboard-compatibility-long` | 相容性全套，包含真正等待 35 秒的腳本 |
+| NativeClipboard | `--native-clipboard-source` | 真實原生 EDIT／密碼框／BUTTON 的 MSAA 角色、焦點與滑鼠位置驗證；未知 App 不依賴名單 |
 | Clipboard / ClipboardRaces | `--clipboard-roundtrip` / `--clipboard-races` | 格式還原與競態 |
 | UiaReadiness / UiaDeepTree | `--uia-readiness` / `--uia-deep-tree` | 延遲 provider 與深層樹 |
 | Actions / ActionRunner / Diagnostics | `--custom-actions` / `--custom-action-runner` / `--action-diagnostics` | 自訂動作與結果 |

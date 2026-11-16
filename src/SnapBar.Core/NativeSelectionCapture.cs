@@ -13,7 +13,7 @@ public sealed class NativeSelectionCapture(TimeProvider? timeProvider = null,
 
     public async Task<NativeCaptureResult> CaptureAsync(Func<TimeSpan, Task<ProbeResponse>> read,
         Func<bool> isCurrent, bool retryUnsupported, CancellationToken cancellationToken,
-        Action? waitingForProvider = null)
+        Action? waitingForProvider = null, Func<ProbeResponse, bool>? useVerifiedFallback = null)
     {
         var started = clock.GetTimestamp();
         int attempts = 0;
@@ -32,7 +32,8 @@ public sealed class NativeSelectionCapture(TimeProvider? timeProvider = null,
             if (!Current()) return Invalid();
             if (clock.GetElapsedTime(started) >= Budget)
                 return new(new("timeout"), attempts, elapsed);
-            if (!retryUnsupported || response.Status != "unsupported" || attempts > RetryDelays.Length)
+            if (!retryUnsupported || response.Status != "unsupported" || attempts > RetryDelays.Length
+                || useVerifiedFallback?.Invoke(response) == true)
                 return new(response, attempts, elapsed);
             var pause = RetryDelays[attempts - 1];
             if (Budget - clock.GetElapsedTime(started) <= pause) return new(response, attempts, elapsed);

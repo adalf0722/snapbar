@@ -1,0 +1,12 @@
+{
+  "title": "協助查明選字偶爾失敗的原因",
+  "summary": "新增預設關閉的本機選字診斷，區分原生讀取、焦點驗證與相容複製失敗。",
+  "highlights": ["診斷只記錄階段與控制項類型，不記錄選取文字或剪貼簿內容。", "保留既有選字安全檢查，避免為排查問題而放寬讀取限制。"],
+  "usage": "排查問題時，先正常結束 SnapBar，再以環境變數 SNAPBAR_SELECTION_DIAGNOSTICS=1 啟動。紀錄位於本機 AppData/Local/SnapBar/diagnostics。結束程式並移除環境變數後重新啟動即可關閉；一般使用不需開啟。",
+  "en": {
+    "title": "Investigate intermittent selection failures",
+    "summary": "Optional local diagnostics distinguish native reads, focus validation and compatibility copy failures.",
+    "highlights": ["Records stages and control types without selected text or clipboard contents.", "Preserves existing selection safety checks during troubleshooting."],
+    "usage": "Quit SnapBar normally, then launch with SNAPBAR_SELECTION_DIAGNOSTICS=1. Logs are stored under local AppData/Local/SnapBar/diagnostics. Quit, remove the variable and restart to disable diagnostics. Normal use does not require this mode."
+  }
+}

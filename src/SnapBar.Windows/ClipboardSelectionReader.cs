@@ -23,7 +23,7 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
     [DllImport("kernel32.dll")] private static extern bool GlobalUnlock(nint memory);
 
     public async Task<ProbeResponse> CaptureAsync(TargetIdentity target, Func<bool> isCurrent,
-        ClipboardReadPlan plan, uint? expectedSequence = null)
+        ClipboardReadPlan plan, uint? expectedSequence = null, Action<string>? diagnostic = null)
     {
         if (busy) return new("busy");
         if (!plan.IsTarget(target)) return new("target-changed");
@@ -77,6 +77,7 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
                 if (!plan.IsReady()) return new("compatibility-setup-required");
                 if (Native.GetClipboardSequenceNumber() != before) return new("clipboard-changed");
                 if (!step.SendCopy()) return new("input-blocked");
+                diagnostic?.Invoke("copy-sent");
 
                 // One transaction per gesture; a second condition is tried only if no copy arrived.
                 // Once the target/input changes, stop probing. Any late clipboard write has
@@ -88,6 +89,7 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
                     if (Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
                     var observed = Native.GetClipboardSequenceNumber();
                     if (observed == before) continue;
+                    diagnostic?.Invoke("copy-observed");
                     // Require a stable sequence and recheck it while holding the clipboard lock.
                     await Task.Delay(35);
                     if (!isCurrent()) return new("clipboard-input-changed");
@@ -109,13 +111,15 @@ public sealed class ClipboardSelectionReader(nint ownerWindow)
                         if (!isCurrent() || Native.GetIdentity(Native.GetForegroundWindow()) != target) return new("target-changed");
                         if (rejected != null) return new(rejected);
                         if (text == null || text.Length > 32768) return new("too-large");
-                        if (text.Length == 0) return new("no-selection");
+                        if (text.Length == 0) { diagnostic?.Invoke("copy-empty-data"); return new("no-selection"); }
+                        diagnostic?.Invoke("copy-received");
                         return new("ok", new(Guid.NewGuid().ToString("N"), target, text, null, step.Editable, 1,
                             text.Length, plan.Source), ClipboardSequence: restoredSequence);
                     }
                     finally { CloseClipboard(); }
                 }
             }
+            diagnostic?.Invoke("copy-no-response");
             return new(plan.NoResponseStatus);
         }
         finally

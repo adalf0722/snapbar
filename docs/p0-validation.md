@@ -1168,3 +1168,23 @@ Release／All 新增必跑 ActionRunner，嚴格模式要求 Node 與 Python 都
 Release 建置成功（11 項既有測試程式警告），Core 540 項通過。原生 `--persistent-results` 最終 55 項全數通過，涵蓋完整原文複製、長文捲動、原選取失效、強制舊按鈕事件拒絕寫回、正常套用、多結果保留、置頂與英／繁中語言保留。日誌為 `artifacts/result-layout-tests.log`。原生 `--clipboard-compatibility` 首次在結果視窗顯示前遇到剪貼簿讀取競態；重跑 21 項全數通過，日誌為 `artifacts/result-layout-compatibility-retry.log`。以隨附 SDK 執行 App DLL 的 `--language-resources-check` 通過。
 
 標準桌面腳本入口被先前 GeoIP smoke host 所持有的 Probe 程序擋下，故以上為直接執行原生 runner 的局部回歸證據，不是完整 Release 發布報告。未強制終止舊程序。乾淨環境的 standalone 開發版啟動檢查因系統未安裝 .NET 10 而失敗；開發版需沿用隨附 SDK／`run-dev.ps1`，發行版需另外執行自含式打包。此輪未執行完整 Release、35 秒慢速相容性案例、跨 App 或混合 DPI 驗證，未發布或替換 `artifacts/p0`。
+
+### 2026-11-16 企業微信相容複製與快速路由
+
+企業微信新增限定程序／原生視窗來源的相容候選，保留已知密碼拒絕、程序與焦點重驗、取消與剪貼簿還原。有效候選不再等待 870 ms 的原生重試間隔；原生輸入框每次仍優先直接讀取。連續兩次自動相容無文字後退避十秒，不阻擋原生或手動快捷鍵。
+
+使用者實體回測企業微信訊息、企業微信輸入框、一般微信訊息各 3/3 成功。企業微信成功紀錄約 221–254 ms，一般相容讀取約 384–412 ms；原生約 140–187 ms。企業微信同一行反白內重選會拖曳，關閉 SnapBar 後仍可重現，未用額外點擊干預。
+
+完整 check 通過：Core 587、ActionRunner 37，零略過。Compatibility／UiaReadiness／UiaDeepTree／Clipboard／ClipboardRaces 共 55 項與 Preflight 1 通過；報告為 `artifacts/checks/desktop/20261116T132431851Z-4761faf80f0543728165112bb554d8cc/report.json`。最終自含式 Probe smoke 11 項通過。實機證據、測試 fixture 的占用／時序修正及安全界線見 [本輪驗證紀錄](2026-11-16-chat-clipboard-validation.md)。未執行完整 Release 或混合 DPI，未發布套件；開發版沿用 run-dev.ps1 啟動。
+
+### 2026-11-17 統一 UIA／Ctrl+C 流程與未知 App 能力驗證
+
+共用 Core 協調器處理原生讀取及剪貼簿備援，保留來源適配。未知 App 可依同一原生控制項、MSAA 文字角色與焦點狀態正向取得資格；缺少證據的未知自繪視窗仍拒絕。UIA 成功及無選取／密碼／焦點失效等終止狀態均不會觸發複製。
+
+Core 605、嚴格 ActionRunner 37、自含式 Probe smoke 11 通過；桌面 NativeClipboard／Compatibility／UiaReadiness／UiaDeepTree／Clipboard／ClipboardRaces 共 64 項與 Preflight 1。完整報告、途中失敗及範圍見 [統一流程驗證](2026-11-17-unified-selection-validation.md)。本輪未發布自含式 App，未執行完整 Release 或混合 DPI。
+
+### 2026-11-17 相容輸入框單次寫入資格
+
+在共用讀取流程加入候選 token 綁定的寫入資格，支援明確可寫的 UIA Edit 及通過原生 caret 驗證的企業微信來源。貼上／剪下／替換重驗原文、焦點、游標位置、generation 與剪貼簿序號；普通相容來源維持唯讀，撤銷資格不能恢復。
+
+Core 619、嚴格 ActionRunner 37、Probe smoke 11 通過；相關選字桌面分組 77 項，以及獨立重跑的 AiPanel 254、Language 68 通過。使用者確認企業微信顯示可編輯，並完成工具列貼上／剪下與復原。剪貼簿完整備份已還原。詳細報告、兩次 AI 複製檢查的未明根因失敗及實機界線見 [本輪驗證](2026-11-17-clipboard-write-validation.md)。未執行完整 Release、混合 DPI 或正式發布。

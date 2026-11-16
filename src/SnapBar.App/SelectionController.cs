@@ -18,7 +18,7 @@ public sealed partial class SelectionController : IDisposable
     private readonly ClipboardSelectionReader clipboardReader;
     private readonly PopupWindow popup = new();
     private readonly GenerationGate generation = new();
-    private readonly NativeSelectionCapture nativeCapture = new();
+    private readonly SelectionCapturePipeline capturePipeline = new();
     private readonly DispatcherTimer foregroundTimer;
     private SelectionSnapshot? selection;
     private CancellationTokenSource? delay;
@@ -29,6 +29,7 @@ public sealed partial class SelectionController : IDisposable
     private ExcludedApplication[] excludedApplications = [];
     private string searchUrlTemplate = WebActionPolicy.DefaultSearchTemplate;
     private long? readinessTicket;
+    private readonly SelectionDiagnostics selectionDiagnostics = new();
     public bool SublimeClipboardEnabled
     {
         get => sublimeClipboardEnabled;
@@ -170,20 +171,32 @@ public sealed partial class SelectionController : IDisposable
             bool Current() => generation.IsCurrent(ticket) && !disposed
                 && Native.GetIdentity(Native.GetForegroundWindow()) == target;
             int nativeRequests = 0;
-            var native = await nativeCapture.CaptureAsync(
-                remaining => probe.RequestAsync(new("capture", (long)window, x, y, UsePointer: pointer,
-                    PrepareProvider: !sublime && nativeRequests++ == 0), remaining),
-                Current, retryUnsupported: !sublime, token,
+            ClipboardFallback? ResolveFallback(ProbeResponse response)
+            {
+                if (SelectionRoutingPolicy.UseClipboardFallback(response, SublimeClipboardEnabled, sublime))
+                    return new(target, () => clipboardReader.CaptureAsync(target,
+                        () => Current() && SublimeClipboardEnabled, SublimeSelectionAdapter.ReadPlan()), AutomaticBackoff: false);
+                if (SelectionRoutingPolicy.UseClipboardFallback(response, ClipboardCompatibilityEnabled,
+                    response.ClipboardTarget?.Target == target && ClipboardSelectionAdapter.IsTarget(target)))
+                    return new(target, () => CaptureClipboardAsync(response.ClipboardTarget!, ticket));
+                return null;
+            }
+            var captured = await capturePipeline.CaptureAsync(target, pointer,
+                async remaining =>
+                {
+                    var response = await probe.RequestAsync(new("capture", (long)window, x, y, UsePointer: pointer,
+                        PrepareProvider: !sublime && nativeRequests++ == 0, Diagnostics: selectionDiagnostics.Enabled), remaining);
+                    selectionDiagnostics.Record(ticket, "native", response);
+                    return response;
+                },
+                Current, ResolveFallback, retryUnsupported: !sublime, token,
                 () => { readinessTicket = ticket; Status?.Invoke(UiText.Get("SelectionController_000")); });
-            var result = native.Response;
-            if (SelectionRoutingPolicy.UseClipboardFallback(result, SublimeClipboardEnabled, sublime))
-                result = await clipboardReader.CaptureAsync(target,
-                    () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
-                    SublimeSelectionAdapter.ReadPlan());
-            else if (SelectionRoutingPolicy.UseClipboardFallback(result, ClipboardCompatibilityEnabled,
-                result.ClipboardTarget?.Target == target && ClipboardSelectionAdapter.IsTarget(target)))
-                result = await CaptureClipboardAsync(result.ClipboardTarget!, ticket);
+            var native = captured.Native;
+            var result = captured.Response;
+            if (captured.BackedOff)
+            { selectionDiagnostics.Record(ticket, "automatic-clipboard-backoff", new("backoff")); return; }
             if (!generation.IsCurrent(ticket) || disposed || Native.GetIdentity(Native.GetForegroundWindow()) != target) return;
+            selectionDiagnostics.Record(ticket, "capture-result", result with { ElapsedMs = watch.Elapsed.TotalMilliseconds });
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
             selection = result.Selection;
@@ -205,7 +218,8 @@ public sealed partial class SelectionController : IDisposable
             popup.Present(selection, x, y, searchUrlTemplate, actions);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? UiText.Get("SelectionController_001",(selection.CharacterCount),((selection.Editable == true ? UiText.Get("SelectionController_047") : UiText.Get("SelectionController_048"))),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture))                : selection.Source == ClipboardSelectionAdapter.Source
-                    ? UiText.Get("SelectionController_002",(selection.CharacterCount),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture))                    : UiText.Get("SelectionController_003",(selection.CharacterCount),((selection.Editable == true ? UiText.Get("SelectionController_049") : selection.Editable == false ? UiText.Get("SelectionController_050") : UiText.Get("SelectionController_051"))),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture),(native.ProbeElapsedMs).ToString("F0", System.Globalization.CultureInfo.InvariantCulture),((native.Attempts > 1 ? UiText.Get("Selection_Attempts", native.Attempts) : ""))));
+                    ? UiText.Get(selection.Editable == true ? "SelectionController_ClipboardEditable" : "SelectionController_002", selection.CharacterCount, watch.Elapsed.TotalMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))
+                    : UiText.Get("SelectionController_003", selection.CharacterCount, selection.Editable == true ? UiText.Get("SelectionController_049") : selection.Editable == false ? UiText.Get("SelectionController_050") : UiText.Get("SelectionController_051"), watch.Elapsed.TotalMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture), native.ProbeElapsedMs.ToString("F0", System.Globalization.CultureInfo.InvariantCulture), native.Attempts > 1 ? UiText.Get("Selection_Attempts", native.Attempts) : ""));
         }
         catch (OperationCanceledException) { }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
@@ -241,7 +255,8 @@ public sealed partial class SelectionController : IDisposable
                     () => generation.IsCurrent(ticket) && !disposed && SublimeClipboardEnabled,
                     SublimeSelectionAdapter.ReadPlan(requireEditable: writes),
                     expectedSequence: action == TextAction.Paste ? actionSequence : null)
-                : genericCompatibility ? CaptureClipboardAsync(new(current.Id, current.Target), ticket)
+                : genericCompatibility ? CaptureClipboardAsync(new(current.Id, current.Target), ticket,
+                    expectedSequence: action == TextAction.Paste ? actionSequence : null)
                     : probe.RequestAsync(new("validate", SessionId: current.Id));
             var validation = await Validate();
             if (!generation.IsCurrent(ticket) || disposed) return;
@@ -304,6 +319,7 @@ public sealed partial class SelectionController : IDisposable
                 // Recheck immediately before injection; validation is intentionally not treated as an atomic lock.
                 if (Native.GetIdentity(Native.GetForegroundWindow()) != current.Target) { Report("target-changed"); return; }
                 if (!generation.IsCurrent(ticket)) { Report("selection-changed"); return; }
+                if (!WriteSourceCurrent(validation.Selection)) { Report("focus-changed"); return; }
                 var sent = compatibility ? SublimeSelectionAdapter.SendAction(action, current.Target)
                     : Native.SendControlKey(action == TextAction.Cut ? (ushort)0x58 : (ushort)0x56);
                 if (!sent) { Report("input-blocked"); return; }

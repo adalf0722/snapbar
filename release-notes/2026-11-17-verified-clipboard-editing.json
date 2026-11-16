@@ -1,0 +1,20 @@
+{
+  "title": "辨識可編輯的相容輸入框",
+  "summary": "相容讀取可依明確的編輯能力及單次選取驗證提供寫入，不再一律限制為唯讀。",
+  "highlights": [
+    "支援明確回報可寫入的 UIA 編輯欄位，以及通過原生游標驗證的企業微信來源。",
+    "貼上、剪下與替換前重新核對選字及來源；切換輸入位置後拒絕原選取的寫入。",
+    "缺乏可編輯證據的聊天訊息與相容來源仍維持唯讀，保留原有偏好與剪貼簿驗證。"
+  ],
+  "usage": "正常結束舊版後啟動新版，保持選字相容模式開啟。在支援的輸入框選字後，診斷會顯示可編輯；在其他欄位操作後請重新選字。請先用可還原的草稿確認目前應用程式版本的行為。",
+  "en": {
+    "title": "Recognize editable compatibility sources",
+    "summary": "Compatibility reads can authorize editing through explicit editability evidence bound to an individual selection.",
+    "highlights": [
+      "Supports UIA edit controls that explicitly report writable values and verified native-caret sources in WeCom.",
+      "Revalidates selection and source before Paste, Cut and replacement, rejecting an old selection after the input location changes.",
+      "Messages and compatibility sources without editing evidence remain read-only, preserving preferences and clipboard validation."
+    ],
+    "usage": "Quit the old build normally and start the new build with Selection compatibility enabled. Select text in a supported editor; diagnostics show Editable when verified. Select again after working in another field. Try a disposable draft first to confirm behavior in your application version."
+  }
+}

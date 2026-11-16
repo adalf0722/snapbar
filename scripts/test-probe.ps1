@@ -17,6 +17,7 @@ try {
     $cases = @(
         @{ Input = '{"Operation":"ping"}'; Expected = 'ok' },
         @{ Input = '{"Operation":"invalid"}'; Expected = 'invalid-request' },
+        @{ Input = '{"Operation":"capture","Window":0,"Diagnostics":true}'; Expected = 'target-changed'; DiagnosticStage = 'capture-focus' },
         @{ Input = '{bad json'; Expected = 'invalid-request' },
         @{ Input = '{"Operation":"capture","Window":0}'; Expected = 'target-changed' },
         @{ Input = '{"Operation":"validate","SessionId":"expired"}'; Expected = 'expired' },
@@ -33,6 +34,10 @@ try {
         $response = $pending.Result | ConvertFrom-Json
         if ($response.Status -ne $case.Expected) { throw "Expected $($case.Expected), got $($response.Status)" }
         if ($null -ne $response.Selection) { throw 'Unexpected selection data in protocol smoke test' }
+        if ($case.DiagnosticStage) {
+            if ($response.Diagnostics.Stage -ne $case.DiagnosticStage) { throw 'Missing requested diagnostic stage' }
+        }
+        elseif ($null -ne $response.Diagnostics) { throw 'Diagnostics leaked into an unrequested or malformed request' }
         Write-Output "PASS probe protocol: $($case.Expected)"
     }
     $probe.StandardInput.Close()

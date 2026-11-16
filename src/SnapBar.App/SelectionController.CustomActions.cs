@@ -31,7 +31,7 @@ public sealed partial class SelectionController
         var genericCompatibility = current.Source == ClipboardSelectionAdapter.Source;
         if (compatibility && !SublimeClipboardEnabled) return new("sublime-disabled");
         if (genericCompatibility && !ClipboardCompatibilityEnabled) return new("compatibility-disabled");
-        if (genericCompatibility && writes) return new("not-editable");
+        if (genericCompatibility && writes && !SessionPolicy.CanWrite(current, current.Target)) return new("not-editable");
         var validation = compatibility
             ? await clipboardReader.CaptureAsync(current.Target, () => Current(current, ticket) && SublimeClipboardEnabled,
                 SublimeSelectionAdapter.ReadPlan(requireEditable: writes))
@@ -162,6 +162,8 @@ public sealed partial class SelectionController
     private bool TryPasteResult(SelectionSnapshot current, long ticket, string text)
     {
         if (!Current(current, ticket) || !SessionPolicy.CanWrite(current, current.Target)) return false;
+        if (current.Source == ClipboardSelectionAdapter.Source && !ClipboardCompatibilityEnabled) return false;
+        if (!WriteSourceCurrent(current)) { Report("focus-changed"); return false; }
         if (Native.AnyModifierDown()) { Report("modifier-held"); return false; }
         if (text.Length == 0) { Status?.Invoke(UiText.Get("SelectionController_CustomActions_006")); return false; }
         Clipboard.SetText(text, TextDataFormat.UnicodeText);
@@ -170,6 +172,7 @@ public sealed partial class SelectionController
             || Native.GetClipboardSequenceNumber() != sequence) { Report("clipboard-changed"); return false; }
         if (!Current(current, ticket) || Native.AnyModifierDown()
             || Native.GetClipboardSequenceNumber() != sequence) { Report("target-changed"); return false; }
+        if (!WriteSourceCurrent(current)) { Report("focus-changed"); return false; }
         var sent = current.Source == "sublime-clipboard" ? SublimeSelectionAdapter.SendAction(TextAction.Paste, current.Target) : Native.SendControlKey(0x56);
         if (sent) Status?.Invoke(UiText.Get("SelectionController_CustomActions_007")); else Report("input-blocked");
         return sent;
