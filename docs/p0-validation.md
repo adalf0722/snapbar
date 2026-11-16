@@ -1,5 +1,15 @@
 # P0 驗證紀錄
 
+## 2026-11-16 Lookup 剪貼簿佔用測試
+
+push 前完整 Release 曾在 Lookup「複製釋義與詞典來源」失敗，原紀錄只有內容比對失敗，無法確認當次是複製忙碌、OLE 讀取失敗或其他剪貼簿變更；未改動前單獨重跑 17 項即通過。原測試點擊後立即呼叫 WPF Clipboard.GetText，沒有先確認複製按鈕回報的狀態。
+
+僅調整 Lookup 測試，不改動實際複製功能。依輔助名稱找到複製按鈕，只在介面明確回報剪貼簿忙碌時重試（最多四次）；成功後先取得原生剪貼簿鎖再讀取 Unicode 文字，鎖被佔用時最多重試二十次。取得內容後仍須精確符合釋義與詞典來源，內容不符立即失敗，不用重複寫入掩蓋錯誤。失敗訊息只記錄狀態分類，不輸出任何剪貼簿內容；既有備份與還原保留。
+
+新增三項回歸檢查：刻意錯誤的預期內容必須失敗、另一執行緒持有剪貼簿時必須顯示忙碌、釋放後重試必須取得完全相符的內容。Lookup 單獨 20 項通過，報告：`artifacts/checks/desktop/20261116T000509558Z-a8b2c10691a2456c965df6681faede66/report.json`。
+
+完整 Release 八套件共 890 項通過、零失敗、零略過：ActionRunner 37、Lifecycle 141、Appearance 231、CompatibilitySlow 22、AiRuntime 117、AiPanel 254、Lookup 20、Language 68；另有 Preflight 1，建置內的 Core 568 通過。完整報告：`artifacts/checks/desktop/20261116T000621003Z-b7cf1cfc1d8e437693074ab88d4d9186/report.json`。未略過 push gate、未 push 或修改公開下載。
+
 ## 2026-11-16 精簡中英雙語發布說明
 
 自動發布頁改為共用 Windows x64 下載置頂，明示預覽版、未簽章與手動更新；下方依序顯示繁中與英文各最多三項摘要，必要條件合併去重。超出的更新仍保留在完整說明，重要功能移除或使用提醒則在兩種語言直接顯示。完整功能、使用方式、安裝限制、來源與驗證資訊預設收合。既有 28 份繁中 JSON 保持原樣，英文及補充提醒另存於 `packaging/RELEASE-NOTE-TRANSLATIONS.json`；新說明直接包含 `en` 欄位。

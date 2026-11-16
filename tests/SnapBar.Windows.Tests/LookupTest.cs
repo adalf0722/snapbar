@@ -14,6 +14,9 @@ internal static class LookupTest
 {
     [DllImport("user32.dll")] private static extern bool OpenClipboard(nint window);
     [DllImport("user32.dll")] private static extern bool CloseClipboard();
+    [DllImport("user32.dll")] private static extern nint GetClipboardData(uint format);
+    [DllImport("kernel32.dll")] private static extern nint GlobalLock(nint memory);
+    [DllImport("kernel32.dll")] private static extern bool GlobalUnlock(nint memory);
 
     internal static string WriteDictionary(string folder, string filename, string name, string text)
     {
@@ -107,6 +110,45 @@ internal static class LookupTest
                         LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>().SelectMany(Elements<T>)
                             .Concat(root is T element ? [element] : []).ToArray();
 
+                    async Task<(bool Matches, string Status)> CopyAndRead(ActionResultWindow window, string expected, Action? onBusy = null)
+                    {
+                        var copy = Elements<Button>(window).Single(button =>
+                            AutomationProperties.GetName(button) == UiText.Get("ActionResultWindow_006"));
+                        var copied = false;
+                        for (var attempt = 0; attempt < 4; attempt++)
+                        {
+                            copy.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                            var messages = Elements<TextBlock>(window);
+                            if (messages.Any(text => text.Text == UiText.Get("ActionResultWindow_007"))) { copied = true; break; }
+                            if (!messages.Any(text => text.Text == UiText.Get("ActionResultWindow_008")))
+                                return (false, "unexpected-copy-status");
+                            onBusy?.Invoke();
+                            await Task.Delay(40);
+                        }
+                        if (!copied) return (false, "clipboard-write-busy");
+
+                        // Read while holding the native lock. Retry contention only, never mismatched data.
+                        for (var attempt = 0; attempt < 20; attempt++)
+                        {
+                            if (!OpenClipboard(owner.Handle)) { await Task.Delay(25); continue; }
+                            try
+                            {
+                                var memory = GetClipboardData(13); // CF_UNICODETEXT
+                                if (memory == 0) return (false, "unicode-text-unavailable");
+                                var pointer = GlobalLock(memory);
+                                if (pointer == 0) return (false, "unicode-text-lock-failed");
+                                try
+                                {
+                                    var matches = Marshal.PtrToStringUni(pointer) == expected;
+                                    return (matches, matches ? "copied" : "content-mismatch");
+                                }
+                                finally { GlobalUnlock(memory); }
+                            }
+                            finally { CloseClipboard(); }
+                        }
+                        return (false, "clipboard-read-busy");
+                    }
+
                     var missing = await RunLookup(direct: true);
                     Require(!app.Windows.OfType<PopupWindow>().Any(window => window.IsVisible), "dictionary shortcut runs directly without presenting the toolbar");
                     TextBlock LookupContent(ActionResultWindow window) =>
@@ -136,8 +178,47 @@ internal static class LookupTest
                     WithClipboard(() => { if (lookupBackup.Capture() != "ok") throw new InvalidOperationException("Clipboard backup failed"); });
                     try
                     {
-                        Elements<Button>(found)[0].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                        Require(Clipboard.GetText() == "【Fixture】\n" + rawDefinition, "lookup copies the definition with its dictionary source");
+                        var expected = "【Fixture】\n" + rawDefinition;
+                        var copied = await CopyAndRead(found, expected);
+                        Require(copied.Matches, "lookup copies the definition with its dictionary source (" + copied.Status + ")");
+                        var mismatch = await CopyAndRead(found, "disposable intentionally incorrect expectation");
+                        Require(!mismatch.Matches && mismatch.Status == "content-mismatch",
+                            "lookup clipboard assertion rejects incorrect content without retrying the copy");
+
+                        using var acquired = new ManualResetEventSlim();
+                        using var release = new ManualResetEventSlim();
+                        Exception? blockerError = null;
+                        var blocker = new Thread(() =>
+                        {
+                            var opened = false;
+                            try
+                            {
+                                for (var attempt = 0; attempt < 40 && !opened; attempt++)
+                                { opened = OpenClipboard(0); if (!opened) Thread.Sleep(25); }
+                                if (!opened) throw new InvalidOperationException("Could not acquire controlled clipboard contention");
+                                acquired.Set();
+                                if (!release.Wait(TimeSpan.FromSeconds(10)))
+                                    throw new InvalidOperationException("Controlled clipboard contention timed out");
+                            }
+                            catch (Exception error) { blockerError = error; acquired.Set(); }
+                            finally { if (opened) CloseClipboard(); }
+                        }) { IsBackground = true };
+                        blocker.Start();
+                        try
+                        {
+                            if (!acquired.Wait(TimeSpan.FromSeconds(3)) || blockerError != null)
+                                throw new InvalidOperationException("Clipboard contention fixture did not start", blockerError);
+                            var busyObserved = false;
+                            copied = await CopyAndRead(found, expected, () => { busyObserved = true; release.Set(); });
+                            Require(busyObserved, "lookup reports busy while another thread holds the clipboard");
+                            Require(copied.Matches, "lookup copies the exact definition after the clipboard is released (" + copied.Status + ")");
+                        }
+                        finally
+                        {
+                            release.Set();
+                            if (!blocker.Join(TimeSpan.FromSeconds(3))) throw new InvalidOperationException("Clipboard contention fixture did not stop");
+                        }
+                        if (blockerError != null) throw new InvalidOperationException("Clipboard contention fixture failed", blockerError);
                     }
                     finally { WithClipboard(() => { if (!lookupBackup.Restore()) throw new InvalidOperationException("Clipboard restore failed"); }); }
                     found.Close();
@@ -153,9 +234,8 @@ internal static class LookupTest
                     WithClipboard(() => { if (multiBackup.Capture() != "ok") throw new InvalidOperationException("Clipboard backup failed"); });
                     try
                     {
-                        Elements<Button>(found)[0].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                        Require(Clipboard.GetText() == "【Fixture】\n" + rawDefinition + "\n\n【航空專業詞典】\ntake off\n離地起飛；開始飛行",
-                            "lookup copies every matched definition with its source heading");
+                        var copied = await CopyAndRead(found, "【Fixture】\n" + rawDefinition + "\n\n【航空專業詞典】\ntake off\n離地起飛；開始飛行");
+                        Require(copied.Matches, "lookup copies every matched definition with its source heading (" + copied.Status + ")");
                     }
                     finally { WithClipboard(() => { if (!multiBackup.Restore()) throw new InvalidOperationException("Clipboard restore failed"); }); }
                     found.Close();
