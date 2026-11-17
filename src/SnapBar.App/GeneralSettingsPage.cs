@@ -6,7 +6,7 @@ using SnapBar.Windows;
 
 namespace SnapBar.App;
 
-internal sealed class GeneralSettingsPage : ContentControl
+internal sealed partial class GeneralSettingsPage : ContentControl
 {
     internal CheckBox AutomaticToggle { get; }
     private readonly ScrollViewer scroll;

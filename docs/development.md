@@ -55,6 +55,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | 套件 | 原生旗標 | 範圍 |
 | --- | --- | --- |
 | Lifecycle | `--tray-lifecycle` | 系統匣、開關、熱鍵與儲存設定；使用入門的獨立程序、受限通訊、真實 UIA／工具列搜尋、完成來源驗證、背景後首次呈現與清理 |
+| AutoCopy | `--auto-copy` | 自動複製與工具列獨立運作、Ctrl 雙擊觸發／略過、提示焦點與逾時、密碼／排除／取消、剪貼簿序號競態；列入 Release |
 | Appearance | `--ui-appearance` | 外觀、捲動與拖曳把手；使用入門單一畫面、原處完成、偏好回復與小視窗截圖 |
 | Compatibility | `--clipboard-compatibility` | 快速剪貼簿相容性與焦點安全 |
 | CompatibilitySlow | `--clipboard-compatibility-long` | 相容性全套，包含真正等待 35 秒的腳本 |
@@ -71,7 +72,7 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 
-`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel + Lookup + Language。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel + Lookup + Language + AutoCopy。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
 
 原生 runner 可以用以下命令列舉所有旗標；未知或多個測試旗標回傳非零。
 
@@ -80,6 +81,8 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 ```
 
 外部 smoke 旗標為 `--sublime-action`、`--browser-launch-smoke`、`--path-shell-smoke`。直接執行需先設定 `$env:DOTNET_ROOT` 為所用 dotnet 所在目錄，並確認外部應用與可丟棄的 fixture 已準備。完整參數請查對應 `SublimeActionTest.cs`、`BrowserLaunchTest.cs`、`PathShellSmokeTest.cs`；它們可能啟動外部應用、操作焦點或剪貼簿。
+
+Sublime 自動複製時機對照使用 `--sublime-action Copy --auto-copy-gesture <x1> <y1> <x2> <y2>`；座標為實體螢幕像素，必須先觀察 `tests/fixtures/sublime-actions.txt` 的編輯區。測試要求該 fixture 位於前景且既有安全綁定就緒，不改文件、綁定或保存的偏好，結束時還原剪貼簿。對照一般拖選、拖選前按 Ctrl、拖選途中按 Ctrl，以及 50／1100 毫秒後放鍵，每組三次。Ctrl 可能讓 Sublime 建立多重選取；被安全綁定拒絕的 Ctrl-before 案例只驗證沒有候選及剪貼簿不變，不代表支援多重選取，也不納入 Release 自動套件。
 
 每次執行保存在 `artifacts/checks/desktop/<UTC時間>-<識別碼>/`：各階段 `.log` 與 `report.json` 包含 exit code、通過／失敗數、耗時和原始碼指紋。`latest.json` 是最近一次執行的副本，失敗也會更新。建置及工具測試分別保存在 `artifacts/checks/build/`、`artifacts/checks/tooling/`。這些路徑均被 Git 忽略。Fixture 直接使用本次建置的 App／Probe，不依賴舊 `artifacts/p0`。
 

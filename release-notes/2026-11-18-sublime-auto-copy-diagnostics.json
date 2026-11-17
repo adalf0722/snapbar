@@ -1,0 +1,12 @@
+{
+  "title": "Sublime 自動複製操作更清楚",
+  "summary": "設定頁補上 Sublime 的 Ctrl 按鍵時機說明，並保留多重選取的安全限制。",
+  "highlights": ["先開始拖選、放開滑鼠前再按 Ctrl，可避免先按 Ctrl 造成的多重選取衝突。", "選擇啟用本機診斷時，可分辨讀取、複製重驗與動作列呈現階段；不記錄選取文字或剪貼簿內容。"],
+  "usage": "需先完成 Sublime 相容性設定並開啟自動複製。可先開始拖選，在放開滑鼠前按住 Ctrl，再放開 Ctrl；先按 Ctrl 再拖選仍可能因多重選取而略過。診斷預設關閉。",
+  "en": {
+    "title": "Clearer auto-copy instructions for Sublime",
+    "summary": "Settings explain when to press Ctrl in Sublime while retaining the multiple-selection safety restriction.",
+    "highlights": ["Start dragging before pressing Ctrl, then release the mouse, to avoid the multiple-selection conflict caused by Ctrl before dragging.", "Optional local diagnostics distinguish capture, copy revalidation and action-bar presentation without selected text or clipboard contents."],
+    "usage": "Complete Sublime compatibility setup and enable auto-copy first. Start dragging, hold Ctrl before releasing the mouse, then release Ctrl. Holding Ctrl before dragging may still create multiple selections and skip capture. Diagnostics remain off by default."
+  }
+}

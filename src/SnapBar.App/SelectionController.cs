@@ -107,6 +107,8 @@ public sealed partial class SelectionController : IDisposable
         monitor.KeyFilter = key => selection != null && !popup.HasSearchForeground && Native.GetIdentity(Native.GetForegroundWindow()) == selection.Target && popup.HandleMenuKey(key);
         foregroundTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Background, (_, _) =>
         {
+            if (autoCopyTarget != null && Native.GetIdentity(Native.GetForegroundWindow()) != autoCopyTarget)
+                Invalidate(preserveReadonlyAction: true);
             if (selection == null) return;
             if (Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasCaptureForeground != true)
                 Invalidate(preserveReadonlyAction: true);
@@ -118,6 +120,9 @@ public sealed partial class SelectionController : IDisposable
     private void OnInput(InputEvent input)
     {
         if (disposed || stopping) return;
+        if (selectionDiagnostics.Enabled)
+            dispatcher.BeginInvoke(() => selectionDiagnostics.Record(0, "input-" + input.Kind,
+                new(input.Modifiers.ToString())), DispatcherPriority.Background);
         if (input.Kind == "key" && (popup.HasSearchForeground || aiWindow?.HasCaptureForeground == true)) return;
         if (input.Kind == "hotkey" && aiWindow?.HasCaptureForeground == true) return;
         if (input.Action == TextAction.Ocr) { OcrRequested?.Invoke(); return; }
@@ -125,7 +130,8 @@ public sealed partial class SelectionController : IDisposable
             && (popup.Contains(input.X, input.Y) || resultWindow?.Contains(input.X, input.Y) == true
                 || customResults.Contains(input.X, input.Y) || aiWindow?.ContainsCaptureSurface(input.X, input.Y) == true)) return;
         if (input.Kind is "key" or "click" or "scroll") { Invalidate(preserveReadonlyAction: true); return; }
-        if (input.Kind == "hotkey" || (input.Kind == "selection" && Automatic))
+        var copySelection = input.Kind == "selection" && autoCopy.ShouldCopy(input.Modifiers);
+        if (input.Kind == "hotkey" || (input.Kind == "selection" && (Automatic || copySelection)))
         {
             if (executing) return;
             var targetId = input.Action == TextAction.Ai ? AiShortcutPromptId : CustomShortcutActionId;
@@ -136,11 +142,20 @@ public sealed partial class SelectionController : IDisposable
             if (input.Action == TextAction.Custom && actions.CustomActions.FirstOrDefault(a => a.Id == targetId)
                 is { UseSelection: false, Kind: not CustomActionKind.Url, Output: not ActionOutput.ReplaceSelection })
             { _ = ExecuteStandaloneCustomAsync(targetId!); return; }
-            _ = CaptureAsync(input.Kind == "selection", input.X, input.Y, input.Action, targetId);
+            // Keep process inspection, UIA startup and feedback window work outside the
+            // low-level hook callback. A newer input must still cancel this queued capture.
+            var queuedTicket = generation.Next();
+            var sourceWindow = Native.GetForegroundWindow();
+            dispatcher.BeginInvoke(() =>
+            {
+                if (generation.IsCurrent(queuedTicket) && Native.GetForegroundWindow() == sourceWindow)
+                    _ = CaptureAsync(input.Kind == "selection", input.X, input.Y, input.Action, targetId, copySelection);
+            });
         }
     }
 
-    internal async Task CaptureAsync(bool pointer, int x, int y, TextAction? directAction = null, string? directTargetId = null)
+    internal async Task CaptureAsync(bool pointer, int x, int y, TextAction? directAction = null, string? directTargetId = null,
+        bool autoCopyRequest = false)
     {
         if (disposed || stopping) return;
         var directPrompt = directAction == TextAction.Ai && directTargetId != null
@@ -154,11 +169,23 @@ public sealed partial class SelectionController : IDisposable
         var window = Native.GetForegroundWindow();
         var target = Native.GetIdentity(window);
         if (target == null || target.ProcessId == Environment.ProcessId) return;
-        if (pointer && (!Automatic || !AppExclusionPolicy.AllowsAutomaticCapture(excludedApplications,
+        if (pointer && (!(Automatic || autoCopyRequest) || !AppExclusionPolicy.AllowsAutomaticCapture(excludedApplications,
             excludedApplications.Length == 0 ? null : Native.GetExecutablePath(target)))) return;
         var watch = Stopwatch.StartNew();
+        var captureSequence = Native.GetClipboardSequenceNumber();
+        if (autoCopyRequest) autoCopyTarget = target;
         try
         {
+            if (autoCopyRequest)
+            {
+                selectionDiagnostics.Record(ticket, "auto-copy-wait", new("start"));
+                var waiting = Stopwatch.StartNew();
+                while (Native.AnyModifierDown() && waiting.ElapsedMilliseconds < AutoCopyModifierWaitMilliseconds)
+                    await Task.Delay(20, token);
+                if (Native.AnyModifierDown()) autoCopyRequest = false;
+                selectionDiagnostics.Record(ticket, "auto-copy-wait", new(autoCopyRequest ? "released" : "modifier-held"));
+                if (!autoCopyRequest && !Automatic) return;
+            }
             await Task.Delay(pointer ? 120 : 40, token);
             // A hotkey can arrive before the user releases Ctrl/Alt. Never inject through held modifiers.
             if (!pointer)
@@ -175,10 +202,13 @@ public sealed partial class SelectionController : IDisposable
             {
                 if (SelectionRoutingPolicy.UseClipboardFallback(response, SublimeClipboardEnabled, sublime))
                     return new(target, () => clipboardReader.CaptureAsync(target,
-                        () => Current() && SublimeClipboardEnabled, SublimeSelectionAdapter.ReadPlan()), AutomaticBackoff: false);
+                        () => Current() && SublimeClipboardEnabled, SublimeSelectionAdapter.ReadPlan(),
+                        expectedSequence: autoCopyRequest ? captureSequence : null,
+                        diagnostic: stage => selectionDiagnostics.Record(ticket, "sublime-capture-" + stage, new("ok"))), AutomaticBackoff: false);
                 if (SelectionRoutingPolicy.UseClipboardFallback(response, ClipboardCompatibilityEnabled,
                     response.ClipboardTarget?.Target == target && ClipboardSelectionAdapter.IsTarget(target)))
-                    return new(target, () => CaptureClipboardAsync(response.ClipboardTarget!, ticket));
+                    return new(target, () => CaptureClipboardAsync(response.ClipboardTarget!, ticket,
+                        expectedSequence: autoCopyRequest ? captureSequence : null));
                 return null;
             }
             var captured = await capturePipeline.CaptureAsync(target, pointer,
@@ -200,6 +230,9 @@ public sealed partial class SelectionController : IDisposable
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
             selection = result.Selection;
+            var autoCopied = autoCopyRequest && await CopySelectionAutomaticallyAsync(selection, ticket,
+                result.ClipboardSequence ?? captureSequence);
+            if (!generation.IsCurrent(ticket) || disposed || !Current()) return;
             if (directAction is { } action)
             {
                 if (directTargetId != null && (action == TextAction.Ai && (directPrompt == null
@@ -215,7 +248,14 @@ public sealed partial class SelectionController : IDisposable
                 else await ExecuteAsync(action, direct: true);
                 return;
             }
+            if (pointer && !Automatic)
+            {
+                if (autoCopied) ShowAutoCopyFeedback(selection, x, y);
+                return;
+            }
             popup.Present(selection, x, y, searchUrlTemplate, actions);
+            selectionDiagnostics.Record(ticket, "popup-present", new("ok"));
+            if (autoCopied) ShowAutoCopyFeedback(selection, x, y);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? UiText.Get("SelectionController_001",(selection.CharacterCount),((selection.Editable == true ? UiText.Get("SelectionController_047") : UiText.Get("SelectionController_048"))),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture))                : selection.Source == ClipboardSelectionAdapter.Source
                     ? UiText.Get(selection.Editable == true ? "SelectionController_ClipboardEditable" : "SelectionController_002", selection.CharacterCount, watch.Elapsed.TotalMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))
@@ -224,7 +264,11 @@ public sealed partial class SelectionController : IDisposable
         catch (OperationCanceledException) { }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
         { Report("window-error"); }
-        finally { if (readinessTicket == ticket) readinessTicket = null; }
+        finally
+        {
+            if (readinessTicket == ticket) readinessTicket = null;
+            if (generation.IsCurrent(ticket) && copyFeedback?.IsVisible != true) autoCopyTarget = null;
+        }
     }
 
     internal async Task ExecuteAsync(TextAction action, bool direct = false)
@@ -266,7 +310,8 @@ public sealed partial class SelectionController : IDisposable
             if ((compatibility || genericCompatibility) && validation.Selection.Text != current.Text) { Report("selection-changed"); return; }
             if (action == TextAction.Copy)
             {
-                Clipboard.SetText(current.Text, TextDataFormat.UnicodeText);
+                if (!WriteSelectionClipboard(current, ticket, validation.ClipboardSequence ?? actionSequence))
+                { Report("clipboard-changed"); return; }
                 Status?.Invoke(UiText.Get("SelectionController_004",(current.CharacterCount)));
                 RememberBuiltIn(action);
             }
@@ -374,6 +419,8 @@ public sealed partial class SelectionController : IDisposable
 
     private void Invalidate(bool preserveReadonlyAction)
     {
+        autoCopyTarget = null;
+        copyFeedback?.HideFeedback();
         aiWindow?.InvalidateTarget();
         if (!preserveReadonlyAction || !customActionAllowsDetachedResult) customAction?.Cancel();
         customResults.InvalidateTargets();
@@ -401,6 +448,6 @@ public sealed partial class SelectionController : IDisposable
     public void Dispose()
     {
         if (disposed) return;
-        disposed = true; Invalidate(); resultWindow?.Close(); customResults.CloseAll(); aiWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
+        disposed = true; Invalidate(); copyFeedback?.Close(); resultWindow?.Close(); customResults.CloseAll(); aiWindow?.Close(); foregroundTimer.Stop(); monitor.Dispose(); probe.Dispose(); popup.Close();
     }
 }

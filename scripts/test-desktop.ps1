@@ -1,6 +1,6 @@
 param(
     [switch]$List,
-    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr', 'OcrActions', 'Language', 'PersistentResults', 'NativeClipboard')]
+    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr', 'OcrActions', 'Language', 'PersistentResults', 'NativeClipboard', 'AutoCopy')]
     [string[]]$Suite = @('Release'),
     [switch]$RequireActionRuntimes
 )
@@ -16,6 +16,7 @@ $catalog = [ordered]@{
     Ocr = '--screen-ocr'; OcrActions = '--ocr-actions'
     Language = '--interface-language'; PersistentResults = '--persistent-results'
     NativeClipboard = '--native-clipboard-source'
+    AutoCopy = '--auto-copy'
 }
 if ($List) {
     Write-Host "Release = $($script:SnapBarReleaseSuites -join ', ') (includes a real 35-second script)."

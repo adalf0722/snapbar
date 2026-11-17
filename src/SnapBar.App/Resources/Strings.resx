@@ -2855,4 +2855,14 @@ Its enabled state will be preserved.</value>
   <data name="VersionChannel_Preview" xml:space="preserve"><value>Preview</value></data>
   <data name="VersionChannel_Development" xml:space="preserve"><value>Development</value></data>
   <data name="VersionChannel_Test" xml:space="preserve"><value>Test</value></data>
+  <data name="AutoCopy_Title" xml:space="preserve"><value>Auto-copy</value></data>
+  <data name="AutoCopy_Description" xml:space="preserve"><value>Copy selected text automatically, independently of the toolbar.</value></data>
+  <data name="AutoCopy_ModeLabel" xml:space="preserve"><value>Auto-copy trigger</value></data>
+  <data name="AutoCopy_ModeControl" xml:space="preserve"><value>Hold Ctrl while selecting to copy</value></data>
+  <data name="AutoCopy_ModeSelection" xml:space="preserve"><value>Copy on selection</value></data>
+  <data name="AutoCopy_HelpControl" xml:space="preserve"><value>Hold Ctrl before dragging, or press and hold it during the drag. Release the mouse, then Ctrl, to copy. Normal dragging follows your action-bar setting without auto-copying. In Sublime Text, press Ctrl during the drag; multiple selections skip both the action bar and copying.</value></data>
+  <data name="AutoCopy_HelpSelection" xml:space="preserve"><value>Select to copy. Hold Ctrl when you finish selecting to skip this copy.</value></data>
+  <data name="AutoCopy_ShowFeedback" xml:space="preserve"><value>Show copy confirmation</value></data>
+  <data name="AutoCopy_SaveFailed" xml:space="preserve"><value>Could not save. Your previous auto-copy settings are still active.</value></data>
+  <data name="AutoCopy_Copied" xml:space="preserve"><value>Copied ✓</value></data>
 </root>

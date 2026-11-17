@@ -1192,3 +1192,53 @@ Core 619、嚴格 ActionRunner 37、Probe smoke 11 通過；相關選字桌面�
 ### 2026-11-17 Sublime 專用設定可替代性
 
 本機 Sublime build 4180 的獨立 fixture 實測未提供 UIA TextPattern／ValuePattern，MSAA 角色為 client（10），直接執行通用原生來源驗證仍回傳 `clipboard-unavailable`。普通 Ctrl+C 可讀單段選字，但空選取會複製整行，多選取會合併文字；專用快捷鍵成功讀取單段選字並拒絕空選取／多選取。有效複製觀測皆還原完整剪貼簿備份。未修改 Sublime 綁定、產品程式或偏好，未驗證剪下／貼上、唯讀、混合 DPI 或完整 Release。方法、重測與界線見 [Sublime 驗證紀錄](2026-11-17-sublime-generic-flow-verification.md)。
+
+### 2026-11-17 可控制的自動複製
+
+新增與工具列獨立的自動複製，預設關閉，預設按 Ctrl 選取才觸發；選取即複製模式則用 Ctrl 略過。可獨立關閉約 900 毫秒的成功提示。滑鼠完成時記錄修飾鍵狀態，放鍵等待最多 600 毫秒，完成擷取及重驗後才寫入。最終剪貼簿序號與請求有效性檢查在同一個剪貼簿鎖內執行；手動複製共用此寫入機制。選取擷取排到低階輸入回呼返回後執行，保留世代與前景檢查，避免舊的排隊請求重新取得資格。
+
+Release 建置與 Core 688 通過。自動複製 29 項、Lifecycle 144 項通過，報告：`artifacts/checks/desktop/20261117T135409215Z-6f3503aee7cf49ec8062c90ac28ffeb0/report.json`。覆蓋唯讀 UIA 複製、工具列獨立、手動複製、提示不搶焦點及逾時、密碼拒絕、排除程式、設定改變與互動取消、剪貼簿外部更新及真正的 Ctrl／普通雙擊。Lifecycle 另驗證設定保存、重新開窗恢復及控制項狀態。截圖：`artifacts/ui-polish/settings-auto-copy.png`，已檢視繁中設定卡片、控制項與捲動邊界。
+
+最後一次 `scripts/check.ps1` 通過，包含編碼／腳本／workflow／工具契約、Release 建置、Core 688 及 ActionRunner 37，零略過。建置報告：`artifacts/checks/build/20261117T135626494Z-4973563693194d1d9b977baba16d65e7/report.json`；動作執行報告：`artifacts/checks/action-runner/20261117T135635367Z-407206ab7ce5456dac9a23681372eee1/report.json`。
+
+相關套件分開執行且零略過：Language 68（`artifacts/checks/desktop/20261117T135102155Z-9ca410ad0c574be8bf3de5e4ba8da535/report.json`）、ClipboardRaces 17（`artifacts/checks/desktop/20261117T135114254Z-f5bfeb6de6d64893985409e4f6d0c876/report.json`）、WebActions 21（`artifacts/checks/desktop/20261117T135128730Z-9746065dd83449018f7c14270e8ed855/report.json`）、Compatibility 33（`artifacts/checks/desktop/20261117T135141703Z-e6f51a927d244eb584a23a4ba9f3c547/report.json`）。相容性新增驗證：停用相容性不注入複製，以及相容來源經擷取、備份還原、重驗後能自動複製。合計六個桌面套件 312 項；各次 Preflight 另計。
+
+中途曾遇到 fixture 無法取得前景、OLE 讀取斷言及實體滑鼠事件間歇失敗；測試改採原生剪貼簿讀取、在 MTA 建立及使用 UIA 代理、先清除舊反白並成批插入雙擊。新設定測試提前建立設定檔，也使原快捷鍵測試的「檔案不存在」前提失效，已將保存測試移到其後；沒有放寬斷言。最終 AutoCopy／Lifecycle 以上述報告為準，不以途中失敗報告作為通過證據。
+
+本輪未完成真實第三方 App 的自動複製回測、混合 DPI／多螢幕人工驗收、Sublime 自動複製實機驗收或完整 Release 套件；不據此發布或替換 `artifacts/p0`。既有相容性與 Sublime 偏好均保持原值。
+
+### 2026-11-17 按住 Ctrl 重複事件取消選取修正
+
+使用者回報 Chrome／Sublime 按 Ctrl 拖選後既不複製也不顯示工具列。以不含按鍵值或選取文字的 opt-in 本機事件診斷重現：滑鼠完成後已進入 `auto-copy-wait`，之後連續的 `input-key` 事件使同一請求失效，沒有進入原生擷取。新增注入重複 Ctrl-down 的回歸案例，在修正前明確失敗：`artifacts/checks/desktop/20261117T141055282Z-30a8fb0fc98e4ac0b2e43f9d78927e91/report.json`。
+
+InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下判定新操作；同一鍵的重複按下照常傳給來源程式，不重新取消選取，放開後再次按下仍會取消。放鍵等待由 600 毫秒增為兩秒，涵蓋實機超過一秒才放開 Ctrl 的操作；等待後才建立擷取候選，因此 Core／Probe 的擷取預算、候選 lease、焦點、密碼與剪貼簿序號保護不變。
+
+修正後 AutoCopy 32、Compatibility 33、Keyboard 26、Lifecycle 144 通過：`artifacts/checks/desktop/20261117T141308240Z-0d685b36c07143918eeec78e7b25b20a/report.json`。延長放鍵等待後另跑 AutoCopy 32 通過：`artifacts/checks/desktop/20261117T141424560Z-24dc528a2910416198bfb0556a0fdfd9/report.json`，新增案例包含完成選取後繼續按住 Ctrl 1.1 秒並注入三次重複按下，確認複製及工具列同時成功。中途一次實體雙擊注入漏接而失敗，未作為通過證據。
+
+最終完整 `scripts/check.ps1` 通過：Core 688、ActionRunner 37，零略過；報告為 `artifacts/checks/build/20261117T141608594Z-2d48ff6ace164a26a8daf27d4c259401/report.json` 及 `artifacts/checks/action-runner/20261117T141616892Z-fafee33dcd204c08a569a950fd47610e/report.json`。以原偏好重新啟動正常開發版，未啟用持續事件診斷，未發布套件。
+
+後續使用者確認 Chrome 可以，但 Sublime 按 Ctrl 選取時動作列仍經常不出現；因此 Sublime 實機問題仍未完成。2026-11-17 依使用者要求停止功能處理，整理至 [交接文件](2026-11-17-auto-copy-sublime-handoff.md)，預計隔日繼續。fixture 通過不能取代此項實機驗收。
+
+### 2026-11-18 Sublime Ctrl 選取定位與操作說明
+
+正常結束下載目錄中的舊版 SnapBar，以工作區的 SelectionController 與真實 Sublime `tests/fixtures/sublime-actions.txt` 對照。先按 Ctrl 再拖選的失敗可重現，畫面狀態列顯示 `2 selection regions`；診斷確認放鍵等待、原生 Probe 已完成，而 Sublime 專用讀取送出兩種安全快捷鍵後無回應。這符合現有單段非空選取綁定拒絕多重選取的行為，不能靠加大 timeout 或改用普通 Ctrl+C 解決。
+
+新增 opt-in Sublime 手勢 driver，座標從實際 fixture 畫面取得，僅操作該前景測試文件，保存及還原剪貼簿，不寫文件、偏好或 keymap。測試注入移到背景 worker，避免阻塞安裝 hook 的 dispatcher。最終紀錄 `artifacts/checks/sublime-auto-copy/20261118-ctrl-timing-characterization.log`，54 項檢查通過：
+
+| 手勢 | 樣本與結果 |
+| --- | --- |
+| 一般拖選 | 6/6 顯示工具列，不自動複製 |
+| 先按 Ctrl 再拖選 | 1/6 顯示並複製；5/6 拒絕且剪貼簿不變 |
+| 拖選途中才按 Ctrl | 6/6 顯示並複製，50／1100 毫秒放鍵延遲各三次 |
+
+首輪重現為 `19 passed, 1 failed`，失敗就是 Ctrl-before 無工具列；另有普通拖選注入漏接與誤將所有 Ctrl-before 都視為必定拒絕的測試假設失敗，均不作為通過證據。最終 driver 對 Ctrl-before 的無結果只檢查沒有候選且剪貼簿不變，不把這些案例當成支援成功，也不以整份測試通過宣稱原始手勢已修復。
+
+使用者選擇保留安全限制並說明可行操作。一般設定的英文與繁中說明新增：先開始拖選，在放開滑鼠前按住 Ctrl，再放開 Ctrl；多重選取會略過動作列與複製。沿用現有綁定、偏好及兩秒等待，不支援多重選取。新增不含文字的 opt-in 擷取／重驗／寫入／呈現診斷，以及雙語 release note。這是本機樣本，仍未做混合 DPI／多螢幕或完整 Release，不發布套件。
+
+相關桌面回歸 AutoCopy 32、Compatibility 33、Keyboard 26、Lifecycle 144 全數通過，無略過：`artifacts/checks/desktop/20261117T225237529Z-a0707475f1634fc08b4c82a0cd9c8079/report.json`。前一輪 AutoCopy 在 Ctrl 雙擊注入時觀測器只收到 click、缺少 selection 而失敗；將該 fixture 的輸入注入移至背景 worker 後通過，未修改產品 hook 或放寬驗證。失敗報告保留於 `artifacts/checks/desktop/20261117T225155232Z-7de3c5d6b5864af494728c6882d97490/report.json`。
+
+最終 `scripts/check.ps1` 通過：Core 688、ActionRunner 37，無略過。建置報告 `artifacts/checks/build/20261117T225358060Z-c3e78aac51654d029ac80f6a1ff645d2/report.json`；動作報告 `artifacts/checks/action-runner/20261117T225406605Z-3c5757fffa1b4a3c86dcc87b3aaaa400/report.json`；完整文字紀錄 `artifacts/checks/sublime-auto-copy/20261118-final-check.log`。確認本機自動偵測、自動複製 RequireControl、提示關閉及兩種相容性開關維持原值，以一般 `run-dev.ps1` 重新啟動工作區版，未啟用持續診斷。
+
+2026-11-18 使用者進一步確認保留「先按 Ctrl 再拖選」及「拖選途中按 Ctrl」兩種操作。查核 `InputMonitor` 的 mouse-up 快照與 `AutoCopySettings.ShouldCopy`，兩者原本即共用同一條件，不需新增開關或更改取消／驗證規則。中英文設定說明已明列兩種操作、滑鼠與 Ctrl 的放開順序，以及一般拖選仍遵循原動作列開關；Sublime 多重選取仍拒絕。新增雙語 `2026-11-18-auto-copy-ctrl-timing.json`。行為證據沿用上述 WPF Ctrl-held 回歸與真實 Sublime before／during 對照，不將 Sublime Ctrl-before 的拒絕算作成功。
+
+說明更新後 `scripts/check.ps1` 通過：Core 688、ActionRunner 37，無略過。建置報告 `artifacts/checks/build/20261117T230411572Z-895d21cc2c87424290f711e9c44975a8/report.json`；動作報告 `artifacts/checks/action-runner/20261117T230420907Z-7fcf4bbba10c45e6afbea369b4d0a613/report.json`。以 `run-dev.ps1` 載入新版說明，未更改使用者偏好，未提交或發布。

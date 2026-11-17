@@ -2855,4 +2855,14 @@
   <data name="VersionChannel_Preview" xml:space="preserve"><value>預覽版</value></data>
   <data name="VersionChannel_Development" xml:space="preserve"><value>開發版</value></data>
   <data name="VersionChannel_Test" xml:space="preserve"><value>測試版</value></data>
+  <data name="AutoCopy_Title" xml:space="preserve"><value>自動複製</value></data>
+  <data name="AutoCopy_Description" xml:space="preserve"><value>選取文字後自動複製，可與工具列分開啟用。</value></data>
+  <data name="AutoCopy_ModeLabel" xml:space="preserve"><value>自動複製觸發方式</value></data>
+  <data name="AutoCopy_ModeControl" xml:space="preserve"><value>按住 Ctrl 選取才複製</value></data>
+  <data name="AutoCopy_ModeSelection" xml:space="preserve"><value>選取即複製</value></data>
+  <data name="AutoCopy_HelpControl" xml:space="preserve"><value>可先按住 Ctrl 再拖選，或先拖選、放開滑鼠前再按住 Ctrl；放開滑鼠後再放開 Ctrl 即可複製。一般拖選維持原動作列設定，不自動複製。Sublime Text 建議拖選途中再按 Ctrl；多重選取會略過動作列與複製。</value></data>
+  <data name="AutoCopy_HelpSelection" xml:space="preserve"><value>選取文字即可複製；完成選取時按住 Ctrl 可略過這次複製。</value></data>
+  <data name="AutoCopy_ShowFeedback" xml:space="preserve"><value>顯示複製提示</value></data>
+  <data name="AutoCopy_SaveFailed" xml:space="preserve"><value>無法儲存，仍使用原本的自動複製設定。</value></data>
+  <data name="AutoCopy_Copied" xml:space="preserve"><value>已複製 ✓</value></data>
 </root>

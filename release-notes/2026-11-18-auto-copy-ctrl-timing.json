@@ -1,0 +1,12 @@
+{
+  "title": "兩種 Ctrl 拖選方式都能觸發自動複製",
+  "summary": "設定說明明確列出先按 Ctrl 再拖選，以及拖選途中按 Ctrl 的操作，保留一般拖選的原有行為。",
+  "highlights": ["放開滑鼠時按住 Ctrl，接著放開 Ctrl，即可依原設定自動複製。", "Sublime Text 建議拖選途中再按 Ctrl；多重選取仍安全略過。"],
+  "usage": "在一般設定啟用自動複製並選擇「按住 Ctrl 選取才複製」。可先按住 Ctrl 再拖選，或先拖選、放開滑鼠前再按 Ctrl；接著放開 Ctrl。一般拖選仍遵循自動顯示動作列開關。",
+  "en": {
+    "title": "Use either Ctrl timing for auto-copy",
+    "summary": "Settings explicitly describe holding Ctrl before dragging or pressing it during the drag, while preserving normal dragging behavior.",
+    "highlights": ["Hold Ctrl when releasing the mouse, then release Ctrl to auto-copy according to your settings.", "In Sublime Text, press Ctrl during the drag; multiple selections are still safely skipped."],
+    "usage": "Enable auto-copy in General settings and choose the Ctrl selection mode. Hold Ctrl before dragging, or press it during the drag before releasing the mouse, then release Ctrl. Normal dragging follows the automatic action-bar setting."
+  }
+}

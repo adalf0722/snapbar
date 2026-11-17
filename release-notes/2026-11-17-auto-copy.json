@@ -1,0 +1,20 @@
+{
+  "title": "依自己的節奏自動複製選取文字",
+  "summary": "新增預設關閉的自動複製，可按住 Ctrl 才觸發，或選取即複製，並自行決定是否顯示成功提示。",
+  "highlights": [
+    "自動複製與工具列可分開啟用，第一次啟用預設按住 Ctrl 選取才複製。",
+    "切換為選取即複製後，按住 Ctrl 可略過這次複製。",
+    "可選擇顯示短暫的複製成功提示，不打斷原本的操作。"
+  ],
+  "usage": "開啟設定的一般頁面，啟用自動複製並選擇觸發方式；按 Ctrl 的模式須在完成選取後放開按鍵。既有應用程式排除與相容性設定仍適用。",
+  "en": {
+    "title": "Auto-copy selected text on your terms",
+    "summary": "Optional auto-copy supports Ctrl-gated selection or copying on selection, with a separate copy confirmation option.",
+    "highlights": [
+      "Enable auto-copy independently of the toolbar; holding Ctrl while selecting is the initial trigger mode.",
+      "In Copy on selection mode, hold Ctrl to skip the current copy.",
+      "Choose a brief copy confirmation that keeps focus in your original app."
+    ],
+    "usage": "Open General settings, enable Auto-copy and choose a trigger. In Ctrl mode, release the key after finishing selection. Existing app exclusions and compatibility preferences still apply."
+  }
+}

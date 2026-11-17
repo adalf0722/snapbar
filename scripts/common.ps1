@@ -117,7 +117,7 @@ function Assert-SnapBarActionRunnerEvidence($Result) {
     }
 }
 
-$script:SnapBarReleaseSuites = @('ActionRunner', 'Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup', 'Language')
+$script:SnapBarReleaseSuites = @('ActionRunner', 'Lifecycle', 'Appearance', 'CompatibilitySlow', 'AiRuntime', 'AiPanel', 'Lookup', 'Language', 'AutoCopy')
 
 function Test-SnapBarInstanceRunning {
     $instance = $null

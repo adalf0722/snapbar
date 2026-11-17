@@ -1,0 +1,12 @@
+{
+  "title": "按住 Ctrl 選字時仍能完成自動複製",
+  "summary": "修正持續按住 Ctrl 時，重複按鍵事件取消自動複製與動作列的問題。",
+  "highlights": ["同一次 Ctrl 按住操作不再重複取消選取；重新按鍵、點擊及切換視窗的保護仍保留。", "放鍵等待延長為兩秒，容許選完文字後自然地放開 Ctrl。"],
+  "usage": "更新後沿用原設定；在完成選取時按住 Ctrl，再放開即可觸發自動複製。",
+  "en": {
+    "title": "Keep auto-copy working while holding Ctrl",
+    "summary": "Repeated Ctrl-down events no longer cancel a pending auto-copy or its action bar.",
+    "highlights": ["One held Ctrl gesture no longer repeatedly cancels selection; fresh key presses, clicks and window changes still invalidate pending work.", "A two-second release window allows a natural pause before releasing Ctrl."],
+    "usage": "Existing settings are preserved. Hold Ctrl when finishing selection, then release it to trigger auto-copy."
+  }
+}

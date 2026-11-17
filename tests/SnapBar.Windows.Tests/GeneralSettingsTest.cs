@@ -124,6 +124,11 @@ internal static class GeneralSettingsTest
             window.ShowSettings(); await Task.Delay(80);
             check("background instance can reveal initialized settings", window.IsVisible);
             var page = window.GeneralPage;
+            var autoCopy = Find<CheckBox>(page, "AutoCopyEnabled");
+            var copyMode = Find<ComboBox>(page, "AutoCopyMode");
+            var copyFeedback = Find<CheckBox>(page, "AutoCopyFeedback");
+            check("auto-copy UI defaults off with disabled Ctrl mode and feedback ready", autoCopy.IsChecked == false
+                && copyMode.SelectedIndex == 0 && !copyMode.IsEnabled && copyFeedback.IsChecked == true && !copyFeedback.IsEnabled);
             var startupToggle = Find<CheckBox>(page, "StartupToggle");
             startupToggle.IsChecked = true; check("startup UI toggles actual registration on", startup.Read().State == StartupState.On && startupToggle.IsChecked == true);
             startupToggle.IsChecked = false; check("startup UI toggles actual registration off", startup.Read().State == StartupState.Off);
@@ -141,6 +146,13 @@ internal static class GeneralSettingsTest
             startup.SetEnabled(false); page.RefreshStartup();
 
             await ShortcutSettingsTest.Run(window, path, check);
+            window.NavigateTo(SettingsCategory.General);
+            autoCopy.IsChecked = true; autoCopy.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            copyMode.SelectedIndex = 1; copyFeedback.IsChecked = false;
+            copyFeedback.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            check("auto-copy controls persist mode and feedback independently", new SettingsStore(path).Load().Settings.AutoCopy
+                == new AutoCopySettings(true, AutoCopyMode.OnSelection, false) && copyMode.IsEnabled && copyFeedback.IsEnabled);
+            UiAppearanceTest.Snapshot(window, "settings-auto-copy.png");
             var ocrLanguage = Find<ComboBox>(window.GeneralPage, "OcrLanguagePriority");
             check("OCR defaults to Traditional Chinese priority", ocrLanguage.SelectedIndex == 0);
             ocrLanguage.SelectedIndex = 1;
@@ -148,6 +160,9 @@ internal static class GeneralSettingsTest
             window.PrepareSessionEnd(); window.Close();
             window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup);
             check("OCR priority is restored in a new settings window", Find<ComboBox>(window.GeneralPage, "OcrLanguagePriority").SelectedIndex == 1);
+            check("auto-copy preferences restore in a new settings window", Find<CheckBox>(window.GeneralPage, "AutoCopyEnabled").IsChecked == true
+                && Find<ComboBox>(window.GeneralPage, "AutoCopyMode").SelectedIndex == 1
+                && Find<CheckBox>(window.GeneralPage, "AutoCopyFeedback").IsChecked == false);
             window.CreateTrayIcon = (_, _, _) => throw new InvalidOperationException("fixture tray unavailable");
             window.InitializeBackground();
             check("background startup reveals settings when tray initialization fails", window.IsVisible

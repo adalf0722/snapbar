@@ -4,7 +4,8 @@ using SnapBar.Core;
 
 namespace SnapBar.Windows;
 
-public record InputEvent(string Kind, int X = 0, int Y = 0, TextAction? Action = null);
+public record InputEvent(string Kind, int X = 0, int Y = 0, TextAction? Action = null,
+    SelectionModifiers Modifiers = SelectionModifiers.None);
 
 public sealed class InputMonitor : IDisposable
 {
@@ -19,8 +20,10 @@ public sealed class InputMonitor : IDisposable
     public event Action<HotkeySettings>? HotkeyRecorded;
     public Func<uint, bool>? KeyFilter { get; set; }
     private readonly HashSet<uint> filteredKeys = [];
+    private readonly HashSet<uint> heldModifiers = [];
     private readonly GlobalHotkey hotkey, searchHotkey, copyHotkey, ocrHotkey, lookupHotkey, aiHotkey, customHotkey;
     public bool HotkeyRegistered => hotkey.Registered;
+    public nint OwnerWindow => source.Handle;
     public bool HotkeySuppressed
     {
         get => hotkey.Suppressed;
@@ -49,6 +52,8 @@ public sealed class InputMonitor : IDisposable
         HotkeySettings? initialAiHotkey = null, HotkeySettings? initialCustomHotkey = null)
     {
         this.source = source;
+        foreach (var key in new uint[] { 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5 })
+            if ((Native.GetAsyncKeyState((int)key) & 0x8000) != 0) heldModifiers.Add(key);
         source.AddHook(WindowMessage);
         hotkey = new(source.Handle, initialHotkey ?? HotkeySettings.Default);
         searchHotkey = new(source.Handle, initialSearchHotkey, firstId: 3);
@@ -112,7 +117,8 @@ public sealed class InputMonitor : IDisposable
                         lastUp = data.Point; lastUpTime = now;
                         var drag = Math.Abs(data.Point.X - down.X) >= Native.GetSystemMetrics(68)
                             || Math.Abs(data.Point.Y - down.Y) >= Native.GetSystemMetrics(69);
-                        if (drag || clickCount >= 2) Input?.Invoke(new("selection", data.Point.X, data.Point.Y));
+                        if (drag || clickCount >= 2) Input?.Invoke(new("selection", data.Point.X, data.Point.Y,
+                            Modifiers: ReadModifiers()));
                         break;
                     case 0x204: case 0x207: Input?.Invoke(new("click", data.Point.X, data.Point.Y)); break;
                     case 0x20A: case 0x20E: Input?.Invoke(new("scroll", data.Point.X, data.Point.Y)); break;
@@ -134,7 +140,12 @@ public sealed class InputMonitor : IDisposable
                 // state is already correct when the following menu key is inspected.
                 if (data.Key is 0x10 or 0x11 or 0x12 or >= 0xA0 and <= 0xA5)
                 {
-                    if (down && KeyFilter?.Invoke(data.Key) != true) Input?.Invoke(new("key"));
+                    // Typematic modifier-down events are still the same held gesture.
+                    // Only a fresh press invalidates a pending selection; always forward
+                    // balanced transitions to the source application.
+                    if (!down) heldModifiers.Remove(data.Key);
+                    else if (heldModifiers.Add(data.Key) && KeyFilter?.Invoke(data.Key) != true)
+                        Input?.Invoke(new("key"));
                     return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
                 }
                 if (!down && filteredKeys.Remove(data.Key)) return 1;
@@ -143,6 +154,15 @@ public sealed class InputMonitor : IDisposable
             }
         }
         return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
+    }
+
+    public static SelectionModifiers ReadModifiers()
+    {
+        bool Down(int key) => (Native.GetAsyncKeyState(key) & 0x8000) != 0;
+        return (Down(0x11) ? SelectionModifiers.Control : 0)
+            | (Down(0x10) ? SelectionModifiers.Shift : 0)
+            | (Down(0x12) ? SelectionModifiers.Alt : 0)
+            | (Down(0x5B) || Down(0x5C) ? SelectionModifiers.Windows : 0);
     }
 
     public void Dispose()

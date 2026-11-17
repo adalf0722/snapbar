@@ -8,6 +8,7 @@ void Check(string name, Func<bool> test)
 }
 var target = new TargetIdentity(42, 123, 999);
 var selection = new SelectionSnapshot("s", target, "original", null, true, 1, 8);
+AutoCopySettingsTests.Run(Check);
 SelectionCapturePipelineTest.Run(Check, target, selection);
 ClipboardWritePolicyTest.Run(Check, target, selection);
 Check("legacy probe requests leave selection diagnostics disabled", () =>

@@ -55,6 +55,7 @@ public sealed partial class MainWindow : Window
         InitializeOnboarding(enableFirstRun, settingsExisted, loaded.Warning);
         BuildSettingsPages();
         generalPage.ConfigureLanguage(preferences.InterfaceLanguage, ChangeInterfaceLanguage);
+        generalPage.ConfigureAutoCopy(preferences.AutoCopy, SaveAutoCopy);
         UiText.Changed += RefreshInterfaceLanguage;
         SourceInitialized += (_, _) =>
         {
@@ -75,6 +76,7 @@ public sealed partial class MainWindow : Window
                 controller.OnboardingSearchFinished += result => _ = onboarding.SearchFinishedAsync(result);
                 controller.HotkeyRecorded += shortcutsPage.Record;
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
+                controller.ConfigureAutoCopy(preferences.AutoCopy);
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
                 controller.ConfigureActions(preferences.Actions);

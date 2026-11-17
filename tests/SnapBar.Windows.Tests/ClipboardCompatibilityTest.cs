@@ -212,6 +212,16 @@ internal static class ClipboardCompatibilityTest
                 Clipboard.SetText("original clipboard");
                 await Capture();
                 Check(controller.ActiveSelection == null && await Command("stats") == 0 && ReadClipboardText() == "original clipboard", "disabled fallback never sends Ctrl+C");
+                controller.ConfigureAutoCopy(new(true, AutoCopyMode.OnSelection, false));
+                var autoBounds = AutomationElement.FocusedElement.Current.BoundingRectangle;
+                await controller.CaptureAsync(true, (int)autoBounds.Left + 20, (int)autoBounds.Top + 20, autoCopyRequest: true);
+                Check(ReadClipboardText() == "original clipboard" && await Command("stats") == 0,
+                    "auto-copy never enables disabled clipboard compatibility");
+                controller.ClipboardCompatibilityEnabled = true;
+                await controller.CaptureAsync(true, (int)autoBounds.Left + 20, (int)autoBounds.Top + 20, autoCopyRequest: true);
+                Check(ReadClipboardText() == Sample && controller.ActiveSelection?.Source == ClipboardSelectionAdapter.Source,
+                    "automatic copy revalidates fallback selection across backup restore sequences");
+                controller.ConfigureAutoCopy(new()); Clipboard.SetText("original clipboard");
                 controller.ClipboardCompatibilityEnabled = true; await Capture();
                 Check(controller.ActiveSelection is { Source: ClipboardSelectionAdapter.Source, Editable: null, Text: Sample }
                     && ReadClipboardText() == "original clipboard", "real Ctrl+C reads Unicode from unsupported provider and restores original clipboard");

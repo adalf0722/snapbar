@@ -34,8 +34,30 @@ internal static class SettingsStoreTests
                 var text = new UTF8Encoding(false, true).GetString(bytes);
                 using var json = System.Text.Json.JsonDocument.Parse(text);
                 return !bytes.Take(3).SequenceEqual(new byte[] { 239, 187, 191 })
-                    && json.RootElement.EnumerateObject().Count() == 9
+                    && json.RootElement.EnumerateObject().Count() == 10
                     && json.RootElement.GetProperty("schemaVersion").GetInt32() == 8;
+            });
+            check("auto-copy roundtrips independently of toolbar and compatibility preferences", () =>
+            {
+                var store = new SettingsStore(path); store.Load();
+                store.Save(new() { AutoCopy = new(true, AutoCopyMode.OnSelection, false),
+                    ClipboardCompatibilityEnabled = false, SublimeCompatibilityEnabled = false });
+                var loaded = new SettingsStore(path).Load().Settings;
+                return loaded.AutoCopy == new AutoCopySettings(true, AutoCopyMode.OnSelection, false)
+                    && !loaded.AutomaticDetectionEnabled && !loaded.ClipboardCompatibilityEnabled
+                    && loaded.SublimeCompatibilityEnabled == false;
+            });
+            check("old settings never enable auto-copy and keep feedback ready", () =>
+            {
+                Seed("{\"schemaVersion\":8,\"automaticDetectionEnabled\":true}");
+                return new SettingsStore(path).Load().Settings.AutoCopy == new AutoCopySettings();
+            });
+            check("null and unknown auto-copy modes normalize to safe defaults", () =>
+            {
+                Seed("{\"schemaVersion\":8,\"autoCopy\":null}");
+                if (new SettingsStore(path).Load().Settings.AutoCopy != new AutoCopySettings()) return false;
+                Seed("{\"schemaVersion\":8,\"autoCopy\":{\"enabled\":true,\"mode\":42,\"showFeedback\":false}}");
+                return new SettingsStore(path).Load().Settings.AutoCopy == new AutoCopySettings(true, AutoCopyMode.RequireControl, false);
             });
             check("pause preference replaces previous saved state", () =>
             {

@@ -18,6 +18,7 @@ internal static class SublimeActionTest
 
     public static int Run(string[] args)
     {
+        if (args.Contains("--auto-copy-gesture")) return SublimeAutoCopyTest.Run(args);
         var index = Array.IndexOf(args, "--sublime-action");
         if (index + 1 >= args.Length || !Enum.TryParse<TextAction>(args[index + 1], true, out var action)
             || action is not (TextAction.Copy or TextAction.Cut or TextAction.Paste))
