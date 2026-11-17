@@ -1,5 +1,11 @@
 # P0 驗證紀錄
 
+## 2026-11-18 一般設定分組與按需說明
+
+一般設定以基本設定、選取與複製、文字辨識分組，共用卡片與分隔線。自動複製的操作說明和進階選項預設收合；停用功能時收起觸發方式與附屬選項，但保留模式和複製提示偏好。剪貼簿覆寫提醒、啟動位置變更與操作失敗仍直接顯示。
+
+Release 建置、Core 688 項通過。桌面 Appearance 243、AutoCopy 32、Language 68 項通過，零失敗、零略過；另有 Preflight 1。報告：`artifacts/checks/desktop/20261117T231835783Z-6385e434dd3247e0adac87e40d69a8f7/report.json`。新增繁中與英文的預設高度完整顯示、附屬控制項展開、開關保留偏好及小視窗展開後可捲動檢查。截圖位於 `artifacts/ui-polish/general-settings-{zh-Hant,en}.png`，並保留 `expanded`、`small` 版本與完整設定視窗 `settings.png`。已目視檢查繁中與英文主畫面；未重新執行混合 DPI 或真實跨應用人工驗收，未發布套件。
+
 ## 2026-11-16 Lookup 剪貼簿佔用測試
 
 push 前完整 Release 曾在 Lookup「複製釋義與詞典來源」失敗，原紀錄只有內容比對失敗，無法確認當次是複製忙碌、OLE 讀取失敗或其他剪貼簿變更；未改動前單獨重跑 17 項即通過。原測試點擊後立即呼叫 WPF Clipboard.GetText，沒有先確認複製按鈕回報的狀態。

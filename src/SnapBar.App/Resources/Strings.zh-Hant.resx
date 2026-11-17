@@ -2865,4 +2865,11 @@
   <data name="AutoCopy_ShowFeedback" xml:space="preserve"><value>顯示複製提示</value></data>
   <data name="AutoCopy_SaveFailed" xml:space="preserve"><value>無法儲存，仍使用原本的自動複製設定。</value></data>
   <data name="AutoCopy_Copied" xml:space="preserve"><value>已複製 ✓</value></data>
+  <data name="General_GroupBasic" xml:space="preserve"><value>基本設定</value></data>
+  <data name="General_GroupSelection" xml:space="preserve"><value>選取與複製</value></data>
+  <data name="General_GroupRecognition" xml:space="preserve"><value>文字辨識</value></data>
+  <data name="General_AutoCopySummary" xml:space="preserve"><value>複製選取的文字，會覆寫剪貼簿內容。</value></data>
+  <data name="General_Trigger" xml:space="preserve"><value>觸發方式</value></data>
+  <data name="General_OperationHelp" xml:space="preserve"><value>操作說明</value></data>
+  <data name="General_AdvancedOptions" xml:space="preserve"><value>進階選項</value></data>
 </root>

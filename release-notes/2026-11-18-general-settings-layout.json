@@ -1,0 +1,20 @@
+{
+  "title": "一般設定更清楚，操作說明隨需展開",
+  "summary": "一般設定改用分組排列，減少重複卡片與長篇文字，讓常用選項更容易找到。",
+  "highlights": [
+    "基本設定、選取與複製、文字辨識集中分組呈現。",
+    "自動複製的操作說明與進階選項可展開查看，關閉功能時收起附屬設定。",
+    "剪貼簿覆寫提醒與需要處理的啟動狀態仍直接顯示，原有偏好保持不變。"
+  ],
+  "usage": "開啟 SnapBar 設定的一般頁面；啟用自動複製後，可展開操作說明或進階選項。無額外必要條件。",
+  "en": {
+    "title": "Clearer general settings with help on demand",
+    "summary": "Grouped settings reduce visual clutter and lengthy explanations so frequently used options are easier to find.",
+    "highlights": [
+      "Settings are grouped into Basics, Selection and copying, and Text recognition.",
+      "Expand How to use and Advanced options for Auto copy; related controls are hidden when the feature is off.",
+      "Clipboard replacement and actionable startup status remain visible, with existing preferences preserved."
+    ],
+    "usage": "Open General in SnapBar settings. Enable Auto copy to reveal How to use and Advanced options. No additional prerequisites."
+  }
+}

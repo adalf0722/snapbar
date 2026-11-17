@@ -2865,4 +2865,11 @@ Its enabled state will be preserved.</value>
   <data name="AutoCopy_ShowFeedback" xml:space="preserve"><value>Show copy confirmation</value></data>
   <data name="AutoCopy_SaveFailed" xml:space="preserve"><value>Could not save. Your previous auto-copy settings are still active.</value></data>
   <data name="AutoCopy_Copied" xml:space="preserve"><value>Copied ✓</value></data>
+  <data name="General_GroupBasic" xml:space="preserve"><value>Basics</value></data>
+  <data name="General_GroupSelection" xml:space="preserve"><value>Selection and copying</value></data>
+  <data name="General_GroupRecognition" xml:space="preserve"><value>Text recognition</value></data>
+  <data name="General_AutoCopySummary" xml:space="preserve"><value>Copies selected text, replacing clipboard contents.</value></data>
+  <data name="General_Trigger" xml:space="preserve"><value>Trigger</value></data>
+  <data name="General_OperationHelp" xml:space="preserve"><value>How to use</value></data>
+  <data name="General_AdvancedOptions" xml:space="preserve"><value>Advanced options</value></data>
 </root>
