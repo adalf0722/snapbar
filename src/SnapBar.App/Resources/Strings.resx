@@ -1722,10 +1722,10 @@ Results appear here after running.</value>
     <value>Settings could not be read or use an incompatible version. Defaults are in use; your original file is preserved and will not be overwritten.</value>
   </data>
   <data name="MainWindow_008" xml:space="preserve">
-    <value>Could not configure Sublime shortcuts due to file format, permissions, or key conflicts. Sublime support is off.</value>
+    <value>Could not configure Sublime shortcuts due to file format, permissions, or key conflicts. Sublime Text integration is off.</value>
   </data>
   <data name="MainWindow_009" xml:space="preserve">
-    <value>Sublime shortcuts are missing or changed. Turn Sublime support off and on to configure them again.</value>
+    <value>Sublime shortcuts are missing or changed. Turn Sublime Text integration off and on to configure them again.</value>
   </data>
   <data name="MainWindow_010" xml:space="preserve">
     <value>This app is already excluded.</value>
@@ -1960,28 +1960,28 @@ Its enabled state will be preserved.</value>
     <value>Action settings are active but could not be saved. Check permissions or the 64 KiB settings limit.</value>
   </data>
   <data name="MainWindow_Settings_013" xml:space="preserve">
-    <value>Selection compatibility mode</value>
+    <value>Allow clipboard-assisted selection</value>
   </data>
   <data name="MainWindow_Settings_014" xml:space="preserve">
-    <value>Selection compatibility mode</value>
+    <value>Allow clipboard-assisted selection</value>
   </data>
   <data name="MainWindow_Settings_015" xml:space="preserve">
-    <value>Selection compatibility mode</value>
+    <value>Allow clipboard-assisted selection</value>
   </data>
   <data name="MainWindow_Settings_016" xml:space="preserve">
-    <value>When native reading is unavailable, temporarily use the clipboard to read text. This may appear in clipboard history.</value>
+    <value>When selected text cannot be read directly, temporarily use the clipboard and restore its original contents. Text may remain in clipboard history.</value>
   </data>
   <data name="MainWindow_Settings_017" xml:space="preserve">
-    <value>Sublime support</value>
+    <value>Sublime Text integration</value>
   </data>
   <data name="MainWindow_Settings_018" xml:space="preserve">
-    <value>Sublime support</value>
+    <value>Sublime Text integration</value>
   </data>
   <data name="MainWindow_Settings_019" xml:space="preserve">
-    <value>Sublime support</value>
+    <value>Sublime Text integration</value>
   </data>
   <data name="MainWindow_Settings_020" xml:space="preserve">
-    <value>Requires selection compatibility mode. First-time setup adds guarded copy/cut/paste shortcuts. Your choice is remembered; no plugin is installed.</value>
+    <value>First-time setup adds dedicated shortcuts so SnapBar can safely read selections and perform Cut/Paste. Requires clipboard-assisted selection.</value>
   </data>
   <data name="OcrOverlay_000" xml:space="preserve">
     <value>Drag to capture text · Esc to cancel</value>
@@ -2164,13 +2164,13 @@ Its enabled state will be preserved.</value>
     <value>Waiting for the app's selection interface…</value>
   </data>
   <data name="SelectionController_001" xml:space="preserve">
-    <value>Sublime compatibility · {0} characters · {1} · Clipboard restored · {2} ms</value>
+    <value>Sublime Text integration · {0} characters · {1} · Clipboard restored · {2} ms</value>
   </data>
   <data name="SelectionController_002" xml:space="preserve">
-    <value>Selection compatibility · {0} characters · Writing unavailable · Clipboard restored · {1} ms</value>
+    <value>Clipboard-assisted selection · {0} characters · Writing unavailable · Clipboard restored · {1} ms</value>
   </data>
   <data name="SelectionController_ClipboardEditable" xml:space="preserve">
-    <value>Selection compatibility · {0} characters · Editable (revalidated before writing) · Clipboard restored · {1} ms</value>
+    <value>Clipboard-assisted selection · {0} characters · Editable (revalidated before writing) · Clipboard restored · {1} ms</value>
   </data>
   <data name="SelectionController_003" xml:space="preserve">
     <value>Captured {0} characters · {1} · {2} ms (UIA {3} ms{4})</value>
@@ -2254,16 +2254,16 @@ Its enabled state will be preserved.</value>
     <value>Another app is using the clipboard. Try again in a moment.</value>
   </data>
   <data name="SelectionController_030" xml:space="preserve">
-    <value>Sublime compatibility reading is off. Enable Selection compatibility mode and Sublime support in Settings.</value>
+    <value>Sublime integration is off. Enable Allow clipboard-assisted selection and Sublime Text integration in Settings.</value>
   </data>
   <data name="SelectionController_031" xml:space="preserve">
-    <value>Selection compatibility mode is off. Enable it in Settings.</value>
+    <value>Clipboard-assisted selection is off. Enable Allow clipboard-assisted selection in Settings.</value>
   </data>
   <data name="SelectionController_032" xml:space="preserve">
     <value>Could not verify this control's selection. Action was not performed.</value>
   </data>
   <data name="SelectionController_033" xml:space="preserve">
-    <value>Compatibility shortcuts are missing or changed. Turn compatibility mode off and on again.</value>
+    <value>Sublime shortcuts are missing or changed. Turn Sublime Text integration off and on to configure them again.</value>
   </data>
   <data name="SelectionController_034" xml:space="preserve">
     <value>Sublime did not return a single selection. Select text and check loaded settings and shortcut conflicts.</value>

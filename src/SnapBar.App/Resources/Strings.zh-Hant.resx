@@ -1722,10 +1722,10 @@
     <value>設定無法讀取或版本不相容；本次使用預設值，原檔保留且不會覆寫。</value>
   </data>
   <data name="MainWindow_008" xml:space="preserve">
-    <value>無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用 Sublime 支援。</value>
+    <value>無法設定 Sublime 快捷鍵（檔案格式、權限或按鍵衝突），未啟用 Sublime Text 整合。</value>
   </data>
   <data name="MainWindow_009" xml:space="preserve">
-    <value>Sublime 快捷鍵設定不存在或已變更；請關閉再啟用 Sublime 支援以重新設定。</value>
+    <value>Sublime 快捷鍵設定不存在或已變更；請關閉再啟用「Sublime Text 整合」以重新設定。</value>
   </data>
   <data name="MainWindow_010" xml:space="preserve">
     <value>此 App 已在排除清單中。</value>
@@ -1960,28 +1960,28 @@
     <value>本次動作設定已生效，但無法保存；請檢查權限或 64 KiB 設定上限。</value>
   </data>
   <data name="MainWindow_Settings_013" xml:space="preserve">
-    <value>選字相容模式</value>
+    <value>允許剪貼簿輔助選字</value>
   </data>
   <data name="MainWindow_Settings_014" xml:space="preserve">
-    <value>選字相容模式</value>
+    <value>允許剪貼簿輔助選字</value>
   </data>
   <data name="MainWindow_Settings_015" xml:space="preserve">
-    <value>選字相容模式</value>
+    <value>允許剪貼簿輔助選字</value>
   </data>
   <data name="MainWindow_Settings_016" xml:space="preserve">
-    <value>原生讀取不足時，暫借剪貼簿取得文字。相容讀取可能出現在剪貼簿歷程。</value>
+    <value>無法直接讀取選字時，暫借剪貼簿並還原原內容。文字可能留在剪貼簿歷程。</value>
   </data>
   <data name="MainWindow_Settings_017" xml:space="preserve">
-    <value>Sublime 支援</value>
+    <value>Sublime Text 整合</value>
   </data>
   <data name="MainWindow_Settings_018" xml:space="preserve">
-    <value>Sublime 支援</value>
+    <value>Sublime Text 整合</value>
   </data>
   <data name="MainWindow_Settings_019" xml:space="preserve">
-    <value>Sublime 支援</value>
+    <value>Sublime Text 整合</value>
   </data>
   <data name="MainWindow_Settings_020" xml:space="preserve">
-    <value>需先啟用選字相容模式。首次啟用會設定有條件的複製／剪下／貼上快捷鍵；之後自動恢復，未安裝外掛。</value>
+    <value>首次啟用會設定專用快捷鍵，讓 SnapBar 安全讀取選字並執行剪下／貼上。需先開啟剪貼簿輔助選字。</value>
   </data>
   <data name="OcrOverlay_000" xml:space="preserve">
     <value>拖曳框選文字 · Esc 取消</value>
@@ -2164,13 +2164,13 @@
     <value>正在等候 App 的選字介面就緒…</value>
   </data>
   <data name="SelectionController_001" xml:space="preserve">
-    <value>Sublime 相容模式 · {0} 字 · {1} · 剪貼簿已還原 · {2} ms</value>
+    <value>Sublime Text 整合 · {0} 字 · {1} · 剪貼簿已還原 · {2} ms</value>
   </data>
   <data name="SelectionController_002" xml:space="preserve">
-    <value>選字相容模式 · {0} 字 · 不提供寫入 · 剪貼簿已還原 · {1} ms</value>
+    <value>剪貼簿輔助選字 · {0} 字 · 不提供寫入 · 剪貼簿已還原 · {1} ms</value>
   </data>
   <data name="SelectionController_ClipboardEditable" xml:space="preserve">
-    <value>選字相容模式 · {0} 字 · 可編輯（寫入前重驗） · 剪貼簿已還原 · {1} ms</value>
+    <value>剪貼簿輔助選字 · {0} 字 · 可編輯（寫入前重驗） · 剪貼簿已還原 · {1} ms</value>
   </data>
   <data name="SelectionController_003" xml:space="preserve">
     <value>已取得 {0} 字 · {1} · {2} ms（UIA {3} ms{4}）</value>
@@ -2254,16 +2254,16 @@
     <value>剪貼簿正被其他程式使用，請稍後再試。</value>
   </data>
   <data name="SelectionController_030" xml:space="preserve">
-    <value>Sublime 尚未啟用相容讀取；請至設定啟用「選字相容模式」與「Sublime 支援」。</value>
+    <value>Sublime 尚未啟用整合；請至設定開啟「允許剪貼簿輔助選字」與「Sublime Text 整合」。</value>
   </data>
   <data name="SelectionController_031" xml:space="preserve">
-    <value>選字相容模式已關閉，請至設定啟用。</value>
+    <value>剪貼簿輔助選字已關閉，請至設定開啟「允許剪貼簿輔助選字」。</value>
   </data>
   <data name="SelectionController_032" xml:space="preserve">
     <value>無法確認此控制項的選取，未執行動作。</value>
   </data>
   <data name="SelectionController_033" xml:space="preserve">
-    <value>相容快捷鍵設定不存在或已變更；請重新勾選相容模式。</value>
+    <value>Sublime 快捷鍵設定不存在或已變更；請關閉再啟用「Sublime Text 整合」以重新設定。</value>
   </data>
   <data name="SelectionController_034" xml:space="preserve">
     <value>Sublime 未回傳單段選取；請選取文字，確認設定已載入且快捷鍵無衝突。</value>

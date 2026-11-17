@@ -1188,3 +1188,7 @@ Core 605、嚴格 ActionRunner 37、自含式 Probe smoke 11 通過；桌面 Nat
 在共用讀取流程加入候選 token 綁定的寫入資格，支援明確可寫的 UIA Edit 及通過原生 caret 驗證的企業微信來源。貼上／剪下／替換重驗原文、焦點、游標位置、generation 與剪貼簿序號；普通相容來源維持唯讀，撤銷資格不能恢復。
 
 Core 619、嚴格 ActionRunner 37、Probe smoke 11 通過；相關選字桌面分組 77 項，以及獨立重跑的 AiPanel 254、Language 68 通過。使用者確認企業微信顯示可編輯，並完成工具列貼上／剪下與復原。剪貼簿完整備份已還原。詳細報告、兩次 AI 複製檢查的未明根因失敗及實機界線見 [本輪驗證](2026-11-17-clipboard-write-validation.md)。未執行完整 Release、混合 DPI 或正式發布。
+
+### 2026-11-17 Sublime 專用設定可替代性
+
+本機 Sublime build 4180 的獨立 fixture 實測未提供 UIA TextPattern／ValuePattern，MSAA 角色為 client（10），直接執行通用原生來源驗證仍回傳 `clipboard-unavailable`。普通 Ctrl+C 可讀單段選字，但空選取會複製整行，多選取會合併文字；專用快捷鍵成功讀取單段選字並拒絕空選取／多選取。有效複製觀測皆還原完整剪貼簿備份。未修改 Sublime 綁定、產品程式或偏好，未驗證剪下／貼上、唯讀、混合 DPI 或完整 Release。方法、重測與界線見 [Sublime 驗證紀錄](2026-11-17-sublime-generic-flow-verification.md)。

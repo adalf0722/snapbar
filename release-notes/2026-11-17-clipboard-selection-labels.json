@@ -1,0 +1,18 @@
+{
+  "title": "清楚了解剪貼簿輔助選字與 Sublime 整合",
+  "summary": "相容性設定改用具體名稱，說明何時暫借剪貼簿，以及 Sublime 首次啟用時會設定什麼。",
+  "highlights": [
+    "「選字相容模式」更名為「允許剪貼簿輔助選字」，保留剪貼簿歷程提醒。",
+    "「Sublime 支援」更名為「Sublime Text 整合」，相關提示同步更新；開關行為與已保存的選擇維持原樣。"
+  ],
+  "usage": "開啟設定的「相容性」頁面即可查看新名稱。Sublime Text 整合仍需先開啟剪貼簿輔助選字，首次啟用會設定專用快捷鍵。",
+  "en": {
+    "title": "Clearer clipboard-assisted selection and Sublime integration settings",
+    "summary": "Compatibility settings now explain when SnapBar temporarily uses the clipboard and what first-time Sublime setup configures.",
+    "highlights": [
+      "Selection compatibility mode is now Allow clipboard-assisted selection, with the clipboard history notice retained.",
+      "Sublime support is now Sublime Text integration, with matching messages; toggle behavior and saved choices remain unchanged."
+    ],
+    "usage": "Open Compatibility in Settings to see the new names. Sublime Text integration still requires clipboard-assisted selection and configures dedicated shortcuts when first enabled."
+  }
+}
