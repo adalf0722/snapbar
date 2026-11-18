@@ -1248,3 +1248,15 @@ InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下�
 2026-11-18 使用者進一步確認保留「先按 Ctrl 再拖選」及「拖選途中按 Ctrl」兩種操作。查核 `InputMonitor` 的 mouse-up 快照與 `AutoCopySettings.ShouldCopy`，兩者原本即共用同一條件，不需新增開關或更改取消／驗證規則。中英文設定說明已明列兩種操作、滑鼠與 Ctrl 的放開順序，以及一般拖選仍遵循原動作列開關；Sublime 多重選取仍拒絕。新增雙語 `2026-11-18-auto-copy-ctrl-timing.json`。行為證據沿用上述 WPF Ctrl-held 回歸與真實 Sublime before／during 對照，不將 Sublime Ctrl-before 的拒絕算作成功。
 
 說明更新後 `scripts/check.ps1` 通過：Core 688、ActionRunner 37，無略過。建置報告 `artifacts/checks/build/20261117T230411572Z-895d21cc2c87424290f711e9c44975a8/report.json`；動作報告 `artifacts/checks/action-runner/20261117T230420907Z-7fcf4bbba10c45e6afbea369b4d0a613/report.json`。以 `run-dev.ps1` 載入新版說明，未更改使用者偏好，未提交或發布。
+
+### 2026-11-18 自訂動作列出現延遲
+
+一般設定可用滑桿或輸入框選擇 0 至 2,000 毫秒，預設 120 毫秒。自動顯示從滑鼠選取事件起計時，讀取及自動複製計入期限。0 毫秒保留原有的讀取前等待。雙語最小視窗測試檢查控制項水平邊界、固定導覽與文字辨識設定可垂直捲動到達。設定截圖位於 `artifacts/ui-polish/settings-appearance-delay.png`、`artifacts/ui-polish/settings-appearance-delay-en.png` 與 `artifacts/ui-polish/settings-appearance-delay-zh-hant.png`。
+
+桌面 fixture 涵蓋保存失敗回復、精確值重開、拖曳與鍵盤步進、長延遲期間的複製提示及候選失效，以及相容來源重讀的剪貼簿還原與外部更新優先權。UIA 使用既有 session、來源焦點、選取範圍及文字驗證。一般剪貼簿相容來源沿用 Probe 候選綁定和受保護的重讀。Sublime 路徑使用原生焦點視窗與既有安全快捷鍵重讀，仍受限於 Sublime 剪貼簿來源可觀測的身分資訊。此輪使用本機單一桌面環境，未進行混合 DPI、多螢幕或真實 Sublime 延遲操作驗收。
+
+`scripts/check.ps1` 通過，Core 694 與 ActionRunner 37，無略過。報告位於 `artifacts/checks/build/20261118T120805406Z-c2acb6cb63d946258fbfefdea1a504ac/report.json` 與 `artifacts/checks/action-runner/20261118T120814736Z-dcadd2f9045e431e8abed6c057f8f46e/report.json`。
+
+同一份產品程式通過 Appearance 243、Lifecycle 170、AutoCopy 47、Language 68、Keyboard 26、Compatibility 39、NativeClipboard 11、ClipboardRaces 17，以及 Preflight 1，無略過。報告位於 `artifacts/checks/desktop/20261118T120451268Z-91605546909546cf8b841bb156dea41a/report.json`。加強計時斷言後重跑 Lifecycle 170、AutoCopy 49、Preflight 1，均通過。2,000 毫秒案例在 161 毫秒完成複製及提示，總共 2,019 毫秒顯示動作列。慢速案例維持 Ctrl 1.1 秒，超過設定的 900 毫秒，放鍵後 181 毫秒完成呈現。重跑報告位於 `artifacts/checks/desktop/20261118T120856448Z-ecbd428c85144eb18074e20d777ce8f7/report.json`。
+
+初次驗證遇到舊版緊湊版面斷言禁止垂直捲動，以及滑桿測試使用了不同的 WPF 路由事件。新版版面測試確認在最小視窗可捲動到 OCR 設定，滑桿測試則使用產品所接收的路由事件。上述通過報告以修正後的測試為準。本輪未執行完整 Release 或發布套件。

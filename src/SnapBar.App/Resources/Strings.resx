@@ -2872,4 +2872,28 @@ Its enabled state will be preserved.</value>
   <data name="General_Trigger" xml:space="preserve"><value>Trigger</value></data>
   <data name="General_OperationHelp" xml:space="preserve"><value>How to use</value></data>
   <data name="General_AdvancedOptions" xml:space="preserve"><value>Advanced options</value></data>
+  <data name="AppearanceDelay_Title" xml:space="preserve">
+    <value>Toolbar appearance delay</value>
+  </data>
+  <data name="AppearanceDelay_Help" xml:space="preserve">
+    <value>After selecting text, wait at least this long before showing the toolbar. 0 adds no delay. The selection capture wait still applies.</value>
+  </data>
+  <data name="AppearanceDelay_Milliseconds" xml:space="preserve">
+    <value>ms</value>
+  </data>
+  <data name="AppearanceDelay_Input" xml:space="preserve">
+    <value>Toolbar appearance delay in milliseconds</value>
+  </data>
+  <data name="AppearanceDelay_Reset" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
+  <data name="AppearanceDelay_Status" xml:space="preserve">
+    <value>Toolbar appearance delay status</value>
+  </data>
+  <data name="AppearanceDelay_Invalid" xml:space="preserve">
+    <value>Enter a whole number from 0 to 2,000 milliseconds.</value>
+  </data>
+  <data name="AppearanceDelay_SaveFailed" xml:space="preserve">
+    <value>Could not save the delay. Try again.</value>
+  </data>
 </root>

@@ -34,7 +34,7 @@ internal static class SettingsStoreTests
                 var text = new UTF8Encoding(false, true).GetString(bytes);
                 using var json = System.Text.Json.JsonDocument.Parse(text);
                 return !bytes.Take(3).SequenceEqual(new byte[] { 239, 187, 191 })
-                    && json.RootElement.EnumerateObject().Count() == 10
+                    && json.RootElement.EnumerateObject().Count() == 11
                     && json.RootElement.GetProperty("schemaVersion").GetInt32() == 8;
             });
             check("auto-copy roundtrips independently of toolbar and compatibility preferences", () =>

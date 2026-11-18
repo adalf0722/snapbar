@@ -24,13 +24,19 @@ public static class NativeClipboardSourceReader
     [DllImport("oleacc.dll")] private static extern int AccessibleObjectFromWindow(nint window, uint objectId,
         ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out IAccessible accessible);
 
+    public static nint ReadFocusedWindow(TargetIdentity target)
+    {
+        if (Native.GetForegroundWindow() != (nint)target.Window) return 0;
+        var thread = Native.GetWindowThreadProcessId((nint)target.Window, out _);
+        var info = new GuiThreadInfo { Size = Marshal.SizeOf<GuiThreadInfo>() };
+        return GetGUIThreadInfo(thread, ref info) && info.Focus != 0 && Owns(info.Focus, target) ? info.Focus : 0;
+    }
+
     public static NativeClipboardSource? Read(TargetIdentity target, int x, int y)
     {
         if (Native.GetIdentity(Native.GetForegroundWindow()) != target) return null;
-        var thread = Native.GetWindowThreadProcessId((nint)target.Window, out _);
-        var info = new GuiThreadInfo { Size = Marshal.SizeOf<GuiThreadInfo>() };
-        if (!GetGUIThreadInfo(thread, ref info) || info.Focus == 0
-            || !Owns(info.Focus, target)) return null;
+        var focus = ReadFocusedWindow(target);
+        if (focus == 0) return null;
         var point = new Native.Point { X = x, Y = y };
         var hit = WindowFromPoint(point);
         if (hit == 0 || !Owns(hit, target)) return null;
@@ -72,7 +78,7 @@ public static class NativeClipboardSourceReader
         try
         {
             IAccessible accessible;
-            if (AccessibleObjectFromWindow(info.Focus, 0xFFFFFFFC, ref iid, out accessible) == 0)
+            if (AccessibleObjectFromWindow(focus, 0xFFFFFFFC, ref iid, out accessible) == 0)
             {
                 try
                 {
@@ -93,9 +99,9 @@ public static class NativeClipboardSourceReader
         }
         catch (Exception e) when (e is COMException or InvalidCastException or InvalidComObjectException or ArgumentException)
         { accessibilityError = e.HResult; }
-        return new((long)info.Focus, (long)hit, Native.GetWindowClass((nint)target.Window),
-            Native.GetWindowClass(info.Focus), pointRole, pointState, focusRole, focusState,
-            HasPasswordStyle(info.Focus), accessibilityError, pointChildId, focusChildId);
+        return new((long)focus, (long)hit, Native.GetWindowClass((nint)target.Window),
+            Native.GetWindowClass(focus), pointRole, pointState, focusRole, focusState,
+            HasPasswordStyle(focus), accessibilityError, pointChildId, focusChildId);
     }
 
     private static bool IsProtected(int? state) => (state.GetValueOrDefault() & 0x20000000) != 0;

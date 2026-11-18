@@ -339,6 +339,42 @@ internal static class ClipboardCompatibilityTest
                         "revoked write capability cannot revive when the same editor becomes writable again");
                 }
                 Clipboard.SetText("original clipboard");
+                controller.Automatic = true;
+                controller.ConfigureAppearanceDelay(2000);
+                async Task<Task> StartDelayedFallback()
+                {
+                    controller.CancelSelection();
+                    var copies = await Command("select");
+                    if (Native.GetIdentity(Native.GetForegroundWindow())?.ProcessId != fixture.Id)
+                        throw new InvalidOperationException("Compatibility fixture lost foreground before delayed gesture");
+                    var pending = controller.CaptureAsync(true, (int)autoBounds.Left + 20, (int)autoBounds.Top + 20);
+                    var wait = Stopwatch.StartNew();
+                    while (await Command("stats") == copies && !pending.IsCompleted && wait.ElapsedMilliseconds < 1500) { }
+                    // The first guarded read waits for a stable clipboard sequence before restoring it.
+                    await Task.Delay(150);
+                    Check(!pending.IsCompleted && controller.ActiveSelection == null && ReadClipboardText() == "original clipboard",
+                        "generic clipboard candidate waits out of sight with clipboard restored");
+                    return pending;
+                }
+                var delayed = await StartDelayedFallback();
+                await delayed;
+                Check(controller.ActiveSelection is { Source: ClipboardSelectionAdapter.Source, Text: Sample }
+                    && ReadClipboardText() == "original clipboard", "delayed clipboard revalidation retains the source and restores the clipboard");
+                delayed = await StartDelayedFallback();
+                var copiesBeforeChange = await Command("changed");
+                await delayed;
+                Check(controller.ActiveSelection == null && await Command("stats") == copiesBeforeChange + 1
+                    && ReadClipboardText() == "original clipboard", "delayed clipboard revalidation rejects changed text in the same source");
+                delayed = await StartDelayedFallback();
+                copiesBeforeChange = await Command("stats");
+                Clipboard.SetText("new clipboard during appearance wait");
+                await delayed;
+                Check(controller.ActiveSelection == null && await Command("stats") == copiesBeforeChange
+                    && ReadClipboardText() == "new clipboard during appearance wait",
+                    "new clipboard contents win without injecting a delayed read");
+                Clipboard.SetText("original clipboard");
+                controller.ConfigureAppearanceDelay(ToolbarAppearanceDelay.DefaultMilliseconds);
+                controller.Automatic = false;
                 await Command("select"); await Capture(); controller.ClipboardCompatibilityEnabled = false;
                 before = await Command("stats"); await controller.ExecuteAsync(TextAction.Search);
                 Check(controller.ActiveSelection == null && launched.Count == 1 && before == await Command("stats"), "disabling compatibility immediately invalidates prior generic session");

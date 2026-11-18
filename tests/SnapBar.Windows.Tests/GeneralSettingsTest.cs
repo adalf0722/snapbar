@@ -10,7 +10,7 @@ using SnapBar.App;
 using SnapBar.Core;
 using SnapBar.Windows;
 
-internal static class GeneralSettingsTest
+internal static partial class GeneralSettingsTest
 {
     [DllImport("user32.dll")] private static extern nint SendMessage(nint window, int message, nint wParam, nint lParam);
     [DllImport("user32.dll")] private static extern void keybd_event(byte key, byte scan, uint flags, nuint extra);
@@ -147,6 +147,7 @@ internal static class GeneralSettingsTest
 
             await ShortcutSettingsTest.Run(window, path, check);
             window.NavigateTo(SettingsCategory.General);
+            await TestAppearanceDelay(window, path, check);
             autoCopy.IsChecked = true; autoCopy.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             copyMode.SelectedIndex = 1; copyFeedback.IsChecked = false;
             copyFeedback.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -159,6 +160,9 @@ internal static class GeneralSettingsTest
             check("choosing English priority persists OCR preference", new SettingsStore(path).Load().Settings.OcrPreferEnglish);
             window.PrepareSessionEnd(); window.Close();
             window = new MainWindow(new SettingsStore(path), () => { }, () => false, startup);
+            check("precise appearance delay restores in a new settings window",
+                Find<TextBox>(window.GeneralPage, "ToolbarAppearanceDelayInput").Text == "173"
+                && Find<Slider>(window.GeneralPage, "ToolbarAppearanceDelaySlider").Value == 173);
             check("OCR priority is restored in a new settings window", Find<ComboBox>(window.GeneralPage, "OcrLanguagePriority").SelectedIndex == 1);
             check("auto-copy preferences restore in a new settings window", Find<CheckBox>(window.GeneralPage, "AutoCopyEnabled").IsChecked == true
                 && Find<ComboBox>(window.GeneralPage, "AutoCopyMode").SelectedIndex == 1

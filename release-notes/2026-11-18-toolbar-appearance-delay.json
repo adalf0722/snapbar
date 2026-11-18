@@ -1,0 +1,18 @@
+{
+  "title": "自訂動作列出現延遲",
+  "summary": "可微調選取文字後自動顯示動作列的時間，自動複製與快捷鍵維持原有時機。",
+  "highlights": [
+    "滑桿與毫秒輸入框同步，支援 0 至 2,000 毫秒，預設 120 毫秒。",
+    "0 毫秒表示不額外延遲，仍會保留讀取選取內容前的等待。"
+  ],
+  "usage": "啟動 Windows 版 SnapBar，在一般設定開啟「自動顯示動作列」後，調整「動作列出現延遲」。輸入毫秒後按 Enter 儲存，或按「還原預設」回到 120 毫秒。",
+  "en": {
+    "title": "Set the toolbar appearance delay",
+    "summary": "Fine-tune when the toolbar appears automatically after selecting text. Auto-copy and shortcuts keep their existing timing.",
+    "highlights": [
+      "The slider and milliseconds field stay in sync. Choose 0 to 2,000 milliseconds, with 120 as the default.",
+      "Setting 0 adds no delay. The selection capture wait still applies."
+    ],
+    "usage": "Open SnapBar on Windows and turn on Show toolbar automatically in General settings. Adjust Toolbar appearance delay and press Enter to save a typed value, or choose Reset to default to restore 120 milliseconds."
+  }
+}

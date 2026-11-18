@@ -106,7 +106,8 @@ internal static class AutoCopyTest
                 var bounds = await Task.Run(() => FindControl("EditableSample").Current.BoundingRectangle);
                 var x = (int)bounds.Left + 35; var y = (int)bounds.Top + 25;
                 SetCursorPos(x, y);
-                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable);
+                var launched = false;
+                using var controller = new SelectionController(owner, TestPaths.ProbeExecutable, _ => launched = true);
                 controller.Status += message => Console.WriteLine("STATUS " + message);
                 using var observerOwner = new HwndSource(new HwndSourceParameters("Auto-copy gesture observer")
                     { Width = 1, Height = 1, WindowStyle = 0 });
@@ -137,6 +138,91 @@ internal static class AutoCopyTest
                 controller.ConfigureAutoCopy(new()); controller.Automatic = true; await SelectAll();
                 Clipboard.SetText("toolbar fixture"); await controller.CaptureAsync(true, x, y);
                 Check(ReadClipboard() == "toolbar fixture" && PopupVisible(), "toolbar-only capture never copies");
+
+                controller.ConfigureAutoCopy(new(true, AutoCopyMode.OnSelection));
+                controller.ConfigureAppearanceDelay(2000);
+                async Task WaitForFeedback(Task capture)
+                {
+                    var limit = Stopwatch.StartNew();
+                    while (!FeedbackVisible() && !capture.IsCompleted && limit.Elapsed < TimeSpan.FromSeconds(3))
+                        await Task.Delay(20);
+                    Check(FeedbackVisible() && !PopupVisible(), "copy feedback arrives while delayed toolbar is pending");
+                }
+                await SelectAll(); Clipboard.SetText("appearance timing fixture");
+                var appearanceClock = Stopwatch.StartNew();
+                var delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await WaitForFeedback(delayedCapture);
+                Check(ReadClipboard() == FixtureWindow.SearchFixtureText && controller.ActiveSelection == null,
+                    "pending toolbar exposes no active selection while clipboard already contains copied text");
+                var copyElapsed = appearanceClock.ElapsedMilliseconds;
+                SetCursorPos((int)bounds.Left + 8, (int)bounds.Bottom + 16);
+                await Task.Delay(1000);
+                Check(!FeedbackVisible() && !PopupVisible(), "feedback timeout and pointer movement leave toolbar pending");
+                await delayedCapture;
+                Check(PopupVisible() && appearanceClock.ElapsedMilliseconds >= 1925
+                    && appearanceClock.ElapsedMilliseconds < 2000 + Math.Max(110, copyElapsed * 3 / 4),
+                    $"automatic appearance counts capture and copy time ({appearanceClock.ElapsedMilliseconds} ms total, {copyElapsed} ms copying)");
+                SetCursorPos(x, y);
+
+                await SelectAll(); Clipboard.SetText("focus delay fixture");
+                delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await WaitForFeedback(delayedCapture);
+                await Task.Run(() => FindControl("PasswordSample").SetFocus());
+                await delayedCapture;
+                Check(!PopupVisible(), "same-window focus change rejects delayed selection");
+                await Task.Run(() => FindControl("EditableSample").SetFocus());
+
+                await SelectAll(); Clipboard.SetText("foreground delay fixture");
+                delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await WaitForFeedback(delayedCapture);
+                var foreground = new Window { Title = "SnapBar foreground cancellation fixture", Width = 240, Height = 100 };
+                foreground.Show(); foreground.Activate();
+                await delayedCapture;
+                Check(!PopupVisible() && !FeedbackVisible(), "foreground change cancels delayed selection and feedback");
+                foreground.Close();
+                Native.SetForegroundWindow((nint)target.Window);
+                await Task.Run(() => FindControl("EditableSample").SetFocus());
+
+                await SelectAll(); Clipboard.SetText("keyboard delay fixture");
+                delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await WaitForFeedback(delayedCapture);
+                keybd_event(0x27, 0, 0, 0); keybd_event(0x27, 0, 2, 0);
+                await delayedCapture;
+                Check(!PopupVisible() && controller.ActiveSelection == null, "arrow key cancels rather than navigating the pending toolbar");
+
+                await SelectAll(); Clipboard.SetText("reselection delay fixture");
+                delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await WaitForFeedback(delayedCapture);
+                controller.ConfigureAppearanceDelay(0);
+                Check(!delayedCapture.IsCompleted, "a preference update keeps the current appearance deadline");
+                await controller.CaptureAsync(true, x, y);
+                var replacement = controller.ActiveSelection;
+                await delayedCapture;
+                Check(PopupVisible() && replacement != null && controller.ActiveSelection == replacement,
+                    "a new selection supersedes the pending generation");
+
+                controller.ConfigureAppearanceDelay(2000);
+                await SelectAll();
+                appearanceClock.Restart();
+                await controller.CaptureAsync(false, x, y);
+                Check(PopupVisible() && appearanceClock.ElapsedMilliseconds < 1800, "toolbar shortcut bypasses automatic appearance delay");
+                await controller.CaptureAsync(false, x, y, TextAction.Search);
+                Check(launched && !PopupVisible() && appearanceClock.ElapsedMilliseconds < 1900, "direct shortcut bypasses automatic appearance delay");
+
+                controller.ConfigureAppearanceDelay(900);
+                await SelectAll(); Clipboard.SetText("slow appearance fixture");
+                keybd_event(0x11, 0, 0, 0);
+                await Task.Delay(40);
+                delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await Task.Delay(1100);
+                Check(!PopupVisible() && !delayedCapture.IsCompleted, "held Ctrl delays capture beyond the appearance deadline");
+                appearanceClock.Restart();
+                keybd_event(0x11, 0, 2, 0);
+                await delayedCapture;
+                Check(PopupVisible() && ReadClipboard() == FixtureWindow.SearchFixtureText && appearanceClock.ElapsedMilliseconds < 750,
+                    $"slow capture presents without another full delay ({appearanceClock.ElapsedMilliseconds} ms after Ctrl release)");
+                controller.ConfigureAppearanceDelay(ToolbarAppearanceDelay.DefaultMilliseconds);
+
                 controller.ConfigureAutoCopy(new(true, AutoCopyMode.OnSelection)); controller.Automatic = false;
                 await SelectAll(); Clipboard.SetText("race fixture");
                 var pending = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
@@ -212,9 +298,11 @@ internal static class AutoCopyTest
                 await SelectWord(true);
                 Check(ReadClipboard() != "gesture fixture" && !PopupVisible(), "Ctrl mouse selection triggers copy after key release");
                 controller.Automatic = true; Clipboard.SetText("repeat fixture");
+                controller.ConfigureAppearanceDelay(900);
                 await SelectWord(true, repeatControl: true, releaseDelay: 1100);
                 Check(ReadClipboard() != "repeat fixture" && PopupVisible(),
-                    "held Ctrl repeats and natural release delay preserve auto-copy and toolbar");
+                    "slow capture consumes the appearance delay while held Ctrl repeats preserve auto-copy");
+                controller.ConfigureAppearanceDelay(ToolbarAppearanceDelay.DefaultMilliseconds);
                 controller.Automatic = false;
                 controller.ConfigureAutoCopy(new(true, AutoCopyMode.OnSelection)); Clipboard.SetText("skip fixture");
                 await SelectWord(true);

@@ -2872,4 +2872,28 @@
   <data name="General_Trigger" xml:space="preserve"><value>觸發方式</value></data>
   <data name="General_OperationHelp" xml:space="preserve"><value>操作說明</value></data>
   <data name="General_AdvancedOptions" xml:space="preserve"><value>進階選項</value></data>
+  <data name="AppearanceDelay_Title" xml:space="preserve">
+    <value>動作列出現延遲</value>
+  </data>
+  <data name="AppearanceDelay_Help" xml:space="preserve">
+    <value>選取文字後，至少等待指定時間再顯示動作列。0 表示不額外延遲，仍會保留讀取選取內容前的等待。</value>
+  </data>
+  <data name="AppearanceDelay_Milliseconds" xml:space="preserve">
+    <value>毫秒</value>
+  </data>
+  <data name="AppearanceDelay_Input" xml:space="preserve">
+    <value>動作列出現延遲（毫秒）</value>
+  </data>
+  <data name="AppearanceDelay_Reset" xml:space="preserve">
+    <value>還原預設</value>
+  </data>
+  <data name="AppearanceDelay_Status" xml:space="preserve">
+    <value>動作列出現延遲狀態</value>
+  </data>
+  <data name="AppearanceDelay_Invalid" xml:space="preserve">
+    <value>請輸入 0 至 2,000 毫秒的整數。</value>
+  </data>
+  <data name="AppearanceDelay_SaveFailed" xml:space="preserve">
+    <value>無法儲存延遲設定，請再試一次。</value>
+  </data>
 </root>

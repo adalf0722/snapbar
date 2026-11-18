@@ -56,6 +56,7 @@ public sealed partial class MainWindow : Window
         BuildSettingsPages();
         generalPage.ConfigureLanguage(preferences.InterfaceLanguage, ChangeInterfaceLanguage);
         generalPage.ConfigureAutoCopy(preferences.AutoCopy, SaveAutoCopy);
+        generalPage.ConfigureAppearanceDelay(preferences.ToolbarAppearanceDelayMilliseconds, SaveAppearanceDelay);
         UiText.Changed += RefreshInterfaceLanguage;
         SourceInitialized += (_, _) =>
         {
@@ -77,6 +78,7 @@ public sealed partial class MainWindow : Window
                 controller.HotkeyRecorded += shortcutsPage.Record;
                 controller.Automatic = preferences.AutomaticDetectionEnabled;
                 controller.ConfigureAutoCopy(preferences.AutoCopy);
+                controller.ConfigureAppearanceDelay(preferences.ToolbarAppearanceDelayMilliseconds);
                 controller.SetExcludedApplications(preferences.ExcludedApplications);
                 controller.SearchUrlTemplate = preferences.SearchUrlTemplate;
                 controller.ConfigureActions(preferences.Actions);
@@ -264,6 +266,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshInterfaceLanguage()
     {
+        generalPage.CancelAppearanceDelayEdit?.Invoke();
         UiText.Refresh(this);
         shortcutsPage.RefreshLanguage();
         aiCommandsPanel.Refresh();

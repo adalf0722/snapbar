@@ -92,8 +92,16 @@ internal static class UiAppearanceTest
                 await SettingsFeedbackTest.RunAsync(directory, Check);
                 main.NavigateTo(SettingsCategory.General);
                 main.Width = main.MinWidth; main.Height = main.MinHeight; main.UpdateLayout(); Snapshot(main, "settings-small.png");
-                Check(main.Content is not ScrollViewer && Children<ScrollViewer>(main).Where(s => s.IsVisible).All(s => s.ScrollableHeight < 1),
-                    "compact general settings retain fixed navigation without vertical overflow");
+                var generalScroll = Children<ScrollViewer>(main.GeneralPage)
+                    .Single(s => AutomationProperties.GetAutomationId(s) == "GeneralSettingsContent");
+                var ocrPriority = Children<ComboBox>(main.GeneralPage)
+                    .Single(c => AutomationProperties.GetAutomationId(c) == "OcrLanguagePriority");
+                generalScroll.ScrollToBottom(); main.UpdateLayout();
+                var ocrBounds = ocrPriority.TransformToAncestor(generalScroll).TransformBounds(new Rect(ocrPriority.RenderSize));
+                Check(main.Content is not ScrollViewer && generalScroll.ScrollableWidth < 1
+                    && ocrBounds.Top >= 0 && ocrBounds.Bottom <= generalScroll.ActualHeight,
+                    "compact general settings retain fixed navigation and reach OCR through vertical scrolling");
+                generalScroll.ScrollToTop();
                 main.Width = 980; main.Height = 720; main.UpdateLayout();
 
                 main.NavigateTo(SettingsCategory.About); Snapshot(main, "settings-about-brand.png");
