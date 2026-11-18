@@ -83,9 +83,10 @@ internal static class AutoCopyTest
                     Native.GetClipboardSequenceNumber(), () => true) && ReadClipboard() == "Unicode fixture \u4e2d\u6587 \ud83d\ude00",
                     "guarded writer transfers Unicode text");
 
-                var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false };
+                var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false, RedirectStandardInput = true };
                 start.ArgumentList.Add("--fixture"); start.ArgumentList.Add("--web-search");
                 start.Environment["SNAPBAR_FOREGROUND_TEST_RUNNER_PID"] = Environment.ProcessId.ToString();
+                start.Environment["SNAPBAR_TEST_EDITABILITY_COMMANDS"] = "1";
                 child = Process.Start(start)!;
                 Console.WriteLine("WAITING: activate the dedicated auto-copy fixture");
                 var deadline = DateTime.UtcNow.AddSeconds(30);
@@ -118,6 +119,20 @@ internal static class AutoCopyTest
                 bool PopupVisible() => app.Windows.OfType<PopupWindow>().Any(w => w.IsVisible);
                 bool FeedbackVisible() => app.Windows.OfType<CopyFeedbackWindow>().Any(w => w.IsVisible);
                 Task SelectAll() => Task.Run(() => ReadText().DocumentRange.Select());
+                async Task SetReadOnly(bool value)
+                {
+                    await child.StandardInput.WriteLineAsync(value ? "readonly" : "writable");
+                    await child.StandardInput.FlushAsync();
+                    var watch = Stopwatch.StartNew();
+                    while (watch.ElapsedMilliseconds < 1250)
+                    {
+                        var current = await Task.Run(() =>
+                            ((ValuePattern)FindControl("EditableSample").GetCurrentPattern(ValuePattern.Pattern)).Current.IsReadOnly);
+                        if (current == value) return;
+                        await Task.Delay(20);
+                    }
+                    throw new InvalidOperationException("Fixture did not change editability");
+                }
                 async Task Capture(bool toolbar)
                 {
                     controller.Automatic = toolbar; await SelectAll();
@@ -163,6 +178,18 @@ internal static class AutoCopyTest
                     && appearanceClock.ElapsedMilliseconds < 2000 + Math.Max(110, copyElapsed * 3 / 4),
                     $"automatic appearance counts capture and copy time ({appearanceClock.ElapsedMilliseconds} ms total, {copyElapsed} ms copying)");
                 SetCursorPos(x, y);
+
+                await SetReadOnly(false);
+                await SelectAll();
+                await controller.CaptureAsync(false, x, y);
+                Check(controller.ActiveSelection?.Editable == true, "editability fixture initially permits writes");
+                Clipboard.SetText("read-only transition fixture");
+                delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);
+                await WaitForFeedback(delayedCapture);
+                await SetReadOnly(true);
+                await delayedCapture;
+                Check(PopupVisible() && controller.ActiveSelection is { Editable: false },
+                    "delayed toolbar presents refreshed read-only permission");
 
                 await SelectAll(); Clipboard.SetText("focus delay fixture");
                 delayedCapture = controller.CaptureAsync(true, x, y, autoCopyRequest: true);

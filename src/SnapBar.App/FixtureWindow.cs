@@ -45,6 +45,13 @@ public sealed class FixtureWindow : Window
             edit.Text = webActionMode switch { "link" => LinkFixtureText, "lookup" => LookupFixtureText, _ => SearchFixtureText };
             edit.IsReadOnly = true;
         }
+        if (Environment.GetEnvironmentVariable("SNAPBAR_TEST_EDITABILITY_COMMANDS") == "1")
+            _ = Task.Run(async () =>
+            {
+                while (await Console.In.ReadLineAsync() is { } command)
+                    if (command is "readonly" or "writable")
+                        await Dispatcher.InvokeAsync(() => edit.IsReadOnly = command == "readonly");
+            });
         edit.AcceptsReturn = true; edit.Height = 130; edit.Padding = new(12);
         if (pathFixture != null) { edit.Text = pathFixture; edit.IsReadOnly = true; }
         edit.FontSize = 18; edit.TextWrapping = TextWrapping.Wrap;

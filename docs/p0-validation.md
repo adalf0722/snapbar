@@ -1260,3 +1260,5 @@ InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下�
 同一份產品程式通過 Appearance 243、Lifecycle 170、AutoCopy 47、Language 68、Keyboard 26、Compatibility 39、NativeClipboard 11、ClipboardRaces 17，以及 Preflight 1，無略過。報告位於 `artifacts/checks/desktop/20261118T120451268Z-91605546909546cf8b841bb156dea41a/report.json`。加強計時斷言後重跑 Lifecycle 170、AutoCopy 49、Preflight 1，均通過。2,000 毫秒案例在 161 毫秒完成複製及提示，總共 2,019 毫秒顯示動作列。慢速案例維持 Ctrl 1.1 秒，超過設定的 900 毫秒，放鍵後 181 毫秒完成呈現。重跑報告位於 `artifacts/checks/desktop/20261118T120856448Z-ecbd428c85144eb18074e20d777ce8f7/report.json`。
 
 初次驗證遇到舊版緊湊版面斷言禁止垂直捲動，以及滑桿測試使用了不同的 WPF 路由事件。新版版面測試確認在最小視窗可捲動到 OCR 設定，滑桿測試則使用產品所接收的路由事件。上述通過報告以修正後的測試為準。本輪未執行完整 Release 或發布套件。
+
+審查後修正延遲呈現使用重驗取得的 UIA 可編輯狀態。fixture 在相同視窗、焦點、文字及範圍下，確認擷取時可寫，並在等待中切換唯讀，最後呈現的動作列採用唯讀資格。AutoCopy 52 與 Preflight 1 通過，無略過。報告位於 `artifacts/checks/desktop/20261118T121602342Z-4fb22d9ce2b247079a10e11897cfe703/report.json`。

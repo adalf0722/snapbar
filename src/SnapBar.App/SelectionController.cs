@@ -283,8 +283,10 @@ public sealed partial class SelectionController : IDisposable
                 if (autoCopied) ShowAutoCopyFeedback(candidate, x, y);
                 bool CanAppear() => Current() && Automatic;
                 await Task.Delay(appearance.GetValueOrDefault().Remaining, token);
-                if (!CanAppear() || !await ValidateDelayedAppearanceAsync(candidate, CanAppear,
-                    ticket, clipboardSequence, sublimeFocus) || !CanAppear()) return;
+                if (!CanAppear()) return;
+                var validated = await ValidateDelayedAppearanceAsync(candidate, CanAppear, ticket, clipboardSequence, sublimeFocus);
+                if (validated == null || !CanAppear()) return;
+                candidate = validated;
             }
             pendingAppearanceTarget = null;
             selection = candidate;

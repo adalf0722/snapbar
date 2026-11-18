@@ -19,10 +19,10 @@ public sealed partial class SelectionController
 
     private AppearanceDeadline StartAppearanceDeadline() => new(Stopwatch.GetTimestamp(), appearanceDelayMilliseconds);
 
-    private async Task<bool> ValidateDelayedAppearanceAsync(SelectionSnapshot candidate, Func<bool> current,
+    private async Task<SelectionSnapshot?> ValidateDelayedAppearanceAsync(SelectionSnapshot candidate, Func<bool> current,
         long ticket, uint clipboardSequence, nint sublimeFocus)
     {
-        if (!current()) return false;
+        if (!current()) return null;
         ProbeResponse validation;
         if (candidate.Source == ClipboardSelectionAdapter.Source)
         {
@@ -38,11 +38,12 @@ public sealed partial class SelectionController
             validation = await clipboardReader.CaptureAsync(candidate.Target, FocusCurrent,
                 SublimeSelectionAdapter.ReadPlan(), clipboardSequence);
             return FocusCurrent() && validation.Success && validation.Selection is { } reread
-                && reread.Target == candidate.Target && reread.Editable == candidate.Editable && reread.Text == candidate.Text;
+                && reread.Target == candidate.Target && reread.Editable == candidate.Editable && reread.Text == candidate.Text
+                ? candidate : null;
         }
         else validation = await probe.RequestAsync(new("validate", SessionId: candidate.Id));
         return current() && validation.Success && validation.Selection is { } selected
             && selected.Id == candidate.Id && selected.Target == candidate.Target && selected.Text == candidate.Text
-            && selected.WriteToken == candidate.WriteToken && selected.WriteCaret == candidate.WriteCaret;
+            && selected.WriteToken == candidate.WriteToken && selected.WriteCaret == candidate.WriteCaret ? selected : null;
     }
 }
