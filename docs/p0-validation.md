@@ -1253,7 +1253,7 @@ InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下�
 
 一般設定可用滑桿或輸入框選擇 0 至 2,000 毫秒，預設 120 毫秒。自動顯示從滑鼠選取事件起計時，讀取及自動複製計入期限。0 毫秒保留原有的讀取前等待。雙語最小視窗測試檢查控制項水平邊界、固定導覽與文字辨識設定可垂直捲動到達。設定截圖位於 `artifacts/ui-polish/settings-appearance-delay.png`、`artifacts/ui-polish/settings-appearance-delay-en.png` 與 `artifacts/ui-polish/settings-appearance-delay-zh-hant.png`。
 
-桌面 fixture 涵蓋保存失敗回復、精確值重開、拖曳與鍵盤步進、長延遲期間的複製提示及候選失效，以及相容來源重讀的剪貼簿還原與外部更新優先權。UIA 使用既有 session、來源焦點、選取範圍及文字驗證。一般剪貼簿相容來源沿用 Probe 候選綁定和受保護的重讀。Sublime 路徑使用原生焦點視窗與既有安全快捷鍵重讀，仍受限於 Sublime 剪貼簿來源可觀測的身分資訊。此輪使用本機單一桌面環境，未進行混合 DPI、多螢幕或真實 Sublime 延遲操作驗收。
+桌面 fixture 涵蓋保存失敗回復、精確值重開、拖曳與鍵盤步進，以及長延遲期間的複製提示及候選失效。UIA 使用既有 session、來源焦點、選取範圍及文字驗證。依使用者審查決定，延遲顯示時以原 Probe 候選、期限、焦點及寫入綁定檢查一般相容來源。Sublime 使用原生焦點視窗與可取得的原始 caret，沿用既有明確啟用及安全快捷鍵設定。兩者皆不為延遲顯示再送出複製。若無法從來源觀察範圍及文字，同一控制項內由程式更改選取後可能短暫顯示原候選的動作列，執行動作仍會重驗。此輪使用本機單一桌面環境，未進行混合 DPI、多螢幕或真實 Sublime 延遲操作驗收。
 
 `scripts/check.ps1` 通過，Core 694 與 ActionRunner 37，無略過。報告位於 `artifacts/checks/build/20261118T120805406Z-c2acb6cb63d946258fbfefdea1a504ac/report.json` 與 `artifacts/checks/action-runner/20261118T120814736Z-dcadd2f9045e431e8abed6c057f8f46e/report.json`。
 
@@ -1262,3 +1262,5 @@ InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下�
 初次驗證遇到舊版緊湊版面斷言禁止垂直捲動，以及滑桿測試使用了不同的 WPF 路由事件。新版版面測試確認在最小視窗可捲動到 OCR 設定，滑桿測試則使用產品所接收的路由事件。上述通過報告以修正後的測試為準。本輪未執行完整 Release 或發布套件。
 
 審查後修正延遲呈現使用重驗取得的 UIA 可編輯狀態。fixture 在相同視窗、焦點、文字及範圍下，確認擷取時可寫，並在等待中切換唯讀，最後呈現的動作列採用唯讀資格。AutoCopy 52 與 Preflight 1 通過，無略過。報告位於 `artifacts/checks/desktop/20261118T121602342Z-4fb22d9ce2b247079a10e11897cfe703/report.json`。
+
+相容來源改為只在延遲後檢查原候選後，Release 建置及 Core 694 通過。最終桌面驗證 Compatibility 42、ClipboardRaces 17、AutoCopy 52 與 Preflight 1 通過，無略過。確認一般相容來源不再於顯示時送出第二次複製，原剪貼簿序號或等待期間的外部更新均保留，同視窗切換欄位會取消呈現，程式自行變更選取後的動作會重驗並拒絕。首次 AutoCopy 因 fixture 未取得前景而停止，最終重跑以測試專用視窗取得前景後通過。報告位於 `artifacts/checks/desktop/20261118T123536841Z-36d2ee4807524a08b8379224a4007ec9/report.json`。

@@ -214,17 +214,19 @@ public sealed partial class SelectionController : IDisposable
             }
             var sublime = SublimeCompatibility.IsTarget(target);
             int nativeRequests = 0;
-            nint sublimeFocus = 0;
+            SublimeAppearanceSource? sublimeSource = null;
             ClipboardFallback? ResolveFallback(ProbeResponse response)
             {
                 if (SelectionRoutingPolicy.UseClipboardFallback(response, SublimeClipboardEnabled, sublime))
                 {
-                    if (pointer && Automatic && directAction == null && appearance?.Remaining > TimeSpan.Zero)
-                        sublimeFocus = NativeClipboardSourceReader.ReadFocusedWindow(target);
-                    return new(target, () => clipboardReader.CaptureAsync(target,
-                        () => Current() && SublimeClipboardEnabled, SublimeSelectionAdapter.ReadPlan(),
-                        expectedSequence: autoCopyRequest ? captureSequence : null,
-                        diagnostic: stage => selectionDiagnostics.Record(ticket, "sublime-capture-" + stage, new("ok"))), AutomaticBackoff: false);
+                    return new(target, () =>
+                    {
+                        if (pointer && Automatic && directAction == null && appearance?.Remaining > TimeSpan.Zero)
+                            sublimeSource = new(NativeClipboardSourceReader.ReadFocusedWindow(target), NativeCaretReader.ReadIdentity(target));
+                        return clipboardReader.CaptureAsync(target, () => Current() && SublimeClipboardEnabled,
+                            SublimeSelectionAdapter.ReadPlan(), expectedSequence: autoCopyRequest ? captureSequence : null,
+                            diagnostic: stage => selectionDiagnostics.Record(ticket, "sublime-capture-" + stage, new("ok")));
+                    }, AutomaticBackoff: false);
                 }
                 if (SelectionRoutingPolicy.UseClipboardFallback(response, ClipboardCompatibilityEnabled,
                     response.ClipboardTarget?.Target == target && ClipboardSelectionAdapter.IsTarget(target)))
@@ -279,12 +281,11 @@ public sealed partial class SelectionController : IDisposable
             var remaining = appearance?.Remaining ?? TimeSpan.Zero;
             if (remaining > TimeSpan.Zero)
             {
-                var clipboardSequence = Native.GetClipboardSequenceNumber();
                 if (autoCopied) ShowAutoCopyFeedback(candidate, x, y);
                 bool CanAppear() => Current() && Automatic;
                 await Task.Delay(appearance.GetValueOrDefault().Remaining, token);
                 if (!CanAppear()) return;
-                var validated = await ValidateDelayedAppearanceAsync(candidate, CanAppear, ticket, clipboardSequence, sublimeFocus);
+                var validated = await ValidateDelayedAppearanceAsync(candidate, CanAppear, sublimeSource);
                 if (validated == null || !CanAppear()) return;
                 candidate = validated;
             }

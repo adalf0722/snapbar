@@ -341,7 +341,7 @@ internal static class ClipboardCompatibilityTest
                 Clipboard.SetText("original clipboard");
                 controller.Automatic = true;
                 controller.ConfigureAppearanceDelay(2000);
-                async Task<Task> StartDelayedFallback()
+                async Task<(Task Pending, int Copies, uint Sequence)> StartDelayedFallback()
                 {
                     controller.CancelSelection();
                     var copies = await Command("select");
@@ -354,24 +354,37 @@ internal static class ClipboardCompatibilityTest
                     await Task.Delay(150);
                     Check(!pending.IsCompleted && controller.ActiveSelection == null && ReadClipboardText() == "original clipboard",
                         "generic clipboard candidate waits out of sight with clipboard restored");
-                    return pending;
+                    return (pending, copies + 1, Native.GetClipboardSequenceNumber());
                 }
-                var delayed = await StartDelayedFallback();
+                var (delayed, originalCopies, originalSequence) = await StartDelayedFallback();
                 await delayed;
                 Check(controller.ActiveSelection is { Source: ClipboardSelectionAdapter.Source, Text: Sample }
-                    && ReadClipboardText() == "original clipboard", "delayed clipboard revalidation retains the source and restores the clipboard");
-                delayed = await StartDelayedFallback();
-                var copiesBeforeChange = await Command("changed");
+                    && ReadClipboardText() == "original clipboard" && await Command("stats") == originalCopies
+                    && Native.GetClipboardSequenceNumber() == originalSequence,
+                    "delayed clipboard candidate presents without another copy or clipboard sequence change");
+                (delayed, originalCopies, originalSequence) = await StartDelayedFallback();
+                await Command("changed");
                 await delayed;
-                Check(controller.ActiveSelection == null && await Command("stats") == copiesBeforeChange + 1
-                    && ReadClipboardText() == "original clipboard", "delayed clipboard revalidation rejects changed text in the same source");
-                delayed = await StartDelayedFallback();
-                copiesBeforeChange = await Command("stats");
+                Check(controller.ActiveSelection?.Source == ClipboardSelectionAdapter.Source && await Command("stats") == originalCopies
+                    && Native.GetClipboardSequenceNumber() == originalSequence,
+                    "opaque programmatic selection changes do not cause another copy for display");
+                await controller.ExecuteAsync(TextAction.Search);
+                Check(launched.Count == 1 && ReadClipboardText() == "original clipboard",
+                    "action revalidation rejects changed content from the opaque toolbar");
+                (delayed, originalCopies, originalSequence) = await StartDelayedFallback();
+                await Command("other");
+                await delayed;
+                Check(controller.ActiveSelection == null && await Command("stats") == originalCopies
+                    && Native.GetClipboardSequenceNumber() == originalSequence,
+                    "delayed clipboard candidate rejects another field without copying");
+                (delayed, originalCopies, _) = await StartDelayedFallback();
                 Clipboard.SetText("new clipboard during appearance wait");
+                var newerSequence = Native.GetClipboardSequenceNumber();
                 await delayed;
-                Check(controller.ActiveSelection == null && await Command("stats") == copiesBeforeChange
-                    && ReadClipboardText() == "new clipboard during appearance wait",
-                    "new clipboard contents win without injecting a delayed read");
+                Check(controller.ActiveSelection?.Source == ClipboardSelectionAdapter.Source && await Command("stats") == originalCopies
+                    && ReadClipboardText() == "new clipboard during appearance wait"
+                    && Native.GetClipboardSequenceNumber() == newerSequence,
+                    "delayed display preserves an external clipboard update without injecting a read");
                 Clipboard.SetText("original clipboard");
                 controller.ConfigureAppearanceDelay(ToolbarAppearanceDelay.DefaultMilliseconds);
                 controller.Automatic = false;
