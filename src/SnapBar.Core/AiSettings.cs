@@ -22,6 +22,8 @@ public sealed record AiSettings
      AiPromptCatalog.ChineseScriptConversion];
     public string[] PinnedIds { get; init; } = ["improve", "shorten", "translate-en"];
     public string[] RecentIds { get; init; } = [];
+    public double ReaderHorizontalRatio { get; init; } = 0.5;
+    public double ReaderVerticalRatio { get; init; } = 0.4;
 }
 public sealed record AiSettingsLoadResult(AiSettings Settings, string? Warning = null);
 public sealed record AiTextResult(bool Success, string Text = "", string Status = "ok");
@@ -65,7 +67,9 @@ public static class AiPolicy
                 || !Text(prompt.Instruction, 1, 8192) || !Text(prompt.Category, 0, 32) || !Text(prompt.Keywords, 0, 256)
                 || !Text(prompt.Icon, 1, 64)) throw new ProductValidationException("ai-prompt-invalid");
         string[] Filter(string[]? ids, int maximum) => (ids ?? []).Where(id => id != null && promptIds.Contains(id)).Distinct(StringComparer.Ordinal).Take(maximum).ToArray();
-        return settings with { Profiles = [.. settings.Profiles], Prompts = [.. settings.Prompts], PinnedIds = Filter(settings.PinnedIds, 128), RecentIds = Filter(settings.RecentIds, 10) };
+        double Ratio(double value, double fallback) => double.IsFinite(value) ? Math.Clamp(value, 0.2, 0.8) : fallback;
+        return settings with { Profiles = [.. settings.Profiles], Prompts = [.. settings.Prompts], PinnedIds = Filter(settings.PinnedIds, 128), RecentIds = Filter(settings.RecentIds, 10),
+            ReaderHorizontalRatio = Ratio(settings.ReaderHorizontalRatio, 0.5), ReaderVerticalRatio = Ratio(settings.ReaderVerticalRatio, 0.4) };
     }
 
     public static IReadOnlyList<AiPrompt> Search(AiSettings settings, string query, string category = "")

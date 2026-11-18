@@ -21,15 +21,30 @@ internal sealed partial class AiPanelWindow : Window
     private readonly Func<string, Task<bool>>? apply;
     private readonly SelectionSnapshot? selection;
     private readonly Func<bool>? localCanApply;
-    private readonly TextBox input = null!, original;
+    private readonly TextBox input = null!;
+    private readonly FrameworkElement original;
     private readonly TextBlock basis, hint, count, status, version, execution, placeholder, modelLabel;
-    private readonly Button direct, stop, restart, resume, originalTab, resultTab, previous, next, copy, replace, model;
+    private readonly Button direct, stop, restart, resume, previous, next, copy, replace, model, toggleCommands;
     private readonly Grid commandRows;
+    private readonly StackPanel commandViews;
+    private readonly List<Button> commandViewButtons = [];
     private readonly List<Button> commandButtons = [];
     private readonly Dictionary<long, string> instructionNames = [];
     private readonly ComboBox category;
     private readonly ContentControl resultContent;
     private readonly Border resultCard;
+    private readonly Border commandArea, originalCard;
+    private readonly Grid comparison;
+    private readonly TextBlock resultHeading, emptyResult;
+    private readonly DockPanel resultMetadata;
+    private readonly ContentControl originalContent;
+    private readonly Button difference;
+    private readonly TextBlock originalMetadata;
+    private readonly GridSplitter readerSplitter;
+    private bool? readerSideBySide;
+    private bool? readerHasResult;
+    private bool showingDifferences;
+    private bool commandsCollapsed;
     private readonly ProgressBar progress;
     private readonly Grid main;
     private readonly Expander filter;
@@ -57,29 +72,32 @@ internal sealed partial class AiPanelWindow : Window
         this.selection = selection; this.localCanApply = localCanApply; this.preferences = preferences; this.apply = apply; ownsClient = client == null;
         this.client = client ?? new AiHttpClient(); lastProfile = preferences.SelectedProfile; Session = new(text);
         ActionUi.Setup(this, language.Get("AiPanelWindow_000"), 800, 650); MinWidth = 680; MinHeight = 500; Topmost = true;
-        var root = new DockPanel { Margin = new(24, 18, 24, 20) }; var header = new DockPanel { Margin = new(0, 0, 0, 20) };
-        model = QuietButton("", ShowSettings, "settings"); model.HorizontalAlignment = HorizontalAlignment.Right;
-        model.MaxWidth = 180; model.Padding = new(8); model.MinHeight = 36;
+        var root = new DockPanel { Margin = new(20, 8, 20, 16) }; var header = new DockPanel { Margin = new(0, 0, 0, 8) };
+        model = QuietButton("", ShowSettings); model.HorizontalAlignment = HorizontalAlignment.Right;
+        model.MaxWidth = 240; model.Padding = new(8); model.MinHeight = 28;
         modelLabel = ActionUi.Text(language.Get("AiPanelWindow_001"), 13, ActionUi.Muted); modelLabel.TextWrapping = TextWrapping.NoWrap; modelLabel.TextTrimming = TextTrimming.CharacterEllipsis;
-        var modelContent = new DockPanel(); var settingsIcon = ActionUi.Icon("settings", ActionUi.Muted, 16);
-        settingsIcon.Margin = new(8, 0, 0, 0); DockPanel.SetDock(settingsIcon, Dock.Right); modelContent.Children.Add(settingsIcon); modelContent.Children.Add(modelLabel); model.Content = modelContent;
-        DockPanel.SetDock(model, Dock.Right); header.Children.Add(model); header.Children.Add(ActionUi.Heading(language.Get("AiPanelWindow_002"), 24));
+        model.Content = modelLabel;
+        AutomationProperties.SetAutomationId(model, "AiServiceSettings");
+        toggleCommands = QuietButton(language.Get("AiPanel_HideCommands"), ToggleCommands);
+        toggleCommands.HorizontalAlignment = HorizontalAlignment.Left;
+        AutomationProperties.SetAutomationId(toggleCommands, "AiToggleCommands");
+        DockPanel.SetDock(model, Dock.Right); header.Children.Add(model); header.Children.Add(toggleCommands);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
         progress = new ProgressBar { Height = 2, IsIndeterminate = true, Visibility = Visibility.Hidden };
         DockPanel.SetDock(progress, Dock.Top); root.Children.Add(progress);
-        main = new Grid(); main.ColumnDefinitions.Add(new() { Width = new(280) }); main.ColumnDefinitions.Add(new() { Width = new(18) }); main.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
+        main = new Grid(); main.ColumnDefinitions.Add(new() { Width = new(264) }); main.ColumnDefinitions.Add(new() { Width = new(18) }); main.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         var rail = new DockPanel();
         var railHeader = new StackPanel(); var heading = new DockPanel();
         var add = QuietButton(language.Get("AiPanelWindow_003"), () => EditPrompt(null), "plus"); add.Padding = new(6); add.MinHeight = 28;
         stop = ActionUi.Button(language.Get("AiPanelWindow_004"), Stop); stop.Padding = new(5); stop.MinHeight = 28; stop.Margin = new(0);
         DockPanel.SetDock(add, Dock.Right); heading.Children.Add(add); DockPanel.SetDock(stop, Dock.Right); heading.Children.Add(stop);
-        var manageCommands = QuietButton("", () => RequestManagement(SettingsCategory.AiCommands), "settings");
+        var manageCommands = QuietButton(language.Get("AiPanel_ManageCommands"), () => RequestManagement(SettingsCategory.AiCommands));
         manageCommands.ToolTip = language.Get("AiPanelWindow_005"); AutomationProperties.SetName(manageCommands, language.Get("AiPanelWindow_006"));
         AutomationProperties.SetAutomationId(manageCommands, "ManageAiCommands"); DockPanel.SetDock(manageCommands, Dock.Right); heading.Children.Add(manageCommands);
         heading.Children.Add(ActionUi.Heading(language.Get("AiPanelWindow_007"), 14)); railHeader.Children.Add(heading);
         var basisRow = new DockPanel { MinHeight = 28, Margin = new(0, 8, 0, 6) };
         var basisButtons = new StackPanel { Orientation = Orientation.Horizontal };
-        restart = QuietButton(language.Get("AiPanelWindow_008"), () => { Session.FromOriginal(); Refresh(); input.Focus(); });
+        restart = QuietButton(language.Get("AiPanel_UseOriginal"), () => { Session.FromOriginal(); Refresh(); input.Focus(); });
         resume = QuietButton(language.Get("AiPanelWindow_009"), () => { Session.ContinueCurrent(); Refresh(); input.Focus(); });
         basisButtons.Children.Add(resume); basisButtons.Children.Add(restart); DockPanel.SetDock(basisButtons, Dock.Right); basisRow.Children.Add(basisButtons);
         basis = ActionUi.Text(language.Get("AiPanelWindow_010"), 12, ActionUi.Muted);
@@ -98,8 +116,18 @@ internal sealed partial class AiPanelWindow : Window
         input.ToolTip = language.Get("AiPanelWindow_015"); railHeader.Children.Add(shortcuts);
         direct = ActionUi.Button(language.Get("AiPanelWindow_016"), () => _ = SubmitAsync(input.Text), primary: true); direct.Margin = new(0, 8, 0, 0);
         AutomationProperties.SetAutomationId(direct, "AiDirectCommand"); railHeader.Children.Add(direct);
+        commandViews = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 6, 0, 0) };
+        foreach (var view in new[] { "All", "Pinned", "Recent" })
+        {
+            var viewId = view;
+            var viewButton = QuietButton(language.Get("AiPanel_View" + view), () => { commandView = viewId; RenderCommands(); });
+            viewButton.Tag = view; AutomationProperties.SetAutomationId(viewButton, "AiCommandsView" + view);
+            commandViewButtons.Add(viewButton); commandViews.Children.Add(viewButton);
+        }
+        railHeader.Children.Add(commandViews);
         category = new ComboBox { MinHeight = 30, Margin = new(0, 6, 0, 0) };
         filter = new Expander { Header = language.Get("AiPanelWindow_017"), Content = category, Margin = new(0, 6, 0, 4), IsExpanded = false };
+        filter.Resources["ControlButtonLine"] = Brushes.Transparent;
         railHeader.Children.Add(filter); DockPanel.SetDock(railHeader, Dock.Top); rail.Children.Add(railHeader);
         var commandFooter = new StackPanel();
         var deletionLine = new DockPanel(); var restoreCommand = QuietButton(language.Get("AiPanelWindow_018"), () => { if (!preferences.TryRestoreDeleted(out var error)) hint!.Text = error == null ? "" : UiText.Current(error, language.Culture); });
@@ -109,11 +137,9 @@ internal sealed partial class AiPanelWindow : Window
         count = ActionUi.Text("", 12, ActionUi.Muted); count.Margin = new(4, 6, 0, 0); commandFooter.Children.Add(count); DockPanel.SetDock(commandFooter, Dock.Bottom); rail.Children.Add(commandFooter);
         commandRows = new Grid { VerticalAlignment = VerticalAlignment.Top };
         commandRows.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
-        commandRows.ColumnDefinitions.Add(new() { Width = new(8) });
-        commandRows.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         var commandScroll = new ScrollViewer { Content = commandRows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         AutomationProperties.SetAutomationId(commandScroll, "AiCommandList"); rail.Children.Add(commandScroll);
-        var commandArea = ActionUi.Card(rail, new(14)); AutomationProperties.SetAutomationId(commandArea, "AiCommandArea"); main.Children.Add(commandArea);
+        commandArea = ActionUi.Card(rail, new(14)); AutomationProperties.SetAutomationId(commandArea, "AiCommandArea"); main.Children.Add(commandArea);
         var right = new DockPanel(); var readerArea = ActionUi.Card(right, new(16));
         AutomationProperties.SetAutomationId(readerArea, "AiReaderArea"); Grid.SetColumn(readerArea, 2); main.Children.Add(readerArea);
         var footer = new DockPanel { Margin = new(0, 16, 0, 0) };
@@ -125,18 +151,26 @@ internal sealed partial class AiPanelWindow : Window
         status = ActionUi.Text("", 12, ActionUi.Muted); footer.Children.Add(status); DockPanel.SetDock(footer, Dock.Bottom); right.Children.Add(footer);
         AutomationProperties.SetAutomationId(status, "AiSourceStatus");
         var body = new DockPanel();
-        var tabs = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 10) };
-        originalTab = ActionUi.Button(language.Get("AiPanelWindow_021"), () => { Session.ShowOriginal(); Refresh(); }); resultTab = ActionUi.Button(language.Get("AiPanelWindow_022"), () => { Session.ShowResult(); Refresh(); });
-        foreach (var tab in new[] { originalTab, resultTab })
-        {
-            tab.Style = (Style)FindResource("AiViewTab"); tab.ClearValue(BackgroundProperty); tab.ClearValue(BorderBrushProperty);
-            tab.ClearValue(ForegroundProperty); tab.ClearValue(PaddingProperty); tab.Content = tab == originalTab ? language.Get("AiPanelWindow_023") : language.Get("AiPanelWindow_024");
-        }
-        AutomationProperties.SetAutomationId(originalTab, "AiOriginalTab"); AutomationProperties.SetAutomationId(resultTab, "AiResultTab");
-        tabs.Children.Add(originalTab); tabs.Children.Add(resultTab); DockPanel.SetDock(tabs, Dock.Top); body.Children.Add(tabs);
         hint = ActionUi.Text("", 12, ActionUi.Muted); hint.Margin = new(0, 10, 0, 0); DockPanel.SetDock(hint, Dock.Bottom); body.Children.Add(hint);
-        original = AiMarkdownView.Plain(text); AutomationProperties.SetAutomationId(original, "AiOriginalText");
-        var resultBody = new DockPanel(); var resultHeader = new DockPanel { Margin = new(20, 8, 12, 0) };
+        original = AiMarkdownView.Literal(text); AutomationProperties.SetAutomationId(original, "AiOriginalText");
+        var originalBody = new DockPanel();
+        var originalHeader = new DockPanel { Margin = new(4, 0, 4, 0), Height = 28 };
+        var copyOriginal = QuietButton(language.Get("AiPanelWindow_047"), () => Copy(originalText: true));
+        AutomationProperties.SetAutomationId(copyOriginal, "AiCopyOriginal"); DockPanel.SetDock(copyOriginal, Dock.Right); originalHeader.Children.Add(copyOriginal);
+        originalHeader.Children.Add(ActionUi.Heading(language.Get("AiPanelWindow_023"), 14));
+        DockPanel.SetDock(originalHeader, Dock.Top); originalBody.Children.Add(originalHeader);
+        originalMetadata = ActionUi.Text(language.Get("AiPanel_OriginalMetadata"), 12, ActionUi.Muted);
+        originalMetadata.Height = 28; originalMetadata.Margin = new(4, 0, 4, 0);
+        DockPanel.SetDock(originalMetadata, Dock.Top); originalBody.Children.Add(originalMetadata);
+        originalContent = new ContentControl { Content = original, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
+        originalBody.Children.Add(originalContent);
+        var resultBody = new DockPanel();
+        var resultTitle = new DockPanel { Margin = new(4, 0, 4, 0), Height = 28 };
+        difference = QuietButton(language.Get("AiPanel_ShowDifferences"), () => { showingDifferences = !showingDifferences; renderedText = null; Refresh(); });
+        AutomationProperties.SetAutomationId(difference, "AiToggleDifferences"); DockPanel.SetDock(difference, Dock.Right); resultTitle.Children.Add(difference);
+        resultHeading = ActionUi.Heading(language.Get("AiPanel_CurrentResult"), 14); resultTitle.Children.Add(resultHeading);
+        DockPanel.SetDock(resultTitle, Dock.Top); resultBody.Children.Add(resultTitle);
+        var resultHeader = resultMetadata = new DockPanel { Margin = new(4, 0, 4, 0), Height = 28 };
         var history = new StackPanel { Orientation = Orientation.Horizontal };
         previous = QuietButton("‹", () => { Session.MoveHistory(-1); Refresh(); }); previous.ToolTip = language.Get("AiPanelWindow_025");
         next = QuietButton("›", () => { Session.MoveHistory(1); Refresh(); }); next.ToolTip = language.Get("AiPanelWindow_026");
@@ -152,9 +186,22 @@ internal sealed partial class AiPanelWindow : Window
         DockPanel.SetDock(resultHeader, Dock.Top); resultBody.Children.Add(resultHeader);
         resultContent = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
         AutomationProperties.SetAutomationId(resultContent, "AiResultContent");
+        emptyResult = ActionUi.Text(language.Get("AiPanel_EmptyResult"), 13, ActionUi.Muted);
+        emptyResult.Margin = new(20); emptyResult.VerticalAlignment = VerticalAlignment.Top;
+        resultContent.Content = emptyResult;
         resultBody.Children.Add(resultContent); resultCard = new Border { Child = resultBody };
-        var originalCard = new Border { Child = original };
-        var content = new Grid(); content.Children.Add(originalCard); content.Children.Add(resultCard); body.Children.Add(content);
+        AutomationProperties.SetAutomationId(resultCard, "AiResultPane");
+        originalCard = new Border { Child = originalBody };
+        AutomationProperties.SetAutomationId(originalCard, "AiOriginalPane");
+        comparison = new Grid(); comparison.Children.Add(originalCard); comparison.Children.Add(resultCard); body.Children.Add(comparison);
+        readerSplitter = new GridSplitter { Background = Brushes.Transparent, ShowsPreview = true, ResizeBehavior = GridResizeBehavior.PreviousAndNext,
+            ToolTip = language.Get("AiPanel_ResizeReader"), Focusable = true };
+        AutomationProperties.SetAutomationId(readerSplitter, "AiReaderSplitter");
+        AutomationProperties.SetName(readerSplitter, language.Get("AiPanel_ResizeReader"));
+        readerSplitter.DragCompleted += (_, _) => SaveReaderRatio();
+        readerSplitter.PreviewKeyUp += (_, e) => { if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down) SaveReaderRatio(); };
+        comparison.Children.Add(readerSplitter);
+        comparison.SizeChanged += (_, _) => LayoutComparison();
         right.Children.Add(body); root.Children.Add(main); Content = root;
         preferences.Changed += OnPreferencesChanged;
         preferences.UndoChanged += RenderCommands;
@@ -173,6 +220,66 @@ internal sealed partial class AiPanelWindow : Window
         Closed += (_, _) => { closed = true; Stop(); preferences.Changed -= OnPreferencesChanged; preferences.UndoChanged -= RenderCommands; if (ownsClient && client is IDisposable disposable) disposable.Dispose(); };
         RefreshCategories(); Refresh();
         if (preferences.Warning != null) hint.Text = language.Get("AiPanelWindow_030");
+    }
+
+    private void ToggleCommands()
+    {
+        commandsCollapsed = !commandsCollapsed;
+        // Move focus out of the rail before hiding it.
+        toggleCommands.Focus();
+        commandArea.Visibility = commandsCollapsed ? Visibility.Collapsed : Visibility.Visible;
+        main.ColumnDefinitions[0].Width = new(commandsCollapsed ? 0 : 264);
+        main.ColumnDefinitions[1].Width = new(commandsCollapsed ? 0 : 18);
+        var label = language.Get(commandsCollapsed ? "AiPanel_ShowCommands" : "AiPanel_HideCommands");
+        toggleCommands.Content = label; AutomationProperties.SetName(toggleCommands, label);
+        if (!commandsCollapsed) input.Focus();
+    }
+
+    private void LayoutComparison()
+    {
+        var sideBySide = comparison.ActualWidth >= 620;
+        var hasResult = Session.Current != null;
+        if (readerSideBySide == sideBySide && readerHasResult == hasResult) return;
+        readerSideBySide = sideBySide; readerHasResult = hasResult;
+        comparison.ColumnDefinitions.Clear(); comparison.RowDefinitions.Clear();
+        var ratio = sideBySide ? preferences.Settings.ReaderHorizontalRatio : hasResult ? preferences.Settings.ReaderVerticalRatio : 0.68;
+        if (sideBySide)
+        {
+            comparison.ColumnDefinitions.Add(new() { Width = new(ratio, GridUnitType.Star), MinWidth = 180 });
+            comparison.ColumnDefinitions.Add(new() { Width = new(12) });
+            comparison.ColumnDefinitions.Add(new() { Width = new(1 - ratio, GridUnitType.Star), MinWidth = 180 });
+        }
+        else
+        {
+            comparison.RowDefinitions.Add(new() { Height = new(ratio, GridUnitType.Star), MinHeight = 100 });
+            comparison.RowDefinitions.Add(new() { Height = new(12) });
+            comparison.RowDefinitions.Add(new() { Height = new(1 - ratio, GridUnitType.Star), MinHeight = hasResult ? 150 : 80 });
+        }
+        Grid.SetRow(resultCard, sideBySide ? 0 : 2); Grid.SetColumn(resultCard, sideBySide ? 2 : 0);
+        Grid.SetRow(readerSplitter, sideBySide ? 0 : 1); Grid.SetColumn(readerSplitter, sideBySide ? 1 : 0);
+        readerSplitter.ResizeDirection = sideBySide ? GridResizeDirection.Columns : GridResizeDirection.Rows;
+        readerSplitter.HorizontalAlignment = sideBySide ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        readerSplitter.VerticalAlignment = sideBySide ? VerticalAlignment.Stretch : VerticalAlignment.Center;
+        readerSplitter.Width = sideBySide ? 12 : double.NaN; readerSplitter.Height = sideBySide ? double.NaN : 12;
+        readerSplitter.Cursor = sideBySide ? Cursors.SizeWE : Cursors.SizeNS;
+        var line = new FrameworkElementFactory(typeof(Border)); line.SetValue(Border.BackgroundProperty, ActionUi.Line);
+        line.SetValue(FrameworkElement.WidthProperty, sideBySide ? 1d : double.NaN);
+        line.SetValue(FrameworkElement.HeightProperty, sideBySide ? double.NaN : 1d);
+        line.SetValue(FrameworkElement.HorizontalAlignmentProperty, sideBySide ? HorizontalAlignment.Center : HorizontalAlignment.Stretch);
+        line.SetValue(FrameworkElement.VerticalAlignmentProperty, sideBySide ? VerticalAlignment.Stretch : VerticalAlignment.Center);
+        readerSplitter.Template = new ControlTemplate(typeof(GridSplitter)) { VisualTree = line };
+    }
+
+    private void SaveReaderRatio()
+    {
+        var horizontal = readerSideBySide == true;
+        var first = horizontal ? comparison.ColumnDefinitions[0].ActualWidth : comparison.RowDefinitions[0].ActualHeight;
+        var last = horizontal ? comparison.ColumnDefinitions[2].ActualWidth : comparison.RowDefinitions[2].ActualHeight;
+        if (first + last <= 0 || !horizontal && Session.Current == null) return;
+        var ratio = Math.Clamp(first / (first + last), 0.2, 0.8);
+        var settings = preferences.Settings;
+        if (!preferences.TrySave(horizontal ? settings with { ReaderHorizontalRatio = ratio } : settings with { ReaderVerticalRatio = ratio }, out var error))
+            hint.Text = error == null ? "" : UiText.Current(error, language.Culture);
     }
 
     private static Button QuietButton(string text, Action click, string? icon = null)
@@ -248,42 +355,62 @@ internal sealed partial class AiPanelWindow : Window
     {
         if (closed) return;
         syncing = true; if (input.Text != Session.Draft) { input.Text = Session.Draft; input.CaretIndex = input.Text.Length; } syncing = false;
-        basis.Text = UiText.Join(language.Get("AiPanelWindow_037"), BasisName(Session.BasisId)); basis.ToolTip = basis.Text;
+        basis.Text = UiText.Join(language.Get("AiPanel_RewriteSource"), BasisName(Session.BasisId)); basis.ToolTip = basis.Text;
         restart.Visibility = Session.BasisId == null ? Visibility.Collapsed : Visibility.Visible;
         var profile = preferences.SelectedProfile;
-        modelLabel.Text = profile.Model.Length == 0 ? language.Get("AiPanelWindow_038") : UiNames.Provider(profile, language);
+        modelLabel.Text = language.Get("AiPanel_ServiceSettings");
         AutomationProperties.SetName(model, language.Get("AiPanelWindow_039")); model.ToolTip = UiNames.Provider(profile, language) + " · " + profile.Model;
         resume.Visibility = Session.Current != null && Session.BasisId != Session.Current.Id ? Visibility.Visible : Visibility.Collapsed;
-        resume.Content = Session.Current is { } shown ? language.Get("AiPanelWindow_040",(shown.Id)): language.Get("AiPanelWindow_041");
+        resume.Content = language.Get("AiPanel_UseCurrent");
         restart.IsEnabled = resume.IsEnabled = !Session.Busy;
         stop.Visibility = Session.Busy ? Visibility.Visible : Visibility.Collapsed;
         progress.Visibility = Session.Busy ? Visibility.Visible : Visibility.Hidden;
-        original.Parent.SetValue(VisibilityProperty, Session.ViewingOriginal ? Visibility.Visible : Visibility.Collapsed);
-        resultCard.Visibility = Session.ViewingOriginal ? Visibility.Collapsed : Visibility.Visible;
-        resultTab.IsEnabled = Session.Current != null; resultTab.Content = Session.HasNewResult ? language.Get("AiPanelWindow_042") : Session.Busy ? language.Get("AiPanelWindow_043") : language.Get("AiPanelWindow_044");
-        originalTab.Tag = Session.ViewingOriginal ? "Selected" : ""; resultTab.Tag = !Session.ViewingOriginal ? "Selected" : "";
+        resultHeading.Text = language.Get(Session.Busy ? "AiPanelWindow_043" : "AiPanel_CurrentResult");
+        emptyResult.Text = language.Get(Session.Busy ? "AiPanel_WaitingResult" : "AiPanel_EmptyResult");
+        resultMetadata.Visibility = Session.Current == null ? Visibility.Hidden : Visibility.Visible;
+        difference.Visibility = Session.Current == null ? Visibility.Collapsed : Visibility.Visible;
+        difference.IsEnabled = Session.Current != null && Session.Original.Length <= 12000 && Session.Current.Text.Length <= 12000;
+        if (!difference.IsEnabled) showingDifferences = false;
+        difference.Content = language.Get(showingDifferences ? "AiPanel_CleanReading" : "AiPanel_ShowDifferences");
+        AutomationProperties.SetName(difference, difference.Content.ToString());
+        difference.ToolTip = language.Get(difference.IsEnabled ? "AiPanel_DifferenceHelp" : "AiPanel_DifferenceLimit");
+        originalMetadata.Text = language.Get(showingDifferences ? "AiPanel_RemovedLegend" : "AiPanel_OriginalMetadata");
         previous.IsEnabled = !Session.Busy && Session.Index > 0; next.IsEnabled = !Session.Busy && Session.Index + 1 < Session.Versions.Count;
         previous.Visibility = next.Visibility = Session.Versions.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         if (Session.Current is { } current)
         {
             version.Text = language.Get("AiPanelWindow_045",(current.Id)); execution.Text = UiText.Join("· ", instructionNames.GetValueOrDefault(current.Id, language.Get("AiPanelWindow_046")));
-            if (renderedText != current.Text) { renderedText = current.Text; resultContent.Content = language.Run(() => AiMarkdownView.Create(current.Text)); }
+            if (renderedText != current.Text)
+            {
+                renderedText = current.Text;
+                if (showingDifferences)
+                {
+                    var comparisonText = TextComparison.Create(Session.Original, current.Text);
+                    originalContent.Content = AiMarkdownView.Comparison(comparisonText.Original, true);
+                    resultContent.Content = AiMarkdownView.Comparison(comparisonText.Result, false);
+                    execution.Text = language.Get("AiPanel_AddedLegend");
+                    execution.ToolTip = language.Get("AiPanel_AddedLegend");
+                }
+                else { originalContent.Content = original; resultContent.Content = language.Run(() => AiMarkdownView.Create(current.Text)); execution.ToolTip = execution.Text; }
+            }
+            if (showingDifferences) execution.Text = language.Get("AiPanel_AddedLegend");
         }
-        copy.Content = Session.ViewingOriginal ? language.Get("AiPanelWindow_047") : language.Get("AiPanelWindow_048");
+        copy.Content = language.Get("AiPanelWindow_048"); copy.IsEnabled = Session.Current != null;
         var writable = targetValid && CanApplyTarget() && apply != null;
-        replace.Visibility = !Session.ViewingOriginal && writable ? Visibility.Visible : Visibility.Collapsed; replace.IsEnabled = !Session.Busy && !applying;
-        var primaryCopy = !Session.ViewingOriginal && !writable;
+        replace.Visibility = Session.Current != null && writable ? Visibility.Visible : Visibility.Collapsed; replace.IsEnabled = !Session.Busy && !applying;
+        var primaryCopy = Session.Current != null && !writable;
         copy.Background = copy.BorderBrush = primaryCopy ? ActionUi.Accent : Brushes.White;
         if (!primaryCopy) copy.BorderBrush = ActionUi.Line;
         copy.Foreground = primaryCopy ? Brushes.White : ActionUi.Ink;
         copy.Resources["ControlHover"] = primaryCopy ? ActionUi.Brush("#2E58BE") : ActionUi.Brush("#EEF1F6");
         copy.Resources["ControlPressed"] = primaryCopy ? ActionUi.Brush("#24489F") : ActionUi.Brush("#E2E7F0");
         status.Text = !targetValid
-            ? Session.ViewingOriginal ? language.Get("AiPanelWindow_049") : language.Get("AiPanelWindow_050")
+            ? Session.Current == null ? language.Get("AiPanelWindow_049") : language.Get("AiPanelWindow_050")
             : !CanApplyTarget()
-                ? Session.ViewingOriginal ? language.Get("AiPanelWindow_051") : language.Get("AiPanelWindow_052")
-                : Session.ViewingOriginal ? language.Get("AiPanelWindow_053") : language.Get("AiPanelWindow_054");
+                ? Session.Current == null ? language.Get("AiPanelWindow_051") : language.Get("AiPanelWindow_052")
+                : Session.Current == null ? language.Get("AiPanelWindow_053") : language.Get("AiPanelWindow_054");
         RenderCommands();
+        LayoutComparison();
     }
     internal async Task SubmitAsync(string instruction, string? promptId = null)
     {
@@ -305,6 +432,9 @@ internal sealed partial class AiPanelWindow : Window
             if (!result.Success) { Session.Cancel(); hint.Text = ErrorMessage(result.Status); return; }
             if (!Session.Complete(ticket, result.Text)) { hint.Text = language.Get("AiPanelWindow_060"); return; }
             instructionNames[Session.Current!.Id] = instructionName;
+            versionPromptIds[Session.Current.Id] = promptId;
+            foreach (var id in versionPromptIds.Keys.Where(id => !Session.Versions.Any(v => v.Id == id)).ToArray()) versionPromptIds.Remove(id);
+            showingDifferences = false; renderedText = null;
             foreach (var id in instructionNames.Keys.Where(id => !Session.Versions.Any(v => v.Id == id)).ToArray()) instructionNames.Remove(id);
             hint.Text = "";
             if (promptId != null)
@@ -314,7 +444,7 @@ internal sealed partial class AiPanelWindow : Window
                     hint.Text = language.Get("AiPanelWindow_061");
             }
             Refresh();
-            if (interaction == interactionRevision && !Session.ViewingOriginal && Session.Draft.Length == 0 && HasForeground) input.Focus();
+            if (!commandsCollapsed && interaction == interactionRevision && Session.Draft.Length == 0 && HasForeground) input.Focus();
         }
         catch (OperationCanceledException) { if (!closed && ReferenceEquals(request, cancellation)) hint.Text = language.Get("AiPanelWindow_062"); }
         catch (Exception e) when (e is InvalidOperationException or System.IO.IOException or HttpRequestException or ObjectDisposedException)
@@ -324,20 +454,25 @@ internal sealed partial class AiPanelWindow : Window
     private string BasisName(long? id) => id == null ? language.Get("Ai_Original") : language.Get("Ai_Version", id);
     private string ErrorMessage(string code) => UiText.Join(language.Run(() => AiErrorMessages.Describe(code)), language.Get("AiPanelWindow_064"));
     private void Stop() { request?.Cancel(); Session.Cancel(); if (!closed) Refresh(); }
-    internal void InvalidateTarget() { targetValid = false; Stop(); if (!closed) { hint.Text = language.Get("AiPanelWindow_065"); Refresh(); } }
+    internal void InvalidateTarget() { targetValid = false; Stop(); if (!closed) { hint.Text = ""; Refresh(); } }
     internal async Task ApplyAsync()
     {
-        if (closed || applying || Session.Busy || !targetValid || apply == null || Session.Current == null || Session.ViewingOriginal
+        if (closed || applying || Session.Busy || !targetValid || apply == null || Session.Current == null
             || !CanApplyTarget()) return;
         applying = true; Refresh();
-        try { if (await apply(Session.Current.Text)) Close(); else { targetValid = false; hint.Text = language.Get("AiPanelWindow_066"); } }
+        try { if (await apply(Session.Current.Text)) Close(); else { targetValid = false; hint.Text = ""; } }
         finally { applying = false; Refresh(); }
     }
     private bool CanApplyTarget() => selection != null
         ? SessionPolicy.CanWrite(selection, selection.Target)
         : localCanApply?.Invoke() == true;
-    private void Copy()
-    { try { Clipboard.SetText(Session.ViewingOriginal ? Session.Original : Session.Current?.Text ?? ""); hint.Text = language.Get("AiPanelWindow_067"); } catch (ExternalException) { hint.Text = language.Get("AiPanelWindow_068"); } }
+    private void Copy() => Copy(originalText: false);
+    private void Copy(bool originalText)
+    {
+        var text = originalText ? Session.Original : Session.Current?.Text;
+        if (text == null) return;
+        try { Clipboard.SetText(text); hint.Text = language.Get("AiPanelWindow_067"); } catch (ExternalException) { hint.Text = language.Get("AiPanelWindow_068"); }
+    }
     private void TogglePin(AiPrompt prompt)
     {
         if (!preferences.TogglePin(prompt.Id, out var error)) hint!.Text = error == null ? "" : UiText.Current(error, language.Culture);
@@ -364,8 +499,10 @@ internal sealed partial class AiPanelWindow : Window
         else if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.Control) { e.Handled = true; _ = ApplyAsync(); }
         else if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control && !input.IsKeyboardFocusWithin)
         {
-            var selected = Keyboard.FocusedElement is TextBox box && box.SelectionLength > 0 || resultContent.Content is FlowDocumentScrollViewer viewer && !viewer.Selection.IsEmpty;
-            if (!selected) { e.Handled = true; Copy(); }
+            var selected = Keyboard.FocusedElement is TextBox box && box.SelectionLength > 0
+                || originalContent.Content is FlowDocumentScrollViewer originalViewer && originalViewer.IsKeyboardFocusWithin && !originalViewer.Selection.IsEmpty
+                || resultContent.Content is FlowDocumentScrollViewer viewer && viewer.IsKeyboardFocusWithin && !viewer.Selection.IsEmpty;
+            if (!selected) { e.Handled = true; Copy(originalContent.IsKeyboardFocusWithin); }
         }
     }
 }

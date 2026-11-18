@@ -1,0 +1,21 @@
+{
+  "title": "AI 改寫更易閱讀，也能快速找到更多指令",
+  "summary": "統一原文與結果排版，提供可調整的對照比例與差異閱讀；緊湊指令清單支援固定、最近與跨分類搜尋。",
+  "highlights": [
+    "原文與結果對齊，拖曳分隔線即可調整並保存閱讀比例。",
+    "指令改為緊湊清單，數量增加後可切換全部、固定與最近，搜尋跨所有指令。",
+    "可切換差異標示與完整閱讀，複製與替換仍保留原始結果。"
+  ],
+  "usage": "開啟 AI 改寫，選擇指令或輸入要求；完成後可切換顯示差異。兩份文字各不超過 12,000 字元時提供差異模式，大幅變動可能整段標示。使用前請先設定 AI 服務、模型與所需金鑰。",
+  "requirements": ["ai"],
+  "en": {
+    "title": "Read AI rewrites clearly and find more commands",
+    "summary": "Aligned text, adjustable comparison panes, optional change highlighting, and a compact command list with pinned, recent, and global search views.",
+    "highlights": [
+      "Original and result text align, with draggable dividers that save reading proportions.",
+      "A compact command list adds All, Pinned, and Recent views for larger collections, with search across all commands.",
+      "Switch between change highlighting and clean reading while copying and replacement preserve the raw result."
+    ],
+    "usage": "Open AI Rewrite and choose a command or enter an instruction. Select Show changes after completion. Highlighting supports texts up to 12,000 characters each; large edits may be marked as whole regions. Configure your AI endpoint, model, and required key first."
+  }
+}

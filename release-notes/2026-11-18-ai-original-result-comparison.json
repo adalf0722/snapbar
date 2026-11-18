@@ -1,0 +1,21 @@
+{
+  "title": "AI 改寫可直接對照原文與結果",
+  "summary": "改寫時同時閱讀原文與結果，減少切換與記憶比對，並可收合指令區增加閱讀空間。",
+  "highlights": [
+    "原文與結果依閱讀寬度左右並排或上下排列，各自捲動並提供獨立複製操作。",
+    "指令區可收合與展開，保留草稿及改寫歷史。",
+    "精簡重複標題，以文字區分管理指令與 AI 服務設定。"
+  ],
+  "usage": "選取文字後開啟 AI 改寫，選擇指令或輸入要求；請先在 AI 服務設定填入服務網址、模型及所需金鑰。可收合指令區放大對照閱讀空間。",
+  "requirements": ["ai"],
+  "en": {
+    "title": "Compare AI rewrites with the original",
+    "summary": "Read the original and result together, and hide commands to make more room for comparison.",
+    "highlights": [
+      "The original and result appear side by side or stacked according to reading width, with independent scrolling and copy actions.",
+      "Hide and show commands while keeping your draft and rewrite history.",
+      "A compact toolbar replaces the repeated heading, with clear labels for command management and AI service settings."
+    ],
+    "usage": "Select text and open AI Rewrite, then choose a command or enter an instruction. First configure your endpoint, model, and required key in AI service settings. Use Hide commands to make more reading room."
+  }
+}

@@ -1266,3 +1266,25 @@ InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下�
 相容來源改為只在延遲後檢查原候選後，Release 建置及 Core 694 通過。最終桌面驗證 Compatibility 42、ClipboardRaces 17、AutoCopy 52 與 Preflight 1 通過，無略過。確認一般相容來源不再於顯示時送出第二次複製，原剪貼簿序號或等待期間的外部更新均保留，同視窗切換欄位會取消呈現，程式自行變更選取後的動作會重驗並拒絕。首次 AutoCopy 因 fixture 未取得前景而停止，最終重跑以測試專用視窗取得前景後通過。報告位於 `artifacts/checks/desktop/20261118T123536841Z-36d2ee4807524a08b8379224a4007ec9/report.json`。
 
 整體審查後，加入實際滑鼠回歸。按住滑桿軌道時預覽以 10 毫秒為單位，移出滑桿後放開會保存預覽值，接著用鍵盤仍可保存。初次測試發現 WPF 會先移動滑桿才交給控制項處理輸入，補上首次預覽的步進正規化。也驗證超過 Int32 的正、負整數與 1,024 位整數會限制在 0 至 2,000 毫秒，保存及重載後保留其他偏好，型別錯誤仍保護原檔。Release 建置、Core 698、Lifecycle 171 與 Preflight 1 全數通過，無略過。最終報告位於 `artifacts/checks/desktop/20261118T124515409Z-cb535ba9c31a4a5dab09058cc114a2c7/report.json`。
+
+### 2026-11-18 AI 原文與結果對照
+
+移除原文／結果分頁與重複大標題，閱讀區寬度達 620 DIP 時左右並排，否則上下排列；上下配置將較多高度留給含版本資訊的結果區。指令區可手動收合，保留草稿、篩選及版本，展開時恢復輸入焦點。管理指令與服務設定改為文字入口。原文與結果具有獨立複製操作，寫回繼續使用原本的來源與焦點驗證。
+
+AI 面板 261、語言 69 與 Preflight 1 全數通過，無略過。報告位於 `artifacts/checks/desktop/20261118T134538699Z-f1155c5f886a42f3b3600f9a92d1aedb/report.json`。涵蓋等待、完成、失敗及取消、版本續改、原文與結果精確複製、收合／展開後草稿保留、最小視窗、長文捲動及外部前景造成來源失效後拒絕寫回。服務使用假回應，寫回使用可丟棄的 WPF fixture，不呼叫外部 AI。
+
+已檢視 `artifacts/ai-panel/saved-command-result.png`、`small.png`、`comparison-wide.png`、`comparison-collapsed.png`、`long-instruction.png`，標準及最小尺寸均能同時閱讀兩區。首輪因最小尺寸結果閱讀高度不足而停止，調整上下比例後通過原有可用高度斷言。未重新驗證真實第三方應用或混合 DPI／多螢幕；未執行完整 Release 或發布套件。
+
+最終 `scripts/check.ps1` 通過，Core 698、ActionRunner 37，無略過。完整日誌位於 `artifacts/checks/ai-comparison-final-check.log`；建置報告 `artifacts/checks/build/20261118T134703535Z-56fdd0b891d947d993c22d0fa4cb1f5e/report.json`，動作報告 `artifacts/checks/action-runner/20261118T134712470Z-9af0df6612ce4a06a1a3756140188182/report.json`。
+
+### 2026-11-19 AI 閱讀排版、指令瀏覽與差異模式
+
+原文改用保留字面內容的文件閱讀器，與結果統一字型、行高、標題／資訊列及正文起點；超長原文保留原有純文字框退路。分隔線以細線呈現，保留 12 DIP 操作範圍，可拖曳及鍵盤調整，左右／上下比例分別保存至既有 AI 設定檔。無結果的上下配置給原文較多空間。指令改為緊湊單欄，預設七項在標準視窗不用捲動；超過 12 項顯示全部／固定／最近入口及數量，搜尋跨檢視與分類。原圖釘設定保留，目前結果使用的指令另以淡藍底與側線呈現。
+
+差異模式固定對照最初選取，以刪除線、底線及底色區分變動，完整閱讀仍為所有新結果的預設。兩份文字各限 12,000 字元，計算超過一百萬格或中段過長時採整個變更區段標示，保留全文並避免切斷 Unicode 文字元素。複製與替換不帶差異裝飾，原選取失效只在動作旁顯示一次，寫回安全條件不變。
+
+最終 AI 面板 272、語言 69、ActionRunner 37 與 Preflight 1 通過，無略過：`artifacts/checks/desktop/20261118T233448359Z-4652864256674f90a1ac0b755fb4341b/report.json`。新增驗證正文首行精確對齊、預設指令無需捲動、32 項指令的固定／最近／搜尋及最後一項鍵盤到達性、差異完整文字與裝飾、原始複製、兩個方向比例獨立保存，以及長文停用差異時仍保留完整結果。服務採假回應、寫回使用可丟棄 WPF fixture；未呼叫真實 AI 或重新測試第三方應用。
+
+已檢視 `artifacts/ai-panel/reading-ready.png`、`reading-polished-wide.png`、`reading-polished-stacked.png`、`reading-differences.png` 與 `toolbox-many-small.png`。首輪直接建置因舊 App 鎖檔而失敗，從設定正常退出後建置與桌面測試成功。未執行混合 DPI／多螢幕或完整 Release，未發布套件。
+
+`scripts/check.ps1` 通過，完整日誌 `artifacts/checks/ai-reading-polish-final-check.log`。差異文字合併再改用線性 StringBuilder，避免大量連續變更造成反覆字串複製；最後桌面入口重新建置並跑 Core 708、上述三個套件，均成功。設計與發布說明以 UTF-8 無 BOM 讀回驗證。

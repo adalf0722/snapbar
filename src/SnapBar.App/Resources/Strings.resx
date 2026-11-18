@@ -2905,4 +2905,28 @@ Its enabled state will be preserved.</value>
   <data name="SelectionSettings_DelayValue" xml:space="preserve">
     <value>{0} ms</value>
   </data>
+  <data name="AiPanel_HideCommands" xml:space="preserve"><value>Hide commands</value></data>
+  <data name="AiPanel_ShowCommands" xml:space="preserve"><value>Show commands</value></data>
+  <data name="AiPanel_ManageCommands" xml:space="preserve"><value>Manage</value></data>
+  <data name="AiPanel_ServiceSettings" xml:space="preserve"><value>AI service settings</value></data>
+  <data name="AiPanel_EmptyResult" xml:space="preserve"><value>Choose a command or enter an instruction to compare the result with the original.</value></data>
+  <data name="AiPanel_WaitingResult" xml:space="preserve"><value>Generating a result. The original remains available for reading.</value></data>
+  <data name="AiPanel_InstructionPlaceholder" xml:space="preserve"><value>Enter a rewrite instruction, or search commands…</value></data>
+  <data name="AiPanel_ActiveCommand" xml:space="preserve"><value>Command used for this result</value></data>
+  <data name="AiPanel_OriginalMetadata" xml:space="preserve"><value>Original selection · Read only</value></data>
+  <data name="AiPanel_CurrentResult" xml:space="preserve"><value>Current result</value></data>
+  <data name="AiPanel_ShowDifferences" xml:space="preserve"><value>Show changes</value></data>
+  <data name="AiPanel_CleanReading" xml:space="preserve"><value>Read clean text</value></data>
+  <data name="AiPanel_DifferenceHelp" xml:space="preserve"><value>Compare literal text with the original. Removed text is struck through; added text is underlined. Large edits may be marked as whole regions.</value></data>
+  <data name="AiPanel_DifferenceLimit" xml:space="preserve"><value>Change highlighting is available for texts up to 12,000 characters each. Full text remains available.</value></data>
+  <data name="AiPanel_RemovedLegend" xml:space="preserve"><value>Strikethrough: removed or replaced</value></data>
+  <data name="AiPanel_AddedLegend" xml:space="preserve"><value>Underline: added or replaced</value></data>
+  <data name="AiPanel_ResizeReader" xml:space="preserve"><value>Resize comparison panes (drag or use arrow keys)</value></data>
+  <data name="AiPanel_RewriteSource" xml:space="preserve"><value>Rewrite source: </value></data>
+  <data name="AiPanel_ViewAll" xml:space="preserve"><value>All</value></data>
+  <data name="AiPanel_ViewPinned" xml:space="preserve"><value>Pinned</value></data>
+  <data name="AiPanel_ViewRecent" xml:space="preserve"><value>Recent</value></data>
+  <data name="AiPanel_SelectedView" xml:space="preserve"><value>Selected view</value></data>
+  <data name="AiPanel_UseOriginal" xml:space="preserve"><value>Use original</value></data>
+  <data name="AiPanel_UseCurrent" xml:space="preserve"><value>Use result</value></data>
 </root>

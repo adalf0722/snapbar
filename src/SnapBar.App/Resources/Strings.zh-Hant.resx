@@ -2905,4 +2905,28 @@
   <data name="SelectionSettings_DelayValue" xml:space="preserve">
     <value>{0} 毫秒</value>
   </data>
+  <data name="AiPanel_HideCommands" xml:space="preserve"><value>收合指令區</value></data>
+  <data name="AiPanel_ShowCommands" xml:space="preserve"><value>展開指令區</value></data>
+  <data name="AiPanel_ManageCommands" xml:space="preserve"><value>管理指令</value></data>
+  <data name="AiPanel_ServiceSettings" xml:space="preserve"><value>AI 服務設定</value></data>
+  <data name="AiPanel_EmptyResult" xml:space="preserve"><value>選擇指令或輸入要求，完成後可在這裡對照原文與結果。</value></data>
+  <data name="AiPanel_WaitingResult" xml:space="preserve"><value>正在產生結果，仍可閱讀原文。</value></data>
+  <data name="AiPanel_InstructionPlaceholder" xml:space="preserve"><value>輸入改寫要求，或搜尋指令…</value></data>
+  <data name="AiPanel_ActiveCommand" xml:space="preserve"><value>目前結果使用的指令</value></data>
+  <data name="AiPanel_OriginalMetadata" xml:space="preserve"><value>原始選取 · 唯讀</value></data>
+  <data name="AiPanel_CurrentResult" xml:space="preserve"><value>目前結果</value></data>
+  <data name="AiPanel_ShowDifferences" xml:space="preserve"><value>顯示差異</value></data>
+  <data name="AiPanel_CleanReading" xml:space="preserve"><value>完整閱讀</value></data>
+  <data name="AiPanel_DifferenceHelp" xml:space="preserve"><value>以原文對照字面內容。刪除以刪除線標示，新增以底線標示；大幅變動時可能整段標示。</value></data>
+  <data name="AiPanel_DifferenceLimit" xml:space="preserve"><value>兩份文字各不超過 12,000 字元時可標示差異，長文仍可完整閱讀。</value></data>
+  <data name="AiPanel_RemovedLegend" xml:space="preserve"><value>刪除線：刪除或替換</value></data>
+  <data name="AiPanel_AddedLegend" xml:space="preserve"><value>底線：新增或替換</value></data>
+  <data name="AiPanel_ResizeReader" xml:space="preserve"><value>調整對照區比例（拖曳或使用方向鍵）</value></data>
+  <data name="AiPanel_RewriteSource" xml:space="preserve"><value>改寫來源：</value></data>
+  <data name="AiPanel_ViewAll" xml:space="preserve"><value>全部</value></data>
+  <data name="AiPanel_ViewPinned" xml:space="preserve"><value>固定</value></data>
+  <data name="AiPanel_ViewRecent" xml:space="preserve"><value>最近</value></data>
+  <data name="AiPanel_SelectedView" xml:space="preserve"><value>目前檢視</value></data>
+  <data name="AiPanel_UseOriginal" xml:space="preserve"><value>用原文</value></data>
+  <data name="AiPanel_UseCurrent" xml:space="preserve"><value>用目前結果</value></data>
 </root>

@@ -327,6 +327,7 @@ ActionOutputRouterTests.Run(Check);
 OfflineDictionaryTests.Run(Check);
 OfflineDictionaryLibraryTests.Run(Check);
 AiRuntimeTests.Run(Check);
+TextComparisonTests.Run(Check);
 AiProviderCatalogTests.Run(Check);
 ProductVersionTests.Run(Check);
 Console.WriteLine($"{passed} passed, {failed} failed");

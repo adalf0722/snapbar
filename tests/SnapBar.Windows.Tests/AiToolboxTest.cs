@@ -50,22 +50,20 @@ internal static class AiToolboxTest
                 && Math.Abs(commandArea.ActualHeight - readerArea.ActualHeight) < 1
                 && readerArea.TranslatePoint(new Point(), panel).X - commandArea.TranslatePoint(new Point(commandArea.ActualWidth, 0), panel).X >= 17,
                 "AI toolbox has equally tall matching command and reader surfaces separated by a gutter");
-            check(Math.Abs(commands[0].TranslatePoint(new Point(), panel).Y - commands[1].TranslatePoint(new Point(), panel).Y) < 1
-                && commands[1].TranslatePoint(new Point(), panel).X > commands[0].TranslatePoint(new Point(commands[0].ActualWidth, 0), panel).X
+            check(Math.Abs(commands[0].TranslatePoint(new Point(), panel).X - commands[1].TranslatePoint(new Point(), panel).X) < 1
+                && commands[1].TranslatePoint(new Point(), panel).Y >= commands[0].TranslatePoint(new Point(0, commands[0].ActualHeight), panel).Y
                 && commands[2].TranslatePoint(new Point(), panel).Y >= commands[0].TranslatePoint(new Point(0, commands[0].ActualHeight), panel).Y,
-                "AI toolbox commands form two distinct columns in visual row order");
+                "AI toolbox compact commands form one ordered column");
             panel.CommandInput.Focus(); Press(panel.CommandInput, Key.Down);
             check(commands[0].IsKeyboardFocused, "AI toolbox Down from input focuses first command");
-            Press(commands[0], Key.Right); check(commands[1].IsKeyboardFocused, "AI toolbox Right moves within the first row");
-            Press(commands[1], Key.Right); check(commands[1].IsKeyboardFocused, "AI toolbox Right never wraps into the next row");
-            Press(commands[1], Key.Down); check(commands[3].IsKeyboardFocused, "AI toolbox Down moves in the same column");
-            Press(commands[3], Key.Down); check(commands[5].IsKeyboardFocused, "AI toolbox Down reaches the final-row command in the same column");
-            Press(commands[5], Key.Down); check(commands[6].IsKeyboardFocused, "AI toolbox Down reaches the lone final-row command");
+            Press(commands[0], Key.Right); check(commands[0].IsKeyboardFocused, "AI toolbox Right keeps the current list item");
+            for (var n = 0; n < 6; n++) Press(commands[n], Key.Down);
+            check(commands[6].IsKeyboardFocused, "AI toolbox Down reaches every command in order");
             Press(commands[6], Key.Down); check(commands[6].IsKeyboardFocused, "AI toolbox Down stops at the final row");
-            Press(commands[6], Key.Up); check(commands[4].IsKeyboardFocused, "AI toolbox Up follows the final command column");
-            Press(commands[4], Key.Up); check(commands[2].IsKeyboardFocused, "AI toolbox Up continues in the same column");
+            Press(commands[6], Key.Up); check(commands[5].IsKeyboardFocused, "AI toolbox Up moves one list item");
+            for (var n = 5; n > 2; n--) Press(commands[n], Key.Up);
             Press(commands[2], Key.Left); check(commands[2].IsKeyboardFocused, "AI toolbox Left stops at the first column");
-            Press(commands[2], Key.Up); Press(commands[0], Key.Up);
+            Press(commands[2], Key.Up); Press(commands[1], Key.Up); Press(commands[0], Key.Up);
             check(panel.CommandInput.IsKeyboardFocused, "AI toolbox Up from the top row returns to input");
             commands[0].Focus(); var pin = Button("AiPin_improve"); pin.Focus();
             pin.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
@@ -96,14 +94,25 @@ internal static class AiToolboxTest
 
             var many = Enumerable.Range(0, 32).Select(n => new AiPrompt("tile-" + n,
                 n == 0 ? "這是一個較長的自訂指令名稱用來確認兩行文字與完整提示" : $"指令 {n + 1}", "Fixture instruction " + n, "自訂")).ToArray();
-            check(preferences.TrySave(preferences.Settings with { Prompts = many, PinnedIds = [], RecentIds = [] }, out _), "AI toolbox accepts a larger isolated command collection");
+            check(preferences.TrySave(preferences.Settings with { Prompts = many, PinnedIds = ["tile-3"], RecentIds = ["tile-4"] }, out _), "AI toolbox accepts a larger isolated command collection");
+            panel.UpdateLayout();
+            Button("AiCommandsViewPinned").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
+            check(Commands().Length == 1 && AutomationProperties.GetAutomationId(Commands()[0]) == "AiPrompt_tile-3", "AI large command collections offer a pinned view");
+            panel.CommandInput.Text = "Fixture instruction 0"; panel.UpdateLayout();
+            check(Commands().Any(b => AutomationProperties.GetAutomationId(b) == "AiPrompt_tile-0"), "AI search crosses the pinned view and finds all commands");
+            panel.CommandInput.Clear();
+            Button("AiCommandsViewRecent").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
+            check(Commands().Length == 1 && AutomationProperties.GetAutomationId(Commands()[0]) == "AiPrompt_tile-4", "AI large command collections offer a recent view");
+            snapshot(panel, "commands-recent.png");
+            Button("AiCommandsViewAll").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
             panel.UpdateLayout(); commands = Commands();
-            var longName = Children<TextBlock>(commands[0]).Single(t => t.Text == many[0].Name);
-            check(longName.TextWrapping == TextWrapping.Wrap && longName.ActualHeight <= 36.5
-                && longName.ActualWidth <= commands[0].ActualWidth && (string)commands[0].ToolTip == many[0].Name,
-                "AI toolbox long names fit a bounded wrapped label with the full name available"); snapshot(panel, "toolbox-long-name.png");
+            var longCommand = Button("AiPrompt_tile-0");
+            var longName = Children<TextBlock>(longCommand).Single(t => t.Text == many[0].Name);
+            check(longName.TextWrapping == TextWrapping.NoWrap && longName.ActualHeight <= 24
+                && longName.ActualWidth <= longCommand.ActualWidth && (string)longCommand.ToolTip == many[0].Name,
+                "AI toolbox long names fit a compact label with the full name available"); snapshot(panel, "toolbox-long-name.png");
             panel.Width = 680; panel.Height = 500; panel.UpdateLayout(); commands[0].Focus();
-            for (var n = 0; n < 15; n++) Press((UIElement)Keyboard.FocusedElement, Key.Down);
+            for (var n = 0; n < 31; n++) Press((UIElement)Keyboard.FocusedElement, Key.Down);
             Press((UIElement)Keyboard.FocusedElement, Key.Right);
             await panel.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle); panel.UpdateLayout();
             var scroll = Children<ScrollViewer>(panel).Single(s => AutomationProperties.GetAutomationId(s) == "AiCommandList");

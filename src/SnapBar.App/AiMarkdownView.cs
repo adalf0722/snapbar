@@ -24,7 +24,7 @@ internal static class AiMarkdownView
                 inCode = !inCode; continue;
             }
             if (inCode) { code.Add(raw); continue; }
-            var line = raw; var paragraph = new Paragraph { Margin = new(0, 3, 0, 8) };
+            var line = raw; var paragraph = new Paragraph { Margin = new(0, 0, 0, 8) };
             if (line.StartsWith('#'))
             {
                 var count = line.TakeWhile(c => c == '#').Count();
@@ -49,9 +49,34 @@ internal static class AiMarkdownView
         if (code.Count > 0) AddCode(document, string.Join("\n", code));
         return new FlowDocumentScrollViewer { Document = document, Background = Brushes.Transparent, IsToolBarVisible = false, IsSelectionEnabled = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }
-    public static TextBox Plain(string text) => new() { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
+    public static TextBox Plain(string text)
+    {
+        var box = new TextBox { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
         VerticalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalContentAlignment = VerticalAlignment.Top,
-        Padding = new(20), BorderThickness = new(0), Background = Brushes.Transparent, FontSize = 15 };
+        Padding = new(20), BorderThickness = new(0), Background = Brushes.Transparent, FontSize = 15, FontFamily = ActionUi.Font, Foreground = ActionUi.Ink };
+        TextBlock.SetLineHeight(box, 24); TextBlock.SetLineStackingStrategy(box, LineStackingStrategy.BlockLineHeight);
+        return box;
+    }
+    public static FrameworkElement Literal(string text) => text.Length > 64000 ? Plain(text) : Comparison([new(text, false)], true);
+    public static FrameworkElement Comparison(IReadOnlyList<SnapBar.Core.ComparisonSpan> spans, bool original)
+    {
+        var document = new FlowDocument { FontFamily = ActionUi.Font, FontSize = 15, LineHeight = 24, TextAlignment = TextAlignment.Left,
+            PagePadding = new(20), Foreground = ActionUi.Ink, Background = Brushes.Transparent };
+        var paragraph = new Paragraph { Margin = new(0) };
+        foreach (var span in spans)
+        {
+            var run = new Run(span.Text);
+            if (span.Changed)
+            {
+                run.Background = ActionUi.Brush(original ? "#FFF0EB" : "#E8F4EF");
+                run.TextDecorations = original ? TextDecorations.Strikethrough : TextDecorations.Underline;
+            }
+            paragraph.Inlines.Add(run);
+        }
+        document.Blocks.Add(paragraph);
+        return new FlowDocumentScrollViewer { Document = document, Background = Brushes.Transparent, IsToolBarVisible = false,
+            IsSelectionEnabled = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    }
     private static void AddCode(FlowDocument document, string text)
     {
         var panel = new DockPanel { Background = ActionUi.Canvas, Margin = new(0, 6, 0, 12) };

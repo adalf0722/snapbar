@@ -68,7 +68,12 @@ internal static class AiPanelTest
                 await AiServicesTest.RunAsync(directory, Check, Snapshot);
                 var snapshot = new SelectionSnapshot("ui", new(0, 1, 1), "# Literal source\n**keep original markers**", new(100, 100, 50, 20), false, 1, 43);
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate(); await Task.Delay(100);
-                Check(panel.Session.ViewingOriginal && !Button(panel, "AiResultTab").IsEnabled && Children<TextBox>(panel).Any(t => t.Text == snapshot.Text && t.IsReadOnly), "AI opens with literal original and no empty result page");
+                Border Pane(string id) => Children<Border>(panel).Single(b => AutomationProperties.GetAutomationId(b) == id);
+                var originalPane = Pane("AiOriginalPane"); var resultPane = Pane("AiResultPane");
+                Check(originalPane.IsVisible && resultPane.IsVisible && !Button(panel, "AiCopy").IsEnabled
+                    && Children<FlowDocumentScrollViewer>(originalPane).Any(v => new TextRange(v.Document.ContentStart, v.Document.ContentEnd).Text.Contains("**keep original markers**")), "AI opens with literal original and an explained result placeholder");
+                Button(panel, "AiCopyOriginal").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(Clipboard.GetText() == snapshot.Text, "AI original copy is available before generation");
                 Check(!Children<Expander>(panel).Single().IsExpanded, "AI category filter starts collapsed"); Snapshot(panel, "original.png");
                 var list = Children<ScrollViewer>(panel).Single(s => AutomationProperties.GetAutomationId(s) == "AiCommandList");
                 var initialCommands = Children<Button>(panel).Where(b => AutomationProperties.GetAutomationId(b).StartsWith("AiPrompt_", StringComparison.Ordinal)).ToArray();
@@ -112,18 +117,37 @@ internal static class AiPanelTest
                 panel.UpdateLayout();
                 Check(Math.Abs(panel.CommandInput.TranslatePoint(new Point(), panel).Y - initialInputY) < 1,
                     "AI progress and stop controls preserve input position while processing");
-                panel.CommandInput.Text = "new draft"; Button(panel, "AiOriginalTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                panel.CommandInput.Text = "new draft";
+                Children<FrameworkElement>(panel).Single(t => AutomationProperties.GetAutomationId(t) == "AiOriginalText").Focus();
+                Check(originalPane.IsVisible && resultPane.IsVisible, "AI pending request keeps original and previous result visible together");
                 delayed.SetResult(new(true, "third result")); await pending;
-                Check(panel.CommandInput.Text == "new draft" && panel.Session.ViewingOriginal && panel.Session.HasNewResult && panel.Session.BasisLabel == "第 2 版", "AI completion preserves new draft and explicit original view");
+                Check(panel.CommandInput.Text == "new draft" && panel.Session.BasisLabel == "第 2 版" && originalPane.IsVisible && resultPane.IsVisible,
+                    "AI completion preserves new draft and rewrite basis while showing both texts");
                 var versions = panel.Session.Versions.Count; client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(false, Status: "authentication"));
                 await panel.SubmitAsync("failure"); Check(panel.Session.Versions.Count == versions && panel.Session.Current?.Text == "third result", "AI failure preserves the latest completed result");
-                Button(panel, "AiResultTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
+                panel.UpdateLayout();
                 Check(!Button(panel, "AiReplace").IsVisible && Button(panel, "AiCopy").IsVisible, "AI readonly source offers copying without replacement");
                 Check(Button(panel, "AiCopy").Background == ActionUi.Accent && Button(panel, "AiCopy").Foreground == Brushes.White,
                     "AI readonly result has an emphasized copy action with readable contrast");
                 Snapshot(panel, "readonly-result.png"); panel.Width = 680; panel.Height = 500; panel.UpdateLayout(); Snapshot(panel, "small.png");
                 Check(panel.CommandInput.ActualWidth > 200 && Button(panel, "AiCopy").ActualWidth > 0, "AI minimum window preserves command and footer controls");
+                Check(originalPane.ActualHeight > 60 && resultPane.ActualHeight > 100
+                    && resultPane.TranslatePoint(new Point(), panel).Y >= originalPane.TranslatePoint(new Point(0, originalPane.ActualHeight), panel).Y,
+                    "AI narrow reader stacks two usable panes without hiding either text");
+                panel.Width = 1100; panel.Height = 650; panel.UpdateLayout();
+                Check(resultPane.TranslatePoint(new Point(), panel).X > originalPane.TranslatePoint(new Point(originalPane.ActualWidth, 0), panel).X
+                    && Math.Abs(resultPane.TranslatePoint(new Point(), panel).Y - originalPane.TranslatePoint(new Point(), panel).Y) < 1,
+                    "AI wide reader places original and result side by side"); Snapshot(panel, "comparison-wide.png");
                 panel.Width = 800; panel.Height = 650;
+                panel.UpdateLayout();
+                var readerWidth = Pane("AiReaderArea").ActualWidth;
+                Button(panel, "AiToggleCommands").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
+                Check(!Pane("AiCommandArea").IsVisible && Pane("AiReaderArea").ActualWidth > readerWidth + 260
+                    && originalPane.IsVisible && resultPane.IsVisible && panel.CommandInput.Text == "new draft" && panel.Session.Current?.Text == "third result",
+                    "AI hiding commands expands comparison while preserving draft and history"); Snapshot(panel, "comparison-collapsed.png");
+                Button(panel, "AiToggleCommands").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); panel.UpdateLayout();
+                Check(Pane("AiCommandArea").IsVisible && panel.CommandInput.IsKeyboardFocused && panel.CommandInput.Text == "new draft",
+                    "AI showing commands restores input focus and draft");
                 var longInstruction = string.Join("\n", Enumerable.Repeat("保留原意並改善語氣，不添加未提供的資訊。", 250));
                 client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, "third result"));
                 await panel.SubmitAsync(longInstruction); panel.UpdateLayout();
@@ -140,9 +164,10 @@ internal static class AiPanelTest
                 delayed = new(TaskCreationOptions.RunContinuationsAsynchronously); client.Handler = (_, _, _) => delayed.Task;
                 pending = panel.SubmitAsync("late"); panel.InvalidateTarget(); delayed.SetResult(new(true, "late ignored")); await pending;
                 Check(panel.Session.Current?.Text == "third result" && !panel.TargetValid, "AI invalidated target rejects a client completion that ignored cancellation");
-                Button(panel, "AiOriginalTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                Check(Text("AiSourceStatus").Text.Contains("複製原文"), "AI invalidated original status still matches its copy action");
-                Button(panel, "AiResultTab").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Button(panel, "AiCopyOriginal").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(Clipboard.GetText() == snapshot.Text, "AI invalidated source still offers exact original copying");
+                Button(panel, "AiCopy").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Check(Clipboard.GetText() == "third result", "AI result copy stays independent from original reading and copying");
                 Check(Text("AiSourceStatus").Text.Contains("複製結果"), "AI invalidated result status matches its copy action");
                 var settingsDialog = new AiSettingsWindow(preferences) { Owner = panel }; settingsDialog.Show(); settingsDialog.Activate();
                 var settingsHandle = new WindowInteropHelper(settingsDialog).Handle; Native.SetForegroundWindow(settingsHandle);
@@ -159,6 +184,7 @@ internal static class AiPanelTest
 
                 await AiPromptEditorTest.RunAsync(preferences, directory, Check, Snapshot);
                 await AiToolboxTest.RunAsync(directory, Check, Snapshot);
+                await AiComparisonTest.RunAsync(directory, Check, Snapshot);
 
                 panel = new(snapshot, preferences, client: client); panel.Show(); panel.Activate();
                 var english = string.Join(" ", Enumerable.Repeat("A reading panel should keep natural spacing between words as a paragraph wraps across several lines. The document can become longer without stretching each line to meet the right edge. Readers should be able to follow the text and reach its final sentence.", 4)) + " Final English sentence.";
@@ -169,7 +195,7 @@ internal static class AiPanelTest
                     client.Handler = (_, _, _) => Task.FromResult(new AiTextResult(true, sample.Text));
                     await panel.SubmitAsync("Long reading fixture"); panel.UpdateLayout();
                     await panel.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-                    var viewer = Children<FlowDocumentScrollViewer>(panel).Single(); viewer.ApplyTemplate(); panel.UpdateLayout();
+                    var viewer = Children<FlowDocumentScrollViewer>(Children<ContentControl>(panel).Single(c => AutomationProperties.GetAutomationId(c) == "AiResultContent")).Single(); viewer.ApplyTemplate(); panel.UpdateLayout();
                     Check(viewer.Document.TextAlignment == TextAlignment.Left && viewer.Document.Blocks.OfType<Paragraph>().All(p => p.TextAlignment == TextAlignment.Left),
                         "AI long " + sample.Name + " stays left aligned after viewer template initialization");
                     Snapshot(panel, "long-" + sample.Name + ".png");
@@ -186,7 +212,7 @@ internal static class AiPanelTest
                 if (!exactCopy) Console.WriteLine($"COPY DIAGNOSTIC viewing-original={panel.Session.ViewingOriginal}; write-busy={Children<TextBlock>(panel).Any(t => t.Text == "剪貼簿忙碌，請稍後再試。")}; result-matches={panel.Session.Current?.Text == markdown}; result-length={panel.Session.Current?.Text.Length}; expected-length={markdown.Length}; clipboard-length={Clipboard.GetText().Length}; session-busy={panel.Session.Busy}");
                 Check(exactCopy, "AI long Markdown copying preserves the exact raw response");
                 panel.Width = 680; panel.Height = 500; panel.UpdateLayout();
-                var smallViewer = Children<FlowDocumentScrollViewer>(panel).Single(); var smallScroll = Children<ScrollViewer>(smallViewer).Single();
+                var smallViewer = Children<FlowDocumentScrollViewer>(Children<ContentControl>(panel).Single(c => AutomationProperties.GetAutomationId(c) == "AiResultContent")).Single(); var smallScroll = Children<ScrollViewer>(smallViewer).Single();
                 smallScroll.ScrollToBottom(); panel.UpdateLayout();
                 await panel.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 var last = smallViewer.Document.ContentEnd.GetNextInsertionPosition(LogicalDirection.Backward)!.GetCharacterRect(LogicalDirection.Backward);
