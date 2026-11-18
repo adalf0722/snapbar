@@ -1,13 +1,20 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using SnapBar.App;
 using SnapBar.Core;
+using SnapBar.Windows;
 
 internal static partial class GeneralSettingsTest
 {
+    [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint x, uint y, uint data, nuint extra);
+
     private static async Task TestAppearanceDelay(MainWindow window, string path, Action<string, bool> check)
     {
         var page = window.GeneralPage;
@@ -50,15 +57,7 @@ internal static partial class GeneralSettingsTest
         check("slider keyboard step adds one millisecond and defers saving", input.Text == "175" && ReadSaved() == 174);
         await Task.Delay(400);
         check("debounced slider change persists", ReadSaved() == 175);
-        input.Text = "bad";
-        slider.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
-            { RoutedEvent = Mouse.PreviewMouseDownEvent });
-        slider.Value = 184.4;
-        await Task.Delay(400);
-        check("pointer slider snaps its preview and does not save before release", input.Text == "180" && ReadSaved() == 175);
-        slider.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
-            { RoutedEvent = Mouse.MouseUpEvent });
-        check("pointer release commits the slider step", slider.Value == 180 && ReadSaved() == 180);
+        await TestDelayTrackRelease(window, slider, input, reset, ReadSaved, check);
         Click(page, "ToolbarAppearanceDelayReset");
         check("reset restores the default", input.Text == "120" && slider.Value == 120 && ReadSaved() == 120);
         input.Text = "173"; Press(input, Key.Enter);
@@ -109,6 +108,61 @@ internal static partial class GeneralSettingsTest
             }
         }
         finally { window.Width = width; window.Height = height; }
+    }
+
+    private static async Task TestDelayTrackRelease(Window window, Slider slider, TextBox input, Button reset,
+        Func<int> readSaved, Action<string, bool> check)
+    {
+        window.UpdateLayout();
+        var windowHandle = new WindowInteropHelper(window).Handle;
+        var foregroundTimeout = DateTime.UtcNow.AddSeconds(15);
+        Console.WriteLine("WAITING: activate the disposable SnapBar settings fixture for the slider gesture");
+        while (Native.GetForegroundWindow() != windowHandle && DateTime.UtcNow < foregroundTimeout)
+        {
+            window.Activate();
+            await Task.Delay(40);
+        }
+        if (Native.GetForegroundWindow() != windowHandle)
+            throw new InvalidOperationException("The slider gesture requires the disposable settings window to own foreground");
+
+        var track = (Track)slider.Template.FindName("PART_Track", slider);
+        var inside = track.PointToScreen(new Point(track.ActualWidth * 0.7, track.ActualHeight / 2));
+        var outside = reset.PointToScreen(new Point(reset.ActualWidth / 2, reset.ActualHeight / 2));
+        var saved = readSaved();
+        Native.GetCursorPos(out var original);
+        try
+        {
+            // Queue actual desktop mouse messages to exercise WPF capture and hit testing.
+            await Task.Run(() =>
+            {
+                if (!SetCursorPos((int)inside.X, (int)inside.Y)) throw new InvalidOperationException("Cannot move to slider track");
+                mouse_event(2, 0, 0, 0, 0);
+            });
+            await Task.Delay(400);
+            var preview = (int)slider.Value;
+            check("track click previews a 10 ms tick without saving while held",
+                preview != saved && preview % 10 == 0 && input.Text == preview.ToString()
+                && readSaved() == saved);
+            await Task.Run(() =>
+            {
+                if (!SetCursorPos((int)outside.X, (int)outside.Y)) throw new InvalidOperationException("Cannot move outside slider");
+                mouse_event(4, 0, 0, 0, 0);
+            });
+            await Task.Delay(100);
+            check("physical release outside slider saves the previewed value",
+                slider.Value == preview && readSaved() == preview);
+            Slider.IncreaseSmall.Execute(null, slider);
+            await Task.Delay(400);
+            check("keyboard change still saves after the outside release", readSaved() == preview + 1);
+        }
+        finally
+        {
+            await Task.Run(() =>
+            {
+                mouse_event(4, 0, 0, 0, 0);
+                SetCursorPos(original.X, original.Y);
+            });
+        }
     }
 
     private static bool ScrollWidthFits(GeneralSettingsPage page, FrameworkElement element)

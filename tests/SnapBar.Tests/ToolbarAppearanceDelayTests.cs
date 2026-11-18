@@ -44,12 +44,34 @@ internal static class ToolbarAppearanceDelayTests
             });
             check("wrong appearance delay type preserves the original file", () =>
             {
-                const string invalid = """{"schemaVersion":8,"toolbarAppearanceDelayMilliseconds":"173"}""";
-                File.WriteAllText(path, invalid);
-                if (store.Load().Warning != "settings-invalid") return false;
-                try { store.Save(new()); return false; }
-                catch (InvalidOperationException) { return File.ReadAllText(path) == invalid; }
+                foreach (var token in new[] { "\"173\"", "null", "true", "[]", "{}", "173.5", "1e20" })
+                {
+                    var invalid = "{\"schemaVersion\":8,\"toolbarAppearanceDelayMilliseconds\":" + token + "}";
+                    File.WriteAllText(path, invalid);
+                    if (store.Load().Warning != "settings-invalid") return false;
+                    try { store.Save(new()); return false; }
+                    catch (InvalidOperationException) { if (File.ReadAllText(path) != invalid) return false; }
+                }
+                return true;
             });
+            foreach (var (raw, expected) in new[]
+            {
+                ("2147483648", 2000), ("-2147483649", 0),
+                (new string('9', 1024), 2000), ("-" + new string('9', 1024), 0)
+            })
+                check($"out-of-range JSON delay of {raw.Length} characters clamps to {expected} and preserves other preferences", () =>
+                {
+                    var json = "{\"schemaVersion\":8,\"automaticDetectionEnabled\":true,\"clipboardCompatibilityEnabled\":false,"
+                        + "\"interfaceLanguage\":\"en\",\"toolbarAppearanceDelayMilliseconds\":" + raw + "}";
+                    File.WriteAllText(path, json);
+                    var result = store.Load();
+                    bool Matches(ApplicationSettings settings) => settings.SchemaVersion == 8 && settings.AutomaticDetectionEnabled
+                        && !settings.ClipboardCompatibilityEnabled && settings.InterfaceLanguage == "en"
+                        && settings.ToolbarAppearanceDelayMilliseconds == expected;
+                    if (result.Warning != null || !Matches(result.Settings)) return false;
+                    store.Save(result.Settings);
+                    return Matches(new SettingsStore(path).Load().Settings);
+                });
         }
         finally { directory.Delete(recursive: true); }
     }

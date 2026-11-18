@@ -1264,3 +1264,5 @@ InputMonitor 現在追蹤左右輔助鍵的按住狀態，只以第一次按下�
 審查後修正延遲呈現使用重驗取得的 UIA 可編輯狀態。fixture 在相同視窗、焦點、文字及範圍下，確認擷取時可寫，並在等待中切換唯讀，最後呈現的動作列採用唯讀資格。AutoCopy 52 與 Preflight 1 通過，無略過。報告位於 `artifacts/checks/desktop/20261118T121602342Z-4fb22d9ce2b247079a10e11897cfe703/report.json`。
 
 相容來源改為只在延遲後檢查原候選後，Release 建置及 Core 694 通過。最終桌面驗證 Compatibility 42、ClipboardRaces 17、AutoCopy 52 與 Preflight 1 通過，無略過。確認一般相容來源不再於顯示時送出第二次複製，原剪貼簿序號或等待期間的外部更新均保留，同視窗切換欄位會取消呈現，程式自行變更選取後的動作會重驗並拒絕。首次 AutoCopy 因 fixture 未取得前景而停止，最終重跑以測試專用視窗取得前景後通過。報告位於 `artifacts/checks/desktop/20261118T123536841Z-36d2ee4807524a08b8379224a4007ec9/report.json`。
+
+整體審查後，加入實際滑鼠回歸。按住滑桿軌道時預覽以 10 毫秒為單位，移出滑桿後放開會保存預覽值，接著用鍵盤仍可保存。初次測試發現 WPF 會先移動滑桿才交給控制項處理輸入，補上首次預覽的步進正規化。也驗證超過 Int32 的正、負整數與 1,024 位整數會限制在 0 至 2,000 毫秒，保存及重載後保留其他偏好，型別錯誤仍保護原檔。Release 建置、Core 698、Lifecycle 171 與 Preflight 1 全數通過，無略過。最終報告位於 `artifacts/checks/desktop/20261118T124515409Z-cb535ba9c31a4a5dab09058cc114a2c7/report.json`。

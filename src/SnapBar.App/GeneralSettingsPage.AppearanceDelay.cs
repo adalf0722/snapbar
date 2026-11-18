@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 using SnapBar.Core;
@@ -85,6 +86,7 @@ internal sealed partial class GeneralSettingsPage
             var value = SliderValue();
             pointerEditing = false;
             slider.IsSnapToTickEnabled = false;
+            if (Mouse.Captured == slider) slider.ReleaseMouseCapture();
             if (pointerChanged || slider.Value != saved) Commit(value);
         }
 
@@ -128,9 +130,23 @@ internal sealed partial class GeneralSettingsPage
             if (e.ChangedButton != MouseButton.Left) return;
             debounce.Stop();
             pointerEditing = true;
-            pointerChanged = false;
+            // WPF may have already moved the track before this preview handler.
+            pointerChanged = slider.Value != saved;
             slider.IsSnapToTickEnabled = true;
-            Display((int)slider.Value, updateSlider: false);
+            Display(pointerChanged ? SliderValue() : saved);
+            slider.Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (!pointerEditing) return;
+                if (Mouse.LeftButton == MouseButtonState.Released)
+                {
+                    EndPointerEdit();
+                    return;
+                }
+                // A Thumb drag captures during normal input routing. Track clicks
+                // do not, so capture only after that routing has completed.
+                if (Mouse.Captured == null && !Mouse.Capture(slider, CaptureMode.SubTree))
+                    EndPointerEdit();
+            });
         }), handledEventsToo: true);
         slider.AddHandler(Mouse.MouseUpEvent, new MouseButtonEventHandler((_, e) =>
         {
@@ -151,6 +167,9 @@ internal sealed partial class GeneralSettingsPage
             debounce.Stop();
             pointerEditing = false;
             slider.IsSnapToTickEnabled = false;
+            if (Mouse.Captured == slider) slider.ReleaseMouseCapture();
+            if (slider.Template?.FindName("PART_Track", slider) is Track { Thumb: { IsDragging: true } thumb })
+                thumb.CancelDrag();
             Display(saved);
             ShowStatus(null);
         }

@@ -7,6 +7,7 @@ namespace SnapBar.Core;
 public sealed record ApplicationSettings(int SchemaVersion = 8, bool AutomaticDetectionEnabled = false)
 {
     public AutoCopySettings AutoCopy { get; init; } = new();
+    [JsonConverter(typeof(ToolbarAppearanceDelayJsonConverter))]
     public int ToolbarAppearanceDelayMilliseconds { get; init; } = ToolbarAppearanceDelay.DefaultMilliseconds;
     public string InterfaceLanguage { get; init; } = global::SnapBar.Core.InterfaceLanguage.System;
     public HotkeySettings Hotkey { get; init; } = HotkeySettings.Default;
@@ -65,11 +66,7 @@ public sealed class SettingsStore(string path)
                 ? global::SnapBar.Core.InterfaceLanguage.TraditionalChinese : global::SnapBar.Core.InterfaceLanguage.Normalize(settings.InterfaceLanguage);
             settings = settings with { SchemaVersion = 8, InterfaceLanguage = language, Hotkey = backupBeforeSave ? HotkeySettings.Default : settings.Hotkey!,
                 ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
-            settings = NormalizeActionHotkeys(settings) with
-            {
-                AutoCopy = AutoCopySettings.Normalize(settings.AutoCopy),
-                ToolbarAppearanceDelayMilliseconds = ToolbarAppearanceDelay.Normalize(settings.ToolbarAppearanceDelayMilliseconds)
-            };
+            settings = NormalizeActionHotkeys(settings) with { AutoCopy = AutoCopySettings.Normalize(settings.AutoCopy) };
             writable = true;
             return new(settings, backupBeforeSave ? "hotkey-invalid" : null);
         }
@@ -90,7 +87,6 @@ public sealed class SettingsStore(string path)
         if (settings.Hotkey?.IsValid != true) throw new InvalidOperationException("Invalid hotkey");
         if (NormalizeActionHotkeys(settings) != settings) throw new InvalidOperationException("Invalid action hotkey");
         settings = settings with { AutoCopy = AutoCopySettings.Normalize(settings.AutoCopy), InterfaceLanguage = global::SnapBar.Core.InterfaceLanguage.Normalize(settings.InterfaceLanguage), ExcludedApplications = AppExclusionPolicy.Normalize(settings.ExcludedApplications), Actions = ActionCatalog.Normalize(settings.Actions) };
-        settings = settings with { ToolbarAppearanceDelayMilliseconds = ToolbarAppearanceDelay.Normalize(settings.ToolbarAppearanceDelayMilliseconds) };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(settings, JsonOptions);
         if (bytes.Length > 64 * 1024) throw new InvalidOperationException("Settings exceed 64 KiB");
         var directory = Path.GetDirectoryName(FilePath)!;
