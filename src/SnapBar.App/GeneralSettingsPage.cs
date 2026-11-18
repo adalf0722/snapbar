@@ -6,11 +6,10 @@ using SnapBar.Windows;
 
 namespace SnapBar.App;
 
-internal sealed partial class GeneralSettingsPage : ContentControl
+internal sealed class GeneralSettingsPage : ContentControl
 {
-    internal CheckBox AutomaticToggle { get; }
     private readonly ScrollViewer scroll;
-    private readonly StackPanel basicRows = new(), selectionRows = new();
+    private readonly StackPanel basicRows = new();
     private readonly CheckBox startupToggle;
     private readonly TextBlock startupMessage;
     private readonly Button startupSettings, retryStartup;
@@ -47,7 +46,7 @@ internal sealed partial class GeneralSettingsPage : ContentControl
 
     private static int LanguageIndex(string preference) => preference switch { "zh-Hant" => 1, "en" => 2, _ => 0 };
 
-    internal GeneralSettingsPage(bool automatic, Action toggle, StartupRegistration startup,
+    internal GeneralSettingsPage(StartupRegistration startup,
         bool ocrPreferEnglish, Action<bool> setOcrLanguagePriority)
     {
         this.startup = startup;
@@ -69,16 +68,6 @@ internal sealed partial class GeneralSettingsPage : ContentControl
         retryStartup.HorizontalAlignment = HorizontalAlignment.Left; launchTitle.Children.Add(retryStartup);
         launch.Children.Add(launchTitle); basicRows.Children.Add(SettingRow(launch));
         AddGroup(panel, "General_GroupBasic", basicRows);
-
-        var detection = new DockPanel();
-        AutomaticToggle = new CheckBox { Style = (Style)FindResource("Switch"), IsChecked = automatic,
-            VerticalAlignment = VerticalAlignment.Center, ToolTip = UiText.Get("GeneralSettingsPage_008") };
-        Identify(AutomaticToggle, "AutomaticDetectionToggle", UiText.Get("GeneralSettingsPage_009"));
-        AutomaticToggle.Click += (_, _) => toggle(); DockPanel.SetDock(AutomaticToggle, Dock.Right); detection.Children.Add(AutomaticToggle);
-        var title = new StackPanel(); title.Children.Add(ActionUi.Heading(UiText.Get("GeneralSettingsPage_010"), 16));
-        title.Children.Add(Description(UiText.Get("GeneralSettingsPage_011"))); detection.Children.Add(title);
-        selectionRows.Children.Add(SettingRow(detection));
-        AddGroup(panel, "General_GroupSelection", selectionRows);
 
         var ocr = new DockPanel();
         var ocrLanguage = new ComboBox { ItemsSource = new[] { UiText.Get("GeneralSettingsPage_026"), UiText.Get("GeneralSettingsPage_027") },

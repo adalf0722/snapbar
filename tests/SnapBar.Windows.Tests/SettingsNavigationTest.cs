@@ -38,6 +38,19 @@ internal static class SettingsNavigationTest
             "settings general page contains basic settings without a shortcut editor or inert toolbar");
         check(!Find<TextBlock>(main, "SettingsMode").IsVisible,
             "settings general page avoids repeating normal detection status beside the switch");
+        check(!Children<FrameworkElement>(main.GeneralPage).Any(element => AutomationProperties.GetAutomationId(element)
+                is "AutomaticDetectionToggle" or "AutoCopyEnabled" or "ToolbarAppearanceDelayInput"),
+            "general settings keep selection and copy controls on their dedicated page");
+        main.NavigateTo(SettingsCategory.Selection); await Layout(main);
+        var selectionScroll = Find<ScrollViewer>(main.SelectionPage, "SelectionSettingsContent");
+        check(Find<RadioButton>(main, "SettingsNav_Selection").IsChecked == true
+            && main.SelectionPage.IsVisible && !main.GeneralPage.IsVisible
+            && selectionScroll.ScrollableHeight < 1 && selectionScroll.ScrollableWidth < 1,
+            "selection settings have a dedicated navigation entry and fit the standard window");
+        check(!Find<Expander>(main.SelectionPage, "ToolbarAppearanceDelayDetails").IsExpanded
+            && !Find<TextBox>(main.SelectionPage, "ToolbarAppearanceDelayInput").IsVisible,
+            "selection delay controls stay hidden until explicitly expanded");
+        UiAppearanceTest.Snapshot(main, "settings-selection.png");
         var sixActions = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(ActionCatalog.Normalize(new()), "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
         main.ActionPanel.ShowSettings(sixActions);
         main.NavigateTo(SettingsCategory.Actions); await Layout(main);
@@ -377,7 +390,7 @@ internal static class SettingsNavigationTest
         check(Find<ScrollViewer>(commands, "AiCommandsSettingsList").ViewportHeight >= 60,
             "settings constrained command page retains a usable local scrolling list");
         main.NavigateTo(SettingsCategory.About); await Layout(main);
-        var diagnostics = Children<Expander>(main).Single(e => (string?)e.Header == "診斷與測試");
+        var diagnostics = Children<Expander>(main).Single(e => e.Header as string == "診斷與測試");
         diagnostics.IsExpanded = true; await Layout(main);
         var fixtureButton = Children<Button>(main).Single(b => AutomationProperties.GetName(b) == "開啟測試視窗");
         var fixtureBounds = fixtureButton.TransformToAncestor(content).TransformBounds(new Rect(fixtureButton.RenderSize));

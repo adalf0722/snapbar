@@ -2896,4 +2896,13 @@
   <data name="AppearanceDelay_SaveFailed" xml:space="preserve">
     <value>無法儲存延遲設定，請再試一次。</value>
   </data>
+  <data name="SelectionSettings_Description" xml:space="preserve">
+    <value>設定選取文字後的行為。</value>
+  </data>
+  <data name="SelectionSettings_CopyHelp" xml:space="preserve">
+    <value>如何使用自動複製</value>
+  </data>
+  <data name="SelectionSettings_DelayValue" xml:space="preserve">
+    <value>{0} 毫秒</value>
+  </data>
 </root>

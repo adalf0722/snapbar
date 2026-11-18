@@ -55,8 +55,8 @@ public sealed partial class MainWindow : Window
         InitializeOnboarding(enableFirstRun, settingsExisted, loaded.Warning);
         BuildSettingsPages();
         generalPage.ConfigureLanguage(preferences.InterfaceLanguage, ChangeInterfaceLanguage);
-        generalPage.ConfigureAutoCopy(preferences.AutoCopy, SaveAutoCopy);
-        generalPage.ConfigureAppearanceDelay(preferences.ToolbarAppearanceDelayMilliseconds, SaveAppearanceDelay);
+        selectionPage.ConfigureAutoCopy(preferences.AutoCopy, SaveAutoCopy);
+        selectionPage.ConfigureAppearanceDelay(preferences.ToolbarAppearanceDelayMilliseconds, SaveAppearanceDelay);
         UiText.Changed += RefreshInterfaceLanguage;
         SourceInitialized += (_, _) =>
         {
@@ -240,7 +240,7 @@ public sealed partial class MainWindow : Window
         tray?.Update(automatic, controller != null);
     }
 
-    private void UpdateModeVisibility() => mode.Visibility = (CurrentCategory is SettingsCategory.General or SettingsCategory.Shortcuts) && controller?.HotkeyRegistered == true
+    private void UpdateModeVisibility() => mode.Visibility = (CurrentCategory is SettingsCategory.General or SettingsCategory.Selection or SettingsCategory.Shortcuts) && controller?.HotkeyRegistered == true
         ? Visibility.Collapsed : Visibility.Visible;
 
     public void ShowSettings()
@@ -266,7 +266,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshInterfaceLanguage()
     {
-        generalPage.CancelAppearanceDelayEdit?.Invoke();
+        selectionPage.CancelAppearanceDelayEdit?.Invoke();
         UiText.Refresh(this);
         shortcutsPage.RefreshLanguage();
         aiCommandsPanel.Refresh();

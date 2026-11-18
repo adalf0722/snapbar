@@ -58,8 +58,7 @@ internal static class AutoCopyTest
             }
             try
             {
-                var settingsPage = new GeneralSettingsPage(false, () => { },
-                    new StartupRegistration(Environment.ProcessPath!, @"Software\SnapBar.Tests\AutoCopy"), false, _ => { });
+                var settingsPage = new SelectionSettingsPage(false, () => { });
                 settingsPage.ConfigureAutoCopy(new(), _ => false);
                 IEnumerable<T> Controls<T>(DependencyObject node) where T : DependencyObject
                 {

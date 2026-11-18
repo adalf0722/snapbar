@@ -1,11 +1,13 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Automation;
+using System.Windows.Data;
+using System.Windows.Controls.Primitives;
 using SnapBar.Core;
 
 namespace SnapBar.App;
 
-internal sealed partial class GeneralSettingsPage
+internal sealed partial class SelectionSettingsPage
 {
     internal void ConfigureAutoCopy(AutoCopySettings initial, Func<AutoCopySettings, bool> save)
     {
@@ -32,11 +34,11 @@ internal sealed partial class GeneralSettingsPage
         AutomationProperties.SetLabeledBy(mode, modeLabel); modeRow.Children.Add(modeLabel);
         options.Children.Add(modeRow);
         help.Margin = new(4, 8, 4, 10);
-        var instructions = Details("General_OperationHelp", "AutoCopyInstructions", help);
+        var instructions = Details("SelectionSettings_CopyHelp", "AutoCopyInstructions", help);
         var advanced = Details("General_AdvancedOptions", "AutoCopyAdvanced", feedback);
         options.Children.Add(instructions); options.Children.Add(advanced);
         body.Children.Add(options); body.Children.Add(error);
-        selectionRows.Children.Add(Divider()); selectionRows.Children.Add(SettingRow(body));
+        copyRows.Children.Add(SettingRow(body));
         var updating = false;
         void Refresh()
         {
@@ -71,6 +73,12 @@ internal sealed partial class GeneralSettingsPage
         var details = new Expander { Header = UiText.Get(titleKey), Content = content,
             Style = (Style)FindResource("AiSettingsExpander"), FontSize = 13 };
         Identify(details, id, UiText.Get(titleKey));
+        details.Loaded += (_, _) =>
+        {
+            if (details.Template.FindName("HeaderToggle", details) is ToggleButton header)
+                BindingOperations.SetBinding(header, AutomationProperties.NameProperty,
+                    new Binding { Source = details, Path = new PropertyPath(AutomationProperties.NameProperty) });
+        };
         return details;
     }
 }

@@ -1,0 +1,20 @@
+{
+  "title": "選取與複製設定更清楚易找",
+  "summary": "選取與複製有了獨立設定頁，常用開關一目了然，延遲調整需要時再展開。",
+  "highlights": [
+    "左側新增「選取與複製」，一般頁保留語言、登入啟動與文字辨識設定。",
+    "動作列延遲以目前數值呈現，點擊後才展開滑桿、數值輸入與還原預設。",
+    "自動複製以獨立卡片呈現，關閉時收起相關選項並保留既有偏好。"
+  ],
+  "usage": "開啟 SnapBar 設定，選擇左側「選取與複製」即可調整，無需額外安裝或重新設定。",
+  "en": {
+    "title": "Find selection and copy settings more easily",
+    "summary": "A dedicated Selection and copying page keeps key switches visible and expands delay controls only when needed.",
+    "highlights": [
+      "Selection and copying now has a sidebar entry; General keeps language, startup, and text recognition settings.",
+      "Toolbar delay shows its current value; expand it to use the slider, enter a value, or reset to default.",
+      "Auto-copy has its own card, hiding related options when disabled while retaining your preferences."
+    ],
+    "usage": "Open SnapBar settings and select Selection and copying in the sidebar. No extra installation or configuration is required."
+  }
+}

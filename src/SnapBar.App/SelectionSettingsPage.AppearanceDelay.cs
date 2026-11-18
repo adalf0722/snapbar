@@ -10,13 +10,22 @@ using SnapBar.Core;
 
 namespace SnapBar.App;
 
-internal sealed partial class GeneralSettingsPage
+internal sealed partial class SelectionSettingsPage
 {
     internal Action? CancelAppearanceDelayEdit { get; private set; }
 
     internal void ConfigureAppearanceDelay(int initial, Func<int, bool> save)
     {
         var saved = ToolbarAppearanceDelay.Normalize(initial);
+        var summary = Description(UiText.Get("SelectionSettings_DelayValue", saved));
+        Identify(summary, "ToolbarAppearanceDelaySummary", UiText.Get("AppearanceDelay_Title"));
+        summary.VerticalAlignment = VerticalAlignment.Center;
+        var header = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(summary, Dock.Right); header.Children.Add(summary);
+        header.Children.Add(Description(UiText.Get("AppearanceDelay_Title")));
+        var details = Details("AppearanceDelay_Title", "ToolbarAppearanceDelayDetails", new StackPanel());
+        details.Header = header;
+        details.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         var slider = new Slider
         {
             Minimum = 0, Maximum = ToolbarAppearanceDelay.MaximumMilliseconds, SmallChange = 1,
@@ -61,6 +70,7 @@ internal sealed partial class GeneralSettingsPage
             if (success) saved = value;
             Display(saved);
             ShowStatus(success ? null : "AppearanceDelay_SaveFailed");
+            summary.Text = UiText.Get("SelectionSettings_DelayValue", saved);
         }
 
         void CommitInput(bool losingFocus)
@@ -96,11 +106,10 @@ internal sealed partial class GeneralSettingsPage
         number.Children.Add(input); number.Children.Add(unit);
         controls.Children.Add(slider); controls.Children.Add(number); controls.Children.Add(reset);
         var body = new StackPanel();
-        body.Children.Add(ActionUi.Heading(UiText.Get("AppearanceDelay_Title"), 16));
         body.Children.Add(Description(UiText.Get("AppearanceDelay_Help")));
         body.Children.Add(controls); body.Children.Add(status);
-        selectionRows.Children.Insert(1, Divider());
-        selectionRows.Children.Insert(2, SettingRow(body));
+        details.Content = body;
+        toolbarRows.Children.Add(SettingRow(details));
         Identify(slider, "ToolbarAppearanceDelaySlider", UiText.Get("AppearanceDelay_Title"));
         Identify(input, "ToolbarAppearanceDelayInput", UiText.Get("AppearanceDelay_Input"));
         Identify(reset, "ToolbarAppearanceDelayReset", UiText.Get("AppearanceDelay_Reset"));
@@ -179,10 +188,12 @@ internal sealed partial class GeneralSettingsPage
             var enabled = AutomaticToggle.IsChecked == true;
             if (!enabled) CancelEdit();
             controls.IsEnabled = enabled;
+            if (!enabled) details.IsExpanded = false;
         }
         AutomaticToggle.Checked += (_, _) => RefreshEnabled();
         AutomaticToggle.Unchecked += (_, _) => RefreshEnabled();
         CancelAppearanceDelayEdit = CancelEdit;
+        details.Collapsed += (_, _) => CancelEdit();
         Unloaded += (_, _) => CancelEdit();
         IsVisibleChanged += (_, _) => { if (!IsVisible) CancelEdit(); };
         RefreshEnabled();

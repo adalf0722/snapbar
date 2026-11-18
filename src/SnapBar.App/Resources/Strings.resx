@@ -2896,4 +2896,13 @@ Its enabled state will be preserved.</value>
   <data name="AppearanceDelay_SaveFailed" xml:space="preserve">
     <value>Could not save the delay. Try again.</value>
   </data>
+  <data name="SelectionSettings_Description" xml:space="preserve">
+    <value>Choose what happens after you select text.</value>
+  </data>
+  <data name="SelectionSettings_CopyHelp" xml:space="preserve">
+    <value>How to use auto-copy</value>
+  </data>
+  <data name="SelectionSettings_DelayValue" xml:space="preserve">
+    <value>{0} ms</value>
+  </data>
 </root>

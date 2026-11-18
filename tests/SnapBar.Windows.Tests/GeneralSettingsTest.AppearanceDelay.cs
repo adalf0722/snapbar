@@ -17,7 +17,11 @@ internal static partial class GeneralSettingsTest
 
     private static async Task TestAppearanceDelay(MainWindow window, string path, Action<string, bool> check)
     {
-        var page = window.GeneralPage;
+        var page = window.SelectionPage;
+        var details = Find<Expander>(page, "ToolbarAppearanceDelayDetails");
+        check("appearance delay starts collapsed", !details.IsExpanded);
+        details.IsExpanded = true;
+        window.UpdateLayout();
         var slider = Find<Slider>(page, "ToolbarAppearanceDelaySlider");
         var input = Find<TextBox>(page, "ToolbarAppearanceDelayInput");
         var reset = Find<Button>(page, "ToolbarAppearanceDelayReset");
@@ -38,6 +42,7 @@ internal static partial class GeneralSettingsTest
         check("automatic appearance enables the delay controls", slider.IsEnabled && input.IsEnabled && reset.IsEnabled);
         input.Text = "173"; Press(input, Key.Enter);
         check("enter stores an exact millisecond and synchronizes the slider", ReadSaved() == 173 && slider.Value == 173);
+        check("collapsed delay summary follows the saved value", Find<TextBlock>(page, "ToolbarAppearanceDelaySummary").Text.Contains("173"));
         foreach (var invalid in new[] { "", "-1", "3.5", "2001", "NaN" })
         {
             input.Text = invalid; Press(input, Key.Enter);
@@ -76,14 +81,15 @@ internal static partial class GeneralSettingsTest
         window.ToggleAutomatic();
         check("disabling automatic appearance retains the saved delay", !input.IsEnabled && input.Text == "173" && ReadSaved() == 173);
         window.ToggleAutomatic();
+        details.IsExpanded = true; window.UpdateLayout();
         Slider.IncreaseSmall.Execute(null, slider);
         window.NavigateTo(SettingsCategory.About);
         await Task.Delay(400);
-        window.NavigateTo(SettingsCategory.General);
+        window.NavigateTo(SettingsCategory.Selection);
         check("leaving settings cancels a pending slider save", input.Text == "173" && ReadSaved() == 173);
 
         var width = window.Width; var height = window.Height;
-        var languageSelector = Find<ComboBox>(page, "InterfaceLanguageSelector");
+        var languageSelector = Find<ComboBox>(window.GeneralPage, "InterfaceLanguageSelector");
         window.UpdateLayout();
         UiAppearanceTest.Snapshot(window, "settings-appearance-delay.png");
         window.Width = window.MinWidth;
@@ -165,7 +171,7 @@ internal static partial class GeneralSettingsTest
         }
     }
 
-    private static bool ScrollWidthFits(GeneralSettingsPage page, FrameworkElement element)
+    private static bool ScrollWidthFits(SelectionSettingsPage page, FrameworkElement element)
     {
         var bounds = element.TransformToAncestor(page).TransformBounds(new Rect(element.RenderSize));
         return bounds.Left >= 0 && bounds.Right <= page.ActualWidth;
