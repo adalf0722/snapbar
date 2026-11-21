@@ -1,6 +1,6 @@
 param(
     [switch]$List,
-    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr', 'OcrActions', 'Language', 'PersistentResults', 'NativeClipboard', 'AutoCopy')]
+    [ValidateSet('Release', 'All', 'Lifecycle', 'Appearance', 'Compatibility', 'CompatibilitySlow', 'Clipboard', 'ClipboardRaces', 'SupportRecovery', 'UiaReadiness', 'UiaDeepTree', 'Actions', 'ActionRunner', 'Diagnostics', 'Layout', 'Keyboard', 'PathWorker', 'PathActions', 'WebActions', 'Lookup', 'Exclusions', 'AiRuntime', 'AiPanel', 'Ocr', 'OcrActions', 'Language', 'PersistentResults', 'NativeClipboard', 'AutoCopy')]
     [string[]]$Suite = @('Release'),
     [switch]$RequireActionRuntimes
 )
@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 $catalog = [ordered]@{
     Lifecycle = '--tray-lifecycle'; Appearance = '--ui-appearance'; Compatibility = '--clipboard-compatibility'
     CompatibilitySlow = '--clipboard-compatibility-long'; Clipboard = '--clipboard-roundtrip'; ClipboardRaces = '--clipboard-races'
+    SupportRecovery = '--support-recovery'
     UiaReadiness = '--uia-readiness'; UiaDeepTree = '--uia-deep-tree'; Actions = '--custom-actions'
     ActionRunner = '--custom-action-runner'; Diagnostics = '--action-diagnostics'; Layout = '--action-layout'
     Keyboard = '--menu-keyboard'; PathWorker = '--path-worker-tests'; PathActions = '--path-actions'

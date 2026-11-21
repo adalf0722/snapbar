@@ -30,9 +30,11 @@ Settings live under `%LOCALAPPDATA%\SnapBar`. Existing valid settings upgrade wh
 
 ## If selection fails
 
-Check the shortcut under General and try the test window under **About and support → diagnostics**. Selection compatibility is enabled by default and can temporarily use the clipboard. Sublime support requires explicit first-time setup; its guarded key-binding choice is saved. Different apps expose different selection information.
+Check the shortcut under General and try **Open test window** under **About and support → Diagnostics and tests**. Selection compatibility is enabled by default and can temporarily use the clipboard. Sublime support requires explicit first-time setup; its guarded key-binding choice is saved. Different apps expose different selection information.
 
 Password fields are rejected. Read-only or uncertain sources do not authorize replacement. Actions revalidate the original foreground window and selection before writing. Test Cut/Paste on disposable text first. Compatibility capture may appear in clipboard history, and concurrent clipboard changes or forced termination can prevent restoration.
+
+To report a selection problem, click **Record the next 2 minutes** on the diagnostics page and repeat the steps that caused the issue. If SnapBar closes unexpectedly, restart it and check the same page for an unexpected-exit notice and any available details. Click **Export diagnostics** to review and save a JSON report you can attach to your issue. The report excludes selected text and clipboard contents and stays local until you choose to share it.
 
 ## Quit or update
 

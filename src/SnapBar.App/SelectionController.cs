@@ -30,7 +30,7 @@ public sealed partial class SelectionController : IDisposable
     private ExcludedApplication[] excludedApplications = [];
     private string searchUrlTemplate = WebActionPolicy.DefaultSearchTemplate;
     private long? readinessTicket;
-    private readonly SelectionDiagnostics selectionDiagnostics = new();
+    private readonly SelectionDiagnostics selectionDiagnostics = SelectionDiagnostics.Shared;
     public bool SublimeClipboardEnabled
     {
         get => sublimeClipboardEnabled;
@@ -123,9 +123,8 @@ public sealed partial class SelectionController : IDisposable
     private void OnInput(InputEvent input)
     {
         if (disposed || stopping) return;
-        if (selectionDiagnostics.Enabled)
-            dispatcher.BeginInvoke(() => selectionDiagnostics.Record(0, "input-" + input.Kind,
-                new(input.Modifiers.ToString())), DispatcherPriority.Background);
+        if (selectionDiagnostics.Enabled && input.Kind is "selection" or "hotkey")
+            selectionDiagnostics.RecordStatus(0, "input-" + input.Kind, input.Modifiers.ToString());
         if (input.Kind == "key" && (popup.HasSearchForeground || aiWindow?.HasCaptureForeground == true)) return;
         if (input.Kind == "hotkey" && aiWindow?.HasCaptureForeground == true) return;
         if (input.Action == TextAction.Ocr) { OcrRequested?.Invoke(); return; }
@@ -248,8 +247,9 @@ public sealed partial class SelectionController : IDisposable
             var result = captured.Response;
             if (captured.BackedOff)
             { selectionDiagnostics.Record(ticket, "automatic-clipboard-backoff", new("backoff")); return; }
-            if (!Current()) return;
-            selectionDiagnostics.Record(ticket, "capture-result", result with { ElapsedMs = watch.Elapsed.TotalMilliseconds });
+            if (!Current())
+            { selectionDiagnostics.RecordStatus(ticket, "capture-result", "stale"); return; }
+            selectionDiagnostics.Record(ticket, "capture-result", result, watch.Elapsed.TotalMilliseconds);
             if (!result.Success || result.Selection == null)
             { Report(sublime && !SublimeClipboardEnabled && result.Status == "unsupported" ? "sublime-disabled" : result.Status); return; }
             var candidate = result.Selection;
@@ -292,14 +292,14 @@ public sealed partial class SelectionController : IDisposable
             pendingAppearanceTarget = null;
             selection = candidate;
             popup.Present(selection, x, y, searchUrlTemplate, actions);
-            selectionDiagnostics.Record(ticket, "popup-present", new("ok"));
+            selectionDiagnostics.RecordStatus(ticket, "popup-present", "ok", watch.Elapsed.TotalMilliseconds);
             if (autoCopied && remaining <= TimeSpan.Zero) ShowAutoCopyFeedback(selection, x, y);
             Status?.Invoke(selection.Source == "sublime-clipboard"
                 ? UiText.Get("SelectionController_001",(selection.CharacterCount),((selection.Editable == true ? UiText.Get("SelectionController_047") : UiText.Get("SelectionController_048"))),(watch.Elapsed.TotalMilliseconds).ToString("F0", System.Globalization.CultureInfo.InvariantCulture))                : selection.Source == ClipboardSelectionAdapter.Source
                     ? UiText.Get(selection.Editable == true ? "SelectionController_ClipboardEditable" : "SelectionController_002", selection.CharacterCount, watch.Elapsed.TotalMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))
                     : UiText.Get("SelectionController_003", selection.CharacterCount, selection.Editable == true ? UiText.Get("SelectionController_049") : selection.Editable == false ? UiText.Get("SelectionController_050") : UiText.Get("SelectionController_051"), watch.Elapsed.TotalMilliseconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture), native.ProbeElapsedMs.ToString("F0", System.Globalization.CultureInfo.InvariantCulture), native.Attempts > 1 ? UiText.Get("Selection_Attempts", native.Attempts) : ""));
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { selectionDiagnostics.RecordStatus(ticket, "capture-result", "cancelled"); }
         catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
         { Report("window-error"); }
         finally

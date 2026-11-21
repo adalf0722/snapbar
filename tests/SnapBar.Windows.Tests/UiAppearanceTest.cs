@@ -60,6 +60,14 @@ internal static class UiAppearanceTest
                 Check(Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "SettingsVersionChannel").Text == UiText.Get("VersionChannel_" + productVersion.Channel),
                     "support page displays the localized release channel");
                 main.NavigateTo(SettingsCategory.About); main.UpdateLayout(); Snapshot(main, "settings-version.png");
+                var diagnostics = Children<Expander>(main).Single(expander => expander.IsVisible);
+                diagnostics.IsExpanded = true;
+                main.UpdateLayout();
+                Check(Children<Button>(main).Count(button => button.IsVisible &&
+                    AutomationProperties.GetAutomationId(button) is "ExportDiagnostics" or "RecordDiagnostics") == 2,
+                    "expanded diagnostics show export and reproduction controls");
+                Snapshot(main, "settings-support-diagnostics.png");
+                diagnostics.IsExpanded = false;
                 main.NavigateTo(SettingsCategory.General); main.UpdateLayout();
                 Check(!main.AutomaticDetectionEnabled && Children<Expander>(main).Where(e => e.IsVisible).All(e => !e.IsExpanded), "settings opens with diagnostics collapsed and automatic detection opt-in intact");
                 Check(main.ClipboardCompatibilityEnabled && Children<CheckBox>(main).Single(c => AutomationProperties.GetAutomationId(c) == "ClipboardCompatibilityToggle").IsChecked == true,

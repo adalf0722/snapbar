@@ -1,39 +1,90 @@
-using System.IO;
-using System.Text;
-using System.Text.Json;
+using System.Diagnostics;
 using SnapBar.Core;
+using SnapBar.Windows;
 
 namespace SnapBar.App;
 
-// Explicit local troubleshooting mode. Deliberately never serializes ProbeResponse or Selection.
+internal readonly record struct SelectionDiagnosticEvent(long Timestamp, long Capture, string Stage, string Status,
+    double ElapsedMs, string? Source, SelectionProbeDiagnostics? Probe);
+
 internal sealed class SelectionDiagnostics
 {
-    internal bool Enabled { get; } = Environment.GetEnvironmentVariable("SNAPBAR_SELECTION_DIAGNOSTICS") == "1";
-    private string? path;
-    private bool failed;
+    internal static readonly SelectionDiagnostics Shared = new();
+    private readonly SelectionDiagnosticEvent[] events = new SelectionDiagnosticEvent[128];
+    private readonly object gate = new();
+    private long written;
+    private int recording;
 
-    internal void Record(long capture, string stage, ProbeResponse response)
+    internal bool Enabled => Volatile.Read(ref recording) != 0;
+
+    internal void Record(long capture, string stage, ProbeResponse response, double? elapsedMs = null)
     {
-        if (!Enabled || failed) return;
+        var probe = response.Diagnostics is { NativeSource: not null } detail
+            ? detail with { NativeSource = null } : response.Diagnostics;
+        var source = response.Selection?.Source switch
+        {
+            "uia" => "uia",
+            ClipboardSelectionAdapter.Source => "clipboard",
+            "sublime-clipboard" => "sublime-clipboard",
+            _ => null
+        };
+        Record(new(Stopwatch.GetTimestamp(), capture, stage, response.Status, elapsedMs ?? response.ElapsedMs,
+            source, probe));
+    }
+
+    internal void RecordStatus(long capture, string stage, string status, double elapsedMs = 0) =>
+        Record(new(Stopwatch.GetTimestamp(), capture, stage, status, elapsedMs, null, null));
+
+    private void Record(SelectionDiagnosticEvent item)
+    {
+        if (!Monitor.TryEnter(gate)) return;
+        try { events[written++ % events.Length] = item; }
+        finally { Monitor.Exit(gate); }
+    }
+
+    internal SelectionDiagnosticEvent[] Snapshot()
+    {
+        lock (gate) return CopyAfter(0);
+    }
+
+    internal SelectionDiagnosticEvent[] TrySnapshot()
+    {
+        if (!Monitor.TryEnter(gate)) return [];
+        try { return CopyAfter(0); }
+        finally { Monitor.Exit(gate); }
+    }
+
+    internal async Task RecordReproductionAsync(SupportSession session, TimeSpan duration)
+    {
+        if (Interlocked.CompareExchange(ref recording, 1, 0) != 0) return;
         try
         {
-            if (path == null)
+            long start;
+            lock (gate) start = written;
+            var clock = Stopwatch.StartNew();
+            var saved = start;
+            while (duration - clock.Elapsed is { Ticks: > 0 } remaining)
             {
-                var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapBar", "diagnostics");
-                Directory.CreateDirectory(directory);
-                path = Path.Combine(directory, $"selection-{DateTime.UtcNow:yyyyMMddTHHmmssfffZ}-{Environment.ProcessId}.jsonl");
+                await Task.Delay(remaining < TimeSpan.FromSeconds(2) ? remaining : TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                SelectionDiagnosticEvent[] snapshot;
+                lock (gate)
+                {
+                    if (written == saved) continue;
+                    snapshot = CopyAfter(start);
+                    saved = written;
+                }
+                session.SaveReproduction(snapshot);
             }
-            var line = JsonSerializer.Serialize(new
-            {
-                time = DateTime.UtcNow, capture, stage, status = response.Status,
-                elapsedMs = response.ElapsedMs, probe = response.Diagnostics
-            }) + Environment.NewLine;
-            var encoding = new UTF8Encoding(false);
-            if ((File.Exists(path) ? new FileInfo(path).Length : 0) + encoding.GetByteCount(line) > 1048576)
-            { failed = true; return; }
-            File.AppendAllText(path, line, encoding);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-        { failed = true; }
+        finally { Volatile.Write(ref recording, 0); }
+    }
+
+    private SelectionDiagnosticEvent[] CopyAfter(long start)
+    {
+        var first = Math.Max(start, written - events.Length);
+        var copy = new SelectionDiagnosticEvent[written - first];
+        for (var index = 0; index < copy.Length; index++)
+            copy[index] = events[(first + index) % events.Length];
+        return copy;
     }
 }

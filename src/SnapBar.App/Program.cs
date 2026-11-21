@@ -44,19 +44,43 @@ internal static class Program
         using var instance = new Mutex(true, "Local\\SnapBar.P0", out var first);
         var background = args.Contains("--background");
         if (!first) { if (!background) showSettings.Set(); return; }
-        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-        var window = new MainWindow(enableFirstRun: true);
-        var wait = ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) =>
+        var support = SupportSession.Local;
+        var diagnostics = SelectionDiagnostics.Shared;
+        support.Start();
+        void RecordCrash(Exception error)
         {
-            if (!app.Dispatcher.HasShutdownStarted)
-                app.Dispatcher.BeginInvoke(window.ShowSettings);
-        }, null, Timeout.Infinite, executeOnlyOnce: false);
-        app.SessionEnding += (_, _) => window.PrepareSessionEnd();
+            try { support.RecordCrash(error, diagnostics); }
+            catch (Exception) { /* Preserve the original fatal exception. */ }
+        }
+        AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
+        {
+            if (eventArgs.IsTerminating && eventArgs.ExceptionObject is Exception error) RecordCrash(error);
+        };
         try
         {
-            if (background) { app.MainWindow = window; window.InitializeBackground(); app.Run(); }
-            else app.Run(window);
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            app.DispatcherUnhandledException += (_, eventArgs) => RecordCrash(eventArgs.Exception);
+            var window = new MainWindow(enableFirstRun: true);
+            var wait = ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) =>
+            {
+                if (!app.Dispatcher.HasShutdownStarted)
+                    app.Dispatcher.BeginInvoke(window.ShowSettings);
+            }, null, Timeout.Infinite, executeOnlyOnce: false);
+            app.SessionEnding += (_, _) => window.PrepareSessionEnd();
+            try
+            {
+                if (Environment.GetEnvironmentVariable("SNAPBAR_SELECTION_DIAGNOSTICS") == "1")
+                    _ = diagnostics.RecordReproductionAsync(support, TimeSpan.FromMinutes(2));
+                if (background) { app.MainWindow = window; window.InitializeBackground(); app.Run(); }
+                else app.Run(window);
+                support.Complete();
+            }
+            finally { wait.Unregister(null); }
         }
-        finally { wait.Unregister(null); }
+        catch (Exception error)
+        {
+            RecordCrash(error);
+            throw;
+        }
     }
 }

@@ -2995,4 +2995,25 @@
   <data name="Validation_action-launch-arguments-invalid" xml:space="preserve">
     <value>請檢查動作設定中的命令列參數。</value>
   </data>
+  <data name="Support_Export" xml:space="preserve">
+    <value>匯出診斷</value>
+  </data>
+  <data name="Support_Record" xml:space="preserve">
+    <value>記錄接下來 2 分鐘</value>
+  </data>
+  <data name="Support_Recording" xml:space="preserve">
+    <value>正在記錄，最多 2 分鐘…</value>
+  </data>
+  <data name="Support_Interrupted" xml:space="preserve">
+    <value>SnapBar 上次未正常結束。你可以匯出可用的診斷資訊。</value>
+  </data>
+  <data name="Support_Save" xml:space="preserve">
+    <value>儲存 JSON</value>
+  </data>
+  <data name="Support_SaveFailed" xml:space="preserve">
+    <value>無法儲存診斷報告。</value>
+  </data>
+  <data name="Support_Preview" xml:space="preserve">
+    <value>儲存前請先檢視報告。你可以把儲存的檔案附在支援回報中。</value>
+  </data>
 </root>

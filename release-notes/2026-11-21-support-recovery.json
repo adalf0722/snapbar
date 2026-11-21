@@ -1,0 +1,18 @@
+{
+  "title": "選字異常與意外結束可匯出診斷",
+  "summary": "支援頁新增本機診斷匯出，協助定位選字、剪貼簿相容及意外結束問題。",
+  "highlights": [
+    "可記錄接下來兩分鐘的重現過程，並在儲存前檢視報告。",
+    "重新啟動時可查看上一次未正常結束的提示及可用的診斷。"
+  ],
+  "usage": "開啟「設定 → 關於與支援 → 診斷與測試」。能重現時，先選「記錄接下來 2 分鐘」再重做操作。選「匯出診斷」檢視並儲存 JSON，依需要自行附到支援回報。",
+  "en": {
+    "title": "Export diagnostics for selection issues and unexpected exits",
+    "summary": "Export a local report to help troubleshoot selection, clipboard compatibility, and unexpected exits.",
+    "highlights": [
+      "Record up to two minutes while reproducing an issue, and review the report before saving.",
+      "After restarting, see an unexpected-exit notice and export any available details."
+    ],
+    "usage": "Open Settings → About & Support → Diagnostics and tests. To reproduce an issue, select Record the next 2 minutes and repeat the steps. Select Export diagnostics to review and save the JSON file, then attach it to a support request if needed."
+  }
+}

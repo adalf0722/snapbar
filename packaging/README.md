@@ -15,6 +15,12 @@ SnapBar 採用 [MIT License](LICENSE)，允許使用、修改、散布與商用�
 5. 關閉設定視窗後留在系統匣。左鍵圖示可返回，右鍵可暫停／恢復或結束；暫停不影響手動快捷鍵。
 6. 完整結束請選「結束 SnapBar」；獨立測試視窗需另行關閉。重複啟動會叫回原設定視窗。
 
+## 回報選字問題或意外結束
+
+到「關於與支援 → 診斷與測試」按「記錄接下來 2 分鐘」，再重做出問題的操作。若 SnapBar 意外關閉，重新開啟後可在同一頁查看提示和可用的診斷。按「匯出診斷」預覽並儲存 JSON，再自行附到問題回報。報告保留版本與操作狀態，不含選取文字或剪貼簿內容，也不會自動上傳。 [回報問題](https://github.com/adalf0722/snapbar/issues)
+
+## 其他功能與設定
+
 在系統匣右鍵選「框選 OCR」，可拖曳擷取繁中與英文，按 Esc 取消。結果可以校正，再複製或搜尋。模型與引擎隨套件提供，OCR 另需 [Microsoft Visual C++ x64 執行階段](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)。
 
 設定存於 `%LOCALAPPDATA%/SnapBar/settings.json`，保存語言、自動偵測偏好、排除清單、搜尋與動作設定，不保存選取原文或剪貼簿。v1–v7 設定保留偏好升級至 v8；損壞／較新版本的檔案保留不覆寫。Sublime 支援需要首次明確設定，之後保留選擇。

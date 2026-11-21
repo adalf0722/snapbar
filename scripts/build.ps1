@@ -44,6 +44,11 @@ try {
         $probe = Join-Path $stage 'Probe'
         $result = Invoke-SnapBarCommand 'PublishProbe' $sdk (@('publish', 'src/SnapBar.Probe', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true', '-o', $probe, '--nologo') + $versionArguments) $run
         $results.Add($result); Assert-SnapBarCommand $result
+        foreach ($symbols in @('SnapBar.App.pdb', 'Probe/SnapBar.Probe.pdb', 'SnapBar.Windows.pdb', 'SnapBar.Core.pdb')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $stage $symbols) -PathType Leaf)) {
+                throw "Published diagnostic symbols missing: $symbols"
+            }
+        }
         $result = Invoke-SnapBarCommand 'ProbeSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-probe.ps1'), '-Executable', (Join-Path $probe 'SnapBar.Probe.exe')) $run
         $results.Add($result); Assert-SnapBarCommand $result
         $result = Invoke-SnapBarCommand 'StartupSmoke' (Get-Command pwsh).Source @('-NoProfile', '-File', (Join-Path $PSScriptRoot 'test-startup.ps1'), '-Executable', (Join-Path $stage 'SnapBar.App.exe')) $run

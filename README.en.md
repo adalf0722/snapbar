@@ -39,6 +39,8 @@ Changing language updates settings and the tray immediately. Editor and result w
 
 Passwords are rejected. Selection support varies between apps. If focus or selection changes, reselect the text before trying to replace it. Excluded apps skip automatic detection but remain available through the manual shortcut.
 
+To report a selection problem, open **About and support → Diagnostics and tests**, click **Record the next 2 minutes**, and repeat the steps that caused the issue. If SnapBar closes unexpectedly, restart it and check the same page for an unexpected-exit notice. Click **Export diagnostics** to review and save a JSON report you can attach to your issue. The report excludes selected text and clipboard contents and stays local until you choose to share it.
+
 ## Background operation and updates
 
 Closing settings leaves SnapBar running in the system tray. Click the tray icon to return to settings. Use **Quit SnapBar** to exit completely. Pausing automatic detection leaves the manual shortcut available.

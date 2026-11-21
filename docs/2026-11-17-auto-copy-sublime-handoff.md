@@ -86,7 +86,7 @@ Sublime 專用讀取使用 `Ctrl+Alt+Shift+F11`（可編輯）／`F12`（一般�
 
 ## 診斷入口
 
-`SelectionDiagnostics` 由程序環境變數 `SNAPBAR_SELECTION_DIAGNOSTICS=1` 啟用。檔案位於 `%LOCALAPPDATA%\SnapBar\diagnostics\selection-*.jsonl`，每檔上限約 1 MiB。只有 opt-in 才寫入；不要新增選取文字、剪貼簿內容、按鍵值或控制項文字到日誌。
+`SelectionDiagnostics` 可從「關於與支援」啟動兩分鐘重現記錄，也可用程序環境變數 `SNAPBAR_SELECTION_DIAGNOSTICS=1` 在啟動時開始。重現快照位於 `%LOCALAPPDATA%\SnapBar\diagnostics\reproduction.json`。平常的選字事件留在記憶體。診斷欄位排除選取文字、剪貼簿內容、按鍵值與控制項文字。
 
 目前已有 `input-*`、`auto-copy-wait`、`native`、`capture-result` 等階段。Sublime 第一次及第二次讀取的細部階段不一定足夠，必要時補上不含內容的狀態與交易時序。先前重現檔為 `selection-20261117T140906420Z-24632.jsonl`；**它是上一個問題的紀錄，不是目前 Sublime 失敗的證據**。
 
@@ -107,7 +107,7 @@ finally {
 }
 ```
 
-啟動後的 App 仍繼承診斷環境；完成後正常結束並以一般 `run-dev.ps1` 重啟，才會停止新程序的持續診斷。
+啟動後的 App 會繼承診斷環境並自動開始兩分鐘的重現記錄。
 
 ## 程式與文件入口
 

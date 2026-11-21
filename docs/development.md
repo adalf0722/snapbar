@@ -72,7 +72,9 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 
-`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + AiRuntime + AiPanel + Lookup + Language + AutoCopy。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + ClipboardRaces + SupportRecovery + AiRuntime + AiPanel + Lookup + Language + AutoCopy。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。SupportRecovery 驗證未正常結束後的報告、診斷欄位與容量，以及 Probe 離開或逾時後可再次請求。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+
+「關於與支援 → 診斷與測試」可預覽並匯出 JSON。平時選字事件僅保留在固定容量的記憶體中。使用者可啟動兩分鐘重現記錄，最近一次的快照保存在 `%LOCALAPPDATA%\SnapBar\diagnostics\reproduction.json`。`SNAPBAR_SELECTION_DIAGNOSTICS=1` 會在啟動時開始同樣的短期記錄。工作階段標記可顯示上次未正常結束，致命例外摘要含模組版本識別碼、方法 token 與 IL 位移，使用相同發行 ZIP 的組件和 PDB 解讀。
 
 原生 runner 可以用以下命令列舉所有旗標；未知或多個測試旗標回傳非零。
 

@@ -2995,4 +2995,25 @@ Its enabled state will be preserved.</value>
   <data name="Validation_action-launch-arguments-invalid" xml:space="preserve">
     <value>Check the launch arguments in the action settings.</value>
   </data>
+  <data name="Support_Export" xml:space="preserve">
+    <value>Export diagnostics</value>
+  </data>
+  <data name="Support_Record" xml:space="preserve">
+    <value>Record the next 2 minutes</value>
+  </data>
+  <data name="Support_Recording" xml:space="preserve">
+    <value>Recording for 2 minutes…</value>
+  </data>
+  <data name="Support_Interrupted" xml:space="preserve">
+    <value>SnapBar did not exit normally last time. You can export the available details.</value>
+  </data>
+  <data name="Support_Save" xml:space="preserve">
+    <value>Save JSON</value>
+  </data>
+  <data name="Support_SaveFailed" xml:space="preserve">
+    <value>Could not save the diagnostic report.</value>
+  </data>
+  <data name="Support_Preview" xml:space="preserve">
+    <value>Review the report before saving. You can attach the saved file to your support request.</value>
+  </data>
 </root>
