@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -243,6 +244,23 @@ internal static class OcrActionsTest
                 ((OcrActionMenu)urlMore.ContextMenu).Manage.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 Check("management preserves editor", managed == 1 && urlEditor.Text == "corrected words"); urlCard.Close();
 
+                var launch = new CustomActionDefinition(url.Id, "Fixture launch", CustomActionKind.Launch, "search",
+                    TestPaths.AppExecutable, ActionOutput.None, Arguments: ["{selection}"]);
+                string? launchInput = null;
+                live = ActionCatalog.Normalize(new ActionSettings { CustomActions = [launch] });
+                var launchCard = new OcrResultWindow("", null,
+                    new OcrActionDependencies(() => live, () => "", value => { live = value; return true; }, () => { }, null,
+                        RunCustom: (_, input, _) => { launchInput = input; return Task.FromResult(new ScriptExecutionResult("ok")); }));
+                launchCard.SetResult(new OcrResult("ok", "select these words")); launchCard.Show();
+                var launchEditor = Children<TextBox>(launchCard).Single(); launchEditor.Select(7, 5);
+                var launchMore = Children<Button>(launchCard).Single(button => AutomationProperties.GetAutomationId(button) == "OcrMore");
+                launchMore.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                ((OcrActionMenu)launchMore.ContextMenu).Rows.Single(item => AutomationProperties.GetAutomationId(item) == "OcrAction_" + launch.Id)
+                    .RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                await Task.Delay(50);
+                Check("launch from OCR uses current OCR text selection and remembers the action", launchInput == "these" && live.RecentIds.Contains(launch.Id));
+                launchCard.Close();
+
                 var preview = new OcrResultWindow("", null);
                 preview.SetResult(new OcrResult("ok", "今天你完成了什麼？\n\n讓工具接手重複的工作，把注意力留給真正重要的事。\n\nMake room for the work that matters."));
                 preview.Show(); await Task.Delay(50);
@@ -336,7 +354,10 @@ internal static class OcrActionsTest
                         try { clipPending.SetResult(new ScriptExecutionResult("ok", "recoverable fixture output")); await Task.Delay(100); }
                         finally { CloseClipboard(); }
                         var retained = (ActionResultWindow?)Field(clipCard, "actionResult");
-                        Check("busy clipboard retains output in result window", retained?.IsVisible == true && Children<TextBox>(retained).Any(t => t.Text.Contains("recoverable fixture output")) && Clipboard.GetText() == "clipboard fixture");
+                        Check("busy clipboard retains output in result window", retained?.IsVisible == true
+                            && Children<FlowDocumentScrollViewer>(retained).Any(viewer =>
+                                new TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text.Contains("recoverable fixture output"))
+                            && Clipboard.GetText() == "clipboard fixture");
                         retained?.Close(); clipPending = new(); InvokeClip(); clipCard.Close();
                         var next = new OcrResultWindow("", null, new OcrActionDependencies(() => clipSettings, () => "", _ => true, () => { }, null));
                         next.SetResult(new OcrResult("ok", "new card")); next.Show();
@@ -542,9 +563,22 @@ internal static class OcrActionsTest
                     using var owner = new HwndSource(new HwndSourceParameters("SnapBar shared action fixture") { Width = 1, Height = 1, WindowStyle = 0 });
                     var sharedUrl = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "Shared URL", CustomActionKind.Url, "globe", "https://example.org/?q=***");
                     var shared = ActionCatalog.Normalize(new ActionSettings { CustomActions = [sharedUrl] }); var destinations = new List<Uri>();
-                    using var controller = new SelectionController(owner, TestPaths.ProbeExecutable, destinations.Add); controller.ConfigureActions(shared);
+                    string? nativeLaunchInput = null;
+                    using var controller = new SelectionController(owner, TestPaths.ProbeExecutable, destinations.Add,
+                        runCustom: (_, text, _) => { nativeLaunchInput = text; return Task.FromResult(new ScriptExecutionResult("ok")); });
+                    controller.ConfigureActions(shared);
                     await controller.CaptureAsync(false, 0, 0); await controller.ExecuteCustomAsync(sharedUrl.Id);
                     Check("shared URL runs through native selection", destinations.Count == 1 && Uri.UnescapeDataString(destinations[0].Query[3..]) == FixtureWindow.SearchFixtureText);
+                    var nativeLaunch = launch with { Id = sharedUrl.Id };
+                    controller.ConfigureActions(shared with { CustomActions = [nativeLaunch] });
+                    await controller.CaptureAsync(false, 0, 0); await controller.ExecuteCustomAsync(nativeLaunch.Id);
+                    Check("native launch receives validated selection without showing a script result", nativeLaunchInput == FixtureWindow.SearchFixtureText
+                        && !app.Windows.OfType<ActionResultWindow>().Any(window => window.IsVisible));
+                    nativeLaunchInput = null;
+                    controller.ConfigureActions(shared with { CustomActions = [nativeLaunch with { UseSelection = false, Arguments = [] }] });
+                    await controller.ExecuteStandaloneCustomAsync(nativeLaunch.Id);
+                    Check("standalone launch works without capturing selection", nativeLaunchInput == "" && controller.ActiveSelection == null);
+                    controller.ConfigureActions(shared);
                     var sharedCard = new OcrResultWindow("", null, new OcrActionDependencies(() => shared, () => "", value => { shared = value; return true; }, () => { }, null, LaunchWeb: destinations.Add));
                     sharedCard.SetResult(new OcrResult("ok", "OCR fixture")); sharedCard.Show();
                     var sharedMore = Children<Button>(sharedCard).Single(b => AutomationProperties.GetAutomationId(b) == "OcrMore");

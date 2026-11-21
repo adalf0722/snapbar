@@ -75,6 +75,12 @@ public sealed partial class SelectionController
                 catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.IOException or ArgumentException) { Report("browser-unavailable"); }
                 return;
             }
+            if (action.Kind == CustomActionKind.Launch)
+            {
+                if (!Current(current, ticket)) return;
+                await ExecuteLaunchAsync(action, action.UseSelection ? current.Text : "", cancellation.Token);
+                return;
+            }
             if (current.Source == ClipboardSelectionAdapter.Source)
             {
                 var lease = await probe.RequestAsync(new("clipboard-extend", SessionId: current.Id, LeaseSeconds: action.TimeoutSeconds + 10));
@@ -125,6 +131,17 @@ public sealed partial class SelectionController
             customAction = null; customActionAllowsDetachedResult = false;
             executing = false; if (!keepResult) Invalidate();
         }
+    }
+
+    private async Task ExecuteLaunchAsync(CustomActionDefinition action, string text, CancellationToken token)
+    {
+        var result = await runCustom(action, text, token);
+        if (disposed || stopping || result.Status == "cancelled") return;
+        if (result.Success) RememberAction(action.Id);
+        var message = ScriptDiagnostic.StatusText(result.Success ? "launch-ok" : result.Status);
+        if (!result.Success && !token.IsCancellationRequested)
+            customResults.Show(new ActionResultWindow(UiNames.Action(action), message, false, false, hud: true));
+        Status?.Invoke(message);
     }
 
     private void ShowDiagnostic(CustomActionDefinition action, ScriptExecutionResult result)

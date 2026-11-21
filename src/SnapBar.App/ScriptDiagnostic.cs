@@ -74,6 +74,11 @@ internal sealed record ScriptDiagnostic(string Summary, string Details, bool IsF
 
     public static string StatusText(string status) => status switch
     {
+        "launch-ok" => UiText.Get("Launch_Success"),
+        "launch-file-missing" => UiText.Get("Launch_FileMissing"),
+        "launch-arguments-too-long" => UiText.Get("Launch_ArgumentsTooLong"),
+        "launch-failed" => UiText.Get("Launch_Failed"),
+        "no-selection" => UiText.Get("Launch_NoSelection"),
         "ok" => UiText.Get("ScriptDiagnostic_017"),
         "cancelled" => UiText.Get("ScriptDiagnostic_018"),
         "script-timeout" => UiText.Get("ScriptDiagnostic_019"),

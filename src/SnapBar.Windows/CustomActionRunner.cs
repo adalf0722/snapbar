@@ -21,9 +21,11 @@ public static class CustomActionRunner
 
     public static async Task<ScriptExecutionResult> RunAsync(CustomActionDefinition action, string text, CancellationToken token)
     {
-        if (CustomActionPolicy.Validate(action) != null || action.Kind == CustomActionKind.Url || text == null || text.Length > 32768 || text.Contains('\0'))
+        if (CustomActionPolicy.Validate(action) != null || action.Kind == CustomActionKind.Url || text == null
+            || (action.Kind != CustomActionKind.Launch && text.Length > 32768) || text.Contains('\0'))
             return new("invalid-action");
         if (token.IsCancellationRequested) return new("cancelled");
+        if (action.Kind == CustomActionKind.Launch) return Launch(action, text, token);
         string? directory = null;
         string? script = null;
         string? bootstrapFile = null;
@@ -122,6 +124,30 @@ public static class CustomActionRunner
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
         }
+    }
+
+    private static ScriptExecutionResult Launch(CustomActionDefinition action, string text, CancellationToken token)
+    {
+        if (action.UseSelection && string.IsNullOrWhiteSpace(text)) return new("no-selection");
+        if (!File.Exists(action.Content)) return new("launch-file-missing");
+        var start = new ProcessStartInfo(action.Content)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = Path.GetDirectoryName(action.Content)!
+        };
+        var arguments = CustomActionPolicy.ResolveLaunchArguments(action.Arguments!, action.UseSelection ? text : "");
+        if (arguments == null) return new("launch-arguments-too-long");
+        foreach (var argument in arguments) start.ArgumentList.Add(argument);
+        if (token.IsCancellationRequested) return new("cancelled");
+        try
+        {
+            using var process = Process.Start(start);
+            return new(process == null ? "launch-failed" : "ok");
+        }
+        catch (Win32Exception error) when (error.NativeErrorCode == 206) { return new("launch-arguments-too-long"); }
+        catch (Win32Exception error) when (error.NativeErrorCode is 2 or 3) { return new("launch-file-missing"); }
+        catch (Exception error) when (error is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException)
+        { return new("launch-failed"); }
     }
 
     private static SafeFileHandle CreateRequestJob()

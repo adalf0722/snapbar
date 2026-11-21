@@ -71,6 +71,8 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        if (args is ["--launch-argument-fixture", var launchMarker, var launchRelease, ..])
+            return CustomActionRunnerTest.LaunchFixture(launchMarker, launchRelease, args[3..]);
         if (args.SequenceEqual(["--ocr-worker"]) || args.SequenceEqual(["--ocr-worker", "--english"])) return OcrBackendTest.FakeWorker(args.Length == 2);
         if (args.SequenceEqual(["--ocr-test-supervisor"])) return OcrBackendTest.Supervisor();
         if (args.SequenceEqual(["--ocr-backend"])) return OcrBackendTest.RunAsync().GetAwaiter().GetResult();

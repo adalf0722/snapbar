@@ -4,7 +4,7 @@
 
 在「管理動作」新增「啟動程式」，設定名稱、選擇本機 `.exe`、逐項填寫命令列參數。可在參數中插入「選取文字」，也可建立只使用固定參數或不帶參數的動作。使用選取文字的動作沿用既有選字入口，也可在 OCR 結果上使用。固定動作沿用既有的無選字執行方式。新增和匯入的動作先放在「更多」，可釘選和匯出。
 
-Everything 的設定範例是選擇 `Everything.exe`，新增 `-search` 和「選取文字」兩個參數。執行後在 Everything 裡查看結果。第一版交付通用啟動能力。先跑腳本再由輸出決定啟動目標，以及在 SnapBar 內查詢 Everything 索引，分別是後續能力。
+Everything 的設定範例是選擇 `Everything.exe`，新增 `-url` 和 `es:{selection:url}` 兩個參數。也可以匯入 [Everything 搜尋動作](../../examples/everything-search.snapbaraction)。Everything 1.4 對 `-search` 使用自己的引號規則，將選取文字以百分比編碼傳入 `-url`，可保留引號及反斜線。執行後在 Everything 裡查看結果。第一版交付通用啟動能力。先跑腳本再由輸出決定啟動目標，以及在 SnapBar 內查詢 Everything 索引，分別是後續能力。
 
 ## 執行與資料
 

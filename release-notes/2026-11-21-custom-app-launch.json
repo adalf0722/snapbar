@@ -1,0 +1,18 @@
+{
+  "title": "從選字工具列啟動你指定的程式",
+  "summary": "自訂動作可以開啟 Windows 程式並把選取文字交給它，例如直接在 Everything 搜尋。",
+  "highlights": [
+    "逐項設定命令列參數，可插入選取文字、使用固定參數，或直接開啟程式。",
+    "可在動作編輯器預覽參數並實際測試啟動。"
+  ],
+  "usage": "在「管理動作」新增「啟動程式」，選擇已安裝的執行檔。若要搜尋 Everything，選擇 Everything.exe，填入 -url，再加入網址編碼文字並在前面加上 es:。",
+  "en": {
+    "title": "Launch your own apps from the selection toolbar",
+    "summary": "Custom actions can open a Windows app and pass it selected text, for example to start a search in Everything.",
+    "highlights": [
+      "Set command-line arguments individually, insert selected text, use fixed values, or open the app directly.",
+      "Preview the arguments and test the launch from the action editor."
+    ],
+    "usage": "In Manage Actions, add a Launch App action and choose an installed executable. For Everything, add -url, then click Add URL-encoded Text and prefix that argument with es:."
+  }
+}

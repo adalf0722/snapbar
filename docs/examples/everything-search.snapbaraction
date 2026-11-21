@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "action": {
+    "id": "custom-590d9ba7409c46ef95e4d5fa0e2f4dee",
+    "name": "Everything 搜尋",
+    "kind": 4,
+    "icon": "search",
+    "content": "C:\\Program Files\\Everything\\Everything.exe",
+    "output": 0,
+    "timeoutSeconds": 10,
+    "useSelection": true,
+    "arguments": ["-url", "es:{selection:url}"]
+  }
+}

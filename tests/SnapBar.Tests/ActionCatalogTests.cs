@@ -52,6 +52,22 @@ internal static class ActionCatalogTests
                 && !ticket.TryReplace(card, 4, "different text", 0, 4, "replacement", out _);
         });
         bool Reject(Action test) { try { test(); return false; } catch (ArgumentException) { return true; } }
+        check("launch actions preserve argument boundaries and round-trip separately from script actions", () =>
+        {
+            var launch = new CustomActionDefinition(action.Id, "Find", CustomActionKind.Launch, "search",
+                Path.GetFullPath("example.exe"), ActionOutput.None, Arguments: ["-search", "{selection}", "", "es:{selection:url}"]);
+            var imported = CustomActionPolicy.Import(CustomActionPolicy.Export(launch));
+            const string input = "中文 \"quote\" | {selection:url} \\";
+            return imported.Kind == CustomActionKind.Launch && imported.Id != launch.Id && imported.UseSelection
+                && CustomActionPolicy.ResolveLaunchArguments(imported.Arguments!, input) is { } args
+                && args.SequenceEqual(new[] { "-search", input, "", "es:" + Uri.EscapeDataString(input) })
+                && CustomActionPolicy.ResolveLaunchArguments(["{selection}{selection}"], new string('a', 20000)) == null
+                && CustomActionPolicy.Import(CustomActionPolicy.Export(action)).Kind == CustomActionKind.Url
+                && CustomActionPolicy.Validate(launch with { UseSelection = false }) != null
+                && CustomActionPolicy.Validate(launch with { Content = "example.exe" }) != null
+                && CustomActionPolicy.Validate(launch with { Output = ActionOutput.ReplaceSelection }) != null
+                && CustomActionPolicy.Validate(launch with { UseSelection = false, Arguments = [] }) == null;
+        });
         ActionSettings PinFiveMore(ActionSettings value) => ActionCatalog.GetMore(value, selection)
             .Where(item => item.Id != action.Id).Take(5)
             .Aggregate(value, (layout, item) => ActionCatalog.SetPlacement(layout, item.Id, ActionPlacement.Bar));

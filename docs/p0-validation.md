@@ -1288,3 +1288,9 @@ AI 面板 261、語言 69 與 Preflight 1 全數通過，無略過。報告位�
 已檢視 `artifacts/ai-panel/reading-ready.png`、`reading-polished-wide.png`、`reading-polished-stacked.png`、`reading-differences.png` 與 `toolbox-many-small.png`。首輪直接建置因舊 App 鎖檔而失敗，從設定正常退出後建置與桌面測試成功。未執行混合 DPI／多螢幕或完整 Release，未發布套件。
 
 `scripts/check.ps1` 通過，完整日誌 `artifacts/checks/ai-reading-polish-final-check.log`。差異文字合併再改用線性 StringBuilder，避免大量連續變更造成反覆字串複製；最後桌面入口重新建置並跑 Core 708、上述三個套件，均成功。設計與發布說明以 UTF-8 無 BOM 讀回驗證。
+
+### 2026-11-21 自訂動作啟動程式
+
+Windows 桌面使用 Everything 1.4.1.1024 的獨立具名實例驗證。從完全關閉的實例啟動並帶入中文及空格，實例已開啟時則接收新搜尋並保留同一程序。`-search` 會改寫雙引號與反斜線，改用 `-url` 搭配 `es:{selection:url}` 後，搜尋欄可完整呈現包含雙引號與反斜線的測試文字。自動測試另以獨立測試執行檔核對參數邊界、空參數和子程序在動作結束後仍能執行。原先使用的 Everything 與 SnapBar 設定保持原樣。
+
+Core 709、編輯器診斷 32、介面語言 69、OCR 動作 91、腳本及啟動執行器 38、桌面預檢 1 通過，無略過。OCR 套件也驗證選字工具列傳入重驗後的文字，以及獨立動作可直接執行。報告位於 `artifacts/checks/desktop/20261121T105729452Z-2f44a29f161c43068853eb03109f9751/report.json`。選字動作套件第一次在既有滑鼠滾輪消失檢查失敗，重跑 70 項全部通過，報告位於 `artifacts/checks/desktop/20261121T105830797Z-b530d37865f041b2848e2af42eb13eb7/report.json`。編輯器擷取 `artifacts/diagnostics/editor-launch.png`。本次使用目前顯示縮放，未測混合 DPI 或多螢幕，未執行完整桌面 Release 或發佈套件。

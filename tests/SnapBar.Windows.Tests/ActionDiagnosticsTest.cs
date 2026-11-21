@@ -126,6 +126,23 @@ internal static class ActionDiagnosticsTest
                 await RunEditorTest();
                 Check(inline.Visibility == Visibility.Visible && Children<TextBlock>(inline).Any(t => t.Text.Contains("需要互動輸入")),
                     "nonterminating PowerShell prompt error remains visible even with exit zero");
+
+                editor.Close();
+                var launch = new CustomActionDefinition(action.Id, "Everything", CustomActionKind.Launch, "search",
+                    Path.GetFullPath("missing-launch-fixture.exe"), ActionOutput.None, Arguments: ["-url", "es:{selection:url}"]);
+                editor = new ActionEditorWindow(launch);
+                editor.Show(); editor.UpdateLayout();
+                var sample = Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionSample");
+                sample.Text = "中文 \"test\"";
+                Check(sample.IsVisible && Children<TextBox>(editor).Any(t => t.IsReadOnly && t.Text.Contains("es:%E4%B8%AD%E6%96%87%20%22test%22")),
+                    "launch editor previews individually resolved parameters");
+                Check(!Children<TextBox>(editor).Single(t => AutomationProperties.GetAutomationId(t) == "CustomActionContent").IsVisible,
+                    "launch editor shows executable fields without script options");
+                test = Children<Button>(editor).Single(b => AutomationProperties.GetAutomationId(b) == "TestCustomAction");
+                await RunEditorTest();
+                Check(Children<TextBlock>(editor).Any(t => t.Text == UiText.Get("Launch_FileMissing")),
+                    "launch editor explains a missing executable inline");
+                Snapshot(editor, "editor-launch.png");
                 exit = 0;
             }
             catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }

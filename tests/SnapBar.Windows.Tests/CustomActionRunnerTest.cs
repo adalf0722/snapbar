@@ -1,10 +1,21 @@
 using SnapBar.Core;
 using System.IO;
 using System.Diagnostics;
+using System.Text.Json;
 using SnapBar.Windows;
 
 internal static class CustomActionRunnerTest
 {
+    internal static int LaunchFixture(string marker, string release, string[] arguments)
+    {
+        File.WriteAllText(marker + ".writing", JsonSerializer.Serialize(arguments));
+        File.Move(marker + ".writing", marker);
+        var timeout = Stopwatch.StartNew();
+        while (!File.Exists(release) && timeout.Elapsed < TimeSpan.FromSeconds(10)) Thread.Sleep(20);
+        File.WriteAllText(release + ".done", "");
+        return 0;
+    }
+
     public static async Task<int> RunAsync(bool requireRuntimes = false)
     {
         int passed = 0, failed = 0;
@@ -16,6 +27,39 @@ internal static class CustomActionRunnerTest
         static CustomActionDefinition Action(string script, int timeout = 10) => new("custom-" + Guid.NewGuid().ToString("N"), "Test", CustomActionKind.PowerShell, "terminal", script, TimeoutSeconds: timeout);
         static void Require(bool condition, ScriptExecutionResult? result = null)
         { if (!condition) throw new Exception(result == null ? "Unexpected execution result" : ScriptExecutionAssert.Describe(result)); }
+        await Check("launch returns before the app exits and preserves quotes, Unicode, and empty arguments", async () =>
+        {
+            var directory = Directory.CreateTempSubdirectory("SnapBar.Launch-");
+            var marker = Path.Combine(directory.FullName, "arguments.json");
+            var release = Path.Combine(directory.FullName, "release");
+            var executable = Environment.ProcessPath!;
+            string[] hostArguments = string.Equals(Path.GetFileName(executable), "dotnet.exe", StringComparison.OrdinalIgnoreCase)
+                ? [typeof(CustomActionRunnerTest).Assembly.Location] : [];
+            var launch = new CustomActionDefinition("custom-" + Guid.NewGuid().ToString("N"), "Launch test", CustomActionKind.Launch,
+                "terminal", executable, ActionOutput.None, Arguments: [.. hostArguments, "--launch-argument-fixture", marker, release, "{selection}", "", "tail"]);
+            const string input = "中文 \"quote\" & | \\";
+            try
+            {
+                using var cancelled = new CancellationTokenSource();
+                cancelled.Cancel();
+                Require((await CustomActionRunner.RunAsync(launch, input, cancelled.Token)).Status == "cancelled");
+                Require((await CustomActionRunner.RunAsync(launch with { Content = Path.Combine(directory.FullName, "missing.exe") }, input, default)).Status == "launch-file-missing");
+                Require((await CustomActionRunner.RunAsync(launch, new string('a', 32768), default)).Status == "launch-arguments-too-long");
+                Require((await CustomActionRunner.RunAsync(launch, "", default)).Status == "no-selection");
+                var result = await CustomActionRunner.RunAsync(launch, input, default).WaitAsync(TimeSpan.FromSeconds(3));
+                Require(result.Success, result);
+                for (var attempt = 0; attempt < 100 && !File.Exists(marker); attempt++) await Task.Delay(30);
+                Require(File.Exists(marker) && !File.Exists(release + ".done"));
+                Require(JsonSerializer.Deserialize<string[]>(File.ReadAllText(marker))!.SequenceEqual([input, "", "tail"]));
+            }
+            finally
+            {
+                File.WriteAllText(release, "");
+                for (var attempt = 0; attempt < 100 && !File.Exists(release + ".done"); attempt++) await Task.Delay(30);
+                foreach (var file in directory.GetFiles()) file.Delete();
+                directory.Delete();
+            }
+        });
         await Check("execution assertion reports status exit and stream lengths", () =>
         {
             try { ScriptExecutionAssert.Result(new("script-failed", "fixture", "fixture error", 7)); }

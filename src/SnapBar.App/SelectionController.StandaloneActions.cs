@@ -31,6 +31,11 @@ public sealed partial class SelectionController
                 && Native.GetIdentity(Native.GetForegroundWindow()) == target);
         try
         {
+            if (action.Kind == CustomActionKind.Launch)
+            {
+                if (Current()) await ExecuteLaunchAsync(action, "", cancellation.Token);
+                return;
+            }
             Status?.Invoke(UiText.Get("SelectionController_CustomActions_001"));
             var result = await runCustom(action, "", cancellation.Token);
             if (!Current() || result.Status == "cancelled") return;

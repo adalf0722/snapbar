@@ -224,7 +224,8 @@ internal sealed class ActionSettingsPanel : ContentControl
                 ConfigureColumns(row, placement == ActionPlacement.Bar);
                 var image = ActionUi.ItemIcon(item, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
                 var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(UiNames.Action(item, language), 14));
-                if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind.ToString(), 12, ActionUi.Muted));
+                if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind == CustomActionKind.Launch
+                    ? Text("Launch_Kind") : item.Custom.Kind.ToString(), 12, ActionUi.Muted));
                 if (item.BuiltIn == TextAction.Lookup && manageDictionary != null)
                 {
                     dictionaryStatus = ActionUi.Text("", 12, ActionUi.Muted);

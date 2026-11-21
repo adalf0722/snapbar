@@ -2929,4 +2929,70 @@ Its enabled state will be preserved.</value>
   <data name="AiPanel_SelectedView" xml:space="preserve"><value>Selected view</value></data>
   <data name="AiPanel_UseOriginal" xml:space="preserve"><value>Use original</value></data>
   <data name="AiPanel_UseCurrent" xml:space="preserve"><value>Use result</value></data>
+  <data name="Launch_Kind" xml:space="preserve">
+    <value>Launch App</value>
+  </data>
+  <data name="Launch_Browse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="Launch_FileFilter" xml:space="preserve">
+    <value>Executables (*.exe)|*.exe</value>
+  </data>
+  <data name="Launch_Executable" xml:space="preserve">
+    <value>Executable</value>
+  </data>
+  <data name="Launch_Arguments" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="Launch_ArgumentHelp" xml:space="preserve">
+    <value>Enter one argument per field. Insert {selection} for selected text or {selection:url} for URL-encoded text.</value>
+  </data>
+  <data name="Launch_AddArgument" xml:space="preserve">
+    <value>Add Argument</value>
+  </data>
+  <data name="Launch_AddSelection" xml:space="preserve">
+    <value>Add Selected Text</value>
+  </data>
+  <data name="Launch_AddEncodedSelection" xml:space="preserve">
+    <value>Add URL-encoded Text</value>
+  </data>
+  <data name="Launch_Argument" xml:space="preserve">
+    <value>Argument</value>
+  </data>
+  <data name="Launch_RemoveArgument" xml:space="preserve">
+    <value>Remove Argument</value>
+  </data>
+  <data name="Launch_Preview" xml:space="preserve">
+    <value>Launch Preview</value>
+  </data>
+  <data name="Launch_NoExecutable" xml:space="preserve">
+    <value>Choose an executable to preview the launch.</value>
+  </data>
+  <data name="Launch_Test" xml:space="preserve">
+    <value>Test Launch</value>
+  </data>
+  <data name="Launch_TestNote" xml:space="preserve">
+    <value>Testing opens the selected app with the previewed arguments.</value>
+  </data>
+  <data name="Launch_Success" xml:space="preserve">
+    <value>App launched.</value>
+  </data>
+  <data name="Launch_FileMissing" xml:space="preserve">
+    <value>The executable could not be found. Check the path in the action settings.</value>
+  </data>
+  <data name="Launch_ArgumentsTooLong" xml:space="preserve">
+    <value>The arguments are too long. Try a shorter selection or fewer arguments.</value>
+  </data>
+  <data name="Launch_Failed" xml:space="preserve">
+    <value>Windows could not start this app. Check that the executable can open under your account.</value>
+  </data>
+  <data name="Launch_NoSelection" xml:space="preserve">
+    <value>Select text to pass to the app.</value>
+  </data>
+  <data name="Validation_action-launch-path-invalid" xml:space="preserve">
+    <value>Select an executable (.exe) with a full path.</value>
+  </data>
+  <data name="Validation_action-launch-arguments-invalid" xml:space="preserve">
+    <value>Check the launch arguments in the action settings.</value>
+  </data>
 </root>

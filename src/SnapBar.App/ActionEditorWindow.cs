@@ -23,6 +23,10 @@ internal sealed class ActionEditorWindow : Window
     private readonly AiIconPresenter iconPreview = new() { Width = 22, Height = 22 };
     private Button iconButton = null!;
     private readonly StackPanel scriptOptions = new(), sampleSection = new();
+    private readonly StackPanel codeOptions = new(), launchOptions = new(), launchArguments = new();
+    private readonly TextBox executable = ActionUi.Input(max: 32768);
+    private static readonly System.Text.Json.JsonSerializerOptions ArgumentPreviewFormat = new()
+    { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
     private readonly CheckBox useSelection = new() { Content = UiText.Get("ActionEditorWindow_000"), IsChecked = true, Margin = new(0, 0, 0, 14),
         ToolTip = UiText.Get("ActionEditorWindow_001") };
     private readonly ActionDiagnosticView diagnostics = new() { Visibility = Visibility.Collapsed };
@@ -36,6 +40,7 @@ internal sealed class ActionEditorWindow : Window
     private string? rawTestOutput;
     private readonly TextBlock error = ActionUi.Text("", 12, Brushes.Firebrick), destination = ActionUi.Text("", 12, ActionUi.Muted),
         help = ActionUi.Text("", 11, ActionUi.Muted), testStatus = ActionUi.Text("", 11, ActionUi.Muted);
+    private readonly TextBlock testNote = ActionUi.Text("", 11, ActionUi.Muted);
     private readonly Button test, stop, variable;
     private readonly TextBlock outputHelp = ActionUi.Text("", 12, ActionUi.Muted);
     private readonly TextBlock resultHeading = ActionUi.Heading(UiText.Get("ActionEditorWindow_004"), 14), contentHeading = ActionUi.Heading(UiText.Get("ActionEditorWindow_005"), 14);
@@ -70,7 +75,7 @@ internal sealed class ActionEditorWindow : Window
         DockPanel.SetDock(footer, Dock.Bottom); outer.Children.Add(footer);
         var grid = new Grid(); grid.ColumnDefinitions.Add(new() { Width = new(1.1, GridUnitType.Star) }); grid.ColumnDefinitions.Add(new() { Width = new(20) }); grid.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
         var form = new StackPanel(); var formHeading = ActionUi.Heading(language.Get("ActionEditorWindow_020")); formHeading.Margin = new(0, 0, 0, 12); form.Children.Add(formHeading);
-        kind.ItemsSource = new[] { language.Get("ActionEditorWindow_021"), "PowerShell", "JavaScript", "Python" }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
+        kind.ItemsSource = new[] { language.Get("ActionEditorWindow_021"), "PowerShell", "JavaScript", "Python", language.Get("Launch_Kind") }; kind.SelectedIndex = (int)(existing?.Kind ?? CustomActionKind.Url);
         AutomationProperties.SetName(kind, language.Get("ActionEditorWindow_022")); Field(form, language.Get("ActionEditorWindow_023"), kind);
         var identity = new Grid(); identity.ColumnDefinitions.Add(new() { Width = new(44) });
         identity.ColumnDefinitions.Add(new() { Width = new(12) }); identity.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
@@ -100,8 +105,9 @@ internal sealed class ActionEditorWindow : Window
             content.Height = e.Key == Key.Home ? 120 : Math.Clamp(content.Height + (e.Key == Key.Up ? -16 : 16), 96, 480);
             e.Handled = true;
         };
-        form.Children.Add(inputHeader); form.Children.Add(content); form.Children.Add(resize);
-        help.Margin = new(0, 0, 0, 10); form.Children.Add(help);
+        codeOptions.Children.Add(inputHeader); codeOptions.Children.Add(content); codeOptions.Children.Add(resize);
+        help.Margin = new(0, 0, 0, 10); codeOptions.Children.Add(help); form.Children.Add(codeOptions);
+        BuildLaunchOptions(form);
         useSelection.Margin = new(0, 0, 0, 8);
         AutomationProperties.SetAutomationId(useSelection, "UseSelectionInput"); scriptOptions.Children.Add(useSelection);
         output.ItemsSource = OutputNames; output.SelectedIndex = (int)(existing?.Output ?? ActionOutput.Window); output.Padding = new(7); Field(scriptOptions, language.Get("ActionEditorWindow_032"), output);
@@ -141,11 +147,11 @@ internal sealed class ActionEditorWindow : Window
         AutomationProperties.SetAutomationId(test, "TestCustomAction"); right.Children.Add(test);
         stop = ActionUi.Button(language.Get("ActionEditorWindow_045"), () => testing?.Cancel()); stop.Margin = new(0, 0, 0, 8); stop.Visibility = Visibility.Collapsed;
         AutomationProperties.SetAutomationId(stop, "StopCustomActionTest"); right.Children.Add(stop); right.Children.Add(testStatus);
-        var note = ActionUi.Text(language.Get("ActionEditorWindow_046"), 11, ActionUi.Muted); note.Margin = new(0, 24, 0, 0); right.Children.Add(note);
+        testNote.Margin = new(0, 24, 0, 0); right.Children.Add(testNote);
         var rightCard = ActionUi.Card(new ScrollViewer { Content = right, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }); Grid.SetColumn(rightCard, 2); grid.Children.Add(rightCard); outer.Children.Add(grid); Content = outer;
         currentKind = (CustomActionKind)kind.SelectedIndex;
         LoadKind(currentKind, existing); ready = true;
-        kind.SelectionChanged += (_, _) => { if (!ready) return; testing?.Cancel(); drafts[currentKind] = (name.Text, content.Text, sample.Text, useSelection.IsChecked == true); runtimeDrafts[currentKind] = runtime.Text; currentKind = (CustomActionKind)kind.SelectedIndex; LoadKind(currentKind); };
+        kind.SelectionChanged += (_, _) => { if (!ready || kind.SelectedIndex < 0) return; testing?.Cancel(); drafts[currentKind] = (name.Text, content.Text, sample.Text, useSelection.IsChecked == true); runtimeDrafts[currentKind] = runtime.Text; currentKind = (CustomActionKind)kind.SelectedIndex; LoadKind(currentKind); };
         foreach (var input in new[] { name, content, sample, runtime, timeout }) input.TextChanged += (_, _) => { if (ready) UpdatePreview(); };
         output.SelectionChanged += (_, _) => { if (ready) UpdatePreview(); };
         useSelection.Checked += (_, _) => { if (ready) UpdatePreview(); };
@@ -154,6 +160,50 @@ internal sealed class ActionEditorWindow : Window
         AutomationProperties.SetAutomationId(name, "CustomActionName"); AutomationProperties.SetAutomationId(content, "CustomActionContent");
         AutomationProperties.SetAutomationId(sample, "CustomActionSample"); AutomationProperties.SetAutomationId(kind, "CustomActionKind");
     }
+
+    private void BuildLaunchOptions(Panel form)
+    {
+        var picker = new DockPanel();
+        var browse = ActionUi.Button(language.Get("Launch_Browse"), () =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog { Filter = language.Get("Launch_FileFilter") };
+            if (dialog.ShowDialog(this) == true) executable.Text = dialog.FileName;
+        });
+        browse.Margin = new(8, 0, 0, 0); DockPanel.SetDock(browse, Dock.Right);
+        picker.Children.Add(browse); picker.Children.Add(executable);
+        AutomationProperties.SetName(executable, language.Get("Launch_Executable"));
+        AutomationProperties.SetAutomationId(executable, "LaunchExecutable");
+        executable.TextChanged += (_, _) => { if (ready) UpdatePreview(); };
+        Field(launchOptions, language.Get("Launch_Executable"), picker);
+        launchOptions.Children.Add(ActionUi.Heading(language.Get("Launch_Arguments"), 14));
+        var hint = ActionUi.Text(language.Get("Launch_ArgumentHelp"), 12, ActionUi.Muted);
+        hint.Margin = new(0, 4, 0, 8); launchOptions.Children.Add(hint);
+        launchOptions.Children.Add(launchArguments);
+        var buttons = new WrapPanel();
+        buttons.Children.Add(ActionUi.Button(language.Get("Launch_AddArgument"), () => AddLaunchArgument("", true), "plus"));
+        buttons.Children.Add(ActionUi.Button(language.Get("Launch_AddSelection"), () => AddLaunchArgument(CustomActionPolicy.SelectionPlaceholder, true), "plus"));
+        buttons.Children.Add(ActionUi.Button(language.Get("Launch_AddEncodedSelection"), () => AddLaunchArgument(CustomActionPolicy.EncodedSelectionPlaceholder, true), "plus"));
+        launchOptions.Children.Add(buttons); form.Children.Add(launchOptions);
+    }
+
+    private void AddLaunchArgument(string value, bool focus = false)
+    {
+        var row = new DockPanel { Margin = new(0, 0, 0, 6) };
+        var argument = ActionUi.Input(value, 32768);
+        AutomationProperties.SetName(argument, language.Get("Launch_Argument"));
+        argument.TextChanged += (_, _) => { if (ready) UpdatePreview(); };
+        var remove = ActionUi.Button(language.Get("Launch_RemoveArgument"), () =>
+        {
+            launchArguments.Children.Remove(row);
+            UpdatePreview();
+        });
+        remove.Margin = new(8, 0, 0, 0); DockPanel.SetDock(remove, Dock.Right);
+        row.Children.Add(remove); row.Children.Add(argument); launchArguments.Children.Add(row);
+        if (focus) { argument.Focus(); UpdatePreview(); }
+    }
+
+    private string[] ReadLaunchArguments() => launchArguments.Children.OfType<DockPanel>()
+        .Select(row => row.Children.OfType<TextBox>().Single().Text).ToArray();
 
     private void ChooseIcon()
     {
@@ -176,6 +226,7 @@ internal sealed class ActionEditorWindow : Window
             CustomActionKind.Url => (language.Get("ActionEditorWindow_047"), "https://translate.google.com/?sl=auto&tl=zh-TW&text=***&op=translate", "Make something wonderful.", true),
             CustomActionKind.PowerShell => (language.Get("ActionEditorWindow_048"), "($env:POPCLIP_TEXT -replace '\\s+', ' ').Trim()", "  Make   something    wonderful.  ", true),
             CustomActionKind.Python => (language.Get("ActionEditorWindow_PythonName"), "import os\n\ntext = os.environ.get('POPCLIP_TEXT', '')\nprint(' '.join(text.split()), end='')", "  Make   something    wonderful.  ", true),
+            CustomActionKind.Launch => (language.Get("Launch_Kind"), "", "Make something wonderful.", false),
             _ => (language.Get("ActionEditorWindow_049"), "const text = process.env.POPCLIP_TEXT;\nconsole.log(JSON.stringify(JSON.parse(text), null, 2));", "{\"product\":\"SnapBar\",\"focus\":\"next action\"}", true)
         };
         var draft = drafts.GetValueOrDefault(type, defaults); name.Text = existing != null ? initialDisplayName! : draft.Item1; content.Text = existing?.Content ?? draft.Item2; sample.Text = draft.Item3;
@@ -187,14 +238,27 @@ internal sealed class ActionEditorWindow : Window
         }
         runtime.Text = existing != null ? existing.InterpreterPath ?? "" : runtimeDrafts.GetValueOrDefault(type, "");
         if (existing != null) timeout.Text = existing.TimeoutSeconds.ToString();
-        scriptOptions.Visibility = type == CustomActionKind.Url ? Visibility.Collapsed : Visibility.Visible;
+        if (existing is { Kind: CustomActionKind.Launch })
+        {
+            executable.Text = existing.Content;
+            foreach (var argument in existing.Arguments!) AddLaunchArgument(argument);
+        }
+        launchOptions.Visibility = type == CustomActionKind.Launch ? Visibility.Visible : Visibility.Collapsed;
+        codeOptions.Visibility = type == CustomActionKind.Launch ? Visibility.Collapsed : Visibility.Visible;
+        scriptOptions.Visibility = type is CustomActionKind.Url or CustomActionKind.Launch ? Visibility.Collapsed : Visibility.Visible;
+        testNote.Text = language.Get(type == CustomActionKind.Launch ? "Launch_TestNote" : "ActionEditorWindow_046");
         UpdatePreview();
     }
 
     private CustomActionDefinition? ReadAction()
     {
-        if (currentKind != CustomActionKind.Url && (!int.TryParse(timeout.Text, out var n) || n is < 1 or > 300)) { error.Text = language.Get("ActionEditorWindow_050"); return null; }
-        var action = new CustomActionDefinition(id, UiNames.KeepOriginalName(name.Text.Trim(), initialDisplayName ?? "", originalAction?.Name), currentKind, selectedIcon, content.Text,
+        if (currentKind is not (CustomActionKind.Url or CustomActionKind.Launch) && (!int.TryParse(timeout.Text, out var n) || n is < 1 or > 300)) { error.Text = language.Get("ActionEditorWindow_050"); return null; }
+        var actionName = UiNames.KeepOriginalName(name.Text.Trim(), initialDisplayName ?? "", originalAction?.Name);
+        var arguments = currentKind == CustomActionKind.Launch ? ReadLaunchArguments() : null;
+        var action = arguments != null
+            ? new CustomActionDefinition(id, actionName, currentKind, selectedIcon, executable.Text.Trim(), ActionOutput.None,
+                UseSelection: CustomActionPolicy.LaunchUsesSelection(arguments), Arguments: arguments)
+            : new CustomActionDefinition(id, actionName, currentKind, selectedIcon, content.Text,
             (ActionOutput)Math.Max(0, output.SelectedIndex), currentKind == CustomActionKind.Url ? 10 : int.Parse(timeout.Text), string.IsNullOrWhiteSpace(runtime.Text) ? null : runtime.Text.Trim(),
             UseSelection: currentKind == CustomActionKind.Url || useSelection.IsChecked == true);
         error.Text = ValidationMessages.Describe(CustomActionPolicy.Validate(action), language); return error.Text.Length == 0 ? action : null;
@@ -202,6 +266,20 @@ internal sealed class ActionEditorWindow : Window
     private void UpdatePreview()
     {
         previewRevision++; ResetResultDisplay(); diagnostics.Clear(); comparison.Clear(); preview.Visibility = Visibility.Visible;
+        if (currentKind == CustomActionKind.Launch)
+        {
+            var arguments = ReadLaunchArguments();
+            sampleSection.Visibility = CustomActionPolicy.LaunchUsesSelection(arguments) ? Visibility.Visible : Visibility.Collapsed;
+            resultHeading.Text = language.Get("Launch_Preview");
+            destination.Text = string.IsNullOrWhiteSpace(executable.Text) ? language.Get("Launch_NoExecutable") : executable.Text.Trim();
+            preview.Text = CustomActionPolicy.ResolveLaunchArguments(arguments, sample.Text) is { } resolved
+                ? string.Join(Environment.NewLine, resolved.Select(FormatArgument)) : language.Get("Launch_ArgumentsTooLong");
+            preview.Visibility = preview.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+            preview.Height = 120;
+            SetTestLabel(language.Get("Launch_Test"));
+            testStatus.Text = "";
+            return;
+        }
         var urlMode = currentKind == CustomActionKind.Url;
         var usesInput = urlMode || useSelection.IsChecked == true;
         sampleSection.Visibility = usesInput ? Visibility.Visible : Visibility.Collapsed;
@@ -211,8 +289,7 @@ internal sealed class ActionEditorWindow : Window
             : currentKind == CustomActionKind.Python ? language.Get("ActionEditorWindow_PythonHelp")
             : currentKind == CustomActionKind.PowerShell ? language.Get("ActionEditorWindow_053") : language.Get("ActionEditorWindow_054");
         var testLabel = urlMode ? language.Get("ActionEditorWindow_055") : language.Get("ActionEditorWindow_056");
-        ((StackPanel)test.Content).Children.OfType<TextBlock>().Single().Text = testLabel;
-        AutomationProperties.SetName(test, testLabel);
+        SetTestLabel(testLabel);
         resultHeading.Text = urlMode ? language.Get("ActionEditorWindow_057") : language.Get("ActionEditorWindow_058"); contentHeading.Text = urlMode ? language.Get("ActionEditorWindow_059") : language.Get("ActionEditorWindow_060");
         preview.Height = urlMode ? 144 : 80;
         if (currentKind == CustomActionKind.Url)
@@ -220,6 +297,15 @@ internal sealed class ActionEditorWindow : Window
         else { destination.Text = $"{(currentKind == CustomActionKind.JavaScript ? "Node.js" : currentKind == CustomActionKind.Python ? "Python 3" : "PowerShell")} · {(usesInput ? language.Get("ActionEditorWindow_079") : language.Get("ActionEditorWindow_080"))}";
             preview.Text = usesInput ? language.Get("ActionEditorWindow_064") : language.Get("ActionEditorWindow_065"); }
         testStatus.Text = "";
+    }
+
+    private static string FormatArgument(string argument) => System.Text.Json.JsonSerializer.Serialize(argument,
+        ArgumentPreviewFormat);
+
+    private void SetTestLabel(string label)
+    {
+        ((StackPanel)test.Content).Children.OfType<TextBlock>().Single().Text = label;
+        AutomationProperties.SetName(test, label);
     }
     private void InsertVariable()
     {
@@ -249,6 +335,13 @@ internal sealed class ActionEditorWindow : Window
     {
         if (testing != null) return; var action = ReadAction(); if (action == null) return;
         if (currentKind == CustomActionKind.Url) { UpdatePreview(); testStatus.Text = language.Get("ActionEditorWindow_067"); return; }
+        if (currentKind == CustomActionKind.Launch)
+        {
+            UpdatePreview();
+            var launch = await CustomActionRunner.RunAsync(action, action.UseSelection ? sample.Text : "", CancellationToken.None);
+            testStatus.Text = language.Run(() => ScriptDiagnostic.StatusText(launch.Status == "ok" ? "launch-ok" : launch.Status));
+            return;
+        }
         var testInput = action.UseSelection ? sample.Text : ""; var testRevision = previewRevision;
         using var cancellation = new CancellationTokenSource(); testing = cancellation; test.IsEnabled = false; kind.IsEnabled = false; stop.Visibility = Visibility.Visible;
         ResetResultDisplay(); diagnostics.Clear(); comparison.Clear(); preview.Text = ""; preview.Height = 80; preview.Visibility = Visibility.Visible;

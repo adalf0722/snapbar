@@ -2929,4 +2929,70 @@
   <data name="AiPanel_SelectedView" xml:space="preserve"><value>目前檢視</value></data>
   <data name="AiPanel_UseOriginal" xml:space="preserve"><value>用原文</value></data>
   <data name="AiPanel_UseCurrent" xml:space="preserve"><value>用目前結果</value></data>
+  <data name="Launch_Kind" xml:space="preserve">
+    <value>啟動程式</value>
+  </data>
+  <data name="Launch_Browse" xml:space="preserve">
+    <value>瀏覽…</value>
+  </data>
+  <data name="Launch_FileFilter" xml:space="preserve">
+    <value>執行檔 (*.exe)|*.exe</value>
+  </data>
+  <data name="Launch_Executable" xml:space="preserve">
+    <value>執行檔</value>
+  </data>
+  <data name="Launch_Arguments" xml:space="preserve">
+    <value>命令列參數</value>
+  </data>
+  <data name="Launch_ArgumentHelp" xml:space="preserve">
+    <value>每欄填寫一個參數。{selection} 會帶入選取文字，{selection:url} 會帶入網址編碼後的文字。</value>
+  </data>
+  <data name="Launch_AddArgument" xml:space="preserve">
+    <value>新增參數</value>
+  </data>
+  <data name="Launch_AddSelection" xml:space="preserve">
+    <value>加入選取文字</value>
+  </data>
+  <data name="Launch_AddEncodedSelection" xml:space="preserve">
+    <value>加入網址編碼文字</value>
+  </data>
+  <data name="Launch_Argument" xml:space="preserve">
+    <value>參數</value>
+  </data>
+  <data name="Launch_RemoveArgument" xml:space="preserve">
+    <value>移除參數</value>
+  </data>
+  <data name="Launch_Preview" xml:space="preserve">
+    <value>啟動預覽</value>
+  </data>
+  <data name="Launch_NoExecutable" xml:space="preserve">
+    <value>選擇執行檔以預覽啟動設定。</value>
+  </data>
+  <data name="Launch_Test" xml:space="preserve">
+    <value>測試啟動</value>
+  </data>
+  <data name="Launch_TestNote" xml:space="preserve">
+    <value>測試時會使用預覽的參數開啟指定程式。</value>
+  </data>
+  <data name="Launch_Success" xml:space="preserve">
+    <value>已啟動程式。</value>
+  </data>
+  <data name="Launch_FileMissing" xml:space="preserve">
+    <value>找不到執行檔。請在動作設定中檢查路徑。</value>
+  </data>
+  <data name="Launch_ArgumentsTooLong" xml:space="preserve">
+    <value>參數過長。請縮短選取文字或減少參數。</value>
+  </data>
+  <data name="Launch_Failed" xml:space="preserve">
+    <value>Windows 無法啟動此程式。請確認目前的帳戶可開啟此執行檔。</value>
+  </data>
+  <data name="Launch_NoSelection" xml:space="preserve">
+    <value>請選取要傳給程式的文字。</value>
+  </data>
+  <data name="Validation_action-launch-path-invalid" xml:space="preserve">
+    <value>請選擇執行檔 (.exe) 或輸入其完整路徑。</value>
+  </data>
+  <data name="Validation_action-launch-arguments-invalid" xml:space="preserve">
+    <value>請檢查動作設定中的命令列參數。</value>
+  </data>
 </root>

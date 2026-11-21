@@ -148,6 +148,13 @@ internal sealed partial class OcrResultWindow
             {
                 var result = await (actionDependencies.RunCustom ?? CustomActionRunner.RunAsync)(custom, ticket.Input, cancellation.Token);
                 if (!Current() || cancellation.IsCancellationRequested) return;
+                if (custom.Kind == CustomActionKind.Launch)
+                {
+                    if (result.Status != "cancelled")
+                        status.Text = language.Run(() => ScriptDiagnostic.StatusText(result.Success ? "launch-ok" : result.Status));
+                    if (result.Success) Remember(item);
+                    return;
+                }
                 var diagnostic = ScriptDiagnostic.Create(custom, result);
                 var replaced = false;
                 bool CanPresent() => Current() || replaced && !actionClosed && invocation == serial

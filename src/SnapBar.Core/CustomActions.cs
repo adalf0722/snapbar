@@ -1,13 +1,16 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace SnapBar.Core;
 
-public enum CustomActionKind { Url, PowerShell, JavaScript, Python }
+public enum CustomActionKind { Url, PowerShell, JavaScript, Python, Launch }
 public enum ActionOutput { None, Clipboard, ReplaceSelection, Hud, Window, Markdown }
 public enum ActionPlacement { Bar, More, Hidden }
 public sealed record CustomActionDefinition(string Id, string Name, CustomActionKind Kind, string Icon, string Content,
-    ActionOutput Output = ActionOutput.Window, int TimeoutSeconds = 10, string? InterpreterPath = null, bool UseSelection = true);
+    ActionOutput Output = ActionOutput.Window, int TimeoutSeconds = 10, string? InterpreterPath = null, bool UseSelection = true,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string[]? Arguments = null);
 public sealed record ActionLayoutEntry(string Id, ActionPlacement Placement);
 public sealed record ActionSettings
 {
@@ -24,6 +27,10 @@ public sealed record ActionItem(string Id, string Name, string Icon, TextAction?
 
 public static class CustomActionPolicy
 {
+    public const string SelectionPlaceholder = "{selection}";
+    public const string EncodedSelectionPlaceholder = "{selection:url}";
+    private const int LaunchArgumentLimit = 32768;
+    private static readonly Regex LaunchSelection = new(@"\{selection(?::url)?\}", RegexOptions.CultureInvariant);
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     private sealed record Envelope(int Version, CustomActionDefinition Action);
     internal static string NormalizeIcon(string? value) =>
@@ -38,12 +45,44 @@ public static class CustomActionPolicy
         if (action == null || !ValidId(action.Id)) return "action-id-invalid";
         if (string.IsNullOrWhiteSpace(action.Name) || action.Name.Length > 32 || action.Name.Any(char.IsControl)) return "action-name-invalid";
         if (!Enum.IsDefined(action.Kind) || !Enum.IsDefined(action.Output)) return "action-kind-invalid";
+        if (action.Kind == CustomActionKind.Launch)
+        {
+            if (string.IsNullOrWhiteSpace(action.Content) || action.Content.Length > 32768
+                || action.Content.Any(char.IsControl) || action.Content.Contains('"')
+                || !Path.IsPathFullyQualified(action.Content)
+                || !string.Equals(Path.GetExtension(action.Content), ".exe", StringComparison.OrdinalIgnoreCase))
+                return "action-launch-path-invalid";
+            if (action.Output != ActionOutput.None || action.InterpreterPath != null || action.Arguments is not { } arguments
+                || arguments.Any(argument => argument == null || argument.Contains('\0'))
+                || arguments.Sum(argument => (long)argument.Length + 1) > LaunchArgumentLimit)
+                return "action-launch-arguments-invalid";
+            return action.UseSelection == LaunchUsesSelection(arguments) ? null : "action-launch-arguments-invalid";
+        }
         if (action.TimeoutSeconds is < 1 or > 300) return "action-timeout-invalid";
         if (string.IsNullOrWhiteSpace(action.Content) || action.Content.Length > 32768) return "action-content-invalid";
         if (action.InterpreterPath != null && (action.InterpreterPath.Length > 32768 || action.InterpreterPath.Any(char.IsControl))) return "action-interpreter-invalid";
         if (action.Kind == CustomActionKind.Url && !action.UseSelection) return "action-selection-required";
         if (action.Kind == CustomActionKind.Url && !ValidTemplate(action.Content)) return "action-template-invalid";
         return null;
+    }
+
+    public static bool LaunchUsesSelection(IEnumerable<string> arguments) => arguments.Any(argument => LaunchSelection.IsMatch(argument));
+
+    public static string[]? ResolveLaunchArguments(string[] arguments, string text)
+    {
+        if (text.Length > LaunchArgumentLimit && LaunchUsesSelection(arguments)) return null;
+        var encoded = arguments.Any(argument => argument.Contains(EncodedSelectionPlaceholder, StringComparison.Ordinal))
+            ? Uri.EscapeDataString(text) : "";
+        long length = 0;
+        foreach (var argument in arguments)
+        {
+            length += argument.Length + 1L;
+            foreach (var match in LaunchSelection.EnumerateMatches(argument))
+                length += (match.Length == SelectionPlaceholder.Length ? text.Length : encoded.Length) - match.Length;
+            if (length > LaunchArgumentLimit) return null;
+        }
+        return arguments.Select(argument => LaunchSelection.Replace(argument,
+            match => match.Length == SelectionPlaceholder.Length ? text : encoded)).ToArray();
     }
 
     private static bool ValidTemplate(string? template)
@@ -70,7 +109,8 @@ public static class CustomActionPolicy
     public static string Export(CustomActionDefinition action)
     {
         if (Validate(action) is { } error) throw new ProductValidationException(error);
-        return JsonSerializer.Serialize(new Envelope(2, action with { Icon = NormalizeIcon(action.Icon) }), JsonOptions);
+        return JsonSerializer.Serialize(new Envelope(action.Kind == CustomActionKind.Launch ? 3 : 2,
+            action with { Icon = NormalizeIcon(action.Icon) }), JsonOptions);
     }
 
     public static CustomActionDefinition Import(string json)
@@ -81,7 +121,8 @@ public static class CustomActionPolicy
             using var document = JsonDocument.Parse(json);
             RejectDuplicates(document.RootElement);
             var envelope = JsonSerializer.Deserialize<Envelope>(json, JsonOptions);
-            if (envelope?.Version is not (1 or 2) || envelope.Action == null || (envelope.Version == 1 && !envelope.Action.UseSelection))
+            if (envelope?.Version is not (1 or 2 or 3) || envelope.Action == null || (envelope.Version == 1 && !envelope.Action.UseSelection)
+                || (envelope.Version == 3) != (envelope.Action.Kind == CustomActionKind.Launch))
                 throw new ProductValidationException("action-import-version");
             if (Validate(envelope.Action) is { } error) throw new ProductValidationException(error);
             return envelope.Action with { Id = "custom-" + Guid.NewGuid().ToString("N"), Icon = NormalizeIcon(envelope.Action.Icon) };
