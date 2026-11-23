@@ -3016,4 +3016,22 @@
   <data name="Support_Preview" xml:space="preserve">
     <value>儲存前請先檢視報告。你可以把儲存的檔案附在支援回報中。</value>
   </data>
+  <data name="ActionsSearch_Label" xml:space="preserve">
+    <value>搜尋動作</value>
+  </data>
+  <data name="ActionsSearch_Help" xml:space="preserve">
+    <value>依動作名稱搜尋動作列、更多與隱藏中的所有動作。</value>
+  </data>
+  <data name="ActionsSearch_Clear" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="ActionsSearch_Count" xml:space="preserve">
+    <value>共 {1} 項動作，找到 {0} 項 · 所有位置 · 清除搜尋後可排序</value>
+  </data>
+  <data name="ActionsSearch_Results" xml:space="preserve">
+    <value>所有位置的動作搜尋結果</value>
+  </data>
+  <data name="ActionsSearch_Empty" xml:space="preserve">
+    <value>找不到符合的動作。清除搜尋即可恢復清單。</value>
+  </data>
 </root>

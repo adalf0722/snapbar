@@ -3016,4 +3016,22 @@ Its enabled state will be preserved.</value>
   <data name="Support_Preview" xml:space="preserve">
     <value>Review the report before saving. You can attach the saved file to your support request.</value>
   </data>
+  <data name="ActionsSearch_Label" xml:space="preserve">
+    <value>Search actions</value>
+  </data>
+  <data name="ActionsSearch_Help" xml:space="preserve">
+    <value>Search action names across Toolbar, More and Hidden.</value>
+  </data>
+  <data name="ActionsSearch_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ActionsSearch_Count" xml:space="preserve">
+    <value>{0} of {1} actions · All locations · Clear search to reorder</value>
+  </data>
+  <data name="ActionsSearch_Results" xml:space="preserve">
+    <value>Action search results across all locations</value>
+  </data>
+  <data name="ActionsSearch_Empty" xml:space="preserve">
+    <value>No matching actions. Clear the search to show the list.</value>
+  </data>
 </root>

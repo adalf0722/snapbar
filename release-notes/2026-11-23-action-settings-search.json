@@ -1,0 +1,18 @@
+{
+  "title": "在動作列設定搜尋所有動作",
+  "summary": "動作列設定新增搜尋，可一次找到動作列、更多與隱藏中的動作，直接編輯或調整顯示位置。",
+  "highlights": [
+    "依動作名稱即時搜尋所有位置，支援內建與自訂動作。",
+    "搜尋結果保留編輯與顯示位置操作；清除搜尋即可恢復原分頁與排序。"
+  ],
+  "usage": "開啟設定 → 動作列，在「搜尋動作」輸入名稱。搜尋期間暫停排序，按「清除」即可恢復，不需額外設定。",
+  "en": {
+    "title": "Find actions across all toolbar settings",
+    "summary": "Search Toolbar, More and Hidden together, then edit matching actions or change their display location.",
+    "highlights": [
+      "Find built-in and custom actions by name as you type, across all locations.",
+      "Edit results and change display locations directly; clear the search to return to your previous tab and reorder actions."
+    ],
+    "usage": "Open Settings → Toolbar and enter a name in Search actions. Reordering is paused while searching; select Clear to restore it. No additional setup is required."
+  }
+}

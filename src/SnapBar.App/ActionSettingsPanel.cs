@@ -34,6 +34,9 @@ internal sealed class ActionSettingsPanel : ContentControl
     private readonly Dictionary<ActionPlacement, RadioButton> tabs = new();
     private readonly ScrollViewer listScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     private ActionPlacement selectedPlacement = ActionPlacement.Bar;
+    private readonly TextBox filter = ActionUi.Input("", 256);
+    private readonly TextBlock filterStatus = ActionUi.Text("", 12, ActionUi.Muted);
+    private readonly Button clearFilter;
 
     public ActionSettingsPanel(ActionSettings initial, Func<ActionSettings, bool> save, Action? editSearch = null,
         Action? manageDictionary = null, bool dictionaryInstalled = false, UiLanguage? language = null)
@@ -101,6 +104,19 @@ internal sealed class ActionSettingsPanel : ContentControl
                 wasCompact = compact;
             }
         };
+        var searchLine = new DockPanel { Margin = new(0, 0, 0, 8) };
+        clearFilter = ActionUi.Button(Text("ActionsSearch_Clear"), () => { filter.Clear(); filter.Focus(); });
+        AutomationProperties.SetAutomationId(clearFilter, "ClearActionsSearch");
+        DockPanel.SetDock(clearFilter, Dock.Right); searchLine.Children.Add(clearFilter);
+        filter.ToolTip = Text("ActionsSearch_Help"); filter.Margin = new(0, 0, 10, 0);
+        AutomationProperties.SetAutomationId(filter, "ActionsSearch");
+        AutomationProperties.SetName(filter, Text("ActionsSearch_Label"));
+        var searchFields = new StackPanel();
+        searchFields.Children.Add(ActionUi.Text(Text("ActionsSearch_Label"), 12, ActionUi.Muted));
+        searchFields.Children.Add(filter); searchLine.Children.Add(searchFields); top.Children.Add(searchLine);
+        AutomationProperties.SetAutomationId(filterStatus, "ActionsSearchStatus"); SettingsFeedback.Live(filterStatus);
+        filterStatus.Margin = new(0, 0, 0, 8); top.Children.Add(filterStatus);
+        filter.TextChanged += (_, _) => { Render(); listScroll.ScrollToTop(); };
         var navigation = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 8) };
         foreach (var placement in Enum.GetValues<ActionPlacement>())
         {
@@ -135,6 +151,7 @@ internal sealed class ActionSettingsPanel : ContentControl
     internal bool FocusSearchEditor() => searchEdit?.Focus() == true;
     internal void FocusDictionaryEditor()
     {
+        filter.Clear();
         var placement = settings.Layout.Single(entry => entry.Id == "lookup").Placement;
         tabs[placement].IsChecked = true;
         dictionaryEdit?.BringIntoView();
@@ -159,6 +176,10 @@ internal sealed class ActionSettingsPanel : ContentControl
 
     private void Render()
     {
+        var words = filter.Text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var searching = words.Length > 0;
+        clearFilter.Visibility = filter.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        filterStatus.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
         var focusId = groups.IsKeyboardFocusWithin && Keyboard.FocusedElement is DependencyObject focused
             ? AutomationProperties.GetAutomationId(focused) : null;
         searchEdit = null; searchDraftStatus = null;
@@ -169,6 +190,7 @@ internal sealed class ActionSettingsPanel : ContentControl
             selectedPlacement = ActionPlacement.More;
         foreach (var (placement, tab) in tabs)
         {
+            tab.IsEnabled = !searching;
             var count = settings.Layout.Count(e => e.Placement == placement);
             tab.Content = placement switch
             {
@@ -199,19 +221,29 @@ internal sealed class ActionSettingsPanel : ContentControl
         SettingsFeedback.Hint(dots, Text("ActionSettingsPanel_041"));
         var moreSurface = new Border { Child = dots, Background = Brushes.Transparent, CornerRadius = new(6) }; preview.Children.Add(moreSurface);
         groups.Children.Clear(); var all = ActionCatalog.GetItems(settings).ToDictionary(a => a.Id);
+        var matches = all.Values.Where(item => words.All(word => (UiNames.Action(item, language) + "\n" + item.Name)
+            .Contains(word, StringComparison.OrdinalIgnoreCase))).Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
+        filterStatus.Text = Text("ActionsSearch_Count", matches.Count, all.Count);
         var columnHeader = new Grid { Margin = new(9, 0, 7, 5), MinHeight = 20 };
-        ConfigureColumns(columnHeader, selectedPlacement == ActionPlacement.Bar);
+        ConfigureColumns(columnHeader, !searching && selectedPlacement == ActionPlacement.Bar);
         void Header(string key, int column)
         {
             var label = ActionUi.Text(Text(key), 12, ActionUi.Muted); Grid.SetColumn(label, column); columnHeader.Children.Add(label);
         }
-        if (selectedPlacement == ActionPlacement.Bar) Header("SettingsPolish_Order", 3);
+        if (!searching && selectedPlacement == ActionPlacement.Bar) Header("SettingsPolish_Order", 3);
         Header("SettingsPolish_Actions", 4); Header("ActionSettingsPanel_011", 5); groups.Children.Add(columnHeader);
-        foreach (var placement in new[] { selectedPlacement })
+        AutomationProperties.SetName(listScroll, searching ? Text("ActionsSearch_Results") : selectedPlacement switch { ActionPlacement.Bar => Text("ActionSettingsPanel_024"), ActionPlacement.More => Text("ActionSettingsPanel_025"), _ => Text("ActionSettingsPanel_026") });
+        if (searching && matches.Count == 0)
         {
-            var list = settings.Layout.Where(e => e.Placement == placement).ToArray();
+            var empty = ActionUi.Text(Text("ActionsSearch_Empty"), 13, ActionUi.Muted);
+            AutomationProperties.SetAutomationId(empty, "ActionsSearchEmpty");
+            empty.Margin = new(12, 18, 12, 18); groups.Children.Add(empty);
+        }
+        foreach (var placement in searching ? Enum.GetValues<ActionPlacement>() : new[] { selectedPlacement })
+        {
+            var list = settings.Layout.Where(e => e.Placement == placement && (!searching || matches.Contains(e.Id))).ToArray();
+            if (searching && list.Length == 0) continue;
             if (placement == ActionPlacement.Hidden && list.Length == 0) continue;
-            AutomationProperties.SetName(listScroll, placement switch { ActionPlacement.Bar => Text("ActionSettingsPanel_024"), ActionPlacement.More => Text("ActionSettingsPanel_025"), _ => Text("ActionSettingsPanel_026") });
             if (list.Length == 0)
             {
                 var empty = ActionUi.Text(placement == ActionPlacement.More ? Text("ActionSettingsPanel_027") : Text("ActionSettingsPanel_028"), 13, ActionUi.Muted);
@@ -221,7 +253,7 @@ internal sealed class ActionSettingsPanel : ContentControl
             {
                 var item = all[entry.Id]; var row = new Grid { MinHeight = 48 };
                 AutomationProperties.SetAutomationId(row, "ActionRow_" + item.Id);
-                ConfigureColumns(row, placement == ActionPlacement.Bar);
+                ConfigureColumns(row, !searching && placement == ActionPlacement.Bar);
                 var image = ActionUi.ItemIcon(item, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
                 var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(UiNames.Action(item, language), 14));
                 if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind == CustomActionKind.Launch
@@ -243,7 +275,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                 var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 var reorder = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 Grid.SetColumn(reorder, 3); row.Children.Add(reorder);
-                if (placement == ActionPlacement.Bar)
+                if (!searching && placement == ActionPlacement.Bar)
                 {
                     var up = SettingsFeedback.IconButton("up", Text("ActionSettingsPanel_030"), () => Commit(ActionCatalog.Move(settings, item.Id, -1), Text("SettingsFeedback_Reordered", UiNames.Action(item, language)))); reorder.Children.Add(up);
                     var down = SettingsFeedback.IconButton("down", Text("ActionSettingsPanel_031"), () => Commit(ActionCatalog.Move(settings, item.Id, 1), Text("SettingsFeedback_Reordered", UiNames.Action(item, language)))); reorder.Children.Add(down);
