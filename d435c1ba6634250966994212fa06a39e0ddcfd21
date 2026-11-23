@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "kind": "snapbar-desktop",
+  "commit": "d435c1ba6634250966994212fa06a39e0ddcfd21",
+  "tree": "213c1b48c7f3f7ad1ebea45522c90d8e0c90ca59",
+  "report": {
+    "schema": 1,
+    "success": true,
+    "sourceFingerprint": "E03C356EC88FF3DF542ABAC01D1250FADE7E1F4B020D5719730F7EDA67F8B46C",
+    "startedUtc": "2026-11-23T13:49:53.9567708Z",
+    "finishedUtc": "2026-11-23T13:52:34.6955821Z",
+    "results": [
+      {
+        "name": "Build",
+        "success": true,
+        "exitCode": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 14.364
+      },
+      {
+        "name": "Preflight",
+        "success": true,
+        "exitCode": 0,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 0.559
+      },
+      {
+        "name": "ActionRunner",
+        "success": true,
+        "exitCode": 0,
+        "passed": 38,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": true,
+        "seconds": 13.252
+      },
+      {
+        "name": "Lifecycle",
+        "success": true,
+        "exitCode": 0,
+        "passed": 173,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 11.154
+      },
+      {
+        "name": "Appearance",
+        "success": true,
+        "exitCode": 0,
+        "passed": 266,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 7.834
+      },
+      {
+        "name": "CompatibilitySlow",
+        "success": true,
+        "exitCode": 0,
+        "passed": 43,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 60.147
+      },
+      {
+        "name": "ClipboardRaces",
+        "success": true,
+        "exitCode": 0,
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 6.713
+      },
+      {
+        "name": "SupportRecovery",
+        "success": true,
+        "exitCode": 0,
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 0.941
+      },
+      {
+        "name": "AiRuntime",
+        "success": true,
+        "exitCode": 0,
+        "passed": 117,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 0.18
+      },
+      {
+        "name": "AiPanel",
+        "success": true,
+        "exitCode": 0,
+        "passed": 272,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 10.299
+      },
+      {
+        "name": "Lookup",
+        "success": true,
+        "exitCode": 0,
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 6.904
+      },
+      {
+        "name": "Language",
+        "success": true,
+        "exitCode": 0,
+        "passed": 69,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 1.995
+      },
+      {
+        "name": "AutoCopy",
+        "success": true,
+        "exitCode": 0,
+        "passed": 52,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 25.439
+      },
+      {
+        "name": "Updates",
+        "success": true,
+        "exitCode": 0,
+        "passed": 36,
+        "failed": 0,
+        "skipped": 0,
+        "runtimesRequired": null,
+        "seconds": 0.694
+      }
+    ]
+  }
+}
