@@ -6,9 +6,9 @@
   "report": {
     "schema": 1,
     "success": true,
-    "sourceFingerprint": "E03C356EC88FF3DF542ABAC01D1250FADE7E1F4B020D5719730F7EDA67F8B46C",
-    "startedUtc": "2026-11-23T13:49:53.9567708Z",
-    "finishedUtc": "2026-11-23T13:52:34.6955821Z",
+    "sourceFingerprint": "80E2841A8EF481A030DCF015A4797C605B0A9DBE9AEEF71532F7479F4F740530",
+    "startedUtc": "2026-11-23T14:01:46.827108Z",
+    "finishedUtc": "2026-11-23T14:04:21.096181Z",
     "results": [
       {
         "name": "Build",
@@ -18,7 +18,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 14.364
+        "seconds": 8.963
       },
       {
         "name": "Preflight",
@@ -28,7 +28,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 0.559
+        "seconds": 0.218
       },
       {
         "name": "ActionRunner",
@@ -38,7 +38,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": true,
-        "seconds": 13.252
+        "seconds": 13.266
       },
       {
         "name": "Lifecycle",
@@ -48,7 +48,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 11.154
+        "seconds": 8.794
       },
       {
         "name": "Appearance",
@@ -58,7 +58,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 7.834
+        "seconds": 9.367
       },
       {
         "name": "CompatibilitySlow",
@@ -68,7 +68,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 60.147
+        "seconds": 59.596
       },
       {
         "name": "ClipboardRaces",
@@ -78,7 +78,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 6.713
+        "seconds": 7.542
       },
       {
         "name": "SupportRecovery",
@@ -88,7 +88,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 0.941
+        "seconds": 0.95
       },
       {
         "name": "AiRuntime",
@@ -98,7 +98,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 0.18
+        "seconds": 0.205
       },
       {
         "name": "AiPanel",
@@ -108,7 +108,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 10.299
+        "seconds": 10.47
       },
       {
         "name": "Lookup",
@@ -118,7 +118,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 6.904
+        "seconds": 7.075
       },
       {
         "name": "Language",
@@ -128,7 +128,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 1.995
+        "seconds": 2.022
       },
       {
         "name": "AutoCopy",
@@ -138,7 +138,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 25.439
+        "seconds": 24.801
       },
       {
         "name": "Updates",
@@ -148,7 +148,7 @@
         "failed": 0,
         "skipped": 0,
         "runtimesRequired": null,
-        "seconds": 0.694
+        "seconds": 0.742
       }
     ]
   }
