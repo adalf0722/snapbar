@@ -94,7 +94,7 @@ internal static class Program
             "--action-layout", "--menu-keyboard", "--custom-actions", "--custom-action-runner", "--action-diagnostics", "--ai-panel", "--ai-preview",
             "--path-worker-tests", "--path-actions", "--path-shell-smoke", "--web-actions", "--lookup", "--screen-ocr", "--browser-launch-smoke",
             "--app-exclusions", "--tray-lifecycle", "--clipboard-races", "--sublime-action", "--uia-readiness",
-            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language", "--ocr-actions", "--persistent-results", "--native-clipboard-source", "--auto-copy", "--support-recovery"];
+            "--uia-deep-tree", "--clipboard-roundtrip", "--desktop-preflight", "--interface-language", "--ocr-actions", "--persistent-results", "--native-clipboard-source", "--auto-copy", "--support-recovery", "--updates"];
         if (args.SequenceEqual(["--list-tests"])) { foreach (var test in tests) Console.WriteLine(test); return 0; }
         var worker = args.Any(a => a is "--clipboard-compatibility-fixture" or "--path-worker" or "--clipboard-race-writer");
         var requireActionRuntimes = args.SequenceEqual(["--custom-action-runner", "--require-runtimes"]);
@@ -105,6 +105,7 @@ internal static class Program
             return 2;
         }
         if (args.Contains("--ai-runtime")) return AiRuntimeTest.RunAsync().GetAwaiter().GetResult();
+        if (args.Contains("--updates")) return UpdateNotificationTest.Run();
         if (args.Contains("--interface-language")) return InterfaceLanguageTest.Run();
         if (args.Contains("--desktop-preflight")) return DesktopPreflight.Run();
         if (args.Contains("--clipboard-compatibility-long")) return ClipboardCompatibilityTest.Run(includeLong: true);

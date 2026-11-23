@@ -399,6 +399,13 @@ internal static class SettingsNavigationTest
             "settings constrained diagnostics retain full build information and a reachable fixture button");
         UiAppearanceTest.Snapshot(main, "settings-constrained-about-diagnostics.png");
         diagnostics.IsExpanded = false;
+        main.NavigateTo(SettingsCategory.General); await Layout(main);
+        main.ShowUpdate(new("999.0.0", null)); await Layout(main);
+        var updateSection = Find<Expander>(main, "UpdateSection");
+        var updateBounds = updateSection.TransformToAncestor(content).TransformBounds(new Rect(updateSection.RenderSize));
+        check(main.CurrentCategory == SettingsCategory.About && updateSection.IsExpanded && !diagnostics.IsExpanded
+            && updateBounds.Top >= 0 && updateBounds.Top < content.ActualHeight,
+            "update entry reveals its section after navigating from another category in a constrained window");
         main.ClearWorkAreaConstraint(); main.Width = 980; main.Height = 720;
         main.NavigateTo(SettingsCategory.General); await Layout(main);
     }

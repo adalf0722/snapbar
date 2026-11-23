@@ -38,6 +38,10 @@ To report a selection problem, click **Record the next 2 minutes** on the diagno
 
 ## Quit or update
 
+Public builds check GitHub in the background 30 seconds after startup, then at most once a day. Stable builds receive stable releases; preview builds can receive newer preview or stable releases. Each version is announced once, with reminders deferred during selection, actions, AI or OCR. Website-only and documentation-only releases do not trigger reminders. Windows may suppress tray notifications; the tray update entry and **About and support → Updates** remain available.
+
+The update section provides manual checks, bilingual summaries and a link to the exact release. You can turn automatic checks off. Checks retrieve only public GitHub release information, never selected text or clipboard contents. Preferences and reminder history are stored separately in `%LOCALAPPDATA%/SnapBar/updates.json`. Development and test builds do not check for updates. Downloads and installation remain manual.
+
 Closing settings keeps SnapBar running in the tray. Use **Quit SnapBar** in settings or the tray menu to exit completely. Pausing automatic detection does not disable the manual shortcut. Close any separate test window yourself.
 
 Before updating, quit the old copy, extract the new ZIP completely, and start its executable. Saved preferences and AI keys are reused for the same Windows account. If you move the folder, re-enable optional login startup. There is no automatic updater.

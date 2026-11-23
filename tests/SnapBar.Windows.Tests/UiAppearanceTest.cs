@@ -60,9 +60,11 @@ internal static class UiAppearanceTest
                 Check(Children<TextBlock>(main).Single(t => AutomationProperties.GetAutomationId(t) == "SettingsVersionChannel").Text == UiText.Get("VersionChannel_" + productVersion.Channel),
                     "support page displays the localized release channel");
                 main.NavigateTo(SettingsCategory.About); main.UpdateLayout(); Snapshot(main, "settings-version.png");
-                var diagnostics = Children<Expander>(main).Single(expander => expander.IsVisible);
+                var diagnostics = Children<Expander>(main).Single(expander => AutomationProperties.GetAutomationId(expander) == "DiagnosticsSection");
                 diagnostics.IsExpanded = true;
                 main.UpdateLayout();
+                Check(!Children<Expander>(main).Single(expander => AutomationProperties.GetAutomationId(expander) == "UpdateSection").IsExpanded,
+                    "expanded diagnostics collapse updates to preserve room for support controls");
                 Check(Children<Button>(main).Count(button => button.IsVisible &&
                     AutomationProperties.GetAutomationId(button) is "ExportDiagnostics" or "RecordDiagnostics") == 2,
                     "expanded diagnostics show export and reproduction controls");

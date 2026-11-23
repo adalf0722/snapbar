@@ -3034,4 +3034,23 @@ Its enabled state will be preserved.</value>
   <data name="ActionsSearch_Empty" xml:space="preserve">
     <value>No matching actions. Clear the search to show the list.</value>
   </data>
+  <data name="Updates_Heading" xml:space="preserve"><value>Updates</value></data>
+  <data name="Updates_NotChecked" xml:space="preserve"><value>Updates have not been checked yet.</value></data>
+  <data name="Updates_Unsupported" xml:space="preserve"><value>Update checks are unavailable for development or test builds.</value></data>
+  <data name="Updates_StorageUnavailable" xml:space="preserve"><value>Update preferences could not be saved. Automatic checks are paused; you can still check manually.</value></data>
+  <data name="Updates_Available" xml:space="preserve"><value>A newer version is available.</value></data>
+  <data name="Updates_Checking" xml:space="preserve"><value>Checking for updates…</value></data>
+  <data name="Updates_Current" xml:space="preserve"><value>You are using the latest version for your channel.</value></data>
+  <data name="Updates_Failed" xml:space="preserve"><value>Updates could not be checked. Please try again later.</value></data>
+  <data name="Updates_Automatic" xml:space="preserve"><value>Automatically check for updates</value></data>
+  <data name="Updates_Privacy" xml:space="preserve"><value>Connects to GitHub for public release information. Selected text and clipboard contents are never sent. You can turn this off at any time.</value></data>
+  <data name="Updates_Check" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="Updates_Download" xml:space="preserve"><value>View update and download</value></data>
+  <data name="Updates_Retry" xml:space="preserve"><value>You can check again after {0}.</value></data>
+  <data name="Updates_FullNotes" xml:space="preserve"><value>View the full release notes for this version.</value></data>
+  <data name="Updates_LastSuccess" xml:space="preserve"><value>Last successful check: {0}</value></data>
+  <data name="Updates_Install" xml:space="preserve"><value>Quit the old version from the tray, fully extract the new package, then open it. Your existing settings will be preserved.</value></data>
+  <data name="Updates_OpenFailed" xml:space="preserve"><value>The release page could not be opened. Please try again.</value></data>
+  <data name="Updates_Tray" xml:space="preserve"><value>New version available…</value></data>
+  <data name="Updates_NotificationTitle" xml:space="preserve"><value>A new SnapBar version is available</value></data>
 </root>

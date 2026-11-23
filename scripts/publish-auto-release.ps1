@@ -36,6 +36,7 @@ else {
         '-F', "body=@$notesPath", '-F', 'draft=true', '-F', 'prerelease=true')) | ConvertFrom-Json
 }
 Assert-SnapBarAutoRelease $release $Version $Commit $RunId
+Assert-SnapBarDraftUpdateMetadata $release $SourceDirectory $Commit
 if ($release.id -notmatch '^[1-9][0-9]*$') { throw 'GitHub did not return a valid Release ID.' }
 $releaseEndpoint = "repos/$Repository/releases/$($release.id)"
 $uploads = @(Get-SnapBarAssetUploads @($release.assets) @($archive, $checksum))
@@ -48,6 +49,7 @@ foreach ($file in $uploads) {
 }
 $release = (Invoke-SnapBarGh @('api', $releaseEndpoint)) | ConvertFrom-Json
 Assert-SnapBarAutoRelease $release $Version $Commit $RunId
+Assert-SnapBarDraftUpdateMetadata $release $SourceDirectory $Commit
 if (@(Get-SnapBarAssetUploads @($release.assets) @($archive, $checksum)).Count) { throw 'Release assets are incomplete; leaving draft unpublished.' }
 if ($release.draft) {
     $refs = (Invoke-SnapBarGh @('api', "repos/$Repository/git/matching-refs/tags/$Version")) | ConvertFrom-Json

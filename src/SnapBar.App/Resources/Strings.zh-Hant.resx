@@ -3034,4 +3034,23 @@
   <data name="ActionsSearch_Empty" xml:space="preserve">
     <value>找不到符合的動作。清除搜尋即可恢復清單。</value>
   </data>
+  <data name="Updates_Heading" xml:space="preserve"><value>更新</value></data>
+  <data name="Updates_NotChecked" xml:space="preserve"><value>尚未檢查更新。</value></data>
+  <data name="Updates_Unsupported" xml:space="preserve"><value>開發或測試版本不提供更新檢查。</value></data>
+  <data name="Updates_StorageUnavailable" xml:space="preserve"><value>無法保存更新偏好，已暫停自動檢查；仍可手動檢查。</value></data>
+  <data name="Updates_Available" xml:space="preserve"><value>有新版本可供下載。</value></data>
+  <data name="Updates_Checking" xml:space="preserve"><value>正在檢查更新…</value></data>
+  <data name="Updates_Current" xml:space="preserve"><value>目前已是此通道的最新版本。</value></data>
+  <data name="Updates_Failed" xml:space="preserve"><value>暫時無法檢查更新，請稍後再試。</value></data>
+  <data name="Updates_Automatic" xml:space="preserve"><value>自動檢查更新</value></data>
+  <data name="Updates_Privacy" xml:space="preserve"><value>會連線 GitHub 取得公開版本資訊，不會傳送選取文字或剪貼簿內容，可隨時關閉。</value></data>
+  <data name="Updates_Check" xml:space="preserve"><value>檢查更新</value></data>
+  <data name="Updates_Download" xml:space="preserve"><value>查看更新與下載</value></data>
+  <data name="Updates_Retry" xml:space="preserve"><value>可於 {0} 後再次檢查。</value></data>
+  <data name="Updates_FullNotes" xml:space="preserve"><value>查看此版本的完整更新說明。</value></data>
+  <data name="Updates_LastSuccess" xml:space="preserve"><value>上次成功檢查：{0}</value></data>
+  <data name="Updates_Install" xml:space="preserve"><value>請先從系統匣結束舊版，再完整解壓縮並開啟新版。原有設定會保留。</value></data>
+  <data name="Updates_OpenFailed" xml:space="preserve"><value>無法開啟發布頁，請稍後再試。</value></data>
+  <data name="Updates_Tray" xml:space="preserve"><value>有新版本…</value></data>
+  <data name="Updates_NotificationTitle" xml:space="preserve"><value>SnapBar 有新版本</value></data>
 </root>

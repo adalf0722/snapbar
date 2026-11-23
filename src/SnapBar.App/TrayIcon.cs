@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using SnapBar.Core;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
 
@@ -15,16 +16,26 @@ internal sealed class TrayIcon : IDisposable
     private readonly Drawing.Icon lightIcon = LoadIcon("snapbar-tray-light"), darkIcon = LoadIcon("snapbar-tray-dark");
     private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
     private bool automatic, disposed;
+    private Forms.ToolStripMenuItem? updateItem;
+    private UpdateRelease? balloonUpdate;
+    internal bool NotificationPending { get; private set; }
+    private readonly Action showSettings;
+    private readonly Action<int, string, string> showBalloon;
+    internal Action<UpdateRelease?>? UpdateClicked { get; set; }
 
-    public TrayIcon(Action showSettings, Action toggleAutomatic, Action exit)
+    public TrayIcon(Action showSettings, Action toggleAutomatic, Action exit, Action<int, string, string>? showBalloon = null)
     {
+        this.showSettings = showSettings;
         menu.Items.Add(UiText.Get("TrayIcon_000"), null, (_, _) => showSettings());
         toggle = new Forms.ToolStripMenuItem(UiText.Get("TrayIcon_001"), null, (_, _) => toggleAutomatic());
         menu.Items.Add(toggle);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(UiText.Get("TrayIcon_002"), null, (_, _) => exit());
         icon = new Forms.NotifyIcon { Icon = ManualIcon(), Text = UiText.Get("TrayIcon_003"), ContextMenuStrip = menu, Visible = true };
+        this.showBalloon = showBalloon ?? ((duration, title, message) => icon.ShowBalloonTip(duration, title, message, Forms.ToolTipIcon.Info));
         icon.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) showSettings(); };
+        icon.BalloonTipClicked += (_, _) => HandleBalloonClick();
+        icon.BalloonTipClosed += (_, _) => { NotificationPending = false; };
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
@@ -49,8 +60,42 @@ internal sealed class TrayIcon : IDisposable
         menu.Items.Insert(2, item);
     }
 
-    public void NotifyHidden() => icon.ShowBalloonTip(4000, UiText.Get("TrayIcon_009"),
-        UiText.Get("TrayIcon_010"), Forms.ToolTipIcon.Info);
+    public void NotifyHidden()
+    {
+        if (NotificationPending) return;
+        balloonUpdate = null;
+        NotificationPending = true;
+        showBalloon(4000, UiText.Get("TrayIcon_009"), UiText.Get("TrayIcon_010"));
+    }
+
+    internal void SetUpdate(UpdateRelease? release, Action show)
+    {
+        if (updateItem == null)
+        {
+            updateItem = new Forms.ToolStripMenuItem(UiText.Get("Updates_Tray"));
+            updateItem.Click += (_, _) => show(); menu.Items.Insert(menu.Items.Count - 1, updateItem);
+        }
+        updateItem.Text = UiText.Get("Updates_Tray"); updateItem.Visible = release != null;
+    }
+
+    internal void NotifyUpdate(UpdateRelease release)
+    {
+        NotificationPending = true;
+        balloonUpdate = release;
+        var text = UiText.Culture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? release.Metadata?.Zh : release.Metadata?.En;
+        var summary = text?.Summaries.FirstOrDefault() ?? UiText.Get("Updates_FullNotes");
+        if (summary.Length > 180) summary = summary[..177] + "…";
+        showBalloon(5000, UiText.Get("Updates_NotificationTitle"), release.Version + " · "
+            + UiText.Get("VersionChannel_" + ProductVersion.Parse(release.Version).Channel) + "\n" + summary);
+    }
+
+    internal void HandleBalloonClick()
+    {
+        if (disposed) return;
+        if (balloonUpdate is { } release) UpdateClicked?.Invoke(release);
+        else showSettings();
+        NotificationPending = false;
+    }
 
     private static Drawing.Icon LoadIcon(string name)
     {

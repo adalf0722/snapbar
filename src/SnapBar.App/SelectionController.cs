@@ -25,6 +25,9 @@ public sealed partial class SelectionController : IDisposable
     private CancellationTokenSource? delay;
     private CancellationTokenSource? pathAction;
     private bool executing, disposed, stopping;
+    private int updateCaptureCount;
+    internal bool UpdateNotificationBusy => updateCaptureCount != 0 || executing || clipboardReader.IsBusy
+        || pendingAppearanceTarget != null || autoCopyTarget != null || popup.IsVisible || aiWindow?.IsVisible == true;
     private bool automatic;
     private bool sublimeClipboardEnabled;
     private ExcludedApplication[] excludedApplications = [];
@@ -179,6 +182,7 @@ public sealed partial class SelectionController : IDisposable
         if (pointer && (!(Automatic || autoCopyRequest) || !AppExclusionPolicy.AllowsAutomaticCapture(excludedApplications,
             excludedApplications.Length == 0 ? null : Native.GetExecutablePath(target)))) return;
         var watch = Stopwatch.StartNew();
+        updateCaptureCount++;
         var captureSequence = Native.GetClipboardSequenceNumber();
         if (autoCopyRequest) autoCopyTarget = target;
         if (pointer && Automatic && directAction == null) pendingAppearanceTarget = target;
@@ -304,6 +308,7 @@ public sealed partial class SelectionController : IDisposable
         { Report("window-error"); }
         finally
         {
+            updateCaptureCount--;
             if (readinessTicket == ticket) readinessTicket = null;
             if (generation.IsCurrent(ticket)) pendingAppearanceTarget = null;
             if (generation.IsCurrent(ticket) && copyFeedback?.IsVisible != true) autoCopyTarget = null;

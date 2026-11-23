@@ -109,7 +109,7 @@ public sealed partial class MainWindow
         aiCommandsPanel = new(aiPreferences); AddPage(SettingsCategory.AiCommands, aiCommandsPanel);
         aiSettingsPanel = new(aiPreferences); aiSettingsPanel.RevealRequested = () => ShowCategory(SettingsCategory.AiServices); AddPage(SettingsCategory.AiServices, aiSettingsPanel);
         AddPage(SettingsCategory.Compatibility, BuildCompatibilityPage());
-        var support = new SettingsSupportPage(() => _ = ExitAsync(), OpenOnboarding); status = support.Status; events = support.Events; AddPage(SettingsCategory.About, support);
+        var support = new SettingsSupportPage(() => _ = ExitAsync(), OpenOnboarding, updatePanel); status = support.Status; events = support.Events; AddPage(SettingsCategory.About, support);
         lifetimeHint = ActionUi.Text(UiText.Get("MainWindow_Settings_009"), 13, ActionUi.Brush("#4F5968")); lifetimeHint.Margin = new(0, 16, 0, 0); Grid.SetRow(lifetimeHint, 3); workspace.Children.Add(lifetimeHint);
         Content = shell;
         aiPreferences.SettingsHost = this;

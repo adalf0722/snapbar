@@ -72,7 +72,11 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 | AiRuntime / AiPanel | `--ai-runtime` / `--ai-panel` | HTTP／DPAPI、AI 面板與選取寫回；服務回應使用受控 fixture |
 | Ocr | `--screen-ocr` | 實體桌面框選、Esc、本機繁中與英文辨識；需要 VC++ x64 執行階段 |
 
-`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + ClipboardRaces + SupportRecovery + AiRuntime + AiPanel + Lookup + Language + AutoCopy。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。SupportRecovery 驗證未正常結束後的報告、診斷欄位與容量，以及 Probe 離開或逾時後可再次請求。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+`Release` = ActionRunner + Lifecycle + Appearance + CompatibilitySlow + ClipboardRaces + SupportRecovery + AiRuntime + AiPanel + Lookup + Language + AutoCopy + Updates。`All` 包含表中所有隔離套件，略過與慢速套件重複的 Compatibility。SupportRecovery 驗證未正常結束後的報告、診斷欄位與容量，以及 Probe 離開或逾時後可再次請求。需要真實 Sublime、瀏覽器或 Explorer 的 smoke 測試未納入自動 profile，需依個案準備環境。`--ai-preview` 可保留可丟棄的 AI 測試視窗供人工檢視，不呼叫真實服務。
+
+`Updates`（`--updates`）以隔離設定、可控時鐘與模擬 HTTP 驗證背景節流、通知去重、忙碌延後、取消、限流、分頁及保護設定檔。測試不連線 GitHub，也不下載套件；同時產生 `artifacts/checks/updates-preview/` 的繁中／英文、一般／窄視窗畫面。更新狀態獨立保存於 `updates.json`，不使背景檢查覆寫一般設定。
+
+新正式版發布前，先在乾淨且具完整 Git 歷史的 checkout 執行 `pwsh -NoProfile -File scripts/prepare-release-draft.ps1 -Version v0.1.0 -Commit <完整來源SHA> -PreviousTag <前一公開Tag> -Repository adalf0722/snapbar`。確認私有草稿內容後才在 GitHub Publish，沿用既有證據核對與附件上傳流程。首次發布可省略 `-PreviousTag`。新草稿共用人類說明與 `snapbar-update-v1` 結構化雙語摘要；既有草稿／公開版本重跑不覆寫 body。手工撰寫且缺少契約的歷史發布仍可下載，但不主動通知，避免從 Markdown 猜測是否有桌面變更。
 
 「關於與支援 → 診斷與測試」可預覽並匯出 JSON。平時選字事件僅保留在固定容量的記憶體中。使用者可啟動兩分鐘重現記錄，最近一次的快照保存在 `%LOCALAPPDATA%\SnapBar\diagnostics\reproduction.json`。`SNAPBAR_SELECTION_DIAGNOSTICS=1` 會在啟動時開始同樣的短期記錄。工作階段標記可顯示上次未正常結束，致命例外摘要含模組版本識別碼、方法 token 與 IL 位移，使用相同發行 ZIP 的組件和 PDB 解讀。
 

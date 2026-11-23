@@ -53,6 +53,7 @@ public sealed partial class MainWindow : Window
         // Existing valid guarded bindings are evidence of the legacy user's explicit choice.
         preferences = preferences with { SublimeCompatibilityEnabled = preferences.SublimeCompatibilityEnabled ?? this.sublimeIsReady() };
         InitializeOnboarding(enableFirstRun, settingsExisted, loaded.Warning);
+        InitializeUpdates();
         BuildSettingsPages();
         generalPage.ConfigureLanguage(preferences.InterfaceLanguage, ChangeInterfaceLanguage);
         selectionPage.ConfigureAutoCopy(preferences.AutoCopy, SaveAutoCopy);
@@ -60,7 +61,7 @@ public sealed partial class MainWindow : Window
         UiText.Changed += RefreshInterfaceLanguage;
         SourceInitialized += (_, _) =>
         {
-            try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); tray.AddOcr(StartOcr); }
+            try { tray = CreateTrayIcon(ShowSettings, ToggleAutomatic, () => _ = ExitAsync()); tray.AddOcr(StartOcr); tray.UpdateClicked = ShowUpdate; }
             catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
             { lifetimeHint.Text = UiText.Get("MainWindow_000"); trayUnavailable = true; lifetimeHint.Visibility = Visibility.Visible; }
             try
@@ -103,6 +104,7 @@ public sealed partial class MainWindow : Window
                 hotkeyNotice = true;
             }
             else if (loaded.Warning != null) ShowNotice(UiText.Get("MainWindow_007"));
+            StartUpdates();
         };
         Activated += (_, _) => { generalPage.RefreshStartup(); shortcutsPage.Refresh(); };
         Closing += (_, e) =>
@@ -114,7 +116,7 @@ public sealed partial class MainWindow : Window
             Hide();
             if (!hiddenNoticeShown) { hiddenNoticeShown = true; tray.NotifyHidden(); }
         };
-        Closed += (_, _) => { shortcutsPage.CloseEditor(); _ = onboarding.StopAsync(); UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
+        Closed += (_, _) => { StopUpdates(); shortcutsPage.CloseEditor(); _ = onboarding.StopAsync(); UiText.Changed -= RefreshInterfaceLanguage; aiSettingsPanel.Detach(); aiCommandsPanel.Detach(); controller?.Dispose(); tray?.Dispose(); };
     }
 
     internal void ToggleAutomatic()
@@ -286,6 +288,7 @@ public sealed partial class MainWindow : Window
         }
         finally { exitResolutionInProgress = false; }
         IsEnabled = false;
+        StopUpdates();
         await onboarding.StopAsync();
         StopOcr();
         controller?.BeginShutdown();
@@ -298,6 +301,7 @@ public sealed partial class MainWindow : Window
     public void PrepareSessionEnd()
     {
         exitRequested = true;
+        StopUpdates();
         _ = onboarding.StopAsync();
         StopOcr();
         controller?.BeginShutdown();

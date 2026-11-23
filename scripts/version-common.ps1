@@ -1,5 +1,6 @@
 if (-not ('SnapBar.Core.ProductVersion' -as [type])) {
-    Add-Type -Path (Join-Path $PSScriptRoot '../src/SnapBar.Core/ProductVersion.cs')
+    $source = [IO.File]::ReadAllText((Join-Path $PSScriptRoot '../src/SnapBar.Core/ProductVersion.cs'), [Text.Encoding]::UTF8)
+    Add-Type -TypeDefinition ("#nullable enable`n" + $source)
 }
 
 function Get-SnapBarVersion([string]$Tag) {

@@ -1,0 +1,20 @@
+{
+  "title": "安靜掌握新版更新",
+  "summary": "SnapBar 會在背景檢查新版，以一次輕提醒告訴你更新的好處，並保留隨時可查看的下載入口。",
+  "highlights": [
+    "正式版與預覽版分流，每個版本只主動提醒一次，使用選字、AI 或 OCR 時延後提醒。",
+    "關於與支援提供手動檢查、更新摘要與下載入口，也能關閉自動檢查。",
+    "檢查只取得 GitHub 公開版本資訊，不傳送選取文字或剪貼簿內容。"
+  ],
+  "usage": "使用公開版本後可到「關於與支援」查看更新；新版仍需先從系統匣結束舊版，再完整解壓縮並開啟，原設定會保留。",
+  "en": {
+    "title": "Quietly stay informed about updates",
+    "summary": "SnapBar checks for new versions in the background, explains the benefits in a one-time reminder, and keeps a download entry available.",
+    "highlights": [
+      "Stable and preview channels stay separate. Each version is announced once, with reminders deferred during selection, AI or OCR work.",
+      "About and support includes manual checks, release summaries and downloads, plus an option to turn automatic checks off.",
+      "Checks retrieve only public GitHub release information; selected text and clipboard contents are never sent."
+    ],
+    "usage": "In a public build, open About and support to check for updates. Quit the old version from the tray, fully extract the new package, then open it. Existing settings are preserved."
+  }
+}

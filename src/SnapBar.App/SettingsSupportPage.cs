@@ -12,7 +12,7 @@ internal sealed class SettingsSupportPage : ContentControl
 {
     internal TextBlock Status { get; }
     internal ListBox Events { get; }
-    internal SettingsSupportPage(Action exit, Action? getStarted = null)
+    internal SettingsSupportPage(Action exit, Action? getStarted = null, FrameworkElement? updates = null)
     {
         HorizontalContentAlignment = HorizontalAlignment.Stretch; VerticalContentAlignment = VerticalAlignment.Stretch;
         var body = new DockPanel(); var exitButton = ActionUi.Button(UiText.Get("SettingsSupportPage_000"), exit);
@@ -38,6 +38,14 @@ internal sealed class SettingsSupportPage : ContentControl
         }
         identity.Children.Add(product); heading.Children.Add(identity);
         var lifetime = ActionUi.Text(UiText.Get("SettingsSupportPage_003"), 13, ActionUi.Muted); lifetime.Margin = new(0, 16, 0, 16); heading.Children.Add(lifetime);
+        Expander? updateSection = null;
+        if (updates != null)
+        {
+            updateSection = new Expander { Header = UiText.Get("Updates_Heading"), Content = updates,
+                IsExpanded = !SupportSession.Local.PreviousInterrupted, Margin = new(0, 0, 0, 12) };
+            AutomationProperties.SetAutomationId(updateSection, "UpdateSection");
+            heading.Children.Add(updateSection);
+        }
         if (getStarted != null)
         {
             var tutorial = ActionUi.Button(UiText.Get("Onboarding_Entry"), getStarted);
@@ -84,7 +92,19 @@ internal sealed class SettingsSupportPage : ContentControl
         diagnostics.Children.Add(Events);
         var advanced = new Expander { Header = UiText.Get("SettingsSupportPage_007"), Content = diagnostics,
             IsExpanded = SupportSession.Local.PreviousInterrupted, VerticalContentAlignment = VerticalAlignment.Stretch };
-        content.Children.Add(advanced); body.Children.Add(content); Content = body;
+        AutomationProperties.SetAutomationId(advanced, "DiagnosticsSection");
+        if (updateSection != null)
+        {
+            advanced.Expanded += (_, _) => { updateSection.IsExpanded = false; advanced.BringIntoView(); };
+            updateSection.Expanded += (_, _) => { advanced.IsExpanded = false; };
+            if (updates is UpdateSettingsPanel panel) panel.RevealRequested += () =>
+            {
+                advanced.IsExpanded = false; updateSection.IsExpanded = true;
+                Dispatcher.BeginInvoke(() => { if (updateSection.IsVisible) updateSection.BringIntoView(); });
+            };
+        }
+        content.Children.Add(advanced); body.Children.Add(content);
+        Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         SizeChanged += (_, _) => Events.MaxHeight = Math.Clamp(ActualHeight - heading.ActualHeight - exitButton.DesiredSize.Height - 110, 20, 240);
     }
 

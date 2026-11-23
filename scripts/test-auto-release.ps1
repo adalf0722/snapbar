@@ -90,6 +90,7 @@ function gh {
             $global:SnapBarFixtureRelease = New-AutoFixtureRelease $version $true
             $global:SnapBarFixtureRelease | Add-Member -NotePropertyName id -NotePropertyValue 42
             $global:SnapBarFixtureRelease.target_commitish = ($arguments | Where-Object { $_ -like 'target_commitish=*' }) -replace '^target_commitish=', ''
+            $global:SnapBarFixtureRelease.prerelease = ($arguments -contains 'prerelease=true')
             $notesPath = ($arguments | Where-Object { $_ -like 'body=@*' }) -replace '^body=@', ''
             $global:SnapBarFixtureRelease.body = [IO.File]::ReadAllText($notesPath)
             $global:SnapBarFixtureReleases = @($global:SnapBarFixtureRelease)
@@ -128,6 +129,7 @@ Write-NotesFixture 'Version.props' '<Project><PropertyGroup><SnapBarVersionPrefi
 $base = Save-NotesFixture
 $null = Invoke-NotesFixtureGit @('tag', 'v0.1.0-rc.4')
 Write-NotesFixture 'src/app.txt' 'new desktop'
+Write-NotesFixture 'scripts/release-notes.ps1' ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'release-notes.ps1'), [Text.Encoding]::UTF8))
 $missing = Save-NotesFixture
 Check-Auto 'desktop changes without notes fail instead of publishing an empty changelog' {
     Reject-Auto { Get-SnapBarReleaseContent -Root $source -Commit $missing -PreviousTag v0.1.0-rc.4 }
@@ -204,6 +206,9 @@ try {
         try { Invoke-AutoPublishFixture } finally { $global:SnapBarFixtureHideDraft = $false }
         Assert-Auto (-not $global:SnapBarFixtureRelease.draft -and $global:SnapBarFixtureRelease.assets.Count -eq 2)
         $body = $global:SnapBarFixtureRelease.body
+        $marker = [regex]::Match($body, '<!-- snapbar-update-v1: ([A-Za-z0-9+/=]+) -->')
+        $metadata = [Text.UTF8Encoding]::new($false, $true).GetString([Convert]::FromBase64String($marker.Groups[1].Value)) | ConvertFrom-Json
+        Assert-Auto ($metadata.desktopChanged -and $metadata.version -ceq '0.1.0-rc.5' -and $metadata.sourceCommit -ceq $commit)
         Assert-Auto ($body.Contains("<!-- snapbar-source: $commit -->") -and $body.Contains('離線查詞'))
         Assert-Auto ($body.Contains('<!-- snapbar-previous: v0.1.0-rc.4 -->'))
         Assert-Auto ($body.IndexOf('[下載 Windows x64 / Download Windows x64]') -lt $body.IndexOf('## 繁體中文'))
@@ -218,6 +223,30 @@ try {
         $global:SnapBarFixtureCommands.Clear()
         Invoke-AutoPublishFixture
         Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+    }
+    Check-Auto 'public bodies stay unchanged but supported-source drafts cannot lose their contract' {
+        $supportedBody = $global:SnapBarFixtureRelease.body
+        $global:SnapBarFixtureRelease.body = [regex]::Replace($global:SnapBarFixtureRelease.body, '<!-- snapbar-update-v1: [A-Za-z0-9+/=]+ -->\r?\n', '')
+        $oldBody = $global:SnapBarFixtureRelease.body
+        Invoke-AutoPublishFixture
+        Assert-Auto ($global:SnapBarFixtureRelease.body -ceq $oldBody)
+        $global:SnapBarFixtureRelease.draft = $true
+        $global:SnapBarFixtureCommands.Clear()
+        Reject-Auto { Invoke-AutoPublishFixture }
+        Assert-Auto ($global:SnapBarFixtureRelease.body -ceq $oldBody -and $global:SnapBarFixtureRelease.draft)
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        foreach ($badBody in @($supportedBody + '<!-- snapbar-update-v1: invalid -->',
+            ([regex]::Replace($supportedBody, '(snapbar-update-v1: )[A-Za-z0-9+/=]+', '${1}e30=')))) {
+            $global:SnapBarFixtureRelease.body = $badBody
+            Reject-Auto { Invoke-AutoPublishFixture }
+            Assert-Auto ($global:SnapBarFixtureRelease.draft -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        }
+        $global:SnapBarFixtureRelease.body = $oldBody
+        $global:SnapBarFixtureRelease.draft = $false
+        $legacy = New-AutoFixtureRelease v0.1.0-rc.4 $true
+        $legacy.body = 'Genuine old source with human-authored notes.'
+        Assert-SnapBarDraftUpdateMetadata $legacy $source $base
+        Assert-Auto ($legacy.body -ceq 'Genuine old source with human-authored notes.')
     }
     Check-Auto 'resolver recovers a published run before stable checks and preserves its original baseline' {
         $global:SnapBarFixtureTags = @([pscustomobject]@{ ref = 'refs/tags/v0.1.0' })
@@ -265,6 +294,51 @@ try {
         [IO.File]::AppendAllText($archive, 'changed')
         Reject-Auto { Invoke-AutoPublishFixture }
         Assert-Auto ($global:SnapBarFixtureCommands.Count -eq 0)
+    }
+    Check-Auto 'formal draft creation validates metadata before POST and preserves existing bodies on rerun' {
+        $global:SnapBarFixtureReleases = @(); $global:SnapBarFixtureCommands.Clear()
+        $draft = & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $commit -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo
+        Assert-Auto ($draft.draft -and -not $draft.prerelease -and $draft.body.Contains('snapbar-update-v1:') -and $draft.body.Contains('正式版 / Stable'))
+        Assert-Auto (-not $draft.body.Contains('snapbar-run:'))
+        $body = $draft.body
+        $global:SnapBarFixtureCommands.Clear()
+        $null = & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $commit -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo
+        Assert-Auto ($global:SnapBarFixtureRelease.body -ceq $body -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        $global:SnapBarFixtureRelease.body = [regex]::Replace($body, '(snapbar-update-v1: )[A-Za-z0-9+/=]+', '${1}e30=')
+        Reject-Auto { & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $commit -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo }
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        $global:SnapBarFixtureRelease.target_commitish = $base
+        $global:SnapBarFixtureRelease.body = 'Genuine pre-metadata draft.'
+        $null = & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $base -SourceDirectory $source -Repository fixture/repo
+        Assert-Auto ($global:SnapBarFixtureRelease.body -ceq 'Genuine pre-metadata draft.' -and $global:SnapBarFixtureRelease.draft)
+        $global:SnapBarFixtureRelease.body = 'Grandfathered human-authored public notes.'; $global:SnapBarFixtureRelease.draft = $false
+        $null = & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $commit -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo
+        Assert-Auto ($global:SnapBarFixtureRelease.body -ceq 'Grandfathered human-authored public notes.' -and -not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        $global:SnapBarFixtureReleases = @(); $global:SnapBarFixtureCommands.Clear()
+        Reject-Auto { & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $missing -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo }
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        $global:SnapBarFixtureTags = @([pscustomobject]@{ ref = 'refs/tags/v0.1.0' })
+        Reject-Auto { & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version v0.1.0 -Commit $commit -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo }
+        Assert-Auto (-not @($global:SnapBarFixtureCommands | Where-Object { $_ -like 'api --method *' }).Count)
+        $global:SnapBarFixtureTags = @()
+    }
+    Check-Auto 'formal alpha and beta drafts emit preview metadata and omit empty run markers with CRLF templates' {
+        $templatePath = Join-Path $PSScriptRoot '../packaging/AUTO-RELEASE-NOTES.md'
+        $originalTemplate = [IO.File]::ReadAllBytes($templatePath)
+        try {
+            $template = [Text.Encoding]::UTF8.GetString($originalTemplate) -replace '\r?\n', "`r`n"
+            [IO.File]::WriteAllText($templatePath, $template, [Text.UTF8Encoding]::new($false))
+            foreach ($version in @('v0.1.0-alpha', 'v0.1.0-beta.2')) {
+            $global:SnapBarFixtureReleases = @(); $global:SnapBarFixtureCommands.Clear()
+            $draft = & (Join-Path $PSScriptRoot 'prepare-release-draft.ps1') -Version $version -Commit $commit -SourceDirectory $source -PreviousTag v0.1.0-rc.4 -Repository fixture/repo
+            Assert-Auto ($draft.draft -and $draft.prerelease -and $draft.tag_name -ceq $version -and $draft.body.Contains('預覽版 / Preview'))
+            $marker = [regex]::Match($draft.body, '<!-- snapbar-update-v1: ([A-Za-z0-9+/=]+) -->')
+            $metadata = [Text.UTF8Encoding]::new($false, $true).GetString([Convert]::FromBase64String($marker.Groups[1].Value)) | ConvertFrom-Json
+            Assert-Auto ($metadata.version -ceq $version.Substring(1) -and $metadata.sourceCommit -ceq $commit)
+            Assert-Auto (-not $draft.body.Contains('snapbar-run:'))
+            }
+        }
+        finally { [IO.File]::WriteAllBytes($templatePath, $originalTemplate) }
     }
 }
 finally { Remove-Item Function:gh; Remove-Variable -Scope Global -Name SnapBarFixtureReleases, SnapBarFixtureTags, SnapBarFixtureCommands, SnapBarFixtureFailUpload, SnapBarFixtureFailQuery, SnapBarFixtureHideDraft, SnapBarFixtureRelease -ErrorAction SilentlyContinue }

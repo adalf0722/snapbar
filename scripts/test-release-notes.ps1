@@ -42,6 +42,45 @@ Check-Notes 'three AI changes have matching concise bilingual bullets and one se
 $preview = New-SnapBarReleaseBody -Root $source -Commit $three -PreviousTag baseline -Version v0.1.0-rc.14 -Repository adalf0722/snapbar -RunId 123
 $previewPath = Join-Path $run 'release-preview.md'
 [IO.File]::WriteAllText($previewPath, $preview, [Text.UTF8Encoding]::new($false))
+function Read-NotesMetadata([string]$Body) {
+    $matches = [regex]::Matches($Body, '<!-- snapbar-update-v1: ([A-Za-z0-9+/=]+) -->')
+    Assert-Notes ($matches.Count -eq 1)
+    $bytes = [Convert]::FromBase64String($matches[0].Groups[1].Value)
+    Assert-Notes ($bytes.Length -le 32768)
+    return [Text.UTF8Encoding]::new($false, $true).GetString($bytes) | ConvertFrom-Json
+}
+Check-Notes 'machine summaries roundtrip with exact identity and delivered packaging changes' {
+    $metadata = Read-NotesMetadata $preview
+    Assert-Notes ($metadata.schemaVersion -eq 1 -and $metadata.version -ceq '0.1.0-rc.14' -and $metadata.sourceCommit -ceq $three)
+    Assert-Notes ($metadata.desktopChanged -and $metadata.zh.summaries.Count -eq 3 -and $metadata.en.summaries.Count -eq 3)
+    Assert-Notes ($metadata.zh.summaries[0] -ceq $content.Zh.summaries[0])
+    Assert-Notes ($metadata.zh.notices.Count -eq 1 -and $metadata.en.notices[0].Contains('API key'))
+}
+Check-Notes 'metadata accepts all shared public preview versions and rejects private or malformed versions' {
+    foreach ($version in @('v1.0.0-alpha', 'v1.0.0-beta.2', 'v1.0.0-rc.10', 'v1.0.0')) {
+        $metadata = Read-NotesMetadata (New-SnapBarUpdateComment $content $version $three)
+        Assert-Notes ($metadata.version -ceq $version.Substring(1))
+    }
+    foreach ($version in @('v1.0.0-dev', 'v1.0.0-validation', 'v1.0.0-ci.1.g123456789abc', 'v1.0.0-beta.02', 'v01.0.0-alpha')) {
+        Reject-Notes { New-SnapBarUpdateComment $content $version $three }
+    }
+}
+Check-Notes 'contract rejects control characters, malformed Unicode, overlong summaries and total notices without truncation' {
+    foreach ($kind in @('control', 'surrogate', 'summary', 'notice', 'total')) {
+        $invalid = $content | ConvertTo-Json -Depth 10 | ConvertFrom-Json
+        switch ($kind) {
+            'control' { $invalid.En.summaries[0] = "invalid`ttext" }
+            'surrogate' { $invalid.En.summaries[0] = [string][char]0xd800 }
+            'summary' { $invalid.Zh.summaries[0] = 'x' * 141 }
+            'notice' { $invalid.En.notices = @('x' * 2001) }
+            'total' { $invalid.En.notices = @(('x' * 1001), ('y' * 1000)) }
+        }
+        Reject-Notes { New-SnapBarUpdateComment $invalid v0.1.0-rc.14 $three }
+    }
+    $maximum = $content | ConvertTo-Json -Depth 10 | ConvertFrom-Json
+    $maximum.Zh.notices = @('字' * 2000); $maximum.En.notices = @('x' * 2000)
+    $null = Read-NotesMetadata (New-SnapBarUpdateComment $maximum v0.1.0-rc.14 $three)
+}
 Check-Notes 'download and bilingual preview status precede summaries while usage and verification stay collapsed' {
     Assert-Notes ($preview.IndexOf('[下載 Windows x64 / Download Windows x64]') -lt $preview.IndexOf('## 繁體中文'))
     Assert-Notes ($preview.IndexOf('## 繁體中文') -lt $preview.IndexOf('## English') -and $preview.IndexOf('## English') -lt $preview.IndexOf('<details>'))
@@ -61,6 +100,7 @@ $fourth = [ordered]@{
     notice = @{ zh = '舊入口已移除，請先確認替代方式。'; en = 'The old entry is removed; check an alternative before updating.' }
     en = @{ title = 'Another change'; summary = 'An additional feature improvement.'; highlights = @('Keep every additional change.'); usage = 'Open it in settings.' }
 }
+$null = Git-Notes @('tag', 'notes-only-base', $three)
 Write-Notes 'release-notes/fourth.json' ($fourth | ConvertTo-Json -Depth 8)
 $four = Save-Notes
 Check-Notes 'overflow stays in full details and important notices remain visible in both languages' {
@@ -69,6 +109,10 @@ Check-Notes 'overflow stays in full details and important notices remain visible
     Assert-Notes ($actual.Summary.Contains('另有 1 項') -and $actual.Summary.Contains('1 more update is'))
     Assert-Notes (-not $actual.Summary.Contains('另一項功能改善') -and $actual.Details.Contains('另一項功能改善') -and $actual.Details.Contains('Another change'))
     Assert-Notes ($actual.Summary.Contains($fourth.notice.zh) -and $actual.Summary.Contains($fourth.notice.en))
+    $metadata = Read-NotesMetadata (New-SnapBarReleaseBody -Root $source -Commit $four -PreviousTag baseline -Version v0.1.0-rc.14 -Repository fixture/repo -RunId 123)
+    Assert-Notes ($metadata.zh.notices -ccontains $fourth.notice.zh -and $metadata.en.notices -ccontains $fourth.notice.en)
+    $noteOnly = Read-NotesMetadata (New-SnapBarReleaseBody -Root $source -Commit $four -PreviousTag notes-only-base -Version v0.1.0-rc.14 -Repository fixture/repo -RunId 123)
+    Assert-Notes (-not $noteOnly.desktopChanged)
 }
 Check-Notes 'priority changes both languages together with stable path ordering for ties' {
     $fourth.priority = 100
@@ -111,6 +155,8 @@ Check-Notes 'maintenance-only releases explain the same scope in Chinese and Eng
     $actual = Get-SnapBarReleaseContent -Root $source -Commit $maintenance -PreviousTag maintenance-base -AsObject
     Assert-Notes ($actual.Summary.Contains('本次沒有桌面功能更新') -and $actual.Summary.Contains('No desktop feature changes'))
     Assert-Notes ($actual.Details.Contains('網站') -and $actual.Details.Contains('website') -and -not $actual.Details.Contains('release tooling'))
+    $metadata = Read-NotesMetadata (New-SnapBarReleaseBody -Root $source -Commit $maintenance -PreviousTag maintenance-base -Version v0.1.0 -Repository fixture/repo -RunId 123)
+    Assert-Notes (-not $metadata.desktopChanged -and $metadata.zh.summaries.Count -eq 1 -and $metadata.en.notices.Count -eq 0)
 }
 Check-Notes 'all repository notes have complete reviewed bilingual content without changing published Chinese files' {
     $catalog = ConvertFrom-SnapBarReleaseCatalog ([IO.File]::ReadAllText((Join-Path $PSScriptRoot '../packaging/RELEASE-NOTE-TRANSLATIONS.json')))
