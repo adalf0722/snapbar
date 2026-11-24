@@ -36,7 +36,6 @@ internal sealed class ActionSettingsPanel : ContentControl
     private ActionPlacement selectedPlacement = ActionPlacement.Bar;
     private readonly TextBox filter = ActionUi.Input("", 256);
     private readonly TextBlock filterStatus = ActionUi.Text("", 12, ActionUi.Muted);
-    private readonly Button clearFilter;
 
     public ActionSettingsPanel(ActionSettings initial, Func<ActionSettings, bool> save, Action? editSearch = null,
         Action? manageDictionary = null, bool dictionaryInstalled = false, UiLanguage? language = null)
@@ -104,16 +103,11 @@ internal sealed class ActionSettingsPanel : ContentControl
                 wasCompact = compact;
             }
         };
-        var searchLine = new DockPanel { Margin = new(0, 0, 0, 8) };
-        clearFilter = ActionUi.Button(Text("ActionsSearch_Clear"), () => { filter.Clear(); filter.Focus(); });
-        AutomationProperties.SetAutomationId(clearFilter, "ClearActionsSearch");
-        DockPanel.SetDock(clearFilter, Dock.Right); searchLine.Children.Add(clearFilter);
-        filter.ToolTip = Text("ActionsSearch_Help"); filter.Margin = new(0, 0, 10, 0);
+        SettingsFeedback.Hint(filter, Text("ActionsSearch_Help"));
         AutomationProperties.SetAutomationId(filter, "ActionsSearch");
         AutomationProperties.SetName(filter, Text("ActionsSearch_Label"));
-        var searchFields = new StackPanel();
-        searchFields.Children.Add(ActionUi.Text(Text("ActionsSearch_Label"), 12, ActionUi.Muted));
-        searchFields.Children.Add(filter); searchLine.Children.Add(searchFields); top.Children.Add(searchLine);
+        top.Children.Add(new SettingsSearchBox(filter, Text("ActionsSearch_Label"), Text("SettingsSearch_Clear"), "ClearActionsSearch")
+        { Margin = new(0, 0, 0, 8) });
         AutomationProperties.SetAutomationId(filterStatus, "ActionsSearchStatus"); SettingsFeedback.Live(filterStatus);
         filterStatus.Margin = new(0, 0, 0, 8); top.Children.Add(filterStatus);
         filter.TextChanged += (_, _) => { Render(); listScroll.ScrollToTop(); };
@@ -178,7 +172,6 @@ internal sealed class ActionSettingsPanel : ContentControl
     {
         var words = filter.Text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var searching = words.Length > 0;
-        clearFilter.Visibility = filter.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         filterStatus.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
         var focusId = groups.IsKeyboardFocusWithin && Keyboard.FocusedElement is DependencyObject focused
             ? AutomationProperties.GetAutomationId(focused) : null;

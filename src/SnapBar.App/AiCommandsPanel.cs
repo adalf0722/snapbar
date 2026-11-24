@@ -36,10 +36,11 @@ internal sealed class AiCommandsPanel : ContentControl
         AutomationProperties.SetAutomationId(configure, "ConfigureAiServiceFromCommands"); DockPanel.SetDock(configure, Dock.Right); serviceLine.Children.Add(configure); serviceLine.Children.Add(serviceStatus);
         serviceNotice = ActionUi.Card(serviceLine, new Thickness(12)); serviceNotice.Background = ActionUi.Pale;
         serviceNotice.Margin = new(0, 0, 0, 12); top.Children.Add(serviceNotice);
-        top.Children.Add(ActionUi.Text(UiText.Get("AiCommandsPanel_004"), 12, ActionUi.Muted));
         var filters = new Grid { Margin = new(0, 0, 0, 12) }; filters.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) }); filters.ColumnDefinitions.Add(new() { Width = new(170) });
-        search = ActionUi.Input("", 256); search.Margin = new(0, 0, 10, 0); search.ToolTip = UiText.Get("AiCommandsPanel_005");
-        AutomationProperties.SetAutomationId(search, "AiCommandsSearch"); AutomationProperties.SetName(search, UiText.Get("AiCommandsPanel_006")); filters.Children.Add(search);
+        search = ActionUi.Input("", 256); SettingsFeedback.Hint(search, UiText.Get("AiCommandsPanel_005"));
+        AutomationProperties.SetAutomationId(search, "AiCommandsSearch"); AutomationProperties.SetName(search, UiText.Get("AiCommandsPanel_006"));
+        filters.Children.Add(new SettingsSearchBox(search, UiText.Get("AiCommandsPanel_004"), UiText.Get("SettingsSearch_Clear"), "ClearAiCommandsSearch")
+        { Margin = new(0, 0, 12, 0) });
         category = new ComboBox { MinHeight = 36 }; AutomationProperties.SetAutomationId(category, "AiCommandsCategory"); AutomationProperties.SetName(category, UiText.Get("AiCommandsPanel_007")); Grid.SetColumn(category, 1); filters.Children.Add(category);
         top.Children.Add(filters); DockPanel.SetDock(top, Dock.Top); body.Children.Add(top);
         var footer = new StackPanel { Margin = new(0, 10, 0, 0) };

@@ -3053,4 +3053,5 @@
   <data name="Updates_OpenFailed" xml:space="preserve"><value>無法開啟發布頁，請稍後再試。</value></data>
   <data name="Updates_Tray" xml:space="preserve"><value>有新版本…</value></data>
   <data name="Updates_NotificationTitle" xml:space="preserve"><value>SnapBar 有新版本</value></data>
+  <data name="SettingsSearch_Clear" xml:space="preserve"><value>清除搜尋</value></data>
 </root>

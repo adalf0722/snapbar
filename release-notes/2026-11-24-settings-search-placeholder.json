@@ -1,0 +1,20 @@
+{
+  "title": "設定頁的搜尋框更清楚一致",
+  "summary": "動作列與 AI 命令改用一致的搜尋圖示與框內提示，讓搜尋區域更簡潔、容易辨識。",
+  "highlights": [
+    "搜尋提示移入輸入框，兩頁使用相同高度與對齊方式。",
+    "輸入後可使用框內的清除按鈕，立即重新搜尋。",
+    "保留搜尋框的無障礙名稱，支援繁體中文與英文介面。"
+  ],
+  "usage": "開啟設定的「動作列」或「AI 命令」，直接在搜尋框輸入文字；按右側清除按鈕即可清空搜尋，不需額外設定。",
+  "en": {
+    "title": "Clearer, consistent search in settings",
+    "summary": "Toolbar and AI Commands now share a search icon and in-field hint for a cleaner, more recognizable search area.",
+    "highlights": [
+      "Search hints move inside matching, consistently aligned fields.",
+      "An in-field clear button appears after typing so you can quickly start another search.",
+      "Accessible search names remain available in both Traditional Chinese and English."
+    ],
+    "usage": "Open Toolbar or AI Commands in settings and type in the search field. Use the clear button on the right to reset your query. No additional setup is required."
+  }
+}

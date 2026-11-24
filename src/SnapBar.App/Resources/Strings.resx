@@ -3053,4 +3053,5 @@ Its enabled state will be preserved.</value>
   <data name="Updates_OpenFailed" xml:space="preserve"><value>The release page could not be opened. Please try again.</value></data>
   <data name="Updates_Tray" xml:space="preserve"><value>New version available…</value></data>
   <data name="Updates_NotificationTitle" xml:space="preserve"><value>A new SnapBar version is available</value></data>
+  <data name="SettingsSearch_Clear" xml:space="preserve"><value>Clear search</value></data>
 </root>
