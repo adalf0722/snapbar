@@ -331,5 +331,6 @@ AiRuntimeTests.Run(Check);
 TextComparisonTests.Run(Check);
 AiProviderCatalogTests.Run(Check);
 ProductVersionTests.Run(Check);
+WindowRecoveryTests.Run(Check);
 Console.WriteLine($"{passed} passed, {failed} failed");
 return failed == 0 ? 0 : 1;

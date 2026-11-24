@@ -50,6 +50,7 @@ internal static class UiAppearanceTest
             {
                 OnboardingTest.Ui(Check);
                 GeneralSettingsAppearanceTest.Run(Check);
+                await WindowMovementTest.RunAsync(Check);
                 main = new MainWindow(new SettingsStore(Path.Combine(directory, "settings.json"))); main.Show(); main.UpdateLayout();
                 var informational = typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
                 var productVersion = ProductVersion.Parse(informational.Split('+')[0]);

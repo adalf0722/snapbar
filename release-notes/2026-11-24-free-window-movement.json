@@ -1,0 +1,18 @@
+{
+  "title": "設定視窗可自由跨螢幕移動",
+  "summary": "移除拖曳設定視窗時的單一螢幕邊界限制，允許跨螢幕擺放；只有標題列無法操作時才協助移回。",
+  "highlights": [
+    "拖曳途中與放開後不再強制把視窗拉回單一螢幕。",
+    "重新顯示或螢幕配置改變時，只在標題列無法操作的情況下做最小幅度移回。"
+  ],
+  "usage": "更新後直接拖曳設定或編輯視窗的標題列即可，不需額外設定。",
+  "en": {
+    "title": "Move settings windows freely across displays",
+    "summary": "Settings windows can span displays without being forced back onto one screen. Recovery moves them only when the title bar is no longer reachable.",
+    "highlights": [
+      "Windows are no longer forced back onto a single display during or after dragging.",
+      "When a window reappears or the display layout changes, it moves only as far as needed to restore access to its title bar."
+    ],
+    "usage": "After updating, drag the title bar of a settings or editor window as usual. No additional setup is required."
+  }
+}
