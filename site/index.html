@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="看到想查的字，選起來就能搜尋。SnapBar 是 Windows 選字工具列，也能透過自行設定的 AI 服務改寫草稿。下載預覽版，跟著內建引導完成第一次搜尋。">
+  <meta name="description" content="選好文字，接著就做。SnapBar 把搜尋、離線查詞、AI 改寫與自訂動作帶到 Windows 的文字旁，也能用本機 OCR 擷取畫面文字。下載預覽版，從第一次搜尋開始。">
   <meta name="theme-color" content="#f7f8fb">
-  <title>SnapBar — 選好文字，直接搜尋、改寫</title>
+  <title>SnapBar — 選好文字，接著就做</title>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="style.css">
   <script src="selection-demo.js" defer></script>
@@ -14,14 +14,14 @@
 <a class="skip" href="#main">跳至主要內容</a>
 <header class="nav wrap">
   <a class="brand" href="./"><img src="icon.png" width="32" height="32" alt="">SnapBar</a>
-  <nav aria-label="主要導覽"><a href="en/" lang="en" hreflang="en">English</a><a href="#experience">AI 改寫</a><a class="blue" href="#download">下載預覽版 ↓</a></nav>
+  <nav aria-label="主要導覽"><a href="en/" lang="en" hreflang="en">English</a><a href="#experience">功能體驗</a><a href="#personalize">個人化</a><a class="blue" href="#download">下載預覽版</a></nav>
 </header>
 <main id="main">
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
       <p class="eyebrow">WINDOWS 選字工具列</p>
-      <h1 id="headline">看到想查的字，<br><span>選起來就能搜尋。</span></h1>
-      <p class="lead">不用先複製、開瀏覽器、再貼上。選取文字，按快捷鍵叫出 SnapBar，再點「搜尋」，就會開啟瀏覽器查詢。</p>
+      <h1 id="headline">選好文字，<br><span>接著就做。</span></h1>
+      <p class="lead">搜尋、查詞、改寫，把常用動作帶到文字旁。畫面上的字選不起來？框選擷取，再繼續處理。</p>
       <div class="hero-actions">
         <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
       </div>
@@ -29,7 +29,7 @@
       <p class="hero-onboarding">首次開啟有練習引導，先試一次搜尋，<strong>不需設定 AI。</strong></p>
     </div>
     <figure class="hero-figure workflow-demo" data-step="3" aria-labelledby="demo-caption">
-      <div class="demo-intro"><span class="demo-badge">01 / 選字搜尋</span><p>讀到不懂的詞？接著查，不用重打。</p></div>
+      <div class="demo-intro"><span class="demo-badge">從選字搜尋開始</span><p>看到想查的字，選起來就能搜尋。</p></div>
       <div class="demo-window" id="selection-preview">
         <div class="demo-titlebar" aria-hidden="true">
           <span class="demo-tab">
@@ -56,7 +56,19 @@
   <section id="experience" class="experience section" aria-labelledby="experience-title">
     <div class="wrap">
       <article class="story">
-        <div class="story-copy"><p class="eyebrow">02 / AI 改寫 · 選用功能</p><h2 id="experience-title">回覆太囉嗦？<br>選起來，改短一點。</h2><p>選取草稿，從 SnapBar 的「更多」開啟 AI 改寫。先看結果，滿意後再複製，或替換可編輯的原文。</p><p class="detail">需自行設定 AI 服務、模型與 API Key，服務可能另外計費。執行 AI 指令時，選取的文字才會傳送至所選服務。</p></div>
+        <div class="story-copy"><p class="eyebrow">閱讀 · 離線字典</p><h2 id="experience-title">看不懂的字，<br>就在旁邊查。</h2><p>選取英文單字或短語，點「字典」，釋義就在選字旁展開。一次查詢多本詞典，依來源閱讀，也能複製釋義留作筆記。</p><p class="detail">查詞在本機執行，不需連線。需先自行匯入支援的 StarDict 詞典；可分別啟用、停用或移除。</p></div>
+        <figure class="dictionary-example feature-example">
+          <p class="example-label">閱讀中的一句話</p>
+          <p class="reading-sentence">Make room for <mark>serendipity</mark>.</p>
+          <div class="lookup-card"><span class="action-label">字典</span><h3 lang="en">serendipity</h3><p class="pronunciation">/ˌser.ənˈdɪp.ə.ti/</p><p>意外發現美好事物的機緣；意外之喜。</p><div class="dictionary-sources"><span>依詞典來源分組</span><span>可複製釋義</span></div></div>
+          <figcaption>查詞情境示意；實際釋義與音標依匯入的詞典而定。</figcaption>
+        </figure>
+      </article>
+    </div>
+  </section>
+  <section class="section wrap" aria-labelledby="rewrite-title">
+      <article class="story">
+        <div class="story-copy"><p class="eyebrow">寫作 · AI 改寫 · 選用功能</p><h2 id="rewrite-title">回覆太囉嗦？<br>選起來，改短一點。</h2><p>選取草稿，從 SnapBar 的「更多」開啟 AI 改寫。比較原文與結果，接著修訂，滿意後再複製；來源可編輯且通過重新驗證時，也能替換原文。</p><p class="detail">需自行設定 AI 服務、模型與 API Key，服務可能另外計費。執行 AI 指令時，選取的文字才會傳送至所選服務。</p></div>
         <figure class="rewrite-example">
           <figcaption>同一句話，把重點留下來。</figcaption>
           <dl>
@@ -68,12 +80,31 @@
           <p class="rewrite-note">改寫結果示意；你可以先比較，再決定是否使用。</p>
         </figure>
       </article>
+  </section>
+  <section class="experience section" aria-labelledby="ocr-title">
+    <div class="wrap story">
+      <div class="story-copy"><p class="eyebrow">擷取 · 本機 OCR</p><h2 id="ocr-title">選不起來的字，<br>也能接著用。</h2><p>圖片或畫面上的文字無法反白？從系統匣啟動「框選 OCR」，或設定專用快捷鍵。在單一螢幕上框出範圍，就能把辨識結果校正、複製、搜尋，或交給已設定的動作。</p><p class="detail">支援繁體中文與英文，影像在本機記憶體處理。OCR 需 Microsoft Visual C++ x64 執行階段；使用 AI 或搜尋時，文字會交給對應服務。</p></div>
+      <figure class="ocr-example feature-example">
+        <div class="capture-scene"><span class="capture-label">畫面上的圖片</span><div class="capture-area"><p>把靈感留下來。</p><p lang="en">Keep the idea.</p><span class="capture-corner corner-start" aria-hidden="true"></span><span class="capture-corner corner-end" aria-hidden="true"></span></div></div>
+        <div class="ocr-output"><p class="example-label">辨識後 · 可編輯文字</p><p>把靈感留下來。<br><span lang="en">Keep the idea.</span></p><div class="result-options"><span>校正</span><span>複製</span><span>搜尋</span><span>更多動作</span></div></div>
+        <figcaption>框選與辨識結果示意；辨識後可先校正，再決定如何使用。</figcaption>
+      </figure>
     </div>
+  </section>
+  <section id="personalize" class="section wrap" aria-labelledby="personalize-title">
+    <div class="section-heading"><p class="eyebrow">依你的習慣使用</p><h2 id="personalize-title">常用的，<br>放到順手的位置。</h2><p>從每天少一次複製，到接上自己的工具。把 SnapBar 調整成你熟悉的工作方式。</p></div>
+    <figure class="product-detail"><img src="assets/selection-detail.png" width="360" height="112" loading="lazy" alt="SnapBar 實際工具列，選取文字旁顯示複製、剪下、貼上、搜尋與更多動作。"><figcaption>實際工具列畫面；顯示的動作會依你的設定與來源狀態調整。</figcaption></figure>
+    <div class="feature-grid">
+      <article><p class="feature-kicker">少一次操作</p><h3>選好，就能接著用。</h3><p>選用自動顯示動作列，並調整出現時間。也能開啟自動複製，選擇按住 Ctrl 選取才複製，或選取即複製。</p><p class="detail">自動複製預設關閉，可與動作列分別設定。</p></article>
+      <article><p class="feature-kicker">常用動作更近</p><h3>順序與按鍵，由你決定。</h3><p>調整動作順序、釘選最多 9 項，選擇純圖示或圖示加文字。搜尋、字典、OCR、指定 AI 命令與自訂動作，都可設定快捷鍵。</p><p class="detail">字典與 AI 動作仍需先完成各自設定。</p></article>
+      <article><p class="feature-kicker">接上自己的工具</p><h3>讓選字成為工作起點。</h3><p>自訂搜尋網址，或加入網址、PowerShell 與 JavaScript 動作，把選取文字交給你的工具處理。</p><p class="detail">JavaScript 需另裝 Node.js；腳本以目前 Windows 使用者權限執行。</p></article>
+    </div>
+    <p class="feature-docs"><a class="blue" href="https://github.com/adalf0722/snapbar#readme">查看完整功能與設定說明</a></p>
   </section>
   <section id="download" class="download section wrap" aria-labelledby="download-title">
     <div class="download-panel">
       <div class="section-heading">
-        <p class="eyebrow">03 / 開始使用</p>
+        <p class="eyebrow">從一個簡單動作開始</p>
         <h2 id="download-title">先試一次搜尋。<br>不必先設定 AI。</h2>
         <p>首次開啟就有練習文字，跟著引導完成第一次選字搜尋。</p>
         <div class="download-actions">
@@ -81,6 +112,7 @@
           <a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases">版本說明 ↗</a>
         </div>
         <p>Windows x64 · 內含 .NET 執行環境 · 套件尚未簽章</p>
+        <p class="small">使用框選 OCR 另需 <a class="blue" href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Microsoft Visual C++ x64 執行階段</a>。新功能請以下載版本的更新說明為準。</p>
         <p class="small"><span id="download-version">查看發布版本</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">所有版本 ↗</a></p>
       </div>
       <ol class="steps">

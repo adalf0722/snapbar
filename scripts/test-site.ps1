@@ -83,7 +83,7 @@ Check-Site 'generated bilingual pages have matching static ZIP, notes and versio
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'selection-demo.js'))
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'icon.png'))
     $zh = [IO.File]::ReadAllText((Join-Path $output 'index.html'), [Text.Encoding]::UTF8)
-    Assert-Site ($zh.Contains('看到想查的字') -and $zh.Contains('回覆太囉嗦'))
+    Assert-Site ($zh.Contains('選好文字') -and $zh.Contains('回覆太囉嗦'))
     Reject-Site { New-SnapBarWebsite $source $output @($current) 'fixture/repo' }
     Reject-Site { New-SnapBarWebsite $source (Join-Path $source 'nested-output') @($current) 'fixture/repo' }
 }

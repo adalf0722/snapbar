@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="See a term you want to look up? Select it and search with SnapBar, the Windows text-selection toolbar. Try your first search with built-in guidance, then connect your own AI service to rewrite drafts.">
+  <meta name="description" content="Select text. Take the next step. SnapBar brings search, offline dictionaries, AI rewriting and custom actions to Windows text, with local OCR for text you cannot select. Start with your first search.">
   <meta name="theme-color" content="#f7f8fb">
-  <title>SnapBar — Select text. Search straight away.</title>
+  <title>SnapBar — Select text. Take the next step.</title>
   <link rel="icon" href="../icon.png">
   <link rel="stylesheet" href="../style.css">
   <script src="../selection-demo.js" defer></script>
@@ -14,20 +14,20 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav wrap">
   <a class="brand" href="./"><img src="../icon.png" width="32" height="32" alt="">SnapBar</a>
-  <nav aria-label="Main navigation"><a href="../" lang="zh-Hant" hreflang="zh-Hant">繁體中文</a><a href="#experience">AI rewrite</a><a class="blue" href="#download">Download preview ↓</a></nav>
+  <nav aria-label="Main navigation"><a href="../" lang="zh-Hant" hreflang="zh-Hant">繁體中文</a><a href="#experience">Explore features</a><a href="#personalize">Make it yours</a><a class="blue" href="#download">Download preview</a></nav>
 </header>
 <main id="main">
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
       <p class="eyebrow">TEXT-SELECTION TOOLBAR FOR WINDOWS</p>
-      <h1 id="headline">See a term?<br><span>Select it. Search it.</span></h1>
-      <p class="lead">Skip copying, opening a browser and pasting. Select text, press the shortcut to bring up SnapBar, then choose Search. Your browser opens the search for you.</p>
+      <h1 id="headline">Select text.<br><span>Take the next step.</span></h1>
+      <p class="lead">Search, look up words and rewrite, with actions beside your text. Can’t select the words on screen? Capture them and keep going.</p>
       <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows preview <span aria-hidden="true">↓</span></a></div>
       <p class="small">Windows x64 · No sign-in to download · Portable ZIP · Unsigned preview</p>
       <p class="hero-onboarding">Built-in guidance walks you through your first search. <strong>No AI setup needed.</strong></p>
     </div>
     <figure class="hero-figure workflow-demo" data-step="3" aria-labelledby="demo-caption">
-      <div class="demo-intro"><span class="demo-badge">01 / SELECT AND SEARCH</span><p>Keep reading. Look up the unfamiliar bit.</p></div>
+      <div class="demo-intro"><span class="demo-badge">START WITH A SEARCH</span><p>See a term? Select it. Search it.</p></div>
       <div class="demo-window" id="selection-preview">
         <div class="demo-titlebar" aria-hidden="true"><span class="demo-tab">Reading notes</span><span class="demo-window-controls">─ □ ×</span></div>
         <div class="workflow-content">
@@ -45,19 +45,42 @@
   <section id="experience" class="experience section" aria-labelledby="experience-title">
     <div class="wrap">
       <article class="story">
-        <div class="story-copy"><p class="eyebrow">02 / AI REWRITE · OPTIONAL</p><h2 id="experience-title">Reply too wordy?<br>Select it. Shorten it.</h2><p>Select your draft and open AI rewrite from SnapBar’s More menu. Review the result, then copy it or replace the original when the source is editable and passes revalidation.</p><p class="detail">Set up your own AI service, model and any required API key. Provider charges may apply. Selected text is sent only when you run an AI instruction.</p></div>
-        <figure class="rewrite-example"><figcaption>Keep the point. Lose the extra words.</figcaption><dl><dt>Your draft</dt><dd><mark>We will need to check this on our side, and we will get back to you once we have confirmed it.</mark></dd><dt><span class="action-label">AI rewrite → Shorten</span></dt><dd>We will confirm and get back to you.</dd></dl><p class="rewrite-note">Illustrative result. Compare it with your draft before deciding to use it.</p></figure>
+        <div class="story-copy"><p class="eyebrow">READING · OFFLINE DICTIONARIES</p><h2 id="experience-title">An unfamiliar word?<br>Look it up right there.</h2><p>Select an English word or short phrase and choose Dictionary. Read definitions beside your selection, search several dictionaries at once, and copy a definition into your notes.</p><p class="detail">Lookups run locally without a connection. Import your own supported StarDict dictionaries first; enable, disable or remove each one separately.</p></div>
+        <figure class="dictionary-example feature-example"><p class="example-label">A sentence you’re reading</p><p class="reading-sentence">Make room for <mark>serendipity</mark>.</p><div class="lookup-card"><span class="action-label">Dictionary</span><h3>serendipity</h3><p class="pronunciation">/ˌser.ənˈdɪp.ə.ti/</p><p>The chance discovery of something good when you weren’t looking for it.</p><div class="dictionary-sources"><span>Grouped by dictionary</span><span>Copy definitions</span></div></div><figcaption>Illustrative lookup. Definitions and pronunciation depend on your imported dictionaries.</figcaption></figure>
       </article>
     </div>
+  </section>
+  <section class="section wrap" aria-labelledby="rewrite-title">
+      <article class="story">
+        <div class="story-copy"><p class="eyebrow">WRITING · AI REWRITE · OPTIONAL</p><h2 id="rewrite-title">Reply too wordy?<br>Select it. Shorten it.</h2><p>Select your draft and open AI rewrite from SnapBar’s More menu. Compare the original and result, keep refining, then copy it or replace the original when the source is editable and passes revalidation.</p><p class="detail">Set up your own AI service, model and any required API key. Provider charges may apply. Selected text is sent only when you run an AI instruction.</p></div>
+        <figure class="rewrite-example"><figcaption>Keep the point. Lose the extra words.</figcaption><dl><dt>Your draft</dt><dd><mark>We will need to check this on our side, and we will get back to you once we have confirmed it.</mark></dd><dt><span class="action-label">AI rewrite → Shorten</span></dt><dd>We will confirm and get back to you.</dd></dl><p class="rewrite-note">Illustrative result. Compare it with your draft before deciding to use it.</p></figure>
+      </article>
+  </section>
+  <section class="experience section" aria-labelledby="ocr-title">
+    <div class="wrap story">
+      <div class="story-copy"><p class="eyebrow">CAPTURE · LOCAL OCR</p><h2 id="ocr-title">Can’t select the text?<br>Keep going anyway.</h2><p>Words stuck in an image or on screen? Start region OCR from the tray menu or set a dedicated shortcut. Capture an area on one screen, then correct, copy or search the text, or use your configured actions.</p><p class="detail">Traditional Chinese and English recognition runs locally, with images processed in memory. OCR requires the Microsoft Visual C++ x64 runtime. Search and AI actions send text to their respective services.</p></div>
+      <figure class="ocr-example feature-example"><div class="capture-scene"><span class="capture-label">An image on screen</span><div class="capture-area"><p lang="zh-Hant">把靈感留下來。</p><p>Keep the idea.</p><span class="capture-corner corner-start" aria-hidden="true"></span><span class="capture-corner corner-end" aria-hidden="true"></span></div></div><div class="ocr-output"><p class="example-label">RECOGNIZED · EDITABLE TEXT</p><p><span lang="zh-Hant">把靈感留下來。</span><br>Keep the idea.</p><div class="result-options"><span>Correct</span><span>Copy</span><span>Search</span><span>More actions</span></div></div><figcaption>Illustrative capture and recognition. Correct the result before deciding how to use it.</figcaption></figure>
+    </div>
+  </section>
+  <section id="personalize" class="section wrap" aria-labelledby="personalize-title">
+    <div class="section-heading"><p class="eyebrow">MAKE IT YOURS</p><h2 id="personalize-title">Your everyday actions.<br>Right where you need them.</h2><p>From one less copy command to connecting your own tools, make SnapBar fit the way you work.</p></div>
+    <figure class="product-detail"><img src="../assets/selection-toolbar-en.png" loading="lazy" alt="SnapBar’s English toolbar beside selected text, with Copy, Cut, Paste, Search and More actions."><figcaption>Actual toolbar. Available actions depend on your settings and the source.</figcaption></figure>
+    <div class="feature-grid">
+      <article><p class="feature-kicker">ONE LESS STEP</p><h3>Select and keep going.</h3><p>Enable automatic toolbar display and adjust its delay. Or enable automatic copying, either when selecting with Ctrl held or whenever you select text.</p><p class="detail">Automatic copying is off by default and can be configured separately from the toolbar.</p></article>
+      <article><p class="feature-kicker">YOUR ACTIONS, CLOSER</p><h3>Your order. Your shortcuts.</h3><p>Reorder actions, pin up to nine, and choose icons or icons with text. Assign shortcuts to search, dictionary, OCR, a specific AI command or a custom action.</p><p class="detail">Dictionary and AI actions still need their respective setup.</p></article>
+      <article><p class="feature-kicker">CONNECT YOUR TOOLS</p><h3>Start a workflow with text.</h3><p>Set a custom search URL or add URL, PowerShell and JavaScript actions to pass selected text to your own tools.</p><p class="detail">JavaScript requires Node.js. Scripts run with your current Windows user permissions.</p></article>
+    </div>
+    <p class="feature-docs"><a class="blue" href="https://github.com/adalf0722/snapbar/blob/main/README.en.md">Explore all features and setup instructions</a></p>
   </section>
   <section id="download" class="download section wrap" aria-labelledby="download-title">
     <div class="download-panel">
       <div class="section-heading">
-        <p class="eyebrow">03 / GET STARTED</p>
+        <p class="eyebrow">START WITH ONE SIMPLE ACTION</p>
         <h2 id="download-title">Try your first search.<br>No AI setup needed.</h2>
         <p>Your first launch includes practice text and guidance to help you complete a search.</p>
         <div class="download-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows preview <span aria-hidden="true">↓</span></a><a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases">Release notes ↗</a></div>
         <p>Windows x64 · .NET runtime included · Unsigned package</p>
+        <p class="small">Region OCR also requires the <a class="blue" href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Microsoft Visual C++ x64 runtime</a>. Check release notes for the features in your downloaded build.</p>
         <p class="small"><span id="download-version">View published releases</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">All releases ↗</a></p>
       </div>
       <ol class="steps">
