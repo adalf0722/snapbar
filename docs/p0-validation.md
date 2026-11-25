@@ -1,5 +1,17 @@
 # P0 驗證紀錄
 
+## 2026-11-25 跨欄拖選的動作列定位
+
+拖選時改用放開位置附近的有效文字行；過高、過遠或無效的矩形退回放開點。快捷鍵保留文字定位。Probe 與 App 共用 Core 策略，App 的工作區選擇與離開後消失邊界使用相同錨點。未更動選取權限、前景／焦點驗證、租期或取消機制。
+
+Release 建置成功（零錯誤，11 個既有警告），Core 757 項通過，包含新增 9 項定位回歸。Layout 267 項通過，包含真實 Popup 視窗的遠端矩形退回與快捷鍵文字定位。報告：`artifacts/checks/desktop/20261125T114408154Z-ef6410d017db45abbef10d44da017697/report.json`；該輪 Keyboard 在輸入法切換時焦點檢查失敗，不能作為整套成功報告。改以完整按鍵切換到專用測試來源後，Keyboard 26 項全數通過，報告：`artifacts/checks/desktop/20261125T114526664Z-0ade486cdc5f4297815d998789304832/report.json`。
+
+在使用者已登入的 Chrome Zabbix 6.0.2 Dashboard 進行實際拖選：主機欄往右選到告警文字，工具列出現在告警附近；從告警往左反向選到主機欄，工具列出現在主機文字附近，兩次皆未落到頁尾。直接觀察原生桌面工具列，不以 DOM 模擬取代滑鼠拖選。驗證使用本次建置的開發版，沿用原有自動偵測設定，完成後從「關於與支援 → 結束 SnapBar」正常退出。
+
+最後完整 `scripts/check.ps1` 通過，包含 Actionlint、版本、工具／推送契約、發布與雙語說明、祖先基準、網站檢查、Core 757 項及 ActionRunner 38 項。最終建置報告：`artifacts/checks/build/20261125T114900024Z-7f8f09bace7d4b748ebf818a358a1d05/report.json`。
+
+負座標、DPI 比例及工作區邊緣由 Core 測試覆蓋；本次未進行實體多螢幕混合 DPI 人工測試、完整 Release 發布套件或打包。未保存選取內容至診斷日誌，未更動 Zabbix 設定或告警資料，未替換 `artifacts/p0`。
+
 ## 2026-11-21 支援診斷與意外結束回報
 
 Release 建置、Core 709 項及完整 Release 桌面套件 1064 項通過，零失敗、零略過。SupportRecovery 14 項涵蓋跨程序的致命例外摘要、未正常結束的辨識、欄位隱私、記憶體容量及 Probe 退出與逾時後的恢復。ClipboardRaces 17 項及 AutoCopy 52 項通過。前兩輪因專用視窗未取得前景中止，最後一輪在相應視窗取得前景後完整通過。報告位於 `artifacts/checks/desktop/20261121T130506241Z-93627b2cceac47f780dba6738ee148a8/report.json`，支援頁畫面位於 `artifacts/ui-polish/settings-support-diagnostics.png`。

@@ -23,6 +23,8 @@ public sealed class PopupWindow : Window
     private string searchTemplate = WebActionPolicy.DefaultSearchTemplate, query = "";
     private nint handle;
     private int pointerX, pointerY, menuIndex = -1;
+    private bool usePointer;
+    private ScreenRect placementAnchor = new(0, 0, 1, 1);
     private (int X, int Y)? lastPointer;
     private bool searchMode, syncingQuery, composing;
     private double unfilteredScrollOffset;
@@ -94,9 +96,10 @@ public sealed class PopupWindow : Window
     }
 
     public void Present(SelectionSnapshot selection, int x, int y, string searchTemplate = WebActionPolicy.DefaultSearchTemplate,
-        ActionSettings? actionSettings = null)
+        ActionSettings? actionSettings = null, bool usePointer = false)
     {
         snapshot = selection; pointerX = x; pointerY = y; this.searchTemplate = searchTemplate;
+        this.usePointer = usePointer;
         UiText.Refresh(this);
         settings = ActionCatalog.Normalize(actionSettings ?? new()); EndSearchInput(); query = ""; menuIndex = -1; more.Visibility = Visibility.Collapsed;
         RenderBar(); Place(); Show(); Place();
@@ -307,7 +310,11 @@ public sealed class PopupWindow : Window
     {
         if (snapshot == null) return;
         new WindowInteropHelper(this).EnsureHandle();
-        var anchor = snapshot.Bounds ?? new ScreenRect(pointerX, pointerY, 1, 1); var area = Native.WorkArea((int)anchor.X, (int)anchor.Y);
+        var sourceDpi = Native.GetDpiForWindow((nint)snapshot.Target.Window);
+        var anchor = SelectionAnchor.Resolve(snapshot.Bounds is { } bounds ? [bounds] : [], usePointer,
+            pointerX, pointerY, (sourceDpi == 0 ? 96 : sourceDpi) / 96d);
+        placementAnchor = anchor;
+        var area = Native.WorkArea((int)anchor.X, (int)anchor.Y);
         void SizeAndPlace()
         {
             var dpi = Native.GetDpiForWindow(handle); var scale = (dpi == 0 ? 96 : dpi) / 96d; var available = Math.Max(1, area.Width / scale);
@@ -347,7 +354,7 @@ public sealed class PopupWindow : Window
         const double marginDip = 48;
         var dpi = Native.GetDpiForWindow(handle);
         var margin = marginDip * (dpi == 0 ? 96 : dpi) / 96;
-        var anchor = snapshot.Bounds ?? new ScreenRect(pointerX, pointerY, 1, 1);
+        var anchor = placementAnchor;
 
         // Keep the route from the selection to every button inside the dismissal boundary.
         var left = Math.Min(bounds.Left, Math.Min(anchor.X, pointerX));

@@ -76,6 +76,21 @@ internal static class ActionLayoutTest
                     .Select(b => ((ActionItem)b.Tag).Id).ToArray();
                 Button PinButton(string name) => Children<Button>(popup).Single(b => AutomationProperties.GetName(b) == "釘選" + name);
                 var iconsOnly = current with { ShowLabels = false };
+                var work = SnapBar.Windows.Native.WorkArea(100, 100);
+                var releaseX = (int)work.X + 150; var releaseY = (int)work.Y + 150;
+                var remote = snapshot with { Bounds = new(work.X + 50, work.Bottom + 5000, 500, 20) };
+                popup.Present(remote, releaseX, releaseY, actionSettings: iconsOnly, usePointer: true);
+                popup.UpdateLayout();
+                var popupHandle = new System.Windows.Interop.WindowInteropHelper(popup).Handle;
+                Check(SnapBar.Windows.Native.GetWindowRect(popupHandle, out var pointerBounds)
+                    && pointerBounds.Left == releaseX && pointerBounds.Top == releaseY + 9,
+                    "native toolbar stays near release when provider reports a distant final rectangle");
+                var keyboard = snapshot with { Bounds = new(work.X + 300, work.Y + 300, 100, 20) };
+                popup.Present(keyboard, releaseX, releaseY, actionSettings: iconsOnly);
+                popup.UpdateLayout();
+                Check(SnapBar.Windows.Native.GetWindowRect(popupHandle, out var keyboardBounds)
+                    && keyboardBounds.Left == (int)keyboard.Bounds.X && keyboardBounds.Top == (int)keyboard.Bounds.Bottom + 8,
+                    "native keyboard toolbar follows selected text instead of pointer");
                 popup.Present(snapshot, 100, 100, actionSettings: iconsOnly); popup.UpdateLayout();
                 Check(VisiblePins().SequenceEqual(expected.Where(id => id != "path")), "actual toolbar filters path for plain text while retaining configured relative order");
                 var eight = ActionCatalog.SetPlacement(iconsOnly, expected[^1], ActionPlacement.More);

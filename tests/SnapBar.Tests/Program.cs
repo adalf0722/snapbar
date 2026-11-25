@@ -11,6 +11,7 @@ var selection = new SelectionSnapshot("s", target, "original", null, true, 1, 8)
 AutoCopySettingsTests.Run(Check);
 UpdatePolicyTests.Run(Check);
 ToolbarAppearanceDelayTests.Run(Check);
+SelectionAnchorTests.Run(Check);
 SelectionCapturePipelineTest.Run(Check, target, selection);
 ClipboardWritePolicyTest.Run(Check, target, selection);
 Check("legacy probe requests leave selection diagnostics disabled", () =>

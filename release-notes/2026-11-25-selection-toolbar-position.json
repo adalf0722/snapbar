@@ -1,0 +1,18 @@
+{
+  "title": "跨欄選字後，動作列更容易找到",
+  "summary": "滑鼠跨欄或反向拖選文字後，動作列會靠近放開滑鼠的位置，避免被頁面遠處的選取範圍帶到螢幕邊緣。",
+  "highlights": [
+    "優先使用滑鼠放開位置附近的文字範圍，異常或過遠的座標會改用放開位置。",
+    "快捷鍵叫出的動作列仍依選取文字定位，並保留螢幕邊緣避讓。"
+  ],
+  "usage": "更新後啟動 SnapBar，在已啟用自動顯示動作列的情況下拖選文字即可，不需新增設定。",
+  "en": {
+    "title": "Find the toolbar near cross-column selections",
+    "summary": "After a cross-column or reverse mouse selection, the toolbar stays near the release point instead of following distant selection geometry to the screen edge.",
+    "highlights": [
+      "Uses text bounds near the mouse release point, falling back to that point when bounds are invalid or too distant.",
+      "Keyboard-triggered toolbars still follow selected text and stay within the screen work area."
+    ],
+    "usage": "After updating, start SnapBar and select text with automatic toolbar display enabled. No new settings are required."
+  }
+}

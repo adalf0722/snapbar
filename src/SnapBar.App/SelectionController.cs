@@ -295,7 +295,7 @@ public sealed partial class SelectionController : IDisposable
             }
             pendingAppearanceTarget = null;
             selection = candidate;
-            popup.Present(selection, x, y, searchUrlTemplate, actions);
+            popup.Present(selection, x, y, searchUrlTemplate, actions, usePointer: pointer);
             selectionDiagnostics.RecordStatus(ticket, "popup-present", "ok", watch.Elapsed.TotalMilliseconds);
             if (autoCopied && remaining <= TimeSpan.Zero) ShowAutoCopyFeedback(selection, x, y);
             Status?.Invoke(selection.Source == "sublime-clipboard"

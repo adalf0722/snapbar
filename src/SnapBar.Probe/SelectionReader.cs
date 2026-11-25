@@ -73,14 +73,13 @@ internal sealed class SelectionReader
 
             var editable = ReadEditability(candidate, focused, ranges[0]);
 
-            ScreenRect? bounds = null;
-            var rectangles = ranges[^1].GetBoundingRectangles();
-            if (rectangles.Length > 0)
-            {
-                var last = rectangles[^1];
-                if (!last.IsEmpty && double.IsFinite(last.X) && double.IsFinite(last.Y) && last.Width > 0 && last.Height > 0)
-                    bounds = new(last.X, last.Y, last.Width, last.Height);
-            }
+            var anchorRanges = request.UsePointer ? ranges : [ranges[^1]];
+            var rectangles = anchorRanges.SelectMany(range => range.GetBoundingRectangles())
+                .Where(rect => !rect.IsEmpty)
+                .Select(rect => new ScreenRect(rect.X, rect.Y, rect.Width, rect.Height));
+            var dpi = Native.GetDpiForWindow((nint)request.Window);
+            var bounds = SelectionAnchor.Resolve(rectangles, request.UsePointer, request.X, request.Y,
+                (dpi == 0 ? 96 : dpi) / 96d);
             element = candidate;
             savedRanges = ranges.Select(r => r.Clone()).ToArray();
             focusedId = focused.GetRuntimeId();
