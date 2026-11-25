@@ -1,0 +1,18 @@
+{
+  "title": "自訂動作結果可選字複製",
+  "summary": "自訂動作的文字與 Markdown 結果現在可選取部分文字，複製操作與 OCR 結果視窗一致。",
+  "highlights": [
+    "保留 Markdown 排版，支援滑鼠選字、Ctrl+A 全選與 Ctrl+C 複製。",
+    "底部按鈕依選取狀態切換為「複製所選文字」或「複製全部」。"
+  ],
+  "usage": "執行輸出至視窗或 Markdown 的自訂動作，點入結果選取文字後複製；未選取時，底部按鈕會複製完整原始輸出。",
+  "en": {
+    "title": "Select and copy custom action results",
+    "summary": "Text and Markdown results now support selecting and copying part of the output, matching the OCR result window.",
+    "highlights": [
+      "Keep Markdown formatting while selecting text with the mouse, selecting all with Ctrl+A, and copying with Ctrl+C.",
+      "The bottom button switches between Copy selected text and Copy all to match the selection."
+    ],
+    "usage": "Run a custom action with window or Markdown output, then click into the result to select and copy text. With no selection, the bottom button copies the complete original output."
+  }
+}

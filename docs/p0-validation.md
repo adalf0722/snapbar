@@ -1328,3 +1328,13 @@ Core 709、編輯器診斷 32、介面語言 69、OCR 動作 91、腳本及啟�
 完整 `scripts/check.ps1` 通過，Core 748、ActionRunner 38，無略過。完整日誌：`artifacts/checks/window-movement-check.log`。
 
 本輪測試前透過舊版設定介面的「結束 SnapBar」正常退出既有程序，測試後以原版本的 `--background` 恢復背景執行。尚未驗證實體多螢幕拖曳、不同縮放比例間切換或實際拔除螢幕；未執行完整桌面 Release，也未發布或替換使用者安裝的套件。
+
+### 2026-11-25 自訂動作結果選字複製
+
+一般文字及 Markdown 結果保留既有排版；點入文字時才啟用視窗並取得閱讀器焦點。底部按鈕依選取狀態顯示「複製所選文字」或「複製全部」，全文複製保留原始順序與 Markdown 語法。視窗初次出現及直接操作底部按鈕仍維持不搶焦點；點入結果後，既有來源失效與回填重驗規則繼續生效。
+
+Release 建置、Core 757、保留結果 69 與桌面預檢 1 通過，無略過。報告位於 `artifacts/checks/desktop/20261125T122835981Z-897504af080841e4b5ddd6e5723d61ee/report.json`；其中後續 Actions 套件因 fixture 未取得前景而停止，因此整份多套件報告不是成功的 Release 證據。單獨重跑 Actions 仍在相同前景前提停止，未執行功能斷言，後排的 Language 套件亦未開始。
+
+新增案例涵蓋實際滑鼠拖選及底部按鈕點擊、Ctrl+A／Ctrl+C、清除選取後恢復全文複製、Markdown 標題排版及原始語法、繁中／英文動態按鈕，以及點入結果後強制觸發舊回填仍不能修改來源或剪貼簿。原有有效回填、多結果保留與長文捲動測試也通過。已檢視 `artifacts/ui-polish/action-result-selection-zh.png`，選取反白與按鈕標籤正常。測試使用可丟棄 fixture；未重新驗證第三方應用、實體多螢幕或混合 DPI，未發布套件。
+
+完整 `scripts/check.ps1` 通過，Core 757、ActionRunner 38，無略過；日誌位於 `artifacts/checks/action-result-selection-check.log`。新增雙語更新說明與設計文件，繁中 Markdown 已以嚴格 UTF-8 讀回驗證。

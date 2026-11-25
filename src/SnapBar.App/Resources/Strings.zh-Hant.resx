@@ -284,6 +284,8 @@
   <data name="ActionResultWindow_005" xml:space="preserve">
     <value>來源不可寫入或已變更；可以複製結果。</value>
   </data>
+  <data name="ActionResult_CopyAll" xml:space="preserve"><value>複製全部</value></data>
+  <data name="ActionResult_CopySelected" xml:space="preserve"><value>複製所選文字</value></data>
   <data name="ActionResultWindow_006" xml:space="preserve">
     <value>複製結果</value>
   </data>

@@ -284,6 +284,8 @@ Results appear here after running.</value>
   <data name="ActionResultWindow_005" xml:space="preserve">
     <value>The source is read-only or has changed. You can copy the result.</value>
   </data>
+  <data name="ActionResult_CopyAll" xml:space="preserve"><value>Copy all</value></data>
+  <data name="ActionResult_CopySelected" xml:space="preserve"><value>Copy selected text</value></data>
   <data name="ActionResultWindow_006" xml:space="preserve">
     <value>Copy result</value>
   </data>

@@ -16,6 +16,8 @@ internal sealed class ActionResultWindow : Window
 {
     private readonly UiLanguage language = UiText.Capture();
     private readonly Button? applyButton;
+    private readonly Button? copyButton;
+    private readonly FlowDocumentScrollViewer? resultViewer;
     private readonly TextBlock? hint;
     private readonly bool diagnosticOnly;
     private readonly bool compactResult;
@@ -92,8 +94,16 @@ internal sealed class ActionResultWindow : Window
             Panel buttons = compactResult ? new WrapPanel() : new StackPanel { Orientation = Orientation.Horizontal };
             hint = ActionUi.Text(canApply ? applyHint ?? language.Get("ActionResultWindow_004") : staleApplyHint ?? language.Get("ActionResultWindow_005"), 12, ActionUi.Muted);
             hint.Margin = new(0, 8, 0, 0);
-            if (!messageOnly) buttons.Children.Add(ActionUi.Button(language.Get("ActionResultWindow_006"), () =>
-            { try { Clipboard.SetText(text, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); } catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); } }, "copy", primary: compactResult));
+            if (!messageOnly)
+            {
+                copyButton = ActionUi.Button(language.Get(compactResult ? "ActionResult_CopyAll" : "ActionResultWindow_006"), () =>
+                {
+                    var output = resultViewer?.Selection is { IsEmpty: false } selected ? selected.Text : text;
+                    try { Clipboard.SetText(output, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); }
+                    catch (System.Runtime.InteropServices.ExternalException) { hint.Text = language.Get("ActionResultWindow_008"); }
+                }, "copy", primary: compactResult);
+                buttons.Children.Add(copyButton);
+            }
             if (!lookup)
             {
                 applyButton = ActionUi.Button(applyLabel ?? language.Get("ActionResultWindow_009"), () => { applyButton!.IsEnabled = false; apply?.Invoke(); });
@@ -122,7 +132,21 @@ internal sealed class ActionResultWindow : Window
             DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
             if (lookup) body.Children.Add(lookupMatches is { Count: > 0 }
                 ? CreateLookupGroups(lookupMatches, lookupWarning) : CreateLookupContent(name, text, messageOnly));
-            else if (compactResult) body.Children.Add(ActionResultContent.Create(text, markdown, RenderMarkdown));
+            else if (compactResult)
+            {
+                body.Children.Add(ActionResultContent.Create(text, markdown, RenderMarkdown, out var viewer));
+                resultViewer = viewer;
+                AutomationProperties.SetAutomationId(viewer, "ActionResultText");
+                // Keep presentation and footer clicks passive, but let intentional text interaction
+                // activate the window so selection and keyboard commands work normally.
+                viewer.PreviewMouseLeftButtonDown += (_, _) => { Activate(); viewer.Focus(); };
+                viewer.Loaded += (_, _) => viewer.Selection.Changed += (_, _) =>
+                {
+                    var label = language.Get(viewer.Selection.IsEmpty ? "ActionResult_CopyAll" : "ActionResult_CopySelected");
+                    ((StackPanel)copyButton!.Content).Children.OfType<TextBlock>().Last().Text = label;
+                    AutomationProperties.SetName(copyButton, label);
+                };
+            }
             else if (markdown) body.Children.Add(new FlowDocumentScrollViewer { Document = RenderMarkdown(text), IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, IsSelectionEnabled = true });
             else body.Children.Add(new TextBox { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto, BorderThickness = new(0), Padding = new(10), FontSize = 14,

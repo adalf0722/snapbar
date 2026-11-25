@@ -8,7 +8,8 @@ namespace SnapBar.App;
 // Presentation only: the original output remains the source for copy and apply.
 internal static class ActionResultContent
 {
-    internal static FrameworkElement Create(string text, bool markdown, Func<string, FlowDocument> renderMarkdown)
+    internal static FrameworkElement Create(string text, bool markdown, Func<string, FlowDocument> renderMarkdown,
+        out FlowDocumentScrollViewer resultViewer)
     {
         var document = renderMarkdown(markdown ? text : "");
         document.FontSize = 15;
@@ -55,6 +56,7 @@ internal static class ActionResultContent
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             VerticalAlignment = VerticalAlignment.Top, MaxHeight = 400, Background = Brushes.White
         };
+        resultViewer = viewer;
         // FlowDocument viewers otherwise request all available height, leaving short results in a large box.
         viewer.Loaded += (_, _) =>
         {
