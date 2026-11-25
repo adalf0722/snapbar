@@ -25,6 +25,7 @@ internal sealed class ActionResultWindow : Window
     private nint handle;
     private readonly DispatcherTimer? timer;
     internal bool IsLookupPinned { get; private set; }
+    internal bool HasForeground => handle != 0 && Native.GetForegroundWindow() == handle;
     public ActionResultWindow(string name, string text, bool markdown, bool canApply, Action? apply = null, bool hud = false,
         ScriptDiagnostic? diagnostic = null, bool diagnosticOnly = false, bool lookup = false, bool messageOnly = false,
         Action? openSettings = null, string? openSettingsLabel = null,
@@ -91,12 +92,12 @@ internal sealed class ActionResultWindow : Window
         if (!diagnosticOnly)
         {
             var footer = new StackPanel { Margin = new(0, 12, 0, 0) };
-            Panel buttons = compactResult ? new WrapPanel() : new StackPanel { Orientation = Orientation.Horizontal };
+            Panel buttons = compactResult || lookup ? new WrapPanel() : new StackPanel { Orientation = Orientation.Horizontal };
             hint = ActionUi.Text(canApply ? applyHint ?? language.Get("ActionResultWindow_004") : staleApplyHint ?? language.Get("ActionResultWindow_005"), 12, ActionUi.Muted);
             hint.Margin = new(0, 8, 0, 0);
             if (!messageOnly)
             {
-                copyButton = ActionUi.Button(language.Get(compactResult ? "ActionResult_CopyAll" : "ActionResultWindow_006"), () =>
+                copyButton = ActionUi.Button(language.Get(compactResult || lookup ? "ActionResult_CopyAll" : "ActionResultWindow_006"), () =>
                 {
                     var output = resultViewer?.Selection is { IsEmpty: false } selected ? selected.Text : text;
                     try { Clipboard.SetText(output, TextDataFormat.UnicodeText); hint.Text = language.Get("ActionResultWindow_007"); }
@@ -127,31 +128,49 @@ internal sealed class ActionResultWindow : Window
                 buttons.Children.Add(pin);
             }
             buttons.Children.Add(ActionUi.Button(language.Get("ActionResultWindow_014"), Close)); footer.Children.Add(buttons);
+            if (lookup)
+                foreach (FrameworkElement button in buttons.Children) button.Margin = new(0, 0, 7, 6);
             if (!lookup || !messageOnly) footer.Children.Add(hint);
             if (lookup) hint.Text = language.Get("ActionResultWindow_015");
             DockPanel.SetDock(footer, Dock.Bottom); body.Children.Add(footer);
-            if (lookup) body.Children.Add(lookupMatches is { Count: > 0 }
-                ? CreateLookupGroups(lookupMatches, lookupWarning) : CreateLookupContent(name, text, messageOnly));
+            if (lookup)
+            {
+                if (messageOnly)
+                {
+                    var message = ActionUi.Text(text, 14);
+                    message.Name = "LookupContent";
+                    body.Children.Add(message);
+                }
+                else
+                {
+                    body.Children.Add(CreateLookupGroups(lookupMatches is { Count: > 0 } ? lookupMatches : [new("", name, text)], lookupWarning, out var viewer));
+                    resultViewer = viewer;
+                    AutomationProperties.SetAutomationId(viewer, "LookupResultText");
+                }
+            }
             else if (compactResult)
             {
                 body.Children.Add(ActionResultContent.Create(text, markdown, RenderMarkdown, out var viewer));
                 resultViewer = viewer;
                 AutomationProperties.SetAutomationId(viewer, "ActionResultText");
-                // Keep presentation and footer clicks passive, but let intentional text interaction
-                // activate the window so selection and keyboard commands work normally.
-                viewer.PreviewMouseLeftButtonDown += (_, _) => { Activate(); viewer.Focus(); };
-                viewer.Loaded += (_, _) => viewer.Selection.Changed += (_, _) =>
-                {
-                    var label = language.Get(viewer.Selection.IsEmpty ? "ActionResult_CopyAll" : "ActionResult_CopySelected");
-                    ((StackPanel)copyButton!.Content).Children.OfType<TextBlock>().Last().Text = label;
-                    AutomationProperties.SetName(copyButton, label);
-                };
             }
             else if (markdown) body.Children.Add(new FlowDocumentScrollViewer { Document = RenderMarkdown(text), IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, IsSelectionEnabled = true });
             else body.Children.Add(new TextBox { Text = text, IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto, BorderThickness = new(0), Padding = new(10), FontSize = 14,
                 VerticalContentAlignment = VerticalAlignment.Top,
                 Background = Brushes.White, FontFamily = new("Consolas, Microsoft JhengHei UI") });
+            if (resultViewer is { } selectableViewer)
+            {
+                // Keep presentation and footer clicks passive, but let intentional text interaction
+                // activate the window so selection and keyboard commands work normally.
+                selectableViewer.PreviewMouseLeftButtonDown += (_, _) => { Activate(); selectableViewer.Focus(); };
+                selectableViewer.Loaded += (_, _) => selectableViewer.Selection.Changed += (_, _) =>
+                {
+                    var label = language.Get(selectableViewer.Selection.IsEmpty ? "ActionResult_CopyAll" : "ActionResult_CopySelected");
+                    ((StackPanel)copyButton!.Content).Children.OfType<TextBlock>().Last().Text = label;
+                    AutomationProperties.SetName(copyButton, label);
+                };
+            }
             if (hud) { footer.Visibility = Visibility.Collapsed; timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) }; timer.Tick += (_, _) => Close(); Loaded += (_, _) => timer.Start(); }
         }
         Content = lookup ? new Border { Background = ActionUi.Canvas, BorderBrush = ActionUi.Line, BorderThickness = new(1), Child = body } : body;
@@ -199,44 +218,52 @@ internal sealed class ActionResultWindow : Window
         @"^(?:(?:n|v|vi|vt|a|adj|adv|prep|pron|conj|int|interj|num|aux|pl|abbr|vbl)\.|【[^】]{1,12}】|相關詞組[：:])",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking);
 
-    private static FrameworkElement CreateLookupGroups(IReadOnlyList<DictionaryMatch> matches, string? warning)
+    private static FrameworkElement CreateLookupGroups(IReadOnlyList<DictionaryMatch> matches, string? warning,
+        out FlowDocumentScrollViewer viewer)
     {
-        var groups = new StackPanel();
+        var document = new FlowDocument { FontFamily = ActionUi.Font, FontSize = 14, PagePadding = new(10), Background = Brushes.White };
         foreach (var match in matches)
         {
-            var source = ActionUi.Text(match.DictionaryName, 12, ActionUi.Muted);
-            source.FontWeight = FontWeights.SemiBold;
-            source.TextWrapping = TextWrapping.Wrap;
-            source.Margin = new(0, groups.Children.Count == 0 ? 0 : 12, 0, 6);
-            AutomationProperties.SetAutomationId(source, "LookupDictionarySource");
-            groups.Children.Add(source);
+            if (!string.IsNullOrEmpty(match.DictionaryName))
+            {
+                var source = new Paragraph(new Run(match.DictionaryName)) { FontSize = 12, Foreground = ActionUi.Muted,
+                    FontWeight = FontWeights.SemiBold, Margin = new(0, document.Blocks.Count == 0 ? 0 : 12, 0, 6) };
+                AutomationProperties.SetAutomationId(source, "LookupDictionarySource");
+                document.Blocks.Add(source);
+            }
             if (!string.Equals(match.Headword, matches[0].Headword, StringComparison.OrdinalIgnoreCase))
-                groups.Children.Add(ActionUi.Text(match.Headword, 14));
-            groups.Children.Add(CreateLookupContent(match.Headword, match.Text, false, wrap: false));
+                document.Blocks.Add(new Paragraph(new Run(match.Headword)) { Margin = new(0, 0, 0, 6) });
+            document.Blocks.Add(CreateLookupContent(match.Headword, match.Text));
         }
         if (warning != null)
         {
-            var message = ActionUi.Text(warning, 12, ActionUi.Muted);
-            message.TextWrapping = TextWrapping.Wrap;
-            message.Margin = new(0, 12, 0, 0);
-            groups.Children.Add(message);
+            document.Blocks.Add(new Paragraph(new Run(warning)) { FontSize = 12, Foreground = ActionUi.Muted, Margin = new(0, 12, 0, 0) });
         }
-        return new Border { Background = Brushes.White, CornerRadius = new(6), Padding = new(10),
-            Child = new ScrollViewer { Content = groups, MaxHeight = 300,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
+        viewer = new FlowDocumentScrollViewer { Document = document, IsToolBarVisible = false, IsSelectionEnabled = true,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            MaxHeight = 320, Background = Brushes.White };
+        var resultViewer = viewer;
+        viewer.Loaded += (_, _) =>
+        {
+            if (FindScrollViewer(resultViewer) is not { } scroll) return;
+            void FitContent() => resultViewer.MaxHeight = Math.Clamp(scroll.ExtentHeight, 32, 320);
+            scroll.ScrollChanged += (_, _) => FitContent();
+            FitContent();
+        };
+        return new Border { Background = Brushes.White, CornerRadius = new(6), Child = viewer };
     }
 
-    private static FrameworkElement CreateLookupContent(string headword, string text, bool messageOnly, bool wrap = true)
+    private static ScrollViewer? FindScrollViewer(DependencyObject parent)
     {
-        var content = ActionUi.Text("", 14);
-        content.Name = "LookupContent";
-        content.TextWrapping = TextWrapping.Wrap;
-        if (messageOnly)
-        {
-            content.Text = text;
-            return content;
-        }
+        if (parent is ScrollViewer scroll) return scroll;
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            if (FindScrollViewer(VisualTreeHelper.GetChild(parent, index)) is { } child) return child;
+        return null;
+    }
 
+    private static Paragraph CreateLookupContent(string headword, string text)
+    {
+        var content = new Paragraph { Name = "LookupContent", Margin = new(0) };
         var lines = text.ReplaceLineEndings("\n").Split('\n', 160);
         var first = 0;
         if (lines.Length > 1 && string.Equals(lines[0].Trim(), headword, StringComparison.OrdinalIgnoreCase))
@@ -258,20 +285,7 @@ internal sealed class ActionResultWindow : Window
             }
             else content.Inlines.Add(new Run(line));
         }
-        if (!wrap) return content;
-        return new Border
-        {
-            Background = Brushes.White,
-            CornerRadius = new(6),
-            Padding = new(10),
-            Child = new ScrollViewer
-            {
-                Content = content,
-                MaxHeight = 220,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
-            }
-        };
+        return content;
     }
     private static FlowDocument RenderMarkdown(string text)
     {

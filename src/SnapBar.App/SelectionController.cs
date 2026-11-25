@@ -115,7 +115,11 @@ public sealed partial class SelectionController : IDisposable
             var waitingTarget = pendingAppearanceTarget ?? autoCopyTarget;
             if (waitingTarget != null && Native.GetIdentity(Native.GetForegroundWindow()) != waitingTarget)
                 Invalidate(preserveReadonlyAction: true);
-            if (selection == null) return;
+            if (selection == null)
+            {
+                if (lookupResult && resultWindow is { IsLookupPinned: false, HasForeground: false }) resultWindow.Close();
+                return;
+            }
             if (Native.GetForegroundWindow() != (nint)selection.Target.Window && !popup.HasSearchForeground && aiWindow?.HasCaptureForeground != true)
                 Invalidate(preserveReadonlyAction: true);
             else if (popup.ShouldDismissForPointer())
@@ -471,7 +475,7 @@ public sealed partial class SelectionController : IDisposable
         customResults.InvalidateTargets();
         if (lookupResult)
         {
-            if (resultWindow is { IsLookupPinned: false }) resultWindow.Close();
+            if (resultWindow is { IsLookupPinned: false, HasForeground: false }) resultWindow.Close();
         }
         else resultWindow?.InvalidateTarget();
         pathAction?.Cancel();

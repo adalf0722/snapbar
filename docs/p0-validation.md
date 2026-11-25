@@ -1338,3 +1338,15 @@ Release 建置、Core 757、保留結果 69 與桌面預檢 1 通過，無略過
 新增案例涵蓋實際滑鼠拖選及底部按鈕點擊、Ctrl+A／Ctrl+C、清除選取後恢復全文複製、Markdown 標題排版及原始語法、繁中／英文動態按鈕，以及點入結果後強制觸發舊回填仍不能修改來源或剪貼簿。原有有效回填、多結果保留與長文捲動測試也通過。已檢視 `artifacts/ui-polish/action-result-selection-zh.png`，選取反白與按鈕標籤正常。測試使用可丟棄 fixture；未重新驗證第三方應用、實體多螢幕或混合 DPI，未發布套件。
 
 完整 `scripts/check.ps1` 通過，Core 757、ActionRunner 38，無略過；日誌位於 `artifacts/checks/action-result-selection-check.log`。新增雙語更新說明與設計文件，繁中 Markdown 已以嚴格 UTF-8 讀回驗證。
+
+### 2026-11-25 字典釋義選字複製
+
+詞典來源與釋義改以同一文件閱讀器呈現，保留來源分組、詞性強調與重複詞頭省略，支援跨詞典選取。點入釋義才啟用視窗；底部按鈕依選取狀態切換複製部分文字或完整原始查詢結果。英文操作文字較長時，底部按鈕換行以避免裁切。
+
+未釘住的結果在自身取得前景時保留，但來源候選與寫回權限仍由既有失效流程清除。候選清除後，切離結果仍會自動關閉；釘住結果、離線詞典設定入口與查詢過程的過期結果拒絕規則維持原有行為。
+
+最終 Release 建置、Core 757、字典 32、保留結果 69 與桌面預檢 1 通過，無略過。報告位於 `artifacts/checks/desktop/20261125T124628058Z-5f7eb4eab88a46aaa07deb8f1f1dd380/report.json`。新增案例以可丟棄詞典及真實滑鼠輸入驗證拖選、底部按鈕保留選取、Ctrl+A／Ctrl+C、跨詞典選取、清除選取後精確複製所有來源與原文，以及未釘住視窗在閱讀中保留、離開後關閉。另確認英文選取標籤與底部操作版面。已檢視 `artifacts/ui-polish/lookup-text-selection.png` 與 `lookup-text-selection-en.png`。
+
+測試前從既有開發版設定的「結束 SnapBar」正常退出。未重新驗證第三方應用、實體多螢幕或混合 DPI，未執行完整桌面 Release 或發布套件。
+
+最終 `scripts/check.ps1` 通過，Core 757、ActionRunner 38，無略過；日誌位於 `artifacts/checks/dictionary-selection-final-check.log`。繁中 Markdown 與雙語更新說明以嚴格 UTF-8 無 BOM 讀回驗證。測試後以本次建置的開發版恢復背景執行。

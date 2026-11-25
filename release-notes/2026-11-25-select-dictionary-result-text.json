@@ -1,0 +1,20 @@
+{
+  "title": "字典釋義可選字複製",
+  "summary": "字典視窗現在支援選取部分釋義，並保留詞典分組與詞性排版，複製操作與其他文字結果一致。",
+  "highlights": [
+    "可拖曳選取釋義，並用 Ctrl+A、Ctrl+C 全選與複製，也能跨詞典分組選取。",
+    "底部按鈕依選取範圍切換「複製所選文字」與「複製全部」，全文仍包含詞典來源。",
+    "未釘住的字典視窗在閱讀與選字時保持開啟，離開視窗後自動關閉。"
+  ],
+  "usage": "匯入並啟用離線詞典後查詢文字，點入釋義拖曳選字，再使用底部按鈕或 Ctrl+C 複製；需要切到其他視窗後繼續保留時，可先釘住結果。",
+  "en": {
+    "title": "Select and copy dictionary definitions",
+    "summary": "Dictionary results now support selecting part of a definition while preserving dictionary groups and part-of-speech formatting.",
+    "highlights": [
+      "Drag to select definitions, use Ctrl+A and Ctrl+C, and select across dictionary groups.",
+      "The bottom button switches between Copy selected text and Copy all; full output still includes dictionary sources.",
+      "Unpinned dictionary results stay open while reading and selecting text, then close when you leave the window."
+    ],
+    "usage": "Import and enable an offline dictionary, look up text, then select a definition and copy it with the bottom button or Ctrl+C. Pin the result first to keep it open when switching to another window."
+  }
+}
