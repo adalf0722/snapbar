@@ -5,16 +5,20 @@ if (demo) {
   const toggle = demo.querySelector(".demo-toggle");
   const replay = demo.querySelector(".demo-replay");
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const durations = [1500, 1500, 2000, 3000];
-  let step = motion.matches ? 3 : 0;
+  const progress = demo.querySelectorAll(".demo-progress li");
+  const durations = [200, 400, 600, 450, 1350];
+  const progressSteps = [0, 0, 1, 2, 3];
+  const poster = 2;
+  let step = motion.matches ? poster : 0;
   let paused = motion.matches;
+  let restartOnPlay = motion.matches;
   let visible = true;
   let timer;
 
   function render() {
     demo.dataset.step = String(step);
-    demo.querySelectorAll(".demo-progress li").forEach((item, index) => {
-      if (index === step) item.setAttribute("aria-current", "step");
+    progress.forEach((item, index) => {
+      if (index === progressSteps[step]) item.setAttribute("aria-current", "step");
       else item.removeAttribute("aria-current");
     });
     toggle.textContent = paused ? toggle.dataset.play : toggle.dataset.pause;
@@ -30,20 +34,28 @@ if (demo) {
     }, durations[step]);
   }
 
+  function replayFromStart() {
+    step = 0;
+    paused = false;
+    restartOnPlay = false;
+    render();
+    schedule();
+  }
+
   toggle.addEventListener("click", () => {
+    if (restartOnPlay) {
+      replayFromStart();
+      return;
+    }
     paused = !paused;
     render();
     schedule();
   });
-  replay.addEventListener("click", () => {
-    step = 0;
-    paused = false;
-    render();
-    schedule();
-  });
+  replay.addEventListener("click", replayFromStart);
   motion.addEventListener("change", () => {
     paused = motion.matches;
-    step = paused ? 3 : 0;
+    step = paused ? poster : 0;
+    restartOnPlay = paused;
     render();
     schedule();
   });

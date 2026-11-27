@@ -76,14 +76,19 @@ Check-Site 'generated bilingual pages have matching static ZIP, notes and versio
         Assert-Site ($html.Contains('id="release-notes" href="' + $selected.ReleaseUrl + '"'))
         $label = if ($relative -eq 'index.html') { '預覽版' } else { 'Preview' }
         Assert-Site ($html.Contains('<span id="download-version">0.1.0-rc.10 · ' + $label + '</span>'))
+        Assert-Site ($html.Contains('class="demo-star"') -and $html.Contains('href="https://github.com/adalf0722/snapbar"'))
+        Assert-Site ([regex]::Matches($html, 'src="(?:\.\./)?assets/search-demo-[a-z]+\.webp"').Count -eq 5)
         Assert-Site (-not $html.Contains('download.js') -and -not $html.Contains('api.github.com'))
         Assert-Site ((Get-FileHash -LiteralPath (Join-Path $source $relative)).Hash -ceq $before[$relative])
     }
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'style.css'))
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'selection-demo.js'))
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'icon.png'))
+    foreach ($frame in @('source', 'selected', 'toolbar', 'click', 'result')) {
+        Assert-Site (Test-Path -LiteralPath (Join-Path $output "assets/search-demo-$frame.webp"))
+    }
     $zh = [IO.File]::ReadAllText((Join-Path $output 'index.html'), [Text.Encoding]::UTF8)
-    Assert-Site ($zh.Contains('選好文字') -and $zh.Contains('回覆太囉嗦'))
+    Assert-Site ($zh.Contains('反白一行') -and $zh.Contains('直接搜') -and $zh.Contains('回覆太囉嗦'))
     Reject-Site { New-SnapBarWebsite $source $output @($current) 'fixture/repo' }
     Reject-Site { New-SnapBarWebsite $source (Join-Path $source 'nested-output') @($current) 'fixture/repo' }
 }

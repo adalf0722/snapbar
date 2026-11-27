@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Select text. Take the next step. SnapBar brings search, offline dictionaries, AI rewriting and custom actions to Windows text, with local OCR for text you cannot select. Start with your first search.">
+  <meta name="description" content="Highlight it. Search it. SnapBar brings search to your text on Windows, skipping copy, new tab, and paste. Download the Windows x64 preview and run it from the extracted ZIP.">
   <meta name="theme-color" content="#f7f8fb">
   <title>SnapBar — Select text. Take the next step.</title>
   <link rel="icon" href="../icon.png">
@@ -20,27 +20,50 @@
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
       <p class="eyebrow">TEXT-SELECTION TOOLBAR FOR WINDOWS</p>
-      <h1 id="headline">Select text.<br><span>Take the next step.</span></h1>
-      <p class="lead">Search, look up words and rewrite, with actions beside your text. Can’t select the words on screen? Capture them and keep going.</p>
-      <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows preview <span aria-hidden="true">↓</span></a></div>
-      <p class="small">Windows x64 · No sign-in to download · Portable ZIP · Unsigned preview</p>
-      <p class="hero-onboarding">Built-in guidance walks you through your first search. <strong>No AI setup needed.</strong></p>
+      <h1 id="headline">Highlight it.<br><span>Search it.</span></h1>
+      <p class="lead">Select text on Windows, press <kbd>Ctrl + Alt + V</kbd>, then click Search. Your browser opens with the words you selected.</p>
+      <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows x64 preview <span aria-hidden="true">↓</span></a></div>
+      <p class="small">Portable ZIP · .NET included · Unsigned preview</p>
     </div>
-    <figure class="hero-figure workflow-demo" data-step="3" aria-labelledby="demo-caption">
-      <div class="demo-intro"><span class="demo-badge">START WITH A SEARCH</span><p>See a term? Select it. Search it.</p></div>
-      <div class="demo-window" id="selection-preview">
-        <div class="demo-titlebar" aria-hidden="true"><span class="demo-tab">Reading notes</span><span class="demo-window-controls">─ □ ×</span></div>
-        <div class="workflow-content">
-          <p class="draft-label">How does this work?</p>
-          <p class="draft-text">I just read about <span>Windows clipboard history</span>. How do I use it?</p>
-          <p class="workflow-shortcut"><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd><span>Bring up SnapBar</span></p>
-          <div class="workflow-toolbar" aria-label="Illustrative toolbar"><span>Copy</span><span class="workflow-search">Search <span aria-hidden="true">↗</span></span><span>⋯</span></div>
-          <div class="workflow-result"><p class="browser-label">Default browser · Illustrative search results</p><p class="search-query">Windows clipboard history <span aria-hidden="true">⌕</span></p><p class="result-text">How to use Windows clipboard history</p><p class="result-hint">Learn how to enable, view and manage clipboard history.</p></div>
+    <div class="hero-showcase">
+      <figure class="workflow-demo" data-step="2" aria-labelledby="demo-caption">
+        <div class="demo-window" id="selection-preview">
+          <img data-frame="0" src="../assets/search-demo-source.webp" width="560" height="256" alt="">
+          <img data-frame="1" src="../assets/search-demo-selected.webp" width="560" height="256" alt="">
+          <img data-frame="2" src="../assets/search-demo-toolbar.webp" width="560" height="256" alt="">
+          <img data-frame="3" src="../assets/search-demo-click.webp" width="560" height="256" alt="">
+          <img data-frame="4" src="../assets/search-demo-result.webp" width="560" height="256" alt="">
         </div>
+        <ol class="demo-progress" aria-label="Search steps"><li>Highlight the code</li><li aria-current="step">Open the toolbar</li><li>Click Search</li><li>Browser opens</li></ol>
+        <figcaption class="demo-footer">
+          <span id="demo-caption">Three-second demo. The toolbar is captured from SnapBar. The click and search results are illustrated.</span>
+          <div class="demo-controls" hidden>
+            <button type="button" class="demo-toggle" data-play="Play" data-pause="Pause" aria-controls="selection-preview">Play</button>
+            <button type="button" class="demo-replay" aria-controls="selection-preview">Replay</button>
+          </div>
+        </figcaption>
+      </figure>
+      <p class="demo-star">Like this workflow? <a class="blue" href="https://github.com/adalf0722/snapbar">⭐ Star SnapBar on GitHub</a></p>
+    </div>
+  </section>
+  <section class="section friction wrap" aria-labelledby="friction-title">
+    <div class="section-heading"><h2 id="friction-title">From five steps to <span>two</span>.</h2></div>
+    <dl class="search-paths">
+      <div class="search-path">
+        <dt>Manual search in a new tab</dt>
+        <dd>Highlight → Copy → New tab → Paste → Submit</dd>
       </div>
-      <ol class="demo-progress" aria-label="Demo steps"><li>Select text</li><li>Use shortcut</li><li>Choose Search</li><li>Browser opens</li></ol>
-      <div class="demo-footer"><figcaption id="demo-caption">Illustrative workflow. Search sends selected text to your configured search service.</figcaption><div class="demo-controls" hidden><button type="button" class="demo-toggle" data-play="Play" data-pause="Pause" aria-controls="selection-preview">Pause</button><button type="button" class="demo-replay" aria-controls="selection-preview">Replay</button></div></div>
-    </figure>
+      <div class="search-path search-path--snapbar">
+        <dt>SnapBar · With automatic toolbar display on</dt>
+        <dd>Highlight → Click Search</dd>
+      </div>
+    </dl>
+    <p class="search-default"><strong>SnapBar default</strong> Highlight → Press <kbd>Ctrl + Alt + V</kbd> → Click Search</p>
+    <div class="feature-grid">
+      <article><h3>Stop carrying text between apps</h3><p>To look up a phrase, you copy it, find the input field, and paste. SnapBar’s search and dictionaries use the text you already selected.</p></article>
+      <article><h3>Look up a word mid-sentence</h3><p>Looking up a word in another tab means finding your place again. Import a StarDict dictionary and choose Dictionary to see the definition beside the sentence.</p></article>
+      <article><h3>Search the exact error code</h3><p>See an error code in docs or notes? Highlight it, bring up SnapBar, and click Search. Your browser opens with the same error code as the query.</p></article>
+    </div>
   </section>
   <section id="experience" class="experience section" aria-labelledby="experience-title">
     <div class="wrap">
@@ -76,9 +99,9 @@
     <div class="download-panel">
       <div class="section-heading">
         <p class="eyebrow">START WITH ONE SIMPLE ACTION</p>
-        <h2 id="download-title">Try your first search.<br>No AI setup needed.</h2>
-        <p>Your first launch includes practice text and guidance to help you complete a search.</p>
-        <div class="download-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows preview <span aria-hidden="true">↓</span></a><a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases">Release notes ↗</a></div>
+        <h2 id="download-title">Try your first search.</h2>
+        <p>Open SnapBar and follow the built-in practice guide to send your first selection to search. Search is ready to use out of the box.</p>
+        <div class="download-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows x64 preview <span aria-hidden="true">↓</span></a><a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases">Release notes ↗</a></div>
         <p>Windows x64 · .NET runtime included · Unsigned package</p>
         <p class="small">Region OCR also requires the <a class="blue" href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Microsoft Visual C++ x64 runtime</a>. Check release notes for the features in your downloaded build.</p>
         <p class="small"><span id="download-version">View published releases</span> · <a class="blue" href="https://github.com/adalf0722/snapbar/releases">All releases ↗</a></p>

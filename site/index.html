@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="選好文字，接著就做。SnapBar 把搜尋、離線查詞、AI 改寫與自訂動作帶到 Windows 的文字旁，也能用本機 OCR 擷取畫面文字。下載預覽版，從第一次搜尋開始。">
+  <meta name="description" content="反白一行，直接搜。SnapBar 把搜尋帶到 Windows 的選字旁，省去複製、開新分頁和貼上。下載 Windows x64 預覽版，解壓就能試。">
   <meta name="theme-color" content="#f7f8fb">
   <title>SnapBar — 選好文字，接著就做</title>
   <link rel="icon" href="icon.png">
@@ -20,38 +20,52 @@
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
       <p class="eyebrow">WINDOWS 選字工具列</p>
-      <h1 id="headline">選好文字，<br><span>接著就做。</span></h1>
-      <p class="lead">搜尋、查詞、改寫，把常用動作帶到文字旁。畫面上的字選不起來？框選擷取，再繼續處理。</p>
+      <h1 id="headline">反白一行，<br><span>直接搜。</span></h1>
+      <p class="lead">在 Windows 選取文字，按 <kbd>Ctrl + Alt + V</kbd>，就在文字旁點「搜尋」。SnapBar 會把原句帶進瀏覽器，省去複製、開新分頁和貼上。</p>
       <div class="hero-actions">
-        <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
+        <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">下載 Windows x64 預覽版 <span aria-hidden="true">↓</span></a>
       </div>
-      <p class="small">Windows x64 · 免登入下載 · 解壓即可啟動 · 未簽章預覽版</p>
-      <p class="hero-onboarding">首次開啟有練習引導，先試一次搜尋，<strong>不需設定 AI。</strong></p>
+      <p class="small">免安裝 · 解壓即可執行 · 內含 .NET · 未簽章預覽版</p>
     </div>
-    <figure class="hero-figure workflow-demo" data-step="3" aria-labelledby="demo-caption">
-      <div class="demo-intro"><span class="demo-badge">從選字搜尋開始</span><p>看到想查的字，選起來就能搜尋。</p></div>
-      <div class="demo-window" id="selection-preview">
-        <div class="demo-titlebar" aria-hidden="true">
-          <span class="demo-tab">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="3" y="2" width="10" height="12" rx="2" fill="currentColor"/>
-              <path d="M5 6h6M5 9h6M5 12h4" stroke="#17243c" stroke-linecap="round"/>
-            </svg>
-            閱讀筆記
-          </span>
-          <span class="demo-window-controls">─ □ ×</span>
+    <div class="hero-showcase">
+      <figure class="workflow-demo" data-step="2" aria-labelledby="demo-caption">
+        <div class="demo-window" id="selection-preview">
+          <img data-frame="0" src="assets/search-demo-source.webp" width="560" height="256" alt="">
+          <img data-frame="1" src="assets/search-demo-selected.webp" width="560" height="256" alt="">
+          <img data-frame="2" src="assets/search-demo-toolbar.webp" width="560" height="256" alt="">
+          <img data-frame="3" src="assets/search-demo-click.webp" width="560" height="256" alt="">
+          <img data-frame="4" src="assets/search-demo-result.webp" width="560" height="256" alt="">
         </div>
-        <div class="workflow-content">
-          <p class="draft-label">這個功能，怎麼用？</p>
-          <p class="draft-text">剛看到「<span>Windows 剪貼簿歷程</span>」，想查一下怎麼用。</p>
-          <p class="workflow-shortcut"><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>V</kbd><span>叫出 SnapBar</span></p>
-          <div class="workflow-toolbar" aria-label="示意工具列"><span>複製</span><span class="workflow-search">搜尋 <span aria-hidden="true">↗</span></span><span>⋯</span></div>
-          <div class="workflow-result"><p class="browser-label">預設瀏覽器 · 搜尋結果示意</p><p class="search-query">Windows 剪貼簿歷程 <span aria-hidden="true">⌕</span></p><p class="result-text">Windows 剪貼簿歷程的使用方法</p><p class="result-hint">查看如何開啟、檢視與管理剪貼簿歷程。</p></div>
-        </div>
+        <ol class="demo-progress" aria-label="搜尋步驟"><li>反白錯誤碼</li><li aria-current="step">叫出工具列</li><li>點「搜尋」</li><li>瀏覽器開啟</li></ol>
+        <figcaption class="demo-footer">
+          <span id="demo-caption">三秒操作示範。工具列取自實際畫面，點擊與搜尋結果為示意。</span>
+          <div class="demo-controls" hidden>
+            <button type="button" class="demo-toggle" data-play="播放" data-pause="暫停" aria-controls="selection-preview">播放</button>
+            <button type="button" class="demo-replay" aria-controls="selection-preview">重播</button>
+          </div>
+        </figcaption>
+      </figure>
+      <p class="demo-star">想讓更多人少做幾次複製貼上？ <a class="blue" href="https://github.com/adalf0722/snapbar">在 GitHub 點 ⭐ Star</a></p>
+    </div>
+  </section>
+  <section class="section friction wrap" aria-labelledby="friction-title">
+    <div class="section-heading"><h2 id="friction-title">搜尋，從 5 步到 <span>2 步</span>。</h2></div>
+    <dl class="search-paths">
+      <div class="search-path">
+        <dt>手動開新分頁搜尋</dt>
+        <dd>反白 → 複製 → 開新分頁 → 貼上 → 送出</dd>
       </div>
-      <ol class="demo-progress" aria-label="示範步驟"><li>選取文字</li><li>按快捷鍵</li><li>點「搜尋」</li><li>瀏覽器開啟</li></ol>
-      <div class="demo-footer"><figcaption id="demo-caption">操作流程為情境示意；搜尋會將選字交給設定的搜尋服務。</figcaption><div class="demo-controls" hidden><button type="button" class="demo-toggle" data-play="播放" data-pause="暫停" aria-controls="selection-preview">暫停</button><button type="button" class="demo-replay" aria-controls="selection-preview">重播</button></div></div>
-    </figure>
+      <div class="search-path search-path--snapbar">
+        <dt>SnapBar · 開啟自動顯示動作列後</dt>
+        <dd>反白 → 點「搜尋」</dd>
+      </div>
+    </dl>
+    <p class="search-default"><strong>SnapBar 預設</strong> 反白 → 按 <kbd>Ctrl + Alt + V</kbd> → 點「搜尋」</p>
+    <div class="feature-grid">
+      <article><h3>選好了，還得搬字</h3><p>想查一段文字，卻要先複製、找輸入框、再貼上。用 SnapBar 搜尋或查詞，動作會直接接手你選好的文字。</p></article>
+      <article><h3>讀到一半，切出去查意思</h3><p>查完生字，還要切回來找剛才讀到哪裡。匯入 StarDict 詞典後，點「字典」就能在原句旁讀釋義。</p></article>
+      <article><h3>查錯誤碼，要先開分頁</h3><p>在文件或筆記裡看到錯誤碼？反白後叫出 SnapBar，點「搜尋」，瀏覽器就會帶著同一個錯誤碼開啟。</p></article>
+    </div>
   </section>
   <section id="experience" class="experience section" aria-labelledby="experience-title">
     <div class="wrap">
@@ -105,10 +119,10 @@
     <div class="download-panel">
       <div class="section-heading">
         <p class="eyebrow">從一個簡單動作開始</p>
-        <h2 id="download-title">先試一次搜尋。<br>不必先設定 AI。</h2>
-        <p>首次開啟就有練習文字，跟著引導完成第一次選字搜尋。</p>
+        <h2 id="download-title">現在就試一次。</h2>
+        <p>開啟 SnapBar，跟著內建練習把一段文字直接送去搜尋。基本搜尋開箱可用。</p>
         <div class="download-actions">
-          <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">下載 Windows 預覽版 <span aria-hidden="true">↓</span></a>
+          <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">下載 Windows x64 預覽版 <span aria-hidden="true">↓</span></a>
           <a class="blue" id="release-notes" href="https://github.com/adalf0722/snapbar/releases">版本說明 ↗</a>
         </div>
         <p>Windows x64 · 內含 .NET 執行環境 · 套件尚未簽章</p>

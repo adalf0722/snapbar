@@ -4,9 +4,19 @@
 
 **Select text. Keep your next action close.**
 
-SnapBar is a text-selection toolbar for Windows. Select text in the app you are using, press **Ctrl + Alt + V**, and copy or search beside your selection.
+SnapBar is an open-source text-selection toolbar for Windows. Highlight text, press **Ctrl + Alt + V**, and copy or search beside your selection. Add your own search URLs and scripts to the toolbar.
 
-[Download the Windows x64 preview](https://github.com/adalf0722/snapbar/releases)
+**[Download the Windows x64 preview](https://github.com/adalf0722/snapbar/releases)** · Portable ZIP · MIT licensed
+
+![Select NETSDK1045, press Ctrl + Alt + V to open SnapBar, and choose Search beside the text. The browser uses the same error code as the query.](site/assets/search-demo.gif)
+
+Three-second demo. The toolbar is captured from SnapBar. The click and search results are illustrated.
+
+## Why I built SnapBar
+
+I wanted the next action to be right beside the text you just selected. If I hit an unfamiliar word in a document, I want to read the definition and pick up where I left off. If I hit an error code, I want to search for the exact text. Taking a few steps out of each task makes it easier to stay focused on the work.
+
+⭐ If you like this project, please give it a star! [Open SnapBar on GitHub](https://github.com/adalf0722/snapbar)
 
 ## Get started
 

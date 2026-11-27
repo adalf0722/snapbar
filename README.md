@@ -2,13 +2,21 @@
 
 繁體中文 · [English](README.en.md)
 
-**選取文字，動作就在手邊。**
+**選好文字，接著就做。**
 
-SnapBar 是 Windows 的選字工具列。在正在使用的 App 裡選取一段文字，按 **Ctrl + Alt + V**，就能在文字旁複製或搜尋。
+SnapBar 是 Windows 的開源選字工具列。反白文字，按 **Ctrl + Alt + V**，就能在選字旁複製或搜尋。常用的搜尋網址和腳本，也能加進自己的動作列。
 
-[前往 Releases 下載 Windows x64 預覽版](https://github.com/adalf0722/snapbar/releases)
+**[下載 Windows x64 預覽版](https://github.com/adalf0722/snapbar/releases)** · 免安裝 · MIT 授權
 
-![反白選字後，SnapBar 工具列出現在文字下方，顯示複製、剪下、貼上、搜尋與更多動作。](site/assets/selection-detail.png)
+![反白 NETSDK1045，按 Ctrl + Alt + V 叫出 SnapBar，在文字旁選擇搜尋。瀏覽器以同一個錯誤碼查詢。](site/assets/search-demo.gif)
+
+三秒操作示範。工具列取自實際畫面，點擊與搜尋結果為示意。
+
+## 為什麼做 SnapBar
+
+我想把下一個動作留在你剛選好的文字旁。讀文件遇到生字，希望看完釋義就接著讀。除錯遇到錯誤碼，希望沿用原文直接查。每次少做幾個動作，就能把注意力留在手上的工作。
+
+如果 SnapBar 也替你省下幾次複製貼上，歡迎[到 GitHub 點個 ⭐ Star](https://github.com/adalf0722/snapbar)。
 
 ## 第一次使用
 
