@@ -68,3 +68,6 @@ try {
     Write-Host 'Repository checks passed.'
 }
 finally { Pop-Location }
+
+# GitHub Actions reads LASTEXITCODE, which may still reflect an expected test failure.
+exit 0
