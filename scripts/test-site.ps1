@@ -70,6 +70,10 @@ Check-Site 'generated bilingual pages have matching static ZIP, notes and versio
     foreach ($relative in @('index.html', 'en/index.html')) { $before[$relative] = (Get-FileHash -LiteralPath (Join-Path $source $relative)).Hash }
     $output = Join-Path $run 'generated'
     $selected = New-SnapBarWebsite $source $output @($old, $current) 'fixture/repo'
+    $pageUrls = [ordered]@{
+        'zh-Hant' = 'https://adalf0722.github.io/snapbar/'
+        'en' = 'https://adalf0722.github.io/snapbar/en/'
+    }
     foreach ($relative in $before.Keys) {
         $html = ConvertFrom-SnapBarUtf8 ([IO.File]::ReadAllBytes((Join-Path $output $relative))) $relative
         Assert-Site ([regex]::Matches($html, [regex]::Escape($selected.DownloadUrl)).Count -eq 2)
@@ -78,8 +82,34 @@ Check-Site 'generated bilingual pages have matching static ZIP, notes and versio
         Assert-Site ($html.Contains('<span id="download-version">0.1.0-rc.10 · ' + $label + '</span>'))
         Assert-Site ($html -match '<footer\b[^>]*>.*?href="https://github\.com/adalf0722/snapbar"')
         Assert-Site ([regex]::Matches($html, 'src="(?:\.\./)?assets/search-demo-[a-z]+\.webp"').Count -eq 5)
+        Assert-Site ($html.Contains('<a class="blue" href="popclip-alternative/">'))
         Assert-Site (-not $html.Contains('download.js') -and -not $html.Contains('api.github.com'))
         Assert-Site ((Get-FileHash -LiteralPath (Join-Path $source $relative)).Hash -ceq $before[$relative])
+        $language = if ($relative -eq 'index.html') { 'zh-Hant' } else { 'en' }
+        $head = [regex]::Match($html, '(?s)<head>.*?</head>').Value
+        Assert-Site ($head.Contains('<link rel="canonical" href="' + $pageUrls[$language] + '">'))
+        foreach ($alternate in $pageUrls.Keys) {
+            Assert-Site ($head.Contains('<link rel="alternate" hreflang="' + $alternate + '" href="' + $pageUrls[$alternate] + '">'))
+        }
+    }
+    [xml]$sitemap = [IO.File]::ReadAllText((Join-Path $output 'sitemap.xml'))
+    Assert-Site ($sitemap.DocumentElement.NamespaceURI -ceq 'http://www.sitemaps.org/schemas/sitemap/0.9')
+    $guideUrls = [ordered]@{
+        'zh-Hant' = $pageUrls['zh-Hant'] + 'popclip-alternative/'
+        'en' = $pageUrls['en'] + 'popclip-alternative/'
+    }
+    Assert-Site ($sitemap.urlset.url.Count -eq ($pageUrls.Count + $guideUrls.Count))
+    foreach ($language in $pageUrls.Keys) {
+        Assert-Site ($sitemap.urlset.url.loc -ccontains $pageUrls[$language])
+        Assert-Site ($sitemap.urlset.url.loc -ccontains $guideUrls[$language])
+        $guidePath = if ($language -eq 'en') { 'en/popclip-alternative/index.html' } else { 'popclip-alternative/index.html' }
+        $guide = ConvertFrom-SnapBarUtf8 ([IO.File]::ReadAllBytes((Join-Path $output $guidePath))) $guidePath
+        Assert-Site ($guide -match '<title>[^<]*PopClip[^<]*Windows[^<]*</title>')
+        Assert-Site ($guide.Contains('<link rel="canonical" href="' + $guideUrls[$language] + '">'))
+        foreach ($alternate in $guideUrls.Keys) {
+            Assert-Site ($guide.Contains('<link rel="alternate" hreflang="' + $alternate + '" href="' + $guideUrls[$alternate] + '">'))
+        }
+        Assert-Site ($guide.Contains('href="../#download"'))
     }
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'style.css'))
     Assert-Site (Test-Path -LiteralPath (Join-Path $output 'selection-demo.js'))

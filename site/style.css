@@ -130,6 +130,12 @@ h3 { font-size: 30px; line-height: 1.4; letter-spacing: -.03em; }
 .feature-kicker { font-size: 14px; font-weight: 650; color: #315dc2; }
 .feature-grid .detail { margin-top: 16px; font-size: 14px; }
 .feature-docs { margin-top: 24px; text-align: center; }
+.guide { max-width: 720px; }
+.guide h1 { text-wrap: balance; }
+.guide > p, .guide > figure, .guide > section { margin-top: 24px; }
+.guide > section > p { margin-top: 12px; }
+.guide .blue { text-decoration: underline; text-underline-offset: 3px; }
+.guide figure img { border-radius: 8px; }
 section[id] { scroll-margin-top: 24px; }
 .download-panel {
   padding: clamp(20px, 5vw, 64px);

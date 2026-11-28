@@ -1,6 +1,6 @@
 # SnapBar
 
-[繁體中文](README.md) · English
+[繁體中文](README.md) · English · [SnapBar website](https://adalf0722.github.io/snapbar/en/)
 
 **Select text. Keep your next action close.**
 

@@ -1,6 +1,6 @@
 # SnapBar
 
-繁體中文 · [English](README.en.md)
+繁體中文 · [English](README.en.md) · [SnapBar 官網](https://adalf0722.github.io/snapbar/)
 
 **選好文字，接著就做。**
 
