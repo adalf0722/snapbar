@@ -76,7 +76,7 @@ Check-Site 'generated bilingual pages have matching static ZIP, notes and versio
         Assert-Site ($html.Contains('id="release-notes" href="' + $selected.ReleaseUrl + '"'))
         $label = if ($relative -eq 'index.html') { '預覽版' } else { 'Preview' }
         Assert-Site ($html.Contains('<span id="download-version">0.1.0-rc.10 · ' + $label + '</span>'))
-        Assert-Site ($html.Contains('class="demo-star"') -and $html.Contains('href="https://github.com/adalf0722/snapbar"'))
+        Assert-Site ($html -match '<footer\b[^>]*>.*?href="https://github\.com/adalf0722/snapbar"')
         Assert-Site ([regex]::Matches($html, 'src="(?:\.\./)?assets/search-demo-[a-z]+\.webp"').Count -eq 5)
         Assert-Site (-not $html.Contains('download.js') -and -not $html.Contains('api.github.com'))
         Assert-Site ((Get-FileHash -LiteralPath (Join-Path $source $relative)).Hash -ceq $before[$relative])

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="反白一行，直接搜。SnapBar 把搜尋帶到 Windows 的選字旁，省去複製、開新分頁和貼上。下載 Windows x64 預覽版，解壓就能試。">
-  <meta name="theme-color" content="#f7f8fb">
+  <meta name="theme-color" content="#fff">
   <title>SnapBar — 選好文字，接著就做</title>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="style.css">
@@ -14,57 +14,57 @@
 <a class="skip" href="#main">跳至主要內容</a>
 <header class="nav wrap">
   <a class="brand" href="./"><img src="icon.png" width="32" height="32" alt="">SnapBar</a>
-  <nav aria-label="主要導覽"><a href="en/" lang="en" hreflang="en">English</a><a href="#experience">功能體驗</a><a href="#personalize">個人化</a><a class="blue" href="#download">下載預覽版</a></nav>
+  <nav aria-label="主要導覽"><a href="#experience">功能</a><a href="#personalize">個人化</a><a href="#download">安裝與使用</a><a class="language-link" href="en/" lang="en" hreflang="en">English</a></nav>
 </header>
 <main id="main">
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
-      <p class="eyebrow">WINDOWS 選字工具列</p>
+      <p class="eyebrow hero-platform">Windows 選字工具列</p>
       <h1 id="headline">反白一行，<br><span>直接搜。</span></h1>
-      <p class="lead">在 Windows 選取文字，按 <kbd>Ctrl + Alt + V</kbd>，就在文字旁點「搜尋」。SnapBar 會把原句帶進瀏覽器，省去複製、開新分頁和貼上。</p>
+      <p class="lead">反白文字，按 <kbd>Ctrl + Alt + V</kbd>，再點選字旁的<span class="search-action">「搜尋」</span>。瀏覽器會直接搜尋你選好的文字。</p>
       <div class="hero-actions">
         <a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">下載 Windows x64 預覽版 <span aria-hidden="true">↓</span></a>
       </div>
-      <p class="small">免安裝 · 解壓即可執行 · 內含 .NET · 未簽章預覽版</p>
+      <p class="small">解壓即可執行 · 內含 .NET · 未簽章預覽版</p>
     </div>
     <div class="hero-showcase">
       <figure class="workflow-demo" data-step="2" aria-labelledby="demo-caption">
-        <div class="demo-window" id="selection-preview">
-          <img data-frame="0" src="assets/search-demo-source.webp" width="560" height="256" alt="">
-          <img data-frame="1" src="assets/search-demo-selected.webp" width="560" height="256" alt="">
-          <img data-frame="2" src="assets/search-demo-toolbar.webp" width="560" height="256" alt="">
-          <img data-frame="3" src="assets/search-demo-click.webp" width="560" height="256" alt="">
-          <img data-frame="4" src="assets/search-demo-result.webp" width="560" height="256" alt="">
-        </div>
-        <ol class="demo-progress" aria-label="搜尋步驟"><li>反白錯誤碼</li><li aria-current="step">叫出工具列</li><li>點「搜尋」</li><li>瀏覽器開啟</li></ol>
-        <figcaption class="demo-footer">
-          <span id="demo-caption">三秒操作示範。工具列取自實際畫面，點擊與搜尋結果為示意。</span>
+        <div class="demo-header">
+          <span>搜尋錯誤碼</span>
           <div class="demo-controls" hidden>
             <button type="button" class="demo-toggle" data-play="播放" data-pause="暫停" aria-controls="selection-preview">播放</button>
             <button type="button" class="demo-replay" aria-controls="selection-preview">重播</button>
           </div>
-        </figcaption>
+        </div>
+        <div class="demo-window" id="selection-preview">
+          <img data-frame="0" src="assets/search-demo-source.webp" width="560" height="256" alt="建置記錄顯示錯誤碼 NETSDK1045。">
+          <img data-frame="1" src="assets/search-demo-selected.webp" width="560" height="256" alt="錯誤碼 NETSDK1045 已反白。">
+          <img data-frame="2" src="assets/search-demo-toolbar.webp" width="560" height="256" alt="按下 Ctrl + Alt + V 後，SnapBar 出現在反白的錯誤碼旁。">
+          <img data-frame="3" src="assets/search-demo-click.webp" width="560" height="256" alt="游標點擊 SnapBar 的搜尋按鈕。">
+          <img data-frame="4" src="assets/search-demo-result.webp" width="560" height="256" alt="瀏覽器開啟 NETSDK1045 的搜尋結果。">
+        </div>
+        <ol class="demo-progress" aria-label="搜尋步驟"><li>反白錯誤碼</li><li aria-current="step">叫出工具列</li><li>點「搜尋」</li><li>瀏覽器開啟</li></ol>
+        <figcaption id="demo-caption">實際工具列畫面。點擊與搜尋結果為示意。</figcaption>
       </figure>
-      <p class="demo-star">想讓更多人少做幾次複製貼上？ <a class="blue" href="https://github.com/adalf0722/snapbar">在 GitHub 點 ⭐ Star</a></p>
     </div>
   </section>
-  <section class="section friction wrap" aria-labelledby="friction-title">
-    <div class="section-heading"><h2 id="friction-title">搜尋，從 5 步到 <span>2 步</span>。</h2></div>
-    <dl class="search-paths">
-      <div class="search-path">
-        <dt>手動開新分頁搜尋</dt>
-        <dd>反白 → 複製 → 開新分頁 → 貼上 → 送出</dd>
-      </div>
-      <div class="search-path search-path--snapbar">
-        <dt>SnapBar · 開啟自動顯示動作列後</dt>
-        <dd>反白 → 點「搜尋」</dd>
-      </div>
-    </dl>
-    <p class="search-default"><strong>SnapBar 預設</strong> 反白 → 按 <kbd>Ctrl + Alt + V</kbd> → 點「搜尋」</p>
-    <div class="feature-grid">
-      <article><h3>選好了，還得搬字</h3><p>想查一段文字，卻要先複製、找輸入框、再貼上。用 SnapBar 搜尋或查詞，動作會直接接手你選好的文字。</p></article>
-      <article><h3>讀到一半，切出去查意思</h3><p>查完生字，還要切回來找剛才讀到哪裡。匯入 StarDict 詞典後，點「字典」就能在原句旁讀釋義。</p></article>
-      <article><h3>查錯誤碼，要先開分頁</h3><p>在文件或筆記裡看到錯誤碼？反白後叫出 SnapBar，點「搜尋」，瀏覽器就會帶著同一個錯誤碼開啟。</p></article>
+  <section class="friction" aria-labelledby="friction-title">
+    <div class="wrap workflow">
+      <h2 id="friction-title">省去複製貼上。</h2>
+      <dl class="search-paths">
+        <div class="search-path">
+          <dt>手動開分頁搜尋 <span>5 步</span></dt>
+          <dd>反白 → 複製 → 開新分頁 → 貼上 → 送出</dd>
+        </div>
+        <div class="search-path search-path--default">
+          <dt>SnapBar 預設 <span>3 步</span></dt>
+          <dd>反白 → 按 <kbd>Ctrl + Alt + V</kbd> → 點「搜尋」</dd>
+        </div>
+        <div class="search-path">
+          <dt>開啟自動顯示動作列 <span>2 步</span></dt>
+          <dd>反白 → 點「搜尋」</dd>
+        </div>
+      </dl>
     </div>
   </section>
   <section id="experience" class="experience section" aria-labelledby="experience-title">
@@ -148,6 +148,6 @@
     </div>
   </section>
 </main>
-<footer class="wrap"><a class="brand" href="./"><img src="icon.png" alt="" width="24" height="24">SnapBar</a><div><a href="https://github.com/adalf0722/snapbar">GitHub</a><a href="https://github.com/adalf0722/snapbar/issues">回報問題</a></div><span>為 Windows 上的每一次選字。</span></footer>
+<footer class="wrap"><a class="brand" href="./"><img src="icon.png" alt="" width="24" height="24">SnapBar</a><div><a href="https://github.com/adalf0722/snapbar">在 GitHub 點 Star</a><a href="https://github.com/adalf0722/snapbar/issues">回報問題</a></div></footer>
 </body>
 </html>

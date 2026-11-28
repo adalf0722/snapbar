@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Highlight it. Search it. SnapBar brings search to your text on Windows, skipping copy, new tab, and paste. Download the Windows x64 preview and run it from the extracted ZIP.">
-  <meta name="theme-color" content="#f7f8fb">
+  <meta name="theme-color" content="#fff">
   <title>SnapBar — Select text. Take the next step.</title>
   <link rel="icon" href="../icon.png">
   <link rel="stylesheet" href="../style.css">
@@ -14,12 +14,12 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav wrap">
   <a class="brand" href="./"><img src="../icon.png" width="32" height="32" alt="">SnapBar</a>
-  <nav aria-label="Main navigation"><a href="../" lang="zh-Hant" hreflang="zh-Hant">繁體中文</a><a href="#experience">Explore features</a><a href="#personalize">Make it yours</a><a class="blue" href="#download">Download preview</a></nav>
+  <nav aria-label="Main navigation"><a href="#experience">Features</a><a href="#personalize">Customize</a><a href="#download">Get started</a><a class="language-link" href="../" lang="zh-Hant" hreflang="zh-Hant">繁體中文</a></nav>
 </header>
 <main id="main">
   <section class="hero wrap" aria-labelledby="headline">
     <div class="hero-copy">
-      <p class="eyebrow">TEXT-SELECTION TOOLBAR FOR WINDOWS</p>
+      <p class="eyebrow hero-platform">Text-selection toolbar for Windows</p>
       <h1 id="headline">Highlight it.<br><span>Search it.</span></h1>
       <p class="lead">Select text on Windows, press <kbd>Ctrl + Alt + V</kbd>, then click Search. Your browser opens with the words you selected.</p>
       <div class="hero-actions"><a class="button" data-windows-download href="https://github.com/adalf0722/snapbar/releases">Download Windows x64 preview <span aria-hidden="true">↓</span></a></div>
@@ -27,42 +27,42 @@
     </div>
     <div class="hero-showcase">
       <figure class="workflow-demo" data-step="2" aria-labelledby="demo-caption">
-        <div class="demo-window" id="selection-preview">
-          <img data-frame="0" src="../assets/search-demo-source.webp" width="560" height="256" alt="">
-          <img data-frame="1" src="../assets/search-demo-selected.webp" width="560" height="256" alt="">
-          <img data-frame="2" src="../assets/search-demo-toolbar.webp" width="560" height="256" alt="">
-          <img data-frame="3" src="../assets/search-demo-click.webp" width="560" height="256" alt="">
-          <img data-frame="4" src="../assets/search-demo-result.webp" width="560" height="256" alt="">
-        </div>
-        <ol class="demo-progress" aria-label="Search steps"><li>Highlight the code</li><li aria-current="step">Open the toolbar</li><li>Click Search</li><li>Browser opens</li></ol>
-        <figcaption class="demo-footer">
-          <span id="demo-caption">Three-second demo. The toolbar is captured from SnapBar. The click and search results are illustrated.</span>
+        <div class="demo-header">
+          <span>Search an error code</span>
           <div class="demo-controls" hidden>
             <button type="button" class="demo-toggle" data-play="Play" data-pause="Pause" aria-controls="selection-preview">Play</button>
             <button type="button" class="demo-replay" aria-controls="selection-preview">Replay</button>
           </div>
-        </figcaption>
+        </div>
+        <div class="demo-window" id="selection-preview">
+          <img data-frame="0" src="../assets/search-demo-source.webp" width="560" height="256" alt="The build log shows error code NETSDK1045.">
+          <img data-frame="1" src="../assets/search-demo-selected.webp" width="560" height="256" alt="Error code NETSDK1045 is highlighted.">
+          <img data-frame="2" src="../assets/search-demo-toolbar.webp" width="560" height="256" alt="SnapBar appears beside the highlighted error code after pressing Ctrl + Alt + V.">
+          <img data-frame="3" src="../assets/search-demo-click.webp" width="560" height="256" alt="The pointer clicks Search in SnapBar.">
+          <img data-frame="4" src="../assets/search-demo-result.webp" width="560" height="256" alt="The browser opens search results for NETSDK1045.">
+        </div>
+        <ol class="demo-progress" aria-label="Search steps"><li>Highlight the code</li><li aria-current="step">Open the toolbar</li><li>Click Search</li><li>Browser opens</li></ol>
+        <figcaption id="demo-caption">Actual SnapBar toolbar. The click and search results are illustrated.</figcaption>
       </figure>
-      <p class="demo-star">Like this workflow? <a class="blue" href="https://github.com/adalf0722/snapbar">⭐ Star SnapBar on GitHub</a></p>
     </div>
   </section>
-  <section class="section friction wrap" aria-labelledby="friction-title">
-    <div class="section-heading"><h2 id="friction-title">From five steps to <span>two</span>.</h2></div>
-    <dl class="search-paths">
-      <div class="search-path">
-        <dt>Manual search in a new tab</dt>
-        <dd>Highlight → Copy → New tab → Paste → Submit</dd>
-      </div>
-      <div class="search-path search-path--snapbar">
-        <dt>SnapBar · With automatic toolbar display on</dt>
-        <dd>Highlight → Click Search</dd>
-      </div>
-    </dl>
-    <p class="search-default"><strong>SnapBar default</strong> Highlight → Press <kbd>Ctrl + Alt + V</kbd> → Click Search</p>
-    <div class="feature-grid">
-      <article><h3>Stop carrying text between apps</h3><p>To look up a phrase, you copy it, find the input field, and paste. SnapBar’s search and dictionaries use the text you already selected.</p></article>
-      <article><h3>Look up a word mid-sentence</h3><p>Looking up a word in another tab means finding your place again. Import a StarDict dictionary and choose Dictionary to see the definition beside the sentence.</p></article>
-      <article><h3>Search the exact error code</h3><p>See an error code in docs or notes? Highlight it, bring up SnapBar, and click Search. Your browser opens with the same error code as the query.</p></article>
+  <section class="friction" aria-labelledby="friction-title">
+    <div class="wrap workflow">
+      <h2 id="friction-title">Skip the copy and paste.</h2>
+      <dl class="search-paths">
+        <div class="search-path">
+          <dt>Manual search in a new tab <span>5 steps</span></dt>
+          <dd>Highlight → Copy → New tab → Paste → Submit</dd>
+        </div>
+        <div class="search-path search-path--default">
+          <dt>SnapBar by default <span>3 steps</span></dt>
+          <dd>Highlight → Press <kbd>Ctrl + Alt + V</kbd> → Click Search</dd>
+        </div>
+        <div class="search-path">
+          <dt>Toolbar appears automatically <span>2 steps</span></dt>
+          <dd>Highlight → Click Search</dd>
+        </div>
+      </dl>
     </div>
   </section>
   <section id="experience" class="experience section" aria-labelledby="experience-title">
@@ -125,6 +125,6 @@
     </div>
   </section>
 </main>
-<footer class="wrap"><a class="brand" href="./"><img src="../icon.png" alt="" width="24" height="24">SnapBar</a><div><a href="https://github.com/adalf0722/snapbar">GitHub</a><a href="https://github.com/adalf0722/snapbar/issues">Report an issue</a></div><span>For your next selection on Windows.</span></footer>
+<footer class="wrap"><a class="brand" href="./"><img src="../icon.png" alt="" width="24" height="24">SnapBar</a><div><a href="https://github.com/adalf0722/snapbar">Star on GitHub</a><a href="https://github.com/adalf0722/snapbar/issues">Report an issue</a></div></footer>
 </body>
 </html>
