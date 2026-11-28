@@ -76,6 +76,8 @@ pwsh -NoProfile -File scripts/test-desktop.ps1 -Suite Release
 
 `Updates`（`--updates`）以隔離設定、可控時鐘與模擬 HTTP 驗證背景節流、通知去重、忙碌延後、取消、限流、分頁及保護設定檔。測試不連線 GitHub，也不下載套件；同時產生 `artifacts/checks/updates-preview/` 的繁中／英文、一般／窄視窗畫面。更新狀態獨立保存於 `updates.json`，不使背景檢查覆寫一般設定。
 
+`AutoCopy` 的 Unicode 寫入正向案例容許最長 300 毫秒的短暫剪貼簿競爭，沿用同一預期序號重試；序號改變便立即失敗，不重新擷取序號覆蓋外部複製。取消與舊序號拒絕案例仍各檢查單次寫入。診斷僅記錄嘗試次數、成功與否及序號是否維持，不記錄剪貼簿文字。這是測試容錯，產品寫入器仍維持單次嘗試及原有安全檢查。
+
 新正式版發布前，先在乾淨且具完整 Git 歷史的 checkout 執行 `pwsh -NoProfile -File scripts/prepare-release-draft.ps1 -Version v0.1.0 -Commit <完整來源SHA> -PreviousTag <前一公開Tag> -Repository adalf0722/snapbar`。確認私有草稿內容後才在 GitHub Publish，沿用既有證據核對與附件上傳流程。首次發布可省略 `-PreviousTag`。新草稿共用人類說明與 `snapbar-update-v1` 結構化雙語摘要；既有草稿／公開版本重跑不覆寫 body。手工撰寫且缺少契約的歷史發布仍可下載，但不主動通知，避免從 Markdown 猜測是否有桌面變更。
 
 「關於與支援 → 診斷與測試」可預覽並匯出 JSON。平時選字事件僅保留在固定容量的記憶體中。使用者可啟動兩分鐘重現記錄，最近一次的快照保存在 `%LOCALAPPDATA%\SnapBar\diagnostics\reproduction.json`。`SNAPBAR_SELECTION_DIAGNOSTICS=1` 會在啟動時開始同樣的短期記錄。工作階段標記可顯示上次未正常結束，致命例外摘要含模組版本識別碼、方法 token 與 IL 位移，使用相同發行 ZIP 的組件和 PDB 解讀。

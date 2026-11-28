@@ -78,9 +78,21 @@ internal static class AutoCopyTest
                 Clipboard.SetText("external fixture");
                 Check(!SelectionClipboardWriter.TryWrite(owner.Handle, "stale fixture", sequence, () => true)
                     && ReadClipboard() == "external fixture", "clipboard sequence race rejects old automatic copy");
-                Check(SelectionClipboardWriter.TryWrite(owner.Handle, "Unicode fixture \u4e2d\u6587 \ud83d\ude00",
-                    Native.GetClipboardSequenceNumber(), () => true) && ReadClipboard() == "Unicode fixture \u4e2d\u6587 \ud83d\ude00",
-                    "guarded writer transfers Unicode text");
+                // Clipboard listeners can briefly hold the clipboard after SetText.
+                // Allow bounded contention in this positive fixture, but never refresh
+                // the expected sequence: an external copy must still fail the test.
+                sequence = Native.GetClipboardSequenceNumber();
+                var writeDeadline = Stopwatch.StartNew();
+                var written = false; var writeAttempts = 0;
+                do
+                {
+                    writeAttempts++;
+                    written = SelectionClipboardWriter.TryWrite(owner.Handle, "Unicode fixture \u4e2d\u6587 \ud83d\ude00", sequence, () => true);
+                    if (written || Native.GetClipboardSequenceNumber() != sequence) break;
+                    await Task.Delay(15);
+                } while (writeDeadline.ElapsedMilliseconds < 300);
+                Console.WriteLine($"WRITER attempts={writeAttempts}; succeeded={written}; sequenceUnchanged={Native.GetClipboardSequenceNumber() == sequence}");
+                Check(written && ReadClipboard() == "Unicode fixture \u4e2d\u6587 \ud83d\ude00", "guarded writer transfers Unicode text");
 
                 var start = new ProcessStartInfo(TestPaths.AppExecutable) { UseShellExecute = false, RedirectStandardInput = true };
                 start.ArgumentList.Add("--fixture"); start.ArgumentList.Add("--web-search");
