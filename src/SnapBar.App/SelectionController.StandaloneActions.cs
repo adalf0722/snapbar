@@ -13,7 +13,7 @@ public sealed partial class SelectionController
         var action = actions.CustomActions.FirstOrDefault(a => a.Id == id);
         if (action is not { UseSelection: false, Kind: not CustomActionKind.Url, Output: not ActionOutput.ReplaceSelection }
             || CustomActionPolicy.Validate(action) != null
-            || actions.Layout.Any(e => e.Id == id && e.Placement == ActionPlacement.Hidden))
+            || actions.Layout.Any(e => e.Id == id && !e.IsVisible))
         { Report("invalid-action"); return; }
         Invalidate();
         var ticket = generation.Next();
@@ -26,7 +26,7 @@ public sealed partial class SelectionController
         bool Current() => !disposed && !stopping && !cancellation.IsCancellationRequested
             && ReferenceEquals(customAction, cancellation)
             && actions.CustomActions.FirstOrDefault(a => a.Id == id) == action
-            && !actions.Layout.Any(e => e.Id == id && e.Placement == ActionPlacement.Hidden)
+            && !actions.Layout.Any(e => e.Id == id && !e.IsVisible)
             && (readonlyResult || generation.IsCurrent(ticket) && target != null
                 && Native.GetIdentity(Native.GetForegroundWindow()) == target);
         try

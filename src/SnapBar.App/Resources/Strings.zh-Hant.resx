@@ -3022,7 +3022,7 @@
     <value>搜尋動作</value>
   </data>
   <data name="ActionsSearch_Help" xml:space="preserve">
-    <value>依動作名稱搜尋動作列、更多與隱藏中的所有動作。</value>
+    <value>依名稱搜尋所有動作，包含已關閉顯示的動作。</value>
   </data>
   <data name="ActionsSearch_Clear" xml:space="preserve">
     <value>清除</value>
@@ -3056,4 +3056,8 @@
   <data name="Updates_Tray" xml:space="preserve"><value>有新版本…</value></data>
   <data name="Updates_NotificationTitle" xml:space="preserve"><value>SnapBar 有新版本</value></data>
   <data name="SettingsSearch_Clear" xml:space="preserve"><value>清除搜尋</value></data>
+  <data name="ActionsList_Label" xml:space="preserve"><value>依顯示位置分組的所有動作</value></data>
+  <data name="ActionsVisibility_Label" xml:space="preserve"><value>顯示</value></data>
+  <data name="ActionsVisibility_Name" xml:space="preserve"><value>顯示「{0}」</value></data>
+  <data name="ActionsVisibility_Help" xml:space="preserve"><value>顯示或收起這個動作。關閉後仍保留原本的位置與排序。</value></data>
 </root>

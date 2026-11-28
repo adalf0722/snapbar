@@ -1,0 +1,20 @@
+{
+  "title": "在同一頁整理動作，用開關決定是否顯示",
+  "summary": "動作列與更多改為同頁清單，每個動作都有顯示開關，暫時收起時仍保留位置與排序。",
+  "highlights": [
+    "移除動作列、更多與隱藏分頁，直接在同一頁搜尋與編輯所有動作。",
+    "使用膠囊形顯示開關收起動作，再次開啟時恢復原本的位置與排序。",
+    "既有隱藏動作保持關閉，動作列滿九項時會提示，避免意外改動排列。"
+  ],
+  "usage": "開啟設定中的「動作列」，選擇顯示位置並切換「顯示」開關；在搜尋框輸入名稱可快速找到動作。",
+  "en": {
+    "title": "Organize actions on one page with visibility switches",
+    "summary": "Toolbar and More actions now share one list. Hide an action with its Show switch while keeping its location and order.",
+    "highlights": [
+      "Search and edit all actions on one page without switching between Toolbar, More, and Hidden tabs.",
+      "Use each action's Show switch to hide it and restore its location and order when shown again.",
+      "Previously hidden actions stay hidden, and a full nine-action toolbar shows a warning without rearranging other actions."
+    ],
+    "usage": "Open Toolbar in Settings, choose a display location, and use the Show switch. Search by name to find an action quickly."
+  }
+}

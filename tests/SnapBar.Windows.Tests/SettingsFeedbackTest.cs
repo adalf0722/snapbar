@@ -59,26 +59,26 @@ internal static class SettingsFeedbackTest
                 row = Find<Grid>(panel, "ActionRow_cut");
                 check(row.IsKeyboardFocusWithin, culture + " reordering at the boundary retains focus on the same action");
                 var combo = Children<ComboBox>(row).Single(); combo.SelectedIndex = (int)ActionPlacement.More; window.UpdateLayout();
-                Find<RadioButton>(panel, "ActionPlacementTab_More").IsChecked = true; window.UpdateLayout();
                 combo = Children<ComboBox>(Find<Grid>(panel, "ActionRow_cut")).Single();
                 var label = new TextBlock { Text = combo.SelectedItem.ToString(), FontSize = combo.FontSize, FontFamily = combo.FontFamily };
                 label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 check(combo.ActualWidth >= label.DesiredSize.Width + 42, culture + " placement reserves room for the complete label and arrow");
                 UiAppearanceTest.Snapshot(window, "feedback-actions-" + culture + ".png");
                 var actionSearch = Find<TextBox>(panel, "ActionsSearch");
-                Find<RadioButton>(panel, "ActionPlacementTab_Bar").IsChecked = true;
                 actionSearch.Text = UiNames.Action(ActionCatalog.GetItems(new()).Single(a => a.Id == "cut"), language);
                 window.UpdateLayout();
                 check(Children<Grid>(panel).Where(g => AutomationProperties.GetAutomationId(g).StartsWith("ActionRow_"))
                     .Select(g => AutomationProperties.GetAutomationId(g)).SequenceEqual(new[] { "ActionRow_cut" }),
                     culture + " action search finds a match outside the selected tab");
-                Find<ComboBox>(panel, "ActionPlacement_cut").SelectedIndex = (int)ActionPlacement.Hidden;
+                var showCut = Find<CheckBox>(panel, "ActionVisible_cut"); showCut.IsChecked = false;
+                showCut.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 window.UpdateLayout();
-                check(Find<ComboBox>(panel, "ActionPlacement_cut").SelectedIndex == (int)ActionPlacement.Hidden
-                    && actionSearch.Text.Length > 0, culture + " search retains a result after moving it to Hidden");
+                check(Find<ComboBox>(panel, "ActionPlacement_cut").SelectedIndex == (int)ActionPlacement.More
+                    && Find<CheckBox>(panel, "ActionVisible_cut").IsChecked == false
+                    && actionSearch.Text.Length > 0, culture + " search retains a hidden result and its previous location");
                 actionSearch.Text = "  ";
-                check(Find<RadioButton>(panel, "ActionPlacementTab_Bar").IsEnabled,
-                    culture + " whitespace search retains normal navigation");
+                check(Find<Button>(panel, "ActionMoveDown_copy").IsEnabled,
+                    culture + " whitespace search restores normal sorting");
                 actionSearch.Text = "aI";
                 check(Children<Grid>(panel).Any(g => AutomationProperties.GetAutomationId(g) == "ActionRow_ai"),
                     culture + " action search ignores case");
@@ -89,8 +89,7 @@ internal static class SettingsFeedbackTest
                 window.UpdateLayout();
                 check(!Children<Button>(panel).Any(b => AutomationProperties.GetAutomationId(b).StartsWith("ActionMove"))
                     && !Children<Border>(panel).Any(b => AutomationProperties.GetAutomationId(b).StartsWith("ReorderAction_"))
-                    && !Find<Grid>(panel, "ActionRow_copy").AllowDrop
-                    && !Find<RadioButton>(panel, "ActionPlacementTab_More").IsEnabled,
+                    && !Find<Grid>(panel, "ActionRow_copy").AllowDrop,
                     culture + " search prevents sorting and tab changes while preserving editing controls");
                 UiAppearanceTest.Snapshot(window, "feedback-actions-search-" + culture + ".png");
                 actionSearch.Text = "取得 公網";
@@ -98,8 +97,7 @@ internal static class SettingsFeedbackTest
                     culture + " action search matches all words against original custom action names");
                 Find<Button>(panel, "ClearActionsSearch").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 window.UpdateLayout();
-                check(Find<RadioButton>(panel, "ActionPlacementTab_Bar").IsChecked == true
-                    && Find<Button>(panel, "ActionMoveDown_copy").IsEnabled && actionSearch.IsKeyboardFocusWithin,
+                check(Find<Button>(panel, "ActionMoveDown_copy").IsEnabled && actionSearch.IsKeyboardFocusWithin,
                     culture + " clearing search restores the original tab and sorting with input focus");
                 commands = UiText.WithCulture(language.Culture, () => new AiCommandsPanel(preferences));
                 window.Content = commands; window.UpdateLayout();

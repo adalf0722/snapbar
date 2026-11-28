@@ -3022,7 +3022,7 @@ Its enabled state will be preserved.</value>
     <value>Search actions</value>
   </data>
   <data name="ActionsSearch_Help" xml:space="preserve">
-    <value>Search action names across Toolbar, More and Hidden.</value>
+    <value>Search all action names, including hidden actions.</value>
   </data>
   <data name="ActionsSearch_Clear" xml:space="preserve">
     <value>Clear</value>
@@ -3056,4 +3056,8 @@ Its enabled state will be preserved.</value>
   <data name="Updates_Tray" xml:space="preserve"><value>New version available…</value></data>
   <data name="Updates_NotificationTitle" xml:space="preserve"><value>A new SnapBar version is available</value></data>
   <data name="SettingsSearch_Clear" xml:space="preserve"><value>Clear search</value></data>
+  <data name="ActionsList_Label" xml:space="preserve"><value>All actions, grouped by display location</value></data>
+  <data name="ActionsVisibility_Label" xml:space="preserve"><value>Show</value></data>
+  <data name="ActionsVisibility_Name" xml:space="preserve"><value>Show {0}</value></data>
+  <data name="ActionsVisibility_Help" xml:space="preserve"><value>Show or hide this action. Its location and order are kept when hidden.</value></data>
 </root>

@@ -222,7 +222,7 @@ public sealed class PopupWindow : Window
         searchPlaceholder.Visibility = query.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         menuRows.Children.Clear(); menuButtons.Clear();
         var barIds = ActionCatalog.GetBar(settings, snapshot).Select(a => a.Id).ToHashSet();
-        var barHasRoom = settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) < ActionCatalog.BarActionLimit;
+        var barHasRoom = settings.Layout.Count(e => e.IsVisible && e.Placement == ActionPlacement.Bar) < ActionCatalog.BarActionLimit;
         var items = UiNames.More(settings, snapshot, query).ToList();
         foreach (var button in row.Children.OfType<Button>().Where(b => b.Tag is ActionItem && b.Visibility == Visibility.Collapsed))
         {

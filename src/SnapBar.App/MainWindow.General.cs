@@ -58,7 +58,7 @@ public sealed partial class MainWindow
     }
 
     private IReadOnlyList<CustomActionDefinition> AvailableShortcutActions() => ActionCatalog.Normalize(preferences.Actions).CustomActions
-        .Where(a => !preferences.Actions.Layout.Any(e => e.Id == a.Id && e.Placement == ActionPlacement.Hidden)).ToArray();
+        .Where(a => !preferences.Actions.Layout.Any(e => e.Id == a.Id && !e.IsVisible)).ToArray();
 
     private ShortcutSaveError? SaveHotkey(HotkeySettings value)
     {

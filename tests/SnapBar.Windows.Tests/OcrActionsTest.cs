@@ -397,7 +397,15 @@ internal static class OcrActionsTest
                     ((OcrActionMenu)lookupMore.ContextMenu).Rows.Single(i => AutomationProperties.GetAutomationId(i) == "OcrAction_lookup").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                     for (var n = 0; n < 100 && Field(lookupCard, "actionResult") == null; n++) await Task.Delay(20);
                     var lookupResult = (ActionResultWindow?)Field(lookupCard, "actionResult");
-                    Check("OCR lookup groups results from both real fixture dictionaries", lookupResult != null && Children<TextBlock>(lookupResult).Any(t => t.Text.Contains("First fixture")) && Children<TextBlock>(lookupResult).Any(t => t.Text.Contains("Second fixture")));
+                    var lookupDocument = lookupResult == null ? null : Children<FlowDocumentScrollViewer>(lookupResult).Single().Document;
+                    var lookupSources = lookupDocument?.Blocks.OfType<Paragraph>()
+                        .Where(paragraph => AutomationProperties.GetAutomationId(paragraph) == "LookupDictionarySource")
+                        .Select(paragraph => new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text).ToArray();
+                    var lookupDefinitions = lookupDocument?.Blocks.OfType<Paragraph>()
+                        .Where(paragraph => paragraph.Name == "LookupContent")
+                        .Select(paragraph => new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text.Trim()).ToArray();
+                    Check("OCR lookup groups results from both real fixture dictionaries", lookupSources?.SequenceEqual(["First fixture", "Second fixture"]) == true
+                        && lookupDefinitions?.SequenceEqual(["first definition", "second definition"]) == true);
                     lookupResult?.Close(); lookupCard.Close();
                 }
                 finally { System.IO.Directory.Delete(dictionaryFolder, true); }

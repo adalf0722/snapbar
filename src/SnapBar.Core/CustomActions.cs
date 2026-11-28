@@ -7,11 +7,12 @@ namespace SnapBar.Core;
 
 public enum CustomActionKind { Url, PowerShell, JavaScript, Python, Launch }
 public enum ActionOutput { None, Clipboard, ReplaceSelection, Hud, Window, Markdown }
+// Hidden is retained for reading legacy settings; normalization separates visibility from location.
 public enum ActionPlacement { Bar, More, Hidden }
 public sealed record CustomActionDefinition(string Id, string Name, CustomActionKind Kind, string Icon, string Content,
     ActionOutput Output = ActionOutput.Window, int TimeoutSeconds = 10, string? InterpreterPath = null, bool UseSelection = true,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string[]? Arguments = null);
-public sealed record ActionLayoutEntry(string Id, ActionPlacement Placement);
+public sealed record ActionLayoutEntry(string Id, ActionPlacement Placement, bool IsVisible = true);
 public sealed record ActionSettings
 {
     public CustomActionDefinition[] CustomActions { get; init; } = [];

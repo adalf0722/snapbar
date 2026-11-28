@@ -1350,3 +1350,23 @@ Release 建置、Core 757、保留結果 69 與桌面預檢 1 通過，無略過
 測試前從既有開發版設定的「結束 SnapBar」正常退出。未重新驗證第三方應用、實體多螢幕或混合 DPI，未執行完整桌面 Release 或發布套件。
 
 最終 `scripts/check.ps1` 通過，Core 757、ActionRunner 38，無略過；日誌位於 `artifacts/checks/dictionary-selection-final-check.log`。繁中 Markdown 與雙語更新說明以嚴格 UTF-8 無 BOM 讀回驗證。測試後以本次建置的開發版恢復背景執行。
+
+### 2026-11-28 動作統一清單與顯示開關
+
+動作列、更多改為同頁分區清單，移除位置分頁及隱藏選項。每列使用膠囊形顯示開關，關閉後仍保留位置與排序、留在原區域並淡化名稱；預覽和實際選單只顯示開啟項目。舊 Hidden 設定轉成更多位置且保持關閉。動作列上限依已顯示項目計算，滿九項時拒絕重新開啟並保留關閉狀態。既有隱藏動作的執行限制同步改讀顯示狀態。
+
+`scripts/check.ps1` 通過，Core 763、ActionRunner 38，無略過。最後來源重新建置與 Core 通過：`artifacts/checks/build/20261128T065323361Z-45b186daf71e474cba7feab797d14fdc/report.json`。驗證包含舊設定遷移、儲存重讀、顯示切換保留位置與排序、九項容量拒絕、刪除復原、隱藏項目不進入選單。
+
+桌面 Layout 270、Appearance 286、Language 69 通過，日誌位於 `artifacts/checks/desktop/20261128T065149947Z-610447906c3b4d2188b1bf17b4d300f9/`；Keyboard 26 通過，日誌位於 `artifacts/checks/desktop/20261128T065322329Z-0b1cec6b4c5b425cb0fb22cbf29c48ee/`。包含開關焦點、滿額後重新開啟拒絕、32 個自訂動作加內建與隨附共 42 項的搜尋及關閉、繁中／英文與受限視窗。
+
+首輪額外 Actions 套件在原生滑鼠滾動未關閉舊工具列斷言停止（9 通過、1 失敗）；OcrActions 的兩個詞典來源分組顯示斷言失敗（90 通過、1 失敗），其共用動作重新命名、隱藏及移除案例均通過。這兩份首輪報告均不是成功的完整 Release 證據。首輪 Actions 測試等待期間以電腦操作啟用專用 fixture，未操作使用者文件。
+
+已檢視 `artifacts/ui-polish/settings-actions.png`、`settings-constrained-actions.png`、`actions-hidden.png` 與 `actions-many-search.png`，確認開關、位置選單、淡化名稱及搜尋結果可讀。未重新驗證第三方應用、實體多螢幕或混合 DPI；未發布套件。
+
+#### 額外失敗點追查與補測
+
+OCR 失敗確認為過時測試：詞典來源與釋義已由 `FlowDocumentScrollViewer` 呈現，測試仍搜尋舊的 `TextBlock`。改成核對文件內兩個來源段落的順序及兩份完整釋義，保留實際匯入與 OCR 動作執行流程，沒有放寬產品結果斷言。
+
+原生滾動保留原斷言與兩秒期限，沒有修改產品輸入監聽或關閉邏輯。Actions 獨立重跑、與 OCR 連跑、六套件按原順序整合重跑，連續三次各 70 項通過。先前暫發失敗的根因尚未確認，這些結果只證明本次重跑成功，不代表已修復未知的暫發原因。
+
+最終六套件整合報告 `artifacts/checks/desktop/20261128T070622810Z-4f6acd1c86c942b9a6b103a110a7e319/report.json` 成功：Layout 270、Appearance 286、Language 69、Actions 70、Keyboard 26、OcrActions 91，加 Preflight 1，共 813 項通過、零失敗、零略過；該次建置與 Core 763 亦通過。這是六個相關套件的成功證據，並非完整 Release 套件。

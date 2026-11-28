@@ -1,6 +1,6 @@
 namespace SnapBar.Core;
 
-public sealed record DeletedCustomAction(CustomActionDefinition Action, ActionPlacement Placement, int PlacementIndex);
+public sealed record DeletedCustomAction(CustomActionDefinition Action, ActionPlacement Placement, int PlacementIndex, bool IsVisible = true);
 
 public static class ActionCatalog
 {
@@ -47,14 +47,15 @@ public static class ActionCatalog
         {
             if (entry?.Id is "translate" or "dictionary") continue;
             if (entry == null || entry.Id == null || !ids.Contains(entry.Id) || !seen.Add(entry.Id) || !Enum.IsDefined(entry.Placement)) throw new ProductValidationException("action-layout-invalid");
-            layout.Add(entry);
+            layout.Add(entry.Placement == ActionPlacement.Hidden
+                ? entry with { Placement = ActionPlacement.More, IsVisible = false } : entry);
         }
         foreach (var id in BuiltIns.Select(a => a.Id).Concat(customs.Select(a => a.Id)))
             if (seen.Add(id)) layout.Add(new(id, id is "copy" or "cut" or "paste" or "search" ? ActionPlacement.Bar : ActionPlacement.More));
-        if (layout.Count(e => e.Placement == ActionPlacement.Bar) > BarActionLimit)
+        if (layout.Count(e => e.IsVisible && e.Placement == ActionPlacement.Bar) > BarActionLimit)
             throw new ProductValidationException("action-bar-limit", BarActionLimit);
         if (settings.RecentIds.Any(id => id == null)) throw new ProductValidationException("action-recent-invalid");
-        var visible = layout.Where(e => e.Placement != ActionPlacement.Hidden).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var visible = layout.Where(e => e.IsVisible).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         return settings with { CustomActions = customs, Layout = layout.ToArray(), RecentIds = settings.RecentIds.Where(visible.Contains).Distinct(StringComparer.Ordinal).Take(5).ToArray() };
     }
 
@@ -65,7 +66,7 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         var items = Items(settings).ToDictionary(a => a.Id);
-        return settings.Layout.Where(e => e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).ToArray();
+        return settings.Layout.Where(e => e.IsVisible && e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).ToArray();
     }
 
     public static bool IsApplicable(ActionItem item, SelectionSnapshot selection) => item.BuiltIn switch
@@ -82,13 +83,13 @@ public static class ActionCatalog
     {
         settings = Normalize(settings);
         var items = Items(settings).ToDictionary(a => a.Id);
-        return settings.Layout.Where(e => e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).Where(a => IsApplicable(a, selection)).ToArray();
+        return settings.Layout.Where(e => e.IsVisible && e.Placement == ActionPlacement.Bar).Select(e => items[e.Id]).Where(a => IsApplicable(a, selection)).ToArray();
     }
 
     public static IReadOnlyList<ActionItem> GetMore(ActionSettings settings, SelectionSnapshot selection, string query = "")
     {
         settings = Normalize(settings);
-        var visible = settings.Layout.Where(e => e.Placement == ActionPlacement.More).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var visible = settings.Layout.Where(e => e.IsVisible && e.Placement == ActionPlacement.More).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         query = (query ?? "").Trim();
         return Items(settings).Where(a => visible.Contains(a.Id))
             .Where(a => (a.Name + " " + a.Id + " " + Aliases(a)).Contains(query, StringComparison.OrdinalIgnoreCase))
@@ -99,7 +100,7 @@ public static class ActionCatalog
     public static IReadOnlyList<ActionItem> GetLocalActions(ActionSettings settings, string query = "")
     {
         settings = Normalize(settings);
-        var visible = settings.Layout.Where(e => e.Placement != ActionPlacement.Hidden && e.Id is not ("copy" or "cut" or "paste"))
+        var visible = settings.Layout.Where(e => e.IsVisible && e.Id is not ("copy" or "cut" or "paste"))
             .Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         query = (query ?? "").Trim();
         return Items(settings).Where(a => visible.Contains(a.Id))
@@ -127,6 +128,7 @@ public static class ActionCatalog
     public static ActionSettings SetPlacement(ActionSettings settings, string id, ActionPlacement placement)
     {
         settings = Normalize(settings);
+        if (placement == ActionPlacement.Hidden) return SetVisible(settings, id, false);
         if (!Enum.IsDefined(placement) || !settings.Layout.Any(e => e.Id == id)) throw new ProductValidationException("action-layout-invalid");
         var current = settings.Layout.Single(e => e.Id == id);
         if (current.Placement == placement) return settings;
@@ -136,6 +138,16 @@ public static class ActionCatalog
             layout.Insert(layout.FindLastIndex(e => e.Placement == ActionPlacement.Bar) + 1, changed);
         else layout.Add(changed);
         return Normalize(settings with { Layout = layout.ToArray() });
+    }
+
+    public static ActionSettings SetVisible(ActionSettings settings, string id, bool visible)
+    {
+        settings = Normalize(settings);
+        if (!settings.Layout.Any(e => e.Id == id)) throw new ProductValidationException("action-layout-invalid");
+        return Normalize(settings with
+        {
+            Layout = settings.Layout.Select(e => e.Id == id ? e with { IsVisible = visible } : e).ToArray()
+        });
     }
 
     public static ActionSettings Move(ActionSettings settings, string id, int delta)
@@ -165,7 +177,7 @@ public static class ActionCatalog
             ?? throw new ProductValidationException("action-not-found");
         var entry = settings.Layout.Single(e => e.Id == id);
         var index = settings.Layout.Where(e => e.Placement == entry.Placement).TakeWhile(e => e.Id != id).Count();
-        deleted = new(action, entry.Placement, index);
+        deleted = new(action, entry.Placement, index, entry.IsVisible);
         return settings with
         {
             CustomActions = settings.CustomActions.Where(a => a.Id != id).ToArray(),
@@ -184,13 +196,13 @@ public static class ActionCatalog
         if (settings.CustomActions.Any(a => a.Id == deleted.Action.Id)) throw new ProductValidationException("action-restore-duplicate");
         if (!Enum.IsDefined(deleted.Placement) || deleted.PlacementIndex < 0) throw new ProductValidationException("action-layout-invalid");
         var placement = deleted.Placement;
-        if (placement == ActionPlacement.Bar && settings.Layout.Count(e => e.Placement == ActionPlacement.Bar) >= BarActionLimit)
+        if (deleted.IsVisible && placement == ActionPlacement.Bar && settings.Layout.Count(e => e.IsVisible && e.Placement == ActionPlacement.Bar) >= BarActionLimit)
             placement = ActionPlacement.More;
         var layout = settings.Layout.ToList();
         var slots = Enumerable.Range(0, layout.Count).Where(i => layout[i].Placement == placement).ToArray();
         var index = placement == deleted.Placement ? deleted.PlacementIndex : slots.Length;
         var insertion = index < slots.Length ? slots[index] : slots.Length > 0 ? slots[^1] + 1 : layout.Count;
-        layout.Insert(insertion, new(deleted.Action.Id, placement));
+        layout.Insert(insertion, new(deleted.Action.Id, placement, deleted.IsVisible));
         return Normalize(settings with
         {
             CustomActions = settings.CustomActions.Append(deleted.Action).ToArray(),

@@ -125,20 +125,17 @@ internal static class UiAppearanceTest
                 settings = ActionCatalog.SetPlacement(ActionCatalog.SetPlacement(settings, "link", ActionPlacement.Bar), "path", ActionPlacement.Bar);
                 var saveCalls = 0;
                 actions = new ActionSettingsWindow(settings, _ => { saveCalls++; return true; }); actions.Show(); actions.UpdateLayout(); Snapshot(actions, "actions.png");
-                void SelectPlacement(ActionPlacement placement)
-                { Children<RadioButton>(actions).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true; actions.UpdateLayout(); }
-                SelectPlacement(ActionPlacement.More);
                 Check(saveCalls == 0 && Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == script.Name + "顯示位置")
-                    && !Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == "複製顯示位置"), "More tab directly exposes custom actions without saving or showing pinned rows");
+                    && Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == "複製顯示位置"), "unified list exposes toolbar and More actions without saving");
                 Snapshot(actions, "actions-more.png");
-                Check(Children<RadioButton>(actions).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_Hidden").Visibility == Visibility.Collapsed,
-                    "empty hidden tab is omitted");
-                Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == script.Name + "顯示位置").SelectedIndex = (int)ActionPlacement.Hidden;
-                SelectPlacement(ActionPlacement.Hidden);
-                Check(Children<RadioButton>(actions).Any(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_Hidden" && t.IsVisible && ((string)t.Content).Contains("1")),
-                    "hidden tab appears with an accurate count when an action is placed there");
-                Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == script.Name + "顯示位置").SelectedIndex = (int)ActionPlacement.More;
-                SelectPlacement(ActionPlacement.Bar);
+                Check(!Children<RadioButton>(actions).Any(t => AutomationProperties.GetAutomationId(t).StartsWith("ActionPlacementTab_")),
+                    "unified action list does not recreate placement tabs");
+                var show = Children<CheckBox>(actions).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_" + script.Id);
+                show.IsChecked = false; show.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); actions.UpdateLayout();
+                Check(Children<CheckBox>(actions).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_" + script.Id).IsChecked == false
+                    && Children<ComboBox>(actions).Any(c => AutomationProperties.GetName(c) == script.Name + "顯示位置" && c.SelectedIndex == (int)ActionPlacement.More),
+                    "hidden action stays in its original section with an accessible switch");
+                Snapshot(actions, "actions-hidden.png");
                 Check(!Children<TextBlock>(actions).Any(t => t.Text == "內建動作" || t.Text == "動作列 · 6")
                     && Children<Border>(actions).Count(b => AutomationProperties.GetAutomationId(b).StartsWith("ReorderAction_")) == 6,
                     "pinned list exposes six drag grips without duplicate headings or builtin subtitles");
@@ -146,6 +143,20 @@ internal static class UiAppearanceTest
                 theme.SelectedIndex = 1; actions.UpdateLayout(); Snapshot(actions, "actions-light.png");
                 actions.Width = actions.MinWidth; actions.Height = 620; actions.UpdateLayout(); Snapshot(actions, "actions-small.png");
                 Check(Children<ComboBox>(actions).Where(c => AutomationProperties.GetName(c).EndsWith("顯示位置")).All(c => c.ActualWidth >= 100), "compact action rows retain usable placement controls");
+                var many = Enumerable.Range(1, 32).Select(i => script with
+                    { Id = "custom-" + Guid.NewGuid().ToString("N"), Name = "Custom action " + i.ToString("D2") }).ToArray();
+                actions.Panel.ShowSettings(ActionCatalog.Normalize(new() { CustomActions = many })); actions.UpdateLayout();
+                Check(Children<CheckBox>(actions).Count(c => AutomationProperties.GetAutomationId(c).StartsWith("ActionVisible_")) == 42,
+                    "unified list supports all 32 custom actions plus built-in and bundled actions");
+                var actionFilter = Children<TextBox>(actions).Single(c => AutomationProperties.GetAutomationId(c) == "ActionsSearch");
+                actionFilter.Text = many[^1].Name; actions.UpdateLayout();
+                var lastToggle = Children<CheckBox>(actions).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_" + many[^1].Id);
+                lastToggle.IsChecked = false; lastToggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); actions.UpdateLayout();
+                Check(Children<Grid>(actions).Count(c => AutomationProperties.GetAutomationId(c).StartsWith("ActionRow_")) == 1
+                    && Children<CheckBox>(actions).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_" + many[^1].Id).IsChecked == false,
+                    "search finds the last action in a full catalog and keeps it available after hiding");
+                Snapshot(actions, "actions-many-search.png");
+                actionFilter.Clear(); actions.UpdateLayout(); Snapshot(actions, "actions-many.png");
                 actions.Width = 900; actions.Height = 820; actions.UpdateLayout();
 
                 editor = new ActionEditorWindow(script); editor.Show(); editor.UpdateLayout();

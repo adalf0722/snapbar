@@ -34,14 +34,10 @@ internal static class ActionLayoutTest
                 window.Show(); window.UpdateLayout();
                 string[] Preview(Window view) => Children<StackPanel>(view).Select(AutomationProperties.GetAutomationId)
                     .Where(id => id.StartsWith("ActionBarPreview_", StringComparison.Ordinal)).Select(id => id[17..]).ToArray();
-                string? BarTab() => Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_Bar").Content as string;
+                string? BarTab() => Children<TextBlock>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionGroup_Bar").Text;
                 void Place(string name, ActionPlacement placement)
                 {
-                    var id = ActionCatalog.GetItems(current).Single(a => a.Name == name).Id;
-                    var currentPlacement = current.Layout.Single(e => e.Id == id).Placement;
-                    Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + currentPlacement).IsChecked = true;
                     Children<ComboBox>(window).Single(c => AutomationProperties.GetName(c) == name + "顯示位置").SelectedIndex = (int)placement;
-                    Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
                     window.UpdateLayout();
                 }
                 Check(Preview(window).SequenceEqual(new[] { "copy", "cut", "paste", "search" }) && BarTab() == "動作列 · 4/9 項",
@@ -65,6 +61,26 @@ internal static class ActionLayoutTest
                 Check(Preview(window).SequenceEqual(expected) && current.Layout.Single(e => e.Id == tenth.Id).Placement == ActionPlacement.More
                     && Children<TextBlock>(window).Any(t => t.Text.Contains("最多可釘選 9 個動作")),
                     "tenth pin is refused with a message and preserves nine-item preview");
+                void ShowAction(string id, bool visible)
+                {
+                    var toggle = Children<CheckBox>(window).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_" + id);
+                    toggle.Focus(); toggle.IsChecked = visible;
+                    toggle.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent)); window.UpdateLayout();
+                }
+                var layoutBeforeHide = current.Layout.ToArray();
+                ShowAction("copy", false);
+                Check(!Preview(window).Contains("copy") && Children<CheckBox>(window).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_copy").IsKeyboardFocused
+                    && !new SettingsStore(path).Load().Settings.Actions.Layout.Single(e => e.Id == "copy").IsVisible,
+                    "visibility switch saves immediately and retains keyboard focus on the hidden row");
+                Place(tenth.Name, ActionPlacement.Bar); ShowAction("copy", true);
+                Check(!current.Layout.Single(e => e.Id == "copy").IsVisible && Preview(window).Length == 9
+                    && Children<CheckBox>(window).Single(c => AutomationProperties.GetAutomationId(c) == "ActionVisible_copy").IsChecked == false
+                    && Children<TextBlock>(window).Any(t => t.Text.Contains("最多可釘選 9 個動作")),
+                    "show switch refuses a full toolbar without losing hidden placement or changing other pins");
+                Place(tenth.Name, ActionPlacement.More); ShowAction("copy", true);
+                Check(current.Layout.Where(e => e.Placement == ActionPlacement.Bar).SequenceEqual(layoutBeforeHide.Where(e => e.Placement == ActionPlacement.Bar))
+                    && Preview(window).SequenceEqual(expected),
+                    "showing a hidden action restores its exact position after capacity becomes available");
                 var restarted = new SettingsStore(path).Load();
                 Check(restarted.Warning == null && ActionCatalog.GetPinned(restarted.Settings.Actions).Select(a => a.Id).SequenceEqual(expected), "all nine positions survive disk roundtrip");
                 reloadedWindow = new ActionSettingsWindow(restarted.Settings.Actions, _ => true); reloadedWindow.Show(); reloadedWindow.UpdateLayout();
@@ -116,8 +132,6 @@ internal static class ActionLayoutTest
 
                 void DeleteCustom(string id)
                 {
-                    var placement = current.Layout.Single(e => e.Id == id).Placement;
-                    Children<RadioButton>(window).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
                     window.UpdateLayout();
                     var row = Children<Grid>(window).Single(g => AutomationProperties.GetAutomationId(g) == "ActionRow_" + id);
                     var more = Children<Button>(row).Single(b => AutomationProperties.GetAutomationId(b) == "CustomActionOptions_" + id);
@@ -215,7 +229,6 @@ internal static class ActionLayoutTest
                 try
                 {
                     settingsWindow.Show(); settingsWindow.UpdateLayout();
-                    Children<RadioButton>(settingsWindow).Single(t => AutomationProperties.GetAutomationId(t) == "ActionPlacementTab_" + placement).IsChecked = true;
                     settingsWindow.UpdateLayout();
                     foreach (var action in actions)
                     {

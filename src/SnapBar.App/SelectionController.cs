@@ -146,7 +146,7 @@ public sealed partial class SelectionController : IDisposable
             var targetId = input.Action == TextAction.Ai ? AiShortcutPromptId : CustomShortcutActionId;
             if (input.Action == TextAction.Ai && aiPreferences?.Settings.Prompts.Any(p => p.Id == targetId) != true
                 || input.Action == TextAction.Custom && !actions.CustomActions.Any(a => a.Id == targetId
-                    && !actions.Layout.Any(e => e.Id == a.Id && e.Placement == ActionPlacement.Hidden)))
+                    && !actions.Layout.Any(e => e.Id == a.Id && !e.IsVisible)))
             { Status?.Invoke(UiText.Get("GeneralSettings_ShortcutTargetMissing")); return; }
             if (input.Action == TextAction.Custom && actions.CustomActions.FirstOrDefault(a => a.Id == targetId)
                 is { UseSelection: false, Kind: not CustomActionKind.Url, Output: not ActionOutput.ReplaceSelection })

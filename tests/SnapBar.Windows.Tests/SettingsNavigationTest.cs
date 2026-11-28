@@ -56,9 +56,10 @@ internal static class SettingsNavigationTest
         main.NavigateTo(SettingsCategory.Actions); await Layout(main);
         check(!Children<RadioButton>(main).Any(button => button.GroupName == "ActionsSubpage"),
             "settings action manager has no second action/search navigation layer");
-        var actionList = Children<ScrollViewer>(main.ActionPanel).Single(s => AutomationProperties.GetName(s) == "動作列中的動作");
-        var actionRows = Children<Grid>(main.ActionPanel).Where(row => AutomationProperties.GetAutomationId(row).StartsWith("ActionRow_")).ToArray();
-        check(actionRows.Length == 6 && actionList.ScrollableHeight < 1 && actionRows.All(row =>
+        var actionList = Children<ScrollViewer>(main.ActionPanel).Single(s => AutomationProperties.GetName(s) == "依顯示位置分組的所有動作");
+        var pinnedIds = ActionCatalog.GetPinned(sixActions).Select(a => "ActionRow_" + a.Id).ToHashSet();
+        var actionRows = Children<Grid>(main.ActionPanel).Where(row => pinnedIds.Contains(AutomationProperties.GetAutomationId(row))).ToArray();
+        check(actionRows.Length == 6 && actionRows.All(row =>
         {
             var bounds = row.TransformToAncestor(actionList).TransformBounds(new Rect(row.RenderSize));
             return bounds.Top >= -1 && bounds.Bottom <= actionList.ViewportHeight + 1;
@@ -128,8 +129,18 @@ internal static class SettingsNavigationTest
         Find<Button>(main, "BackToActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
         foreach (var placement in new[] { ActionPlacement.More, ActionPlacement.Hidden, ActionPlacement.Bar })
         {
-            Children<ComboBox>(main.ActionPanel).Single(combo => AutomationProperties.GetName(combo) == "搜尋顯示位置").SelectedIndex = (int)placement;
-            Find<RadioButton>(main.ActionPanel, "ActionPlacementTab_" + placement).IsChecked = true; await Layout(main);
+            if (placement == ActionPlacement.Hidden)
+            {
+                var show = Find<CheckBox>(main.ActionPanel, "ActionVisible_search"); show.IsChecked = false;
+                show.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            }
+            else
+            {
+                Children<ComboBox>(main.ActionPanel).Single(combo => AutomationProperties.GetName(combo) == "搜尋顯示位置").SelectedIndex = (int)placement;
+                var show = Find<CheckBox>(main.ActionPanel, "ActionVisible_search"); show.IsChecked = true;
+                show.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            }
+            await Layout(main);
             Find<Button>(main.ActionPanel, "EditSearchAction").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
             check(main.SearchPanel.IsVisible, "settings search remains editable when placed in " + placement);
             Find<Button>(main, "BackToActions").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
@@ -139,7 +150,6 @@ internal static class SettingsNavigationTest
         check(!Children<Button>(main.GeneralPage).Any(button => AutomationProperties.GetAutomationId(button) == "OfflineDictionarySettings"),
             "settings keeps dictionary management out of the OCR controls");
         main.NavigateTo(SettingsCategory.Actions); await Layout(main);
-        Find<RadioButton>(main.ActionPanel, "ActionPlacementTab_More").IsChecked = true; await Layout(main);
         check(Find<TextBlock>(main.ActionPanel, "DictionaryActionStatus").Text == "尚未匯入",
             "settings lookup row shows its dictionary status");
         Find<Button>(main.ActionPanel, "ManageLookupDictionary").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Layout(main);
@@ -176,7 +186,6 @@ internal static class SettingsNavigationTest
         check(Find<TextBlock>(main.ActionPanel, "DictionaryActionStatus").Text == "已匯入",
             "settings updates dictionary status in the existing lookup row");
         main.ActionPanel.ShowDictionaryStatus(false);
-        Find<RadioButton>(main.ActionPanel, "ActionPlacementTab_Bar").IsChecked = true;
 
         main.NavigateTo(SettingsCategory.AiCommands); await Layout(main);
         var configureService = Find<Button>(main.AiCommandsPanel, "ConfigureAiServiceFromCommands");
@@ -345,7 +354,7 @@ internal static class SettingsNavigationTest
             UiAppearanceTest.Snapshot(main, "settings-constrained-" + category.ToString().ToLowerInvariant() + ".png");
         }
         main.NavigateTo(SettingsCategory.Actions); await Layout(main);
-        check(Children<ScrollViewer>(main.ActionPanel).Any(scroll => AutomationProperties.GetName(scroll) == "動作列中的動作" && scroll.ViewportHeight >= 56),
+        check(Children<ScrollViewer>(main.ActionPanel).Any(scroll => AutomationProperties.GetName(scroll) == "依顯示位置分組的所有動作" && scroll.ViewportHeight >= 56),
             "settings constrained actions retain at least one full row in the scrolling list");
         var compactPreview = Find<Expander>(main.ActionPanel, "ActionSettingsCompactPreview");
         check(compactPreview.IsVisible && !compactPreview.IsExpanded,

@@ -9,6 +9,50 @@ internal static class ActionCatalogTests
         var target = new TargetIdentity(1, 2, 3);
         var selection = new SelectionSnapshot("s", target, "hello", null, true, 1, 5);
         var settings = new ActionSettings { CustomActions = [action] };
+        check("visibility toggle preserves placement and exact layout order", () =>
+        {
+            var before = ActionCatalog.Move(ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar), action.Id, -3);
+            var hidden = ActionCatalog.SetVisible(before, action.Id, false);
+            var restored = ActionCatalog.SetVisible(hidden, action.Id, true);
+            return hidden.Layout.Single(e => e.Id == action.Id) is { Placement: ActionPlacement.Bar, IsVisible: false }
+                && hidden.Layout.Select(e => e.Id).SequenceEqual(before.Layout.Select(e => e.Id))
+                && !ActionCatalog.GetPinned(hidden).Any(e => e.Id == action.Id)
+                && !ActionCatalog.GetBar(hidden, selection).Any(e => e.Id == action.Id)
+                && !ActionCatalog.GetMore(hidden, selection).Any(e => e.Id == action.Id)
+                && !ActionCatalog.GetLocalActions(hidden).Any(e => e.Id == action.Id)
+                && restored.Layout.SequenceEqual(before.Layout);
+        });
+        check("legacy hidden layout migrates to a hidden More action and remains idempotent", () =>
+        {
+            var migrated = ActionCatalog.Normalize(settings with { Layout = [new("search", ActionPlacement.Hidden)] });
+            return migrated.Layout[0] is { Id: "search", Placement: ActionPlacement.More, IsVisible: false }
+                && ActionCatalog.Normalize(migrated).Layout.SequenceEqual(migrated.Layout)
+                && !ActionCatalog.GetMore(migrated, selection).Any(e => e.Id == "search");
+        });
+        check("hidden toolbar action releases capacity and cannot reappear on a full bar", () =>
+        {
+            var full = PinFiveMore(settings);
+            var hidden = ActionCatalog.SetVisible(full, "copy", false);
+            var filled = ActionCatalog.SetPlacement(hidden, action.Id, ActionPlacement.Bar);
+            return ActionCatalog.GetPinned(hidden).Count == 8 && ActionCatalog.GetPinned(filled).Count == 9
+                && Reject(() => ActionCatalog.SetVisible(filled, "copy", true))
+                && !filled.Layout.Single(e => e.Id == "copy").IsVisible
+                && ActionCatalog.SetVisible(ActionCatalog.SetVisible(filled, action.Id, false), "copy", true)
+                    .Layout.Single(e => e.Id == "copy").Placement == ActionPlacement.Bar;
+        });
+        check("delete and restore preserve hidden toolbar placement and order", () =>
+        {
+            var before = ActionCatalog.SetVisible(ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar), action.Id, false);
+            var deletedSettings = ActionCatalog.DeleteCustom(before, action.Id, out var deleted);
+            return ActionCatalog.RestoreCustom(deletedSettings, deleted).Layout.SequenceEqual(before.Layout);
+        });
+        check("hidden actions remain hidden when changing their remembered location", () =>
+        {
+            var hidden = ActionCatalog.SetVisible(settings, action.Id, false);
+            var moved = ActionCatalog.SetPlacement(hidden, action.Id, ActionPlacement.Bar);
+            return moved.Layout.Single(e => e.Id == action.Id) is { Placement: ActionPlacement.Bar, IsVisible: false }
+                && !ActionCatalog.GetPinned(moved).Any(e => e.Id == action.Id);
+        });
         check("local menu joins visible placements and excludes editing commands", () =>
         {
             var configured = ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar);
@@ -311,6 +355,16 @@ internal static class ActionCatalogTests
         var path = Path.Combine(directory, "settings.json");
         try
         {
+            check("settings store retains visibility location and order after reopening", () =>
+            {
+                var before = ActionCatalog.SetVisible(ActionCatalog.Move(ActionCatalog.SetPlacement(settings, action.Id, ActionPlacement.Bar), action.Id, -2), action.Id, false);
+                var store = new SettingsStore(path);
+                var originalSettings = store.Load().Settings;
+                store.Save(originalSettings with { Actions = before });
+                var loaded = new SettingsStore(path).Load();
+                return loaded.Warning == null && loaded.Settings.Actions.Layout.SequenceEqual(before.Layout)
+                    && ActionCatalog.SetVisible(loaded.Settings.Actions, action.Id, true).Layout.Single(e => e.Id == action.Id).IsVisible;
+            });
             check("retired translation entries preserve saved action placements", () =>
             {
                 File.WriteAllText(path, """
@@ -318,7 +372,7 @@ internal static class ActionCatalogTests
                     """);
                 var loaded = new SettingsStore(path).Load();
                 return loaded.Warning == null
-                    && loaded.Settings.Actions.Layout.Single(entry => entry.Id == "search").Placement == ActionPlacement.Hidden
+                    && !loaded.Settings.Actions.Layout.Single(entry => entry.Id == "search").IsVisible
                     && !loaded.Settings.Actions.Layout.Any(entry => entry.Id is "translate" or "dictionary");
             });
             foreach (var version in new[] { 1, 2, 3, 4, 5, 6, 7 })

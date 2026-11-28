@@ -31,9 +31,7 @@ internal sealed class ActionSettingsPanel : ContentControl
     private readonly TextBlock deletionText = ActionUi.Text("", 13);
     private readonly Border previewShell = new();
     private readonly Dictionary<string, (FrameworkElement Element, Border Surface)> previewItems = [];
-    private readonly Dictionary<ActionPlacement, RadioButton> tabs = new();
     private readonly ScrollViewer listScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-    private ActionPlacement selectedPlacement = ActionPlacement.Bar;
     private readonly TextBox filter = ActionUi.Input("", 256);
     private readonly TextBlock filterStatus = ActionUi.Text("", 12, ActionUi.Muted);
 
@@ -111,21 +109,6 @@ internal sealed class ActionSettingsPanel : ContentControl
         AutomationProperties.SetAutomationId(filterStatus, "ActionsSearchStatus"); SettingsFeedback.Live(filterStatus);
         filterStatus.Margin = new(0, 0, 0, 8); top.Children.Add(filterStatus);
         filter.TextChanged += (_, _) => { Render(); listScroll.ScrollToTop(); };
-        var navigation = new StackPanel { Orientation = Orientation.Horizontal, Margin = new(0, 0, 0, 8) };
-        foreach (var placement in Enum.GetValues<ActionPlacement>())
-        {
-            var tab = new RadioButton { GroupName = "ActionPlacement", Style = (Style)FindResource("ActionPlacementFilter"),
-                IsChecked = placement == selectedPlacement, Margin = new(0, 0, 6, 0) };
-            AutomationProperties.SetAutomationId(tab, "ActionPlacementTab_" + placement);
-            if (placement == ActionPlacement.Bar) SettingsFeedback.Hint(tab, Text("SettingsFeedback_Capacity", ActionCatalog.BarActionLimit));
-            tab.Checked += (_, _) =>
-            {
-                if (selectedPlacement == placement) return;
-                selectedPlacement = placement; Render(); listScroll.ScrollToTop();
-            };
-            tabs.Add(placement, tab); navigation.Children.Add(tab);
-        }
-        top.Children.Add(navigation);
         DockPanel.SetDock(top, Dock.Top); outer.Children.Add(top);
         var footer = new StackPanel();
         var deletionContent = new DockPanel();
@@ -146,8 +129,7 @@ internal sealed class ActionSettingsPanel : ContentControl
     internal void FocusDictionaryEditor()
     {
         filter.Clear();
-        var placement = settings.Layout.Single(entry => entry.Id == "lookup").Placement;
-        tabs[placement].IsChecked = true;
+        Render();
         dictionaryEdit?.BringIntoView();
         dictionaryEdit?.Focus();
     }
@@ -179,20 +161,6 @@ internal sealed class ActionSettingsPanel : ContentControl
         dictionaryEdit = null; dictionaryStatus = null;
         deletionNotice.Visibility = undo == null ? Visibility.Collapsed : Visibility.Visible;
         deletionText.Text = undo == null ? "" : Text("ActionSettingsPanel_017",(UiNames.Action(undo.Action, language)));
-        if (selectedPlacement == ActionPlacement.Hidden && !settings.Layout.Any(e => e.Placement == ActionPlacement.Hidden))
-            selectedPlacement = ActionPlacement.More;
-        foreach (var (placement, tab) in tabs)
-        {
-            tab.IsEnabled = !searching;
-            var count = settings.Layout.Count(e => e.Placement == placement);
-            tab.Content = placement switch
-            {
-                ActionPlacement.Bar => Text("SettingsPolish_Capacity", count, ActionCatalog.BarActionLimit),
-                ActionPlacement.More => Text("ActionSettingsPanel_019",(count)),
-                _ => Text("ActionSettingsPanel_020",(count))            };
-            tab.Visibility = placement == ActionPlacement.Hidden && count == 0 ? Visibility.Collapsed : Visibility.Visible;
-            tab.IsChecked = selectedPlacement == placement;
-        }
         preview.Children.Clear(); previewItems.Clear(); var dark = settings.Theme == "Dark";
         previewShell.Background = dark ? ActionUi.DarkSurface : Brushes.White;
         previewShell.BorderBrush = dark ? ActionUi.DarkLine : ActionUi.Line;
@@ -217,26 +185,31 @@ internal sealed class ActionSettingsPanel : ContentControl
         var matches = all.Values.Where(item => words.All(word => (UiNames.Action(item, language) + "\n" + item.Name)
             .Contains(word, StringComparison.OrdinalIgnoreCase))).Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
         filterStatus.Text = Text("ActionsSearch_Count", matches.Count, all.Count);
-        var columnHeader = new Grid { Margin = new(9, 0, 7, 5), MinHeight = 20 };
-        ConfigureColumns(columnHeader, !searching && selectedPlacement == ActionPlacement.Bar);
-        void Header(string key, int column)
-        {
-            var label = ActionUi.Text(Text(key), 12, ActionUi.Muted); Grid.SetColumn(label, column); columnHeader.Children.Add(label);
-        }
-        if (!searching && selectedPlacement == ActionPlacement.Bar) Header("SettingsPolish_Order", 3);
-        Header("SettingsPolish_Actions", 4); Header("ActionSettingsPanel_011", 5); groups.Children.Add(columnHeader);
-        AutomationProperties.SetName(listScroll, searching ? Text("ActionsSearch_Results") : selectedPlacement switch { ActionPlacement.Bar => Text("ActionSettingsPanel_024"), ActionPlacement.More => Text("ActionSettingsPanel_025"), _ => Text("ActionSettingsPanel_026") });
+        AutomationProperties.SetName(listScroll, Text(searching ? "ActionsSearch_Results" : "ActionsList_Label"));
         if (searching && matches.Count == 0)
         {
             var empty = ActionUi.Text(Text("ActionsSearch_Empty"), 13, ActionUi.Muted);
             AutomationProperties.SetAutomationId(empty, "ActionsSearchEmpty");
             empty.Margin = new(12, 18, 12, 18); groups.Children.Add(empty);
         }
-        foreach (var placement in searching ? Enum.GetValues<ActionPlacement>() : new[] { selectedPlacement })
+        foreach (var placement in new[] { ActionPlacement.Bar, ActionPlacement.More })
         {
             var list = settings.Layout.Where(e => e.Placement == placement && (!searching || matches.Contains(e.Id))).ToArray();
             if (searching && list.Length == 0) continue;
-            if (placement == ActionPlacement.Hidden && list.Length == 0) continue;
+            var columnHeader = new Grid { Margin = new(9, 8, 7, 5), MinHeight = 26 };
+            ConfigureColumns(columnHeader);
+            var heading = ActionUi.Text(placement == ActionPlacement.Bar
+                ? Text("SettingsPolish_Capacity", settings.Layout.Count(e => e.IsVisible && e.Placement == placement), ActionCatalog.BarActionLimit)
+                : Text("ActionSettingsPanel_019", settings.Layout.Count(e => e.IsVisible && e.Placement == placement)), 13);
+            AutomationProperties.SetAutomationId(heading, "ActionGroup_" + placement);
+            Grid.SetColumnSpan(heading, 3); columnHeader.Children.Add(heading);
+            void Header(string key, int column)
+            {
+                var label = ActionUi.Text(Text(key), 12, ActionUi.Muted); Grid.SetColumn(label, column); columnHeader.Children.Add(label);
+            }
+            if (!searching && placement == ActionPlacement.Bar) Header("SettingsPolish_Order", 3);
+            Header("SettingsPolish_Actions", 4); Header("ActionSettingsPanel_011", 5); Header("ActionsVisibility_Label", 6);
+            groups.Children.Add(columnHeader);
             if (list.Length == 0)
             {
                 var empty = ActionUi.Text(placement == ActionPlacement.More ? Text("ActionSettingsPanel_027") : Text("ActionSettingsPanel_028"), 13, ActionUi.Muted);
@@ -246,8 +219,8 @@ internal sealed class ActionSettingsPanel : ContentControl
             {
                 var item = all[entry.Id]; var row = new Grid { MinHeight = 48 };
                 AutomationProperties.SetAutomationId(row, "ActionRow_" + item.Id);
-                ConfigureColumns(row, !searching && placement == ActionPlacement.Bar);
-                var image = ActionUi.ItemIcon(item, item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
+                ConfigureColumns(row);
+                var image = ActionUi.ItemIcon(item, entry.IsVisible && item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
                 var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(UiNames.Action(item, language), 14));
                 if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind == CustomActionKind.Launch
                     ? Text("Launch_Kind") : item.Custom.Kind.ToString(), 12, ActionUi.Muted));
@@ -265,6 +238,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                     searchDraftStatus.Visibility = searchHasDraft ? Visibility.Visible : Visibility.Collapsed; name.Children.Add(searchDraftStatus);
                 }
                 Grid.SetColumn(name, 2); row.Children.Add(name);
+                name.Opacity = image.Opacity = entry.IsVisible ? 1 : 0.5;
                 var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 var reorder = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
                 Grid.SetColumn(reorder, 3); row.Children.Add(reorder);
@@ -281,7 +255,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                     AutomationProperties.SetName(grip, UiText.Join(UiNames.Action(item, language), Text("ActionSettingsPanel_034"))); AutomationProperties.SetAutomationId(grip, "ReorderAction_" + item.Id);
                     EnableReordering(grip, item.Id); EnableReordering(name, item.Id); row.Children.Add(grip);
                     var insertion = new Border { Height = 2, Background = ActionUi.Accent, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed, IsHitTestVisible = false };
-                    Grid.SetColumnSpan(insertion, 6); row.Children.Add(insertion);
+                    Grid.SetColumnSpan(insertion, 7); row.Children.Add(insertion);
                     row.AllowDrop = true;
                     row.DragOver += (_, e) =>
                     {
@@ -323,7 +297,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                     AutomationProperties.SetAutomationId(edit, "EditCustomAction_" + item.Id); AutomationProperties.SetAutomationId(extra, "CustomActionOptions_" + item.Id);
                 }
                 Grid.SetColumn(buttons, 4); row.Children.Add(buttons);
-                var combo = new ComboBox { ItemsSource = new[] { Text("ActionSettingsPanel_040"), Text("ActionSettingsPanel_041"), Text("ActionSettingsPanel_042") }, SelectedIndex = (int)placement, VerticalAlignment = VerticalAlignment.Center, Margin = new(6), Padding = new(5) };
+                var combo = new ComboBox { ItemsSource = new[] { Text("ActionSettingsPanel_040"), Text("ActionSettingsPanel_041") }, SelectedIndex = (int)placement, VerticalAlignment = VerticalAlignment.Center, Margin = new(6), Padding = new(5) };
                 AutomationProperties.SetName(combo, UiText.Join(UiNames.Action(item, language), Text("ActionSettingsPanel_043")));
                 AutomationProperties.SetAutomationId(combo, "ActionPlacement_" + item.Id);
                 combo.SelectionChanged += (_, _) =>
@@ -333,6 +307,18 @@ internal sealed class ActionSettingsPanel : ContentControl
                     catch (ArgumentException error) { status.Text = ValidationMessages.Describe(error, language); Render(); }
                 };
                 Grid.SetColumn(combo, 5); row.Children.Add(combo);
+                var visibility = new CheckBox { Style = (Style)FindResource("Switch"), IsChecked = entry.IsVisible,
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                AutomationProperties.SetAutomationId(visibility, "ActionVisible_" + item.Id);
+                AutomationProperties.SetName(visibility, Text("ActionsVisibility_Name", UiNames.Action(item, language)));
+                SettingsFeedback.Hint(visibility, Text("ActionsVisibility_Help"));
+                visibility.Click += (_, _) =>
+                {
+                    if (UiText.IsRefreshing) return;
+                    try { Commit(ActionCatalog.SetVisible(settings, item.Id, visibility.IsChecked == true)); }
+                    catch (ArgumentException error) { status.Text = ValidationMessages.Describe(error, language); Render(); }
+                };
+                Grid.SetColumn(visibility, 6); row.Children.Add(visibility);
                 var rowCard = ActionUi.Card(row, new Thickness(8, 0, 6, 0)); rowCard.CornerRadius = new(8); rowCard.Margin = new(0, 0, 0, 3);
                 var buttonIndex = 0;
                 foreach (var button in buttons.Children.OfType<Button>())
@@ -343,7 +329,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                     buttonIndex++;
                 }
                 if (previewItems.TryGetValue(item.Id, out var target)) SettingsFeedback.Link(row, rowCard, target.Element, target.Surface, dark);
-                else if (placement == ActionPlacement.More) SettingsFeedback.Link(row, rowCard, dots, moreSurface, dark, reverse: false);
+                else if (entry.IsVisible && placement == ActionPlacement.More) SettingsFeedback.Link(row, rowCard, dots, moreSurface, dark, reverse: false);
                 groups.Children.Add(rowCard);
             }
         }
@@ -352,13 +338,13 @@ internal sealed class ActionSettingsPanel : ContentControl
             var target = Controls(groups).FirstOrDefault(element => AutomationProperties.GetAutomationId(element) == focusId);
             if (target is Control { IsEnabled: false } && target.Parent is Panel buttons)
                 target = buttons.Children.OfType<Control>().FirstOrDefault(button => button.IsEnabled);
-            if (target?.Focus() != true) tabs[selectedPlacement].Focus();
+            if (target?.Focus() != true) filter.Focus();
         }
     }
 
-    private static void ConfigureColumns(Grid grid, bool toolbar)
+    private static void ConfigureColumns(Grid grid)
     {
-        foreach (var width in new[] { toolbar ? 24d : 0d, 36d, -1d, toolbar ? 80d : 0d, 80d, 142d })
+        foreach (var width in new[] { 24d, 36d, -1d, 80d, 80d, 142d, 58d })
             grid.ColumnDefinitions.Add(new() { Width = width < 0 ? new(1, GridUnitType.Star) : new(width) });
     }
 
@@ -423,7 +409,7 @@ internal sealed class ActionSettingsPanel : ContentControl
             var message = placement != deleted.Placement ? Text("ActionSettingsPanel_051") : Text("ActionSettingsPanel_052");
             if (Commit(restored, message))
             {
-                undo = null; selectedPlacement = placement; Render();
+                undo = null; Render();
             }
         }
         catch (ArgumentException error) { status.Text = ValidationMessages.Describe(error, language); }
@@ -435,7 +421,6 @@ internal sealed class ActionSettingsPanel : ContentControl
         if (dialog.ShowDialog() == true && dialog.SavedAction is { } action)
         {
             var customs = settings.CustomActions.Where(a => a.Id != action.Id).Append(action).ToArray();
-            selectedPlacement = settings.Layout.FirstOrDefault(e => e.Id == action.Id)?.Placement ?? ActionPlacement.More;
             Commit(settings with { CustomActions = customs });
         }
     }
