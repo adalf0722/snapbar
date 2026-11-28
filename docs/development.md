@@ -145,7 +145,9 @@ Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執�
 
 官網工作使用目前 `main` 的網站原始碼，執行 `scripts/build-site.ps1`，以唯讀 token 分頁查詢 Releases。依公開時間選取最新且 ZIP 與 `.sha256` 附件均完整的版本，包含預覽版，並在全新的暫存目錄填入中英文下載網址、版本說明與版本號後部署。這是網站原始碼選擇的例外，不影響桌面套件使用確切來源 SHA；重跑舊發布也不會把官網原始碼或下載連結退回舊版。瀏覽器不查詢 Releases API，不需 JavaScript 即可下載。查詢或生成失敗會在上傳 Pages artifact 前停止，保留原站；生成過程不提交或 push，因此不會再觸發預覽版。
 
-網站部署失敗不撤回已公開的 Release；可重跑失敗工作，或手動執行 **Deploy SnapBar website**，不必重建桌面套件。該入口同樣使用目前 `main` 與最新完整公開套件。`scripts/test-site.ps1` 驗證版本選擇、分頁、雙語靜態下載與失敗保護，已納入 `scripts/check.ps1`。完整流程見 [site/README.md](../site/README.md)。
+Pages 的建置／上傳與部署分為 `build`、`deploy` 兩個相依工作，待上傳工作完成才查詢產物，降低剛上傳成功卻尚未出現在清單的競態。產物名稱包含 run ID 與 attempt；部署使用建置工作輸出的確切名稱，僅重跑部署時仍使用前次成功建置的產物，完整重跑則使用新的名稱，避免同名產物衝突。
+
+網站部署失敗不撤回已公開的 Release；可重跑失敗工作，或手動執行 **Deploy SnapBar website**，不必重建桌面套件。該入口同樣使用目前 `main` 與最新完整公開套件。重跑既有執行仍採用原 workflow 版本；修正 workflow 後，應提交至 main 並啟動新的網站部署，才能使用修正。`scripts/test-site.ps1` 驗證版本選擇、分頁、雙語靜態下載與失敗保護，已納入 `scripts/check.ps1`。完整流程見 [site/README.md](../site/README.md)。
 
 同一 workflow run 透過 Release 說明中的 run ID 與來源 SHA 標記識別。請優先使用 Re-run failed jobs，沿用原始 artifact，缺少的附件會補傳，既有附件必須名稱、大小、SHA-256 全部相符才略過。其他來源／run 占用版本或附件不同時拒絕覆寫。完整重跑會沿用同 run 已建立的版本；若重新建置使 ZIP 位元組不同，會拒絕替換既有下載。人工操作剛好搶先建立同一版本時，請重跑整條流程，讓版本解析重新選擇下一號。
 

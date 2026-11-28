@@ -14,12 +14,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+    outputs:
+      artifact-name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       # Always deploy current main, including when an older Release job is retried.
       - uses: actions/checkout@v7
@@ -32,9 +33,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: ./scripts/build-site.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'snapbar-site')
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/snapbar-site
+
+  # Finish the upload job before discovery: a freshly finalized artifact may
+  # briefly be absent from the service listing when deployed in the same job.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
       - uses: actions/deploy-pages@v4
         id: deployment
+        with:
+          artifact_name: ${{ needs.build.outputs.artifact-name }}
