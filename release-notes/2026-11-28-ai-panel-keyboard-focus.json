@@ -1,0 +1,20 @@
+{
+  "title": "AI 指令的鍵盤焦點更清楚完整",
+  "summary": "使用鍵盤瀏覽 AI 指令時，淡藍底色與內嵌焦點框讓目前操作目標清楚可見，避免邊緣被裁切。",
+  "highlights": [
+    "指令、圖釘與更多操作使用完整的內嵌焦點框，整列淡藍底色協助定位。",
+    "保留已執行指令的左側色條，方便區分目前焦點與結果來源。",
+    "名稱完整可見時不再顯示重複提示；被截短的名稱仍可透過延遲提示查看。"
+  ],
+  "usage": "開啟 AI 面板後，使用方向鍵瀏覽指令，按 Tab 移至圖釘或更多操作，再按 Enter 執行。",
+  "en": {
+    "title": "See complete keyboard focus in AI commands",
+    "summary": "A pale blue row and inset focus ring clearly identify the current AI command or tool without clipped edges.",
+    "highlights": [
+      "Commands, pins, and more options use inset focus rings, with a pale blue row to help locate focus.",
+      "The executed command keeps its left accent bar so the result source stays distinct from keyboard focus.",
+      "Fully visible names no longer show duplicate tooltips; truncated names remain available in delayed tooltips."
+    ],
+    "usage": "Open the AI panel, browse commands with the arrow keys, press Tab to reach pin or more options, and press Enter to activate the focused control."
+  }
+}

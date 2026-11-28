@@ -42,10 +42,12 @@ internal sealed partial class AiPanelWindow
             var active = Session.Busy ? runningPromptId == prompt.Id : Session.Current != null && versionPromptIds.GetValueOrDefault(Session.Current.Id) == prompt.Id;
             var tile = new Border { Background = active ? ActionUi.Pale : Brushes.Transparent, CornerRadius = new(6),
                 BorderBrush = active ? ActionUi.Accent : Brushes.Transparent, BorderThickness = new(active ? 2 : 0, 0, 0, 0), Margin = new(0, 0, 0, 2), Tag = prompt.Id };
+            tile.IsKeyboardFocusWithinChanged += (_, _) => tile.Background = active || tile.IsKeyboardFocusWithin ? ActionUi.Pale : Brushes.Transparent;
             Grid.SetRow(tile, index);
             var surface = new Grid(); surface.ColumnDefinitions.Add(new() { Width = new(1, GridUnitType.Star) });
             surface.ColumnDefinitions.Add(new() { Width = new(26) }); surface.ColumnDefinitions.Add(new() { Width = new(26) }); tile.Child = surface;
             var button = ActionUi.Button(UiNames.Prompt(prompt, language), () => _ = SubmitAsync(prompt.Instruction, prompt.Id));
+            button.Style = (Style)FindResource("AiPanelCommandButton");
             button.BorderThickness = new(0); button.Margin = new(0); button.IsEnabled = !Session.Busy;
             button.Background = Brushes.Transparent; button.Padding = new(8, 6, 4, 6); button.MinHeight = 40;
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
@@ -57,6 +59,14 @@ internal sealed partial class AiPanelWindow
             title.TextWrapping = TextWrapping.NoWrap; title.LineHeight = 18; title.MaxHeight = 24; content.Children.Add(title); button.Content = content;
             AutomationProperties.SetItemStatus(button, active ? language.Get("AiPanel_ActiveCommand") : "");
             button.ToolTip = UiNames.Prompt(prompt, language); button.Tag = prompt.Id; AutomationProperties.SetAutomationId(button, "AiPrompt_" + prompt.Id);
+            ToolTipService.SetInitialShowDelay(button, 700);
+            button.ToolTipOpening += (_, e) =>
+            {
+                var text = new FormattedText(title.Text, title.Language.GetSpecificCulture(), title.FlowDirection,
+                    new Typeface(title.FontFamily, title.FontStyle, title.FontWeight, title.FontStretch), title.FontSize,
+                    title.Foreground, VisualTreeHelper.GetDpi(title).PixelsPerDip);
+                e.Handled = text.WidthIncludingTrailingWhitespace <= title.ActualWidth;
+            };
             AutomationProperties.SetHelpText(button, language.Get("AiPanelWindow_Commands_005"));
             button.PreviewKeyDown += CommandKey;
             button.GotKeyboardFocus += (_, _) => button.BringIntoView();
@@ -64,7 +74,7 @@ internal sealed partial class AiPanelWindow
 
             Button Tool(string iconName, Action click, HorizontalAlignment alignment)
             {
-                var tool = QuietButton("", click, iconName); tool.Style = (Style)FindResource("AiRowTool");
+                var tool = QuietButton("", click, iconName); tool.Style = (Style)FindResource("AiPanelRowTool");
                 tool.Width = 24; tool.Height = tool.MinHeight = 24; tool.Padding = new(4); tool.Margin = new(2);
                 tool.VerticalAlignment = VerticalAlignment.Center; tool.HorizontalAlignment = alignment; return tool;
             }
