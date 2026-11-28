@@ -151,10 +151,12 @@ Check-Notes 'maintenance-only releases explain the same scope in Chinese and Eng
     $current = Git-Notes @('rev-parse', 'HEAD')
     $null = Git-Notes @('tag', 'maintenance-base', $current)
     Write-Notes 'site/index.html' 'maintenance'
+    Write-Notes 'README.en.md' 'documentation update'
     $maintenance = Save-Notes
     $actual = Get-SnapBarReleaseContent -Root $source -Commit $maintenance -PreviousTag maintenance-base -AsObject
     Assert-Notes ($actual.Summary.Contains('本次沒有桌面功能更新') -and $actual.Summary.Contains('No desktop feature changes'))
     Assert-Notes ($actual.Details.Contains('網站') -and $actual.Details.Contains('website') -and -not $actual.Details.Contains('release tooling'))
+    Assert-Notes (-not $actual.DesktopChanged -and $actual.Details.Contains('文件') -and $actual.Details.Contains('documentation'))
     $metadata = Read-NotesMetadata (New-SnapBarReleaseBody -Root $source -Commit $maintenance -PreviousTag maintenance-base -Version v0.1.0 -Repository fixture/repo -RunId 123)
     Assert-Notes (-not $metadata.desktopChanged -and $metadata.zh.summaries.Count -eq 1 -and $metadata.en.notices.Count -eq 0)
 }

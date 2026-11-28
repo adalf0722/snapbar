@@ -90,10 +90,12 @@ function Get-SnapBarReleaseContent {
         $added = $paths
     }
     $files = @($paths -split "`n" | Where-Object { $_ })
+    $projectDocs = '^(docs/|README(?:\.en)?\.md$|AGENTS\.md$)'
     # Classification is independent of whether an authored note was added.
     $desktop = @($files | Where-Object {
-        $_ -notmatch '^(site/|docs/|tests/|scripts/|\.github/|\.githooks/|release-notes/)' -and
-        $_ -notmatch '^(README\.md|AGENTS\.md|LICENSE|\.gitignore)$'
+        $_ -notmatch $projectDocs -and
+        $_ -notmatch '^(site/|tests/|scripts/|\.github/|\.githooks/|release-notes/)' -and
+        $_ -notmatch '^(LICENSE|\.gitignore)$'
     })
     $notePaths = @($added -split "`n" | Where-Object { $_ -cmatch '^release-notes/[a-z0-9][a-z0-9-]*\.json$' } | Sort-Object)
     $catalog = $null
@@ -131,7 +133,7 @@ function Get-SnapBarReleaseContent {
     }
     $areas = @(); $englishAreas = @()
     if (@($files | Where-Object { $_ -like 'site/*' }).Count) { $areas += '網站'; $englishAreas += 'website' }
-    if (@($files | Where-Object { $_ -match '^(docs/|README\.md|AGENTS\.md)' }).Count) { $areas += '文件'; $englishAreas += 'documentation' }
+    if (@($files | Where-Object { $_ -match $projectDocs }).Count) { $areas += '文件'; $englishAreas += 'documentation' }
     if (@($files | Where-Object { $_ -match '^(scripts/|tests/|\.github/|\.githooks/)' }).Count) { $areas += '建置、測試或發布工具'; $englishAreas += 'build, test or release tooling' }
     $scope = if ($areas.Count) { $areas -join '、' } else { '專案維護內容' }
     $englishScope = if ($englishAreas.Count) { $englishAreas -join '; ' } else { 'project maintenance' }

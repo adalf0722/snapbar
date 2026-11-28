@@ -39,7 +39,7 @@ jobs:
           "website=$($changes.Website.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
   windows-package:
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'push' || needs.changes.outputs.desktop == 'true') }}
+    if: ${{ !cancelled() && (github.event_name != 'push' || (needs.changes.result == 'success' && needs.changes.outputs.desktop == 'true')) }}
     permissions:
       contents: write
     uses: ./.github/workflows/windows-package.yml
@@ -52,7 +52,7 @@ jobs:
       ${{ !cancelled() &&
           ((needs.windows-package.result == 'success' &&
             (github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))) ||
-           (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+           (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.result == 'success' &&
             needs.changes.outputs.desktop == 'false' && needs.changes.outputs.website == 'true')) }}
     permissions:
       contents: read

@@ -171,6 +171,21 @@ Write-SnapBarJson (Join-Path (Split-Path $run -Parent) 'latest.json') $report
         $classify = Join-Path $fixture 'scripts/get-push-changes.ps1'
         $changes = & $classify -Before $commit -After $script:websiteCommit -Ref 'refs/heads/main'
         Assert-Push (-not $changes.Desktop -and $changes.Website)
+        $actionsStep = Join-Path $run 'actions-classifier.ps1'
+        Write-PushFixture $actionsStep @'
+param([string]$Classifier, [string]$Before, [string]$After)
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+& $Classifier -Before $Before -After $After -Ref 'refs/heads/main' | ConvertTo-Json -Compress
+if (Test-Path -LiteralPath variable:\LASTEXITCODE) { exit $LASTEXITCODE }
+'@
+        $pwsh = (Get-Command pwsh).Source
+        $json = & $pwsh -NoProfile -File $actionsStep $classify $commit $script:websiteCommit
+        Assert-Push ($LASTEXITCODE -eq 0)
+        $changes = $json | ConvertFrom-Json
+        Assert-Push (-not $changes.Desktop -and $changes.Website)
+        $json = & $pwsh -NoProfile -File $actionsStep $classify ('f' * 40) $script:websiteCommit
+        Assert-Push ($LASTEXITCODE -eq 0 -and ($json | ConvertFrom-Json).Desktop)
         $changes = & $classify -Before $commit -After $script:websiteCommit -Ref 'refs/pull/1/merge'
         Assert-Push (-not $changes.Desktop -and $changes.Website)
         Assert-Push ((& $classify -Before $commit -After $script:websiteCommit -Ref 'refs/tags/v1.2.4').Desktop)

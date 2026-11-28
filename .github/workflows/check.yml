@@ -46,7 +46,7 @@ jobs:
         shell: pwsh
         run: ./scripts/check.ps1 -SkipDesktop
       - name: Save check logs
-        if: always()
+        if: always() && steps.changes.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: check-logs
