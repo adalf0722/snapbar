@@ -105,6 +105,7 @@ internal static class UpdatePolicyTests
         {
             var now = DateTimeOffset.UtcNow;
             var state = new UpdateState { Enabled = false, LastAttemptUtc = now, LastSuccessUtc = now, RetryAtUtc = now.AddHours(1),
+                AutomaticRetryAtUtc = now.AddMinutes(10), ConsecutiveFailures = 2,
                 CandidatesFetchedAtUtc = now, Latest = new("3.0.0", Metadata("3.0.0", false)), Notification = new("2.0.0", Metadata("2.0.0")),
                 NotifiedVersions = Enumerable.Range(1, 70).Select(i => $"1.0.0-rc.{i}").ToArray() };
             var settings = Path.Combine(directory, "settings.json");
@@ -112,9 +113,16 @@ internal static class UpdatePolicyTests
             if (!store.Save(state)) return false;
             var loaded = new UpdateStateStore(Path.Combine(directory, "updates.json")).Load();
             return !loaded.Enabled && loaded.LastAttemptUtc == now && loaded.LastSuccessUtc == now && loaded.RetryAtUtc == state.RetryAtUtc
+                && loaded.AutomaticRetryAtUtc == state.AutomaticRetryAtUtc && loaded.ConsecutiveFailures == 2
                 && loaded.CandidatesFetchedAtUtc == now && loaded.Latest?.Version == "3.0.0" && loaded.Notification?.Version == "2.0.0"
                 && loaded.NotifiedVersions.Length == 64 && loaded.NotifiedVersions[0] == "1.0.0-rc.70"
                 && loaded.NotifiedVersions[^1] == "1.0.0-rc.7" && File.ReadAllText(settings) == "existing preferences";
+        }));
+        check("legacy update state retains preferences without retry fields", () => WithStore((directory, store) =>
+        {
+            File.WriteAllText(Path.Combine(directory, "updates.json"), "{\"schemaVersion\":1,\"enabled\":false}", new UTF8Encoding(false));
+            var loaded = store.Load();
+            return store.Writable && !loaded.Enabled && loaded.ConsecutiveFailures == 0 && loaded.AutomaticRetryAtUtc == null;
         }));
         foreach (var contents in new[] { "broken", "{\"schemaVersion\":2,\"enabled\":true}", "{\"schemaVersion\":1,\"enabled\":true,\"enabled\":false}", new string('x', 65537) })
             check("update state protects corrupt newer duplicate or oversized existing files " + contents.Length, () => WithStore((directory, store) =>
@@ -130,6 +138,8 @@ internal static class UpdatePolicyTests
             var before = File.ReadAllBytes(path);
             return !store.Save(new() { SchemaVersion = 2 }) && !store.Save(new() { NotifiedVersions = ["invalid"] })
                 && !store.Save(new() { Notification = new("2.0.0", null) })
+                && !store.Save(new() { ConsecutiveFailures = -1 }) && !store.Save(new() { ConsecutiveFailures = 6 })
+                && !store.Save(new() { AutomaticRetryAtUtc = new DateTimeOffset(2026, 11, 28, 10, 0, 0, TimeSpan.FromHours(8)) })
                 && !store.Save(new() { LastAttemptUtc = new DateTimeOffset(2026, 11, 23, 10, 0, 0, TimeSpan.FromHours(8)) })
                 && File.ReadAllBytes(path).SequenceEqual(before) && store.Writable;
         }));

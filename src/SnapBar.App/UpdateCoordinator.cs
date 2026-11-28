@@ -28,16 +28,7 @@ internal sealed class UpdateCoordinator : IDisposable
     internal string Status { get; private set; } = "Updates_NotChecked";
     internal event Action? Changed;
     internal bool CanCheck => Supported && !Checking && (NextManualUtc == null || now() >= NextManualUtc);
-    internal DateTimeOffset? NextManualUtc
-    {
-        get
-        {
-            var next = State.LastAttemptUtc is { } attempt
-                ? attempt > DateTimeOffset.MaxValue.AddSeconds(-60) ? DateTimeOffset.MaxValue : attempt.AddSeconds(60)
-                : (DateTimeOffset?)null;
-            return State.RetryAtUtc > next || next == null ? State.RetryAtUtc ?? next : next;
-        }
-    }
+    internal DateTimeOffset? NextManualUtc => State.RetryAtUtc;
 
     internal UpdateCoordinator(string version, UpdateStateStore store,
         Func<CancellationToken, Task<IReadOnlyList<UpdateRelease>>> read, Func<bool> busy,
@@ -72,8 +63,10 @@ internal sealed class UpdateCoordinator : IDisposable
     {
         if (disposed) return;
         if (!Supported || !StorageAvailable || !State.Enabled || now() < startAfter) { Changed?.Invoke(); return; }
-        if (!Checking && (State.LastAttemptUtc == null || now() - State.LastAttemptUtc >= TimeSpan.FromHours(24))
-            && (State.RetryAtUtc == null || now() >= State.RetryAtUtc)) await CheckAsync(false);
+        var interval = TimeSpan.FromHours(current!.Channel == "Preview" ? 1 : 24);
+        var due = State.AutomaticRetryAtUtc is { } retry ? now() >= retry
+            : State.LastSuccessUtc == null || now() - State.LastSuccessUtc >= interval;
+        if (!Checking && due && (State.RetryAtUtc == null || now() >= State.RetryAtUtc)) await CheckAsync(false);
         TryNotify();
         if (!disposed) Changed?.Invoke(); // Refresh cooldown text even without a new result.
     }
@@ -82,7 +75,7 @@ internal sealed class UpdateCoordinator : IDisposable
     {
         if (disposed || !Supported) return Task.CompletedTask;
         if (Checking) { manualInterest |= manual; return active ?? Task.CompletedTask; }
-        if (manual && NextManualUtc is { } next && now() < next) return Task.CompletedTask;
+        if (NextManualUtc is { } next && now() < next) return Task.CompletedTask;
         active = RunAsync(manual);
         return active;
     }
@@ -105,25 +98,36 @@ internal sealed class UpdateCoordinator : IDisposable
                 notified = notified.Append(selected.Notification.Version).Distinct(StringComparer.Ordinal)
                     .OrderByDescending(ProductVersion.Parse).Take(64).ToArray();
             Persist(State with { Latest = selected.Latest, Notification = selected.Notification,
-                NotifiedVersions = notified, LastSuccessUtc = now(), CandidatesFetchedAtUtc = now(), RetryAtUtc = null });
+                NotifiedVersions = notified, LastSuccessUtc = now(), CandidatesFetchedAtUtc = now(), RetryAtUtc = null,
+                AutomaticRetryAtUtc = null, ConsecutiveFailures = 0 });
             Status = selected.Latest == null ? "Updates_Current" : "Updates_Available";
         }
         catch (OperationCanceledException)
-        { if (!disposed && ticket == generation) Status = "Updates_Failed"; }
+        { if (!disposed && ticket == generation) RecordFailure(); }
         catch (UpdateRateLimitException error)
         {
             if (!disposed && ticket == generation)
-            { Persist(State with { RetryAtUtc = error.RetryAt }); Status = "Updates_Failed"; }
+            { RecordFailure(error.RetryAt); }
         }
         catch (Exception error) when (error is HttpRequestException or IOException or JsonException
             or FormatException or InvalidOperationException or ArgumentException or KeyNotFoundException)
-        { if (!disposed && ticket == generation) Status = "Updates_Failed"; }
+        { if (!disposed && ticket == generation) RecordFailure(); }
         finally
         {
             if (ReferenceEquals(request, cancellation)) request = null;
             Checking = false;
             if (!disposed) Changed?.Invoke();
         }
+    }
+
+    private void RecordFailure(DateTimeOffset? rateLimit = null)
+    {
+        var failures = Math.Min(State.ConsecutiveFailures + 1, 5);
+        var delay = TimeSpan.FromMinutes(Math.Min(5 * (1 << (failures - 1)), 60));
+        var time = now();
+        var retry = time > DateTimeOffset.MaxValue - delay ? DateTimeOffset.MaxValue : time + delay;
+        Persist(State with { ConsecutiveFailures = failures, AutomaticRetryAtUtc = retry, RetryAtUtc = rateLimit });
+        Status = "Updates_Failed";
     }
 
     private void TryNotify()

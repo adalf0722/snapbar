@@ -11,6 +11,8 @@ public sealed record UpdateState
     public DateTimeOffset? LastAttemptUtc { get; init; }
     public DateTimeOffset? LastSuccessUtc { get; init; }
     public DateTimeOffset? RetryAtUtc { get; init; }
+    public DateTimeOffset? AutomaticRetryAtUtc { get; init; }
+    public int ConsecutiveFailures { get; init; }
     public DateTimeOffset? CandidatesFetchedAtUtc { get; init; }
     public string[] NotifiedVersions { get; init; } = [];
     public UpdateRelease? Latest { get; init; }
@@ -131,6 +133,7 @@ public sealed class UpdateStateStore
 
     private static bool IsValid(UpdateState? state, bool allowExtraNotified) => state != null && state.SchemaVersion == 1
         && Utc(state.LastAttemptUtc) && Utc(state.LastSuccessUtc) && Utc(state.RetryAtUtc) && Utc(state.CandidatesFetchedAtUtc)
+        && Utc(state.AutomaticRetryAtUtc) && state.ConsecutiveFailures is >= 0 and <= 5
         && state.NotifiedVersions != null && (allowExtraNotified || state.NotifiedVersions.Length <= 64)
         && state.NotifiedVersions.All(UpdatePolicy.IsPublicVersion)
         && ValidRelease(state.Latest) && ValidRelease(state.Notification)

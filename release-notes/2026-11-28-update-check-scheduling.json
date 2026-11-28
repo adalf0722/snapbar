@@ -1,0 +1,20 @@
+{
+  "title": "更即時掌握新版，手動檢查不必等待",
+  "summary": "預覽版每小時自動檢查更新，連線失敗會較早重試，手動檢查取消固定冷卻時間。",
+  "highlights": [
+    "啟動後保留 30 秒緩衝，預覽版每小時、正式版每天檢查，近期成功檢查過便跳過。",
+    "連線失敗先於 5 分鐘後重試，持續失敗逐步延長至每小時，重開後仍保留重試進度。",
+    "手動檢查完成後可立即再試；同一時間共用一個請求，遇 GitHub 限流仍顯示可再次檢查的時間。"
+  ],
+  "usage": "開啟新版 SnapBar，在「關於與支援」保留「自動檢查更新」勾選即可；需能連線 GitHub，也可隨時按「檢查更新」。下載與安裝仍由使用者手動完成。",
+  "en": {
+    "title": "Find updates sooner without a manual cooldown",
+    "summary": "Preview builds check hourly, failed connections retry sooner, and manual checks no longer have a fixed cooldown.",
+    "highlights": [
+      "Keep the 30-second startup buffer; preview builds check hourly and stable builds daily, skipping recent successful checks.",
+      "Retry connection failures after five minutes, gradually backing off to hourly retries and preserving progress across restarts.",
+      "Check again immediately after completion. Concurrent checks share one request; GitHub rate limits still show when checking can resume."
+    ],
+    "usage": "Open the new SnapBar and leave automatic checks enabled under About & Support. GitHub connectivity is required; you can also use Check for updates at any time. Downloading and installing updates remain manual."
+  }
+}

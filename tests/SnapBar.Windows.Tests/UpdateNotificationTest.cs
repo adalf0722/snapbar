@@ -155,9 +155,8 @@ internal static class UpdateNotificationTest
                     busy = false; await coordinator.TickAsync();
                     Check("idle tick notifies the exact desktop version once", notifications == 1 && coordinator.State.NotifiedVersions.Contains("1.1.0"));
                     await coordinator.TickAsync(); Check("automatic checks are throttled", requests == 1 && notifications == 1);
-                    await coordinator.CheckAsync(); Check("manual cooldown prevents repeat requests", requests == 1);
-                    clock += TimeSpan.FromSeconds(61); await coordinator.CheckAsync();
-                    Check("manual check bypasses daily interval without notifying", requests == 2 && notifications == 1);
+                    await coordinator.CheckAsync();
+                    Check("manual check is immediately available after success without notifying", requests == 2 && notifications == 1);
                     coordinator.SetEnabled(false); clock += TimeSpan.FromDays(2); await coordinator.TickAsync();
                     Check("disabled automatic checks stay off", requests == 2);
                     await coordinator.CheckAsync(); Check("manual checks remain available when automatic checks are off", requests == 3);
@@ -165,9 +164,7 @@ internal static class UpdateNotificationTest
                     {
                         var button = disabledPanel.Children.OfType<WrapPanel>().SelectMany(row => row.Children.OfType<Button>())
                             .Single(item => AutomationProperties.GetAutomationId(item) == "CheckUpdates");
-                        Check("manual button respects cooldown while automatic checks are off", !button.IsEnabled);
-                        clock += TimeSpan.FromSeconds(61); await coordinator.TickAsync();
-                        Check("manual button recovers after cooldown while automatic checks are off", button.IsEnabled);
+                        Check("manual button stays available after success while automatic checks are off", button.IsEnabled);
                     }
                     coordinator.SetEnabled(true);
                 }
@@ -180,6 +177,88 @@ internal static class UpdateNotificationTest
                     Check("installed upgrade removes stale cached download", upgraded.State.Latest == null);
                 using (var dev = new UpdateCoordinator("1.0.0-dev", new UpdateStateStore(statePath), Read, () => false, _ => notifications++, () => clock))
                 { await dev.CheckAsync(); clock += TimeSpan.FromDays(1); await dev.TickAsync(); Check("development builds never query or advertise upgrades", requests == 3 && dev.State.Latest == null); }
+
+                foreach (var (version, hours) in new[] { ("1.0.0-rc.1", 1), ("1.0.0", 24) })
+                {
+                    var time = clock;
+                    var calls = 0;
+                    var path = Path.Combine(directory.FullName, "interval-" + hours + ".json");
+                    Task<IReadOnlyList<UpdateRelease>> Fetch(CancellationToken _) { calls++; return Task.FromResult<IReadOnlyList<UpdateRelease>>([]); }
+                    using (var schedule = new UpdateCoordinator(version, new UpdateStateStore(path), Fetch, () => false, _ => { }, () => time))
+                    {
+                        time += TimeSpan.FromSeconds(29); await schedule.TickAsync();
+                        Check(version + " waits before startup check", calls == 0);
+                        time += TimeSpan.FromSeconds(1); await schedule.TickAsync();
+                        Check(version + " checks at thirty seconds", calls == 1);
+                        time += TimeSpan.FromHours(hours) - TimeSpan.FromSeconds(1); await schedule.TickAsync();
+                        Check(version + " honors success interval", calls == 1);
+                    }
+                    using var restartedSchedule = new UpdateCoordinator(version, new UpdateStateStore(path), Fetch, () => false, _ => { }, () => time);
+                    time += TimeSpan.FromSeconds(29); await restartedSchedule.TickAsync();
+                    Check(version + " restart still waits thirty seconds", calls == 1);
+                    time += TimeSpan.FromSeconds(1); await restartedSchedule.TickAsync();
+                    Check(version + " persisted success becomes due", calls == 2);
+                }
+
+                {
+                    var time = clock;
+                    var calls = 0;
+                    var fail = true;
+                    var path = Path.Combine(directory.FullName, "backoff.json");
+                    Task<IReadOnlyList<UpdateRelease>> Fetch(CancellationToken _)
+                    { calls++; if (fail) throw new HttpRequestException(); return Task.FromResult<IReadOnlyList<UpdateRelease>>([]); }
+                    using (var schedule = new UpdateCoordinator("1.0.0-rc.1", new UpdateStateStore(path), Fetch, () => false, _ => { }, () => time))
+                    {
+                        fail = false; await schedule.CheckAsync(); fail = true;
+                        time += TimeSpan.FromSeconds(30); await schedule.CheckAsync();
+                        Check("failed manual check after recent success schedules early background recovery", schedule.State.LastSuccessUtc == time.AddSeconds(-30)
+                            && schedule.State.AutomaticRetryAtUtc == time.AddMinutes(5));
+                        foreach (var minutes in new[] { 5, 10, 20, 40, 60, 60 })
+                        {
+                            Check("failure schedules " + minutes + " minute retry", schedule.State.AutomaticRetryAtUtc == time.AddMinutes(minutes));
+                            var before = calls;
+                            time += TimeSpan.FromMinutes(minutes) - TimeSpan.FromSeconds(1); await schedule.TickAsync();
+                            Check("failure waits until retry deadline", calls == before);
+                            time += TimeSpan.FromSeconds(1); await schedule.TickAsync();
+                            Check("failure retries at deadline", calls == before + 1);
+                        }
+                    }
+                    using var restartedFailure = new UpdateCoordinator("1.0.0-rc.1", new UpdateStateStore(path), Fetch, () => false, _ => { }, () => time);
+                    var beforeRestart = calls;
+                    time += TimeSpan.FromSeconds(30); await restartedFailure.TickAsync();
+                    Check("restart preserves automatic retry deadline and count", calls == beforeRestart && restartedFailure.State.ConsecutiveFailures == 5);
+                    fail = false; await restartedFailure.CheckAsync();
+                    Check("manual bypasses failure backoff and success resets failures", calls == beforeRestart + 1
+                        && restartedFailure.State.ConsecutiveFailures == 0 && restartedFailure.State.AutomaticRetryAtUtc == null);
+                    time += TimeSpan.FromMinutes(59); await restartedFailure.TickAsync();
+                    Check("recovery resumes normal interval", calls == beforeRestart + 1);
+                }
+
+                {
+                    var time = clock;
+                    var calls = 0;
+                    var limit = time.AddHours(2);
+                    Task<IReadOnlyList<UpdateRelease>> Fetch(CancellationToken _)
+                    { calls++; if (calls == 1) throw new UpdateRateLimitException(limit); return Task.FromResult<IReadOnlyList<UpdateRelease>>([]); }
+                    using var schedule = new UpdateCoordinator("1.0.0-rc.1", new UpdateStateStore(Path.Combine(directory.FullName, "limit.json")), Fetch, () => false, _ => { }, () => time);
+                    await schedule.CheckAsync();
+                    Check("rate limit disables manual check until server deadline", !schedule.CanCheck && schedule.NextManualUtc == limit);
+                    time += TimeSpan.FromHours(1); await schedule.TickAsync(); await schedule.CheckAsync();
+                    Check("automatic and manual checks obey rate limit", calls == 1);
+                    time = limit; await schedule.TickAsync();
+                    Check("rate limit expiry permits check and clears restrictions", calls == 2 && schedule.CanCheck && schedule.NextManualUtc == null);
+                }
+
+                {
+                    var pending = new TaskCompletionSource<IReadOnlyList<UpdateRelease>>();
+                    var calls = 0;
+                    using var schedule = new UpdateCoordinator("1.0.0", new UpdateStateStore(Path.Combine(directory.FullName, "single.json")),
+                        _ => { calls++; return pending.Task; }, () => false, _ => { }, () => clock);
+                    var first = schedule.CheckAsync(); var second = schedule.CheckAsync();
+                    Check("repeated manual clicks share the pending request", calls == 1 && ReferenceEquals(first, second) && !schedule.CanCheck);
+                    pending.SetResult([]); await first;
+                    Check("manual check recovers immediately on completion", schedule.CanCheck);
+                }
 
                 var late = new TaskCompletionSource<IReadOnlyList<UpdateRelease>>();
                 using (var cancelled = new UpdateCoordinator("1.0.0", new UpdateStateStore(Path.Combine(directory.FullName, "late.json")),
