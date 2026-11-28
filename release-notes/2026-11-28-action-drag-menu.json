@@ -1,0 +1,20 @@
+{
+  "title": "直接拖曳整理動作列與更多",
+  "summary": "設定頁以抓取手掌提示可拖曳項目，並支援跨區搬移與右鍵操作，整理常用動作更順手。",
+  "highlights": [
+    "把手與名稱使用抓取手掌游標，拖動時顯示握住狀態與清楚落點。",
+    "可在動作列與更多之間雙向拖曳，保留顯示狀態並遵守九項容量限制。",
+    "右鍵即可搬移、顯示或隱藏動作；自訂動作也能編輯、複製、匯出與刪除。"
+  ],
+  "usage": "開啟設定的動作列頁，拖曳項目把手或名稱，或在項目上按右鍵。搜尋期間請使用位置下拉選單或右鍵搬移；不需額外安裝。",
+  "en": {
+    "title": "Drag actions between the action bar and More",
+    "summary": "Grab cursors, cross-group dragging and context menus make organizing frequently used actions easier.",
+    "highlights": [
+      "Handles and names show an open hand, changing to a closed hand while dragging with clear drop feedback.",
+      "Move actions in either direction between the action bar and More while preserving visibility and the nine-action limit.",
+      "Right-click to move, show or hide actions; custom actions also offer edit, duplicate, export and delete commands."
+    ],
+    "usage": "Open the action bar settings and drag an action's handle or name, or right-click the action. While searching, use the placement dropdown or context menu. No additional installation is required."
+  }
+}

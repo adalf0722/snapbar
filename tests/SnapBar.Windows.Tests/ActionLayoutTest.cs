@@ -181,6 +181,7 @@ internal static class ActionLayoutTest
                 Check(!RestoreButton().IsVisible && current.CustomActions.Contains(retry) && Children<TextBlock>(window).Any(t => t.Text.Contains("無法保存")),
                     "restore applies for the session while retaining a failed save warning");
                 CheckChosenIcons(Check, snapshot);
+                ActionSettingsInteractionTest.Run(Check);
                 result = 0;
             }
             catch (Exception error) { Console.WriteLine("FAIL " + error.Message); }

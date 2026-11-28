@@ -137,8 +137,8 @@ internal static class UiAppearanceTest
                     "hidden action stays in its original section with an accessible switch");
                 Snapshot(actions, "actions-hidden.png");
                 Check(!Children<TextBlock>(actions).Any(t => t.Text == "內建動作" || t.Text == "動作列 · 6")
-                    && Children<Border>(actions).Count(b => AutomationProperties.GetAutomationId(b).StartsWith("ReorderAction_")) == 6,
-                    "pinned list exposes six drag grips without duplicate headings or builtin subtitles");
+                    && Children<Border>(actions).Count(b => AutomationProperties.GetAutomationId(b).StartsWith("ReorderAction_")) == settings.Layout.Length,
+                    "both groups expose drag grips without duplicate headings or builtin subtitles");
                 var theme = Children<ComboBox>(actions).Single(c => AutomationProperties.GetName(c) == "動作列主題");
                 theme.SelectedIndex = 1; actions.UpdateLayout(); Snapshot(actions, "actions-light.png");
                 actions.Width = actions.MinWidth; actions.Height = 620; actions.UpdateLayout(); Snapshot(actions, "actions-small.png");

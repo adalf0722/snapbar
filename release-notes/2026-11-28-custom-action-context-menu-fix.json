@@ -1,0 +1,12 @@
+{
+  "title": "修復自訂動作選單造成程式退出",
+  "summary": "修正自訂動作選單分隔線的樣式衝突，讓右鍵與更多操作選單正常開啟。",
+  "highlights": ["自訂動作的右鍵與「⋯」選單可正常顯示全部指令，不再因分隔線樣式錯誤退出程式。"],
+  "usage": "重新啟動更新後的 SnapBar，開啟動作列設定，在自訂動作上按右鍵或點選「⋯」即可使用；無需額外設定。",
+  "en": {
+    "title": "Fix a crash when opening custom action menus",
+    "summary": "Resolve a separator style conflict so custom action context menus and options menus open correctly.",
+    "highlights": ["Custom action right-click and options menus display all commands without crashing because of a separator style mismatch."],
+    "usage": "Restart the updated SnapBar, open action bar settings, then right-click a custom action or click its options button. No additional setup is required."
+  }
+}

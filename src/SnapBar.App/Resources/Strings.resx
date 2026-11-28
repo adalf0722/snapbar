@@ -3060,4 +3060,9 @@ Its enabled state will be preserved.</value>
   <data name="ActionsVisibility_Label" xml:space="preserve"><value>Show</value></data>
   <data name="ActionsVisibility_Name" xml:space="preserve"><value>Show {0}</value></data>
   <data name="ActionsVisibility_Help" xml:space="preserve"><value>Show or hide this action. Its location and order are kept when hidden.</value></data>
+  <data name="ActionsDrag_Help" xml:space="preserve"><value>Drag to reorder the action bar or move between the action bar and More.</value></data>
+  <data name="ActionsMenu_MoveBar" xml:space="preserve"><value>Move to action bar</value></data>
+  <data name="ActionsMenu_MoveMore" xml:space="preserve"><value>Move to More</value></data>
+  <data name="ActionsMenu_Hide" xml:space="preserve"><value>Hide action</value></data>
+  <data name="ActionsMenu_Show" xml:space="preserve"><value>Show action</value></data>
 </root>

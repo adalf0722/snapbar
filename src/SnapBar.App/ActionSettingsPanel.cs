@@ -10,7 +10,7 @@ using SnapBar.Core;
 
 namespace SnapBar.App;
 
-internal sealed class ActionSettingsPanel : ContentControl
+internal sealed partial class ActionSettingsPanel : ContentControl
 {
     private readonly UiLanguage? language;
     private string Text(string key, params object?[] values) => language?.Get(key, values) ?? UiText.Get(key, values);
@@ -121,7 +121,10 @@ internal sealed class ActionSettingsPanel : ContentControl
         deletionNotice.Margin = new(0, 10, 0, 0); footer.Children.Add(deletionNotice);
         status.Margin = new(0, 10, 0, 0); footer.Children.Add(status);
         DockPanel.SetDock(footer, Dock.Bottom); outer.Children.Add(footer);
-        listScroll.Content = groups; outer.Children.Add(listScroll); Content = outer; Render();
+        listScroll.Content = groups;
+        listScroll.AllowDrop = true;
+        listScroll.AddHandler(DragDrop.DragOverEvent, new DragEventHandler(ScrollDuringDrag), handledEventsToo: true);
+        outer.Children.Add(listScroll); Content = outer; Render();
     }
 
     internal void ShowSettings(ActionSettings value) { settings = ActionCatalog.Normalize(value); Render(); }
@@ -154,6 +157,7 @@ internal sealed class ActionSettingsPanel : ContentControl
     {
         var words = filter.Text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var searching = words.Length > 0;
+        listScroll.AllowDrop = !searching;
         filterStatus.Visibility = searching ? Visibility.Visible : Visibility.Collapsed;
         var focusId = groups.IsKeyboardFocusWithin && Keyboard.FocusedElement is DependencyObject focused
             ? AutomationProperties.GetAutomationId(focused) : null;
@@ -210,10 +214,13 @@ internal sealed class ActionSettingsPanel : ContentControl
             if (!searching && placement == ActionPlacement.Bar) Header("SettingsPolish_Order", 3);
             Header("SettingsPolish_Actions", 4); Header("ActionSettingsPanel_011", 5); Header("ActionsVisibility_Label", 6);
             groups.Children.Add(columnHeader);
+            if (!searching) EnableGroupDrop(columnHeader, placement);
             if (list.Length == 0)
             {
                 var empty = ActionUi.Text(placement == ActionPlacement.More ? Text("ActionSettingsPanel_027") : Text("ActionSettingsPanel_028"), 13, ActionUi.Muted);
+                AutomationProperties.SetAutomationId(empty, "ActionGroupEmpty_" + placement);
                 empty.Margin = new(12, 18, 12, 18); groups.Children.Add(empty);
+                if (!searching) EnableGroupDrop(empty, placement);
             }
             foreach (var entry in list)
             {
@@ -221,7 +228,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                 AutomationProperties.SetAutomationId(row, "ActionRow_" + item.Id);
                 ConfigureColumns(row);
                 var image = ActionUi.ItemIcon(item, entry.IsVisible && item.Custom != null ? ActionUi.Accent : ActionUi.Muted); image.Margin = new(8); Grid.SetColumn(image, 1); row.Children.Add(image);
-                var name = new StackPanel { Margin = new(6, 7, 8, 7), VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(UiNames.Action(item, language), 14));
+                var name = new StackPanel { Margin = new(6, 7, 8, 7), Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center }; name.Children.Add(ActionUi.Text(UiNames.Action(item, language), 14));
                 if (item.Custom != null) name.Children.Add(ActionUi.Text(item.Custom.Kind == CustomActionKind.Launch
                     ? Text("Launch_Kind") : item.Custom.Kind.ToString(), 12, ActionUi.Muted));
                 if (item.BuiltIn == TextAction.Lookup && manageDictionary != null)
@@ -250,34 +257,14 @@ internal sealed class ActionSettingsPanel : ContentControl
                     AutomationProperties.SetName(up, UiText.Join(UiNames.Action(item, language), Text("ActionSettingsPanel_032"))); AutomationProperties.SetName(down, UiText.Join(UiNames.Action(item, language), Text("ActionSettingsPanel_033")));
                     up.MinWidth = down.MinWidth = 34;
                     up.IsEnabled = entry != list.First(); down.IsEnabled = entry != list.Last();
+                }
+                if (!searching)
+                {
                     var grip = new Border { Child = ActionUi.Icon("grip", ActionUi.Muted, 16), Background = Brushes.Transparent,
                         Width = 24, Height = 36, VerticalAlignment = VerticalAlignment.Center };
-                    AutomationProperties.SetName(grip, UiText.Join(UiNames.Action(item, language), Text("ActionSettingsPanel_034"))); AutomationProperties.SetAutomationId(grip, "ReorderAction_" + item.Id);
+                    AutomationProperties.SetName(grip, UiText.Join(UiNames.Action(item, language), Text("ActionSettingsPanel_034")));
+                    AutomationProperties.SetAutomationId(grip, "ReorderAction_" + item.Id);
                     EnableReordering(grip, item.Id); EnableReordering(name, item.Id); row.Children.Add(grip);
-                    var insertion = new Border { Height = 2, Background = ActionUi.Accent, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed, IsHitTestVisible = false };
-                    Grid.SetColumnSpan(insertion, 7); row.Children.Add(insertion);
-                    row.AllowDrop = true;
-                    row.DragOver += (_, e) =>
-                    {
-                        var source = e.Data.GetData(typeof(string)) as string;
-                        var valid = source != item.Id && list.Any(a => a.Id == source);
-                        e.Effects = valid ? DragDropEffects.Move : DragDropEffects.None;
-                        insertion.VerticalAlignment = e.GetPosition(row).Y < row.ActualHeight / 2 ? VerticalAlignment.Top : VerticalAlignment.Bottom;
-                        insertion.Visibility = valid ? Visibility.Visible : Visibility.Collapsed; e.Handled = true;
-                    };
-                    row.DragLeave += (_, _) => insertion.Visibility = Visibility.Collapsed;
-                    row.Drop += (_, e) =>
-                    {
-                        insertion.Visibility = Visibility.Collapsed;
-                        if (e.Data.GetData(typeof(string)) is not string source) return;
-                        var pinned = settings.Layout.Where(a => a.Placement == ActionPlacement.Bar).ToList();
-                        var from = pinned.FindIndex(a => a.Id == source); var to = pinned.FindIndex(a => a.Id == item.Id);
-                        if (from < 0 || to < 0) return;
-                        if (e.GetPosition(row).Y >= row.ActualHeight / 2) to++;
-                        if (from < to) to--;
-                        if (from != to) Commit(ActionCatalog.Move(settings, source, to - from), Text("SettingsFeedback_Reordered", UiNames.Action(all[source], language)));
-                        e.Effects = DragDropEffects.Move; e.Handled = true;
-                    };
                 }
                 if (item.BuiltIn == TextAction.Search && editSearch != null)
                 {
@@ -293,7 +280,7 @@ internal sealed class ActionSettingsPanel : ContentControl
                 if (item.Custom is { } custom)
                 {
                     var edit = SettingsFeedback.IconButton("edit", UiText.Join(Text("ActionSettingsPanel_039"), " · ", UiNames.Action(item, language)), () => Edit(custom)); buttons.Children.Add(edit);
-                    var extra = SettingsFeedback.IconButton("more", Text("SettingsFeedback_More", UiNames.Action(item, language)), () => { }); extra.ContextMenu = ActionMenu(custom); extra.Click += (_, _) => { extra.ContextMenu.PlacementTarget = extra; extra.ContextMenu.IsOpen = true; }; buttons.Children.Add(extra);
+                    var extra = SettingsFeedback.IconButton("more", Text("SettingsFeedback_More", UiNames.Action(item, language)), () => { }); extra.ContextMenu = ActionMenu(item); extra.Click += (_, _) => { extra.ContextMenu.PlacementTarget = extra; extra.ContextMenu.IsOpen = true; }; buttons.Children.Add(extra);
                     AutomationProperties.SetAutomationId(edit, "EditCustomAction_" + item.Id); AutomationProperties.SetAutomationId(extra, "CustomActionOptions_" + item.Id);
                 }
                 Grid.SetColumn(buttons, 4); row.Children.Add(buttons);
@@ -320,6 +307,8 @@ internal sealed class ActionSettingsPanel : ContentControl
                 };
                 Grid.SetColumn(visibility, 6); row.Children.Add(visibility);
                 var rowCard = ActionUi.Card(row, new Thickness(8, 0, 6, 0)); rowCard.CornerRadius = new(8); rowCard.Margin = new(0, 0, 0, 3);
+                row.ContextMenu = ActionMenu(item);
+                if (!searching) EnableRowDrop(row, item.Id, placement);
                 var buttonIndex = 0;
                 foreach (var button in buttons.Children.OfType<Button>())
                 {
@@ -360,7 +349,14 @@ internal sealed class ActionSettingsPanel : ContentControl
     private void EnableReordering(FrameworkElement handle, string actionId)
     {
         Point? start = null;
-        handle.Cursor = Cursors.Hand; handle.ToolTip = Text("ActionSettingsPanel_044");
+        handle.Cursor = GrabCursors.Open; handle.ToolTip = Text("ActionsDrag_Help");
+        handle.GiveFeedback += (_, e) =>
+        {
+            if (e.Effects != DragDropEffects.Move) { e.UseDefaultCursors = true; return; }
+            e.UseDefaultCursors = false;
+            Mouse.SetCursor(GrabCursors.Closed);
+            e.Handled = true;
+        };
         if (handle is Border grip)
         {
             grip.CornerRadius = new(5);
@@ -378,14 +374,46 @@ internal sealed class ActionSettingsPanel : ContentControl
             if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance) return;
             start = null;
             if (handle.IsMouseCaptured) handle.ReleaseMouseCapture();
-            DragDrop.DoDragDrop(handle, actionId, DragDropEffects.Move);
+            try { DragDrop.DoDragDrop(handle, new DataObject(DragFormat, new ActionDragPayload(this, actionId)), DragDropEffects.Move); }
+            finally { clearDropFeedback?.Invoke(); clearDropFeedback = null; Mouse.SetCursor(null); }
         };
     }
 
-    private ContextMenu ActionMenu(CustomActionDefinition action)
+    private ContextMenu ActionMenu(ActionItem actionItem)
     {
         var menu = new ContextMenu { Style = (Style)FindResource("SettingsMenu") };
-        void Add(string label, Action handler) { var item = new MenuItem { Header = label }; item.Click += (_, _) => handler(); menu.Items.Add(item); }
+        void Add(string label, Action handler)
+        {
+            var item = new MenuItem { Header = label };
+            item.Click += (_, _) =>
+            {
+                menu.IsOpen = false;
+                handler();
+                // ContextMenu restores its previous focus after Click; move focus after that restoration.
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () =>
+                {
+                    var target = Controls(groups).FirstOrDefault(element => AutomationProperties.GetAutomationId(element) == "ActionPlacement_" + actionItem.Id);
+                    if (target != null) { target.BringIntoView(); target.Focus(); }
+                    else filter.Focus();
+                });
+            };
+            menu.Items.Add(item);
+        }
+        var entry = settings.Layout.Single(e => e.Id == actionItem.Id);
+        var destination = entry.Placement == ActionPlacement.Bar ? ActionPlacement.More : ActionPlacement.Bar;
+        Add(Text(destination == ActionPlacement.Bar ? "ActionsMenu_MoveBar" : "ActionsMenu_MoveMore"),
+            () => ChangePlacement(actionItem.Id, destination));
+        Add(Text(entry.IsVisible ? "ActionsMenu_Hide" : "ActionsMenu_Show"), () =>
+        {
+            try { Commit(ActionCatalog.SetVisible(settings, actionItem.Id, !entry.IsVisible)); }
+            catch (ArgumentException error) { status.Text = ValidationMessages.Describe(error, language); }
+        });
+        if (actionItem.BuiltIn == TextAction.Search && editSearch != null) Add(Text("ActionSettingsPanel_036"), editSearch);
+        if (actionItem.BuiltIn == TextAction.Lookup && manageDictionary != null) Add(Text("ActionSettingsPanel_038"), manageDictionary);
+        if (actionItem.Custom is not { } action) return menu;
+        // Opt out of the menu's MenuItem-only container style for this separator.
+        menu.Items.Add(new Separator { Style = null });
+        Add(Text("ActionSettingsPanel_039"), () => Edit(action));
         Add(Text("ActionSettingsPanel_045"), () =>
         {
             var displayName = UiNames.Action(action);

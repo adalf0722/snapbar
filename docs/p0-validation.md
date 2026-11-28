@@ -1370,3 +1370,21 @@ OCR 失敗確認為過時測試：詞典來源與釋義已由 `FlowDocumentScrol
 原生滾動保留原斷言與兩秒期限，沒有修改產品輸入監聽或關閉邏輯。Actions 獨立重跑、與 OCR 連跑、六套件按原順序整合重跑，連續三次各 70 項通過。先前暫發失敗的根因尚未確認，這些結果只證明本次重跑成功，不代表已修復未知的暫發原因。
 
 最終六套件整合報告 `artifacts/checks/desktop/20261128T070622810Z-4f6acd1c86c942b9a6b103a110a7e319/report.json` 成功：Layout 270、Appearance 286、Language 69、Actions 70、Keyboard 26、OcrActions 91，加 Preflight 1，共 813 項通過、零失敗、零略過；該次建置與 Core 763 亦通過。這是六個相關套件的成功證據，並非完整 Release 套件。
+
+### 2026-11-28 動作拖曳與右鍵選單
+
+新增動作列與更多之間雙向拖曳、張開與握住手掌游標、區域與插入落點提示，以及項目右鍵選單。名稱與把手可拖曳；長清單靠近邊緣時捲動。搜尋期間停用拖曳，位置下拉選單與右鍵仍可搬移。顯示開關與九項容量限制沿用既有政策。
+
+最終報告 `artifacts/checks/desktop/20261128T114716717Z-6488fcfb73894999ab6aa75bb3d088d6/report.json` 成功：Layout 289、Appearance 286、Language 69、Keyboard 26，加 Preflight 1，共 671 項通過；建置與 Core 763 通過。新增案例涵蓋前後插入、雙向搬移、空白分區、滿額拒絕、隱藏動作不占顯示容量、儲存重讀、來源隔離、離開落點不儲存、搜尋與選單後的鍵盤焦點。`scripts/check.ps1 -SkipDesktop` 亦通過。
+
+已檢視 `artifacts/ui-polish/actions-drag-groups.png`、`actions-drag-small.png`。以 `--ui-preview` 拋棄式測試視窗實測名稱從更多拖入動作列、把手從動作列拖回更多、項目右鍵搬移，以及搬移後以 Shift+F10 開啟該動作選單。選單關閉後的焦點改為延後恢復，避免 WPF 的原焦點還原覆蓋。實際右鍵與鍵盤選單截圖為 `actions-native-context-menu.jpg`、`actions-native-keyboard-menu.jpg`。
+
+測試前已從設定正常結束使用者執行的舊版；手動拖曳僅操作拋棄式視窗。未重新驗證第三方應用、實體多螢幕與混合 DPI，亦未執行完整 Release 或發布套件。
+
+#### 自訂動作右鍵退出修復
+
+使用者實測自訂動作右鍵造成程式退出。Windows 的 .NET Runtime 事件確認例外為 `InvalidOperationException`：`MenuItem` 專用樣式被套用到 `Separator`。原驗證只實際開啟內建動作選單；自訂動作測試直接觸發指令，未讓選單產生容器與排版，因此漏掉此問題。
+
+新增回歸案例實際開啟每個隨附自訂動作的右鍵與「⋯」選單，執行選單排版並確認六個指令與分隔線皆可顯示。修復前報告 `artifacts/checks/desktop/20261128T115229570Z-db500e8440b844cf86467486bf2dfeb6/report.json` 以同一個樣式例外失敗。修復將分隔線的 Style 明確設為 null，避免套用選單的 MenuItem 容器樣式。
+
+修復後報告 `artifacts/checks/desktop/20261128T115259214Z-2bbb6bfcddb340d7a58be84c3366ce28/report.json` 成功：Layout 293、Appearance 286、Language 69、Keyboard 26，加 Preflight 1，共 675 項通過；建置與 Core 763 通過。重新啟動修正版後，以原生滑鼠實際開啟並關閉「搜尋 Gmail」的右鍵與「⋯」選單，六個指令及分隔線正常呈現，程式持續執行；未變更動作設定。保留動作列設定頁供使用者試用。

@@ -3060,4 +3060,9 @@
   <data name="ActionsVisibility_Label" xml:space="preserve"><value>顯示</value></data>
   <data name="ActionsVisibility_Name" xml:space="preserve"><value>顯示「{0}」</value></data>
   <data name="ActionsVisibility_Help" xml:space="preserve"><value>顯示或收起這個動作。關閉後仍保留原本的位置與排序。</value></data>
+  <data name="ActionsDrag_Help" xml:space="preserve"><value>拖曳以調整動作列順序，或在動作列與更多之間移動。</value></data>
+  <data name="ActionsMenu_MoveBar" xml:space="preserve"><value>移至動作列</value></data>
+  <data name="ActionsMenu_MoveMore" xml:space="preserve"><value>移至更多</value></data>
+  <data name="ActionsMenu_Hide" xml:space="preserve"><value>隱藏動作</value></data>
+  <data name="ActionsMenu_Show" xml:space="preserve"><value>顯示動作</value></data>
 </root>
