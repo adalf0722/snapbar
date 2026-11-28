@@ -25,7 +25,7 @@ actionlint 固定為 1.7.12，首次檢查 workflow 時自動下載至 `.tools/a
 
 安裝器僅設定本 checkout 的 `core.hooksPath=.githooks`，啟用 pre-commit 與 pre-push。若已有其他 hook 設定或傳統 pre-commit／pre-push，會保留並提示手動整合。pre-commit 驗證暫存區版本的編碼、語法與空白；若 workflow 或 `.github/actionlint.yaml`／`.yml` 有變動，另從 Git index 擷取全部 workflow 與設定至獨立快照並執行 actionlint，避免未暫存的修正掩蓋問題。其他檔案提交不需執行 actionlint。完整檢查由日常入口和 CI 執行，包含隔離 bare remote 的 push 流程測試。Commit message 驗證器維持原狀。
 
-pre-push 在每次推送 branch／tag 前執行完整 Release 桌面測試。先提交或 stash 所有修改、正常結束 SnapBar，並在測試期間避免輸入與複製。推送來源必須指向目前 HEAD；其他分支請切換後個別推送。不接受 assume-unchanged／skip-worktree 的追蹤檔案。刪除遠端 ref 或傳送桌面證據 notes ref 不跑桌面測試。測試失敗會擋下 push；通過後先上傳綁定 commit 的精簡 Git note，再繼續原始 push。新 clone 必須重新安裝 hooks。
+pre-push 在分支推送包含桌面或打包相關變更、比較基準無法取得，或推送 tag 時，執行完整 Release 桌面測試。需要測試時，先提交或 stash 所有修改、正常結束 SnapBar，並在測試期間避免輸入與複製。測試來源必須指向目前 HEAD；其他分支請切換後個別推送。不接受 assume-unchanged／skip-worktree 的追蹤檔案。測試失敗會擋下 push。通過後先上傳綁定 commit 的精簡 Git note，再繼續原始 push。新 clone 必須重新安裝 hooks。
 
 ## 桌面測試
 
@@ -109,7 +109,9 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 
 ## GitHub 自動發布
 
-`.github/workflows/release.yml` 支援 push main 自動發布預覽版、其他 branch／tag push 自動打包、手動完整演練與手動 Release 發布，全部建置／打包均使用 GitHub 託管的 `windows-latest`，不再等待本機自架 runner。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。先將 workflow 與腳本合併並推送至 GitHub，再執行；手動觸發入口需要 workflow 已存在於預設分支。
+`.github/workflows/release.yml` 依推送內容決定是否呼叫 Windows 發布流程。需要打包的 main push 會自動發布預覽版，其他分支及 tag 產生驗證套件。手動完整演練與手動 Release 發布同樣使用 GitHub 託管的 `windows-latest`。版本名稱使用 `v0.1.0`、`v0.1.0-rc.1` 這類格式，並指定含有 workflow 的提交。手動觸發入口需要 workflow 已存在於預設分支。
+
+本機 hook 和 GitHub Actions 共用 `scripts/get-push-changes.ps1`，比較遠端分支更新前後的完整檔案差異。Pull request 的 Repository checks 則比較目標分支與預計合併的 commit。只有網站、網站腳本、專案文件或更新說明變動時，會執行工具與網站檢查，略過桌面測試、建置及打包。桌面原始碼、套件內的文件、建置設定及發布流程變更仍會走完整驗證。首次推送分支、非 fast-forward 更新或缺少比較基準時也會走完整驗證。
 
 ### 一次性本機設定與測試證據
 
@@ -121,11 +123,11 @@ App 與 Probe 先發佈到全新 `artifacts/publish/<識別碼>/package`，通�
 
 Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執行本機 hook；但缺少該 commit 紀錄時雲端會拒絕打包。請 checkout 該確切 commit，再以已安裝 hook 的一般 branch／tag push 完成驗證。若來源已在遠端，沒有更新的 push 不會重新測試；可新增指向該 commit 的驗證 branch 或 tag 並推送，再重跑原工作。測試紀錄不是簽章，不能防止有 repository 寫入權限的人偽造紀錄。由於 notes 先送出，原始 push 最後失敗或使用 `git push --dry-run` 時仍可能留下測試紀錄；不會因此自行產生套件。原有自架 runner 可自行停止，本次不自動移除註冊。
 
-### 每次 push main 自動發布
+### main 的桌面變更自動發布
 
-`git push origin main` 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。最後自動建立預覽版 Release，附上 ZIP、SHA-256 與從版本庫彙整的使用者更新說明，一般使用者直接到 Releases 下載。
+需要打包的 `git push origin main` 通過本機桌面測試後，雲端核對該 commit 的 note，執行完整 repository checks、自含式發布、Probe／Startup smoke 與 ZIP 核對。最後自動建立預覽版 Release，附上 ZIP、SHA-256 與從版本庫彙整的使用者更新說明，一般使用者直接到 Releases 下載。
 
-自動版本使用根目錄 `Version.props` 的 `SnapBarVersionPrefix`（目前 `0.1.0`），取遠端 tags 與 Releases（含草稿）內同系列最大的整數 rc 序號加一。每次 main push 仍發布預覽版；修正升 patch、新功能升 minor、1.0 後重大不相容變更升 major。正式版由維護者明確發布；該系列正式 Tag 或已公開正式 Release 存在後，新的 rc 分配會阻擋，須先調整 `Version.props` 為例如 `0.1.1` 或 `0.2.0`，新系列從 rc.1 起。失敗可留空號，已發布版本不可重用。main push 工作依 concurrency group 序列執行；GitHub 預設只保留一個等待工作，密集連續 push 可能使尚未開始的舊工作被較新的 push 取代。正在執行的工作不會被取消。
+自動版本使用根目錄 `Version.props` 的 `SnapBarVersionPrefix`（目前 `0.1.0`），取遠端 tags 與 Releases（含草稿）內同系列最大的整數 rc 序號加一。修正升 patch、新功能升 minor、1.0 後重大不相容變更升 major。正式版由維護者明確發布；該系列正式 Tag 或已公開正式 Release 存在後，新的 rc 分配會阻擋，須先調整 `Version.props` 為例如 `0.1.1` 或 `0.2.0`，新系列從 rc.1 起。失敗可留空號，已發布版本不可重用。需要打包的 main push 依 concurrency group 序列執行。GitHub 預設只保留一個等待工作，密集連續推送桌面變更時，較新的打包工作可能取代尚未開始的工作。正在執行的工作不會被取消。
 
 同一 run 的恢復優先於正式版阻擋，核對 run ID 與來源 SHA 後沿用既有 Release 版本、更新說明基準與 artifact，不因之後新增的版本重新分配。只有尚未建立 Release 的早期失敗會重新選號。版本選擇與最後發布工作具有 contents write，其餘桌面建置／驗證維持唯讀，不需額外 PAT。
 
@@ -139,7 +141,7 @@ Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執�
 
 發布先建立對應確切 commit 的草稿，完整上傳兩個附件並核對 digest 後才公開，避免只有原始碼或部分附件的公開版本。整條流程在同一個 workflow 完成；GITHUB_TOKEN 建立的 Release 不會再次觸發 release 事件，避免重複打包。
 
-公開預覽版成功後，`website` 工作直接呼叫可重用的 `.github/workflows/pages.yml`；手動 Release 事件則在 `upload` 成功後呼叫。其他分支／tag push 與手動驗證不部署網站。Pages 必須先在 repository 設定選擇 GitHub Actions 作為來源，`github-pages` environment 的分支／tag 規則也必須允許該發布事件。
+公開預覽版成功或手動 Release 附件上傳成功後，`website` 工作會呼叫可重用的 `.github/workflows/pages.yml`。main push 若有網站變更且略過 Windows 打包，會獨立部署網站並使用既有的下載附件。其他分支／tag push 與手動驗證不部署網站。Pages 必須先在 repository 設定選擇 GitHub Actions 作為來源，`github-pages` environment 的分支／tag 規則也必須允許該發布事件。
 
 官網工作使用目前 `main` 的網站原始碼，執行 `scripts/build-site.ps1`，以唯讀 token 分頁查詢 Releases。依公開時間選取最新且 ZIP 與 `.sha256` 附件均完整的版本，包含預覽版，並在全新的暫存目錄填入中英文下載網址、版本說明與版本號後部署。這是網站原始碼選擇的例外，不影響桌面套件使用確切來源 SHA；重跑舊發布也不會把官網原始碼或下載連結退回舊版。瀏覽器不查詢 Releases API，不需 JavaScript 即可下載。查詢或生成失敗會在上傳 Pages artifact 前停止，保留原站；生成過程不提交或 push，因此不會再觸發預覽版。
 
@@ -147,7 +149,7 @@ Git hook 可被 `--no-verify` 略過，GitHub 網頁提交或合併也不會執�
 
 同一 workflow run 透過 Release 說明中的 run ID 與來源 SHA 標記識別。請優先使用 Re-run failed jobs，沿用原始 artifact，缺少的附件會補傳，既有附件必須名稱、大小、SHA-256 全部相符才略過。其他來源／run 占用版本或附件不同時拒絕覆寫。完整重跑會沿用同 run 已建立的版本；若重新建置使 ZIP 位元組不同，會拒絕替換既有下載。人工操作剛好搶先建立同一版本時，請重跑整條流程，讓版本解析重新選擇下一號。
 
-其他 branch／tag push 維持只產生 Actions 的 `windows-release-package` artifact，不公開 Release；版本為 `v0.0.0-ci.<run number>.g<commit 前綴>`。推送後必須保持工作區乾淨，下一次提交會要求自己的桌面測試證據。
+其他分支在需要打包時，以及 tag push，只產生 Actions 的 `windows-release-package` artifact，版本為 `v0.0.0-ci.<run number>.g<commit 前綴>`。
 
 ### 先做完整演練
 
@@ -159,7 +161,7 @@ gh workflow run release.yml --repo adalf0722/snapbar --ref main -f version=v0.0.
 
 演練與正式發布共用 package、verify 工作：核對 push 前的桌面證據、全部 repository checks、自含式打包、artifact 上傳至 GitHub，再由另一個 runner 下載並核對 SHA-256。成功後可在該次 Actions 頁面下載 `windows-release-package`；摘要包含來源 commit、版本與校驗碼。演練不建立 tag／Release，不上傳 Release 附件，upload 工作會明確顯示 skipped。
 
-桌面建置與打包事件均 checkout 觸發時的 commit SHA；分支後續移動不會改變此次套件來源。同一 commit 可重用 push 前的桌面紀錄；不同 commit 即使只有文件變動，也必須先完成該 commit 的 pre-push 驗證。不要在 GitHub 建立未經本機 push 驗證的新來源 commit 後直接發布。
+桌面建置與打包事件均 checkout 觸發時的 commit SHA；分支後續移動不會改變此次套件來源。同一 commit 可重用 push 前的桌面紀錄。若要手動為先前略過桌面測試的文件 commit 打包，可先用已安裝 hook 的 checkout 推送指向該 commit 的驗證 tag，以取得相符紀錄。
 
 ### 每次發布
 

@@ -14,224 +14,48 @@ on:
     types: [published]
 permissions:
   contents: read
-concurrency:
-  group: snapbar-${{ github.event_name }}-${{ github.event.release.tag_name || github.ref }}
-  cancel-in-progress: false
 jobs:
-  auto-version:
-    name: Select automatic prerelease version
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: windows-latest
+  changes:
+    name: Classify push changes
+    if: github.event_name == 'push' && !github.event.deleted
+    runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      contents: write
     outputs:
-      version: ${{ steps.plan.outputs.version }}
-      previous-tag: ${{ steps.plan.outputs.previous-tag }}
+      desktop: ${{ steps.classify.outputs.desktop }}
+      website: ${{ steps.classify.outputs.website }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Select a version using published releases and drafts
-        id: plan
+      - name: Compare the old and new commit trees
+        id: classify
         shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          SNAPBAR_PREVIOUS_TAG: ${{ vars.SNAPBAR_PREVIOUS_TAG }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          $ErrorActionPreference = 'Stop'
-          $plan = ./scripts/resolve-auto-version.ps1
-          . ./scripts/release-notes.ps1
-          if (-not $plan.recovered -or $plan.draft) {
-            $null = Get-SnapBarReleaseContent -Commit $env:GITHUB_SHA -PreviousTag $plan.previousTag
-          }
-          "version=$($plan.version)" >> $env:GITHUB_OUTPUT
-          "previous-tag=$($plan.previousTag)" >> $env:GITHUB_OUTPUT
-          Write-Host "Selected automatic prerelease version: $($plan.version)"
-  package:
-    name: Verify desktop evidence and build self-contained package
-    needs: auto-version
-    if: ${{ !cancelled() && (needs.auto-version.result == 'success' || needs.auto-version.result == 'skipped') }}
-    runs-on: windows-latest
-    timeout-minutes: 45
-    outputs:
-      version: ${{ steps.package.outputs.version }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Fetch pre-push desktop evidence
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $env:GIT_CONFIG_COUNT = '1'
-          $env:GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader'
-          $env:GIT_CONFIG_VALUE_0 = 'AUTHORIZATION: basic ' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("x-access-token:$env:GH_TOKEN"))
-          try {
-            git fetch --no-tags origin refs/notes/snapbar-desktop:refs/notes/snapbar-desktop
-            if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch desktop evidence. Push with the installed pre-push hook first.' }
-          }
-          finally {
-            Remove-Item Env:GIT_CONFIG_COUNT, Env:GIT_CONFIG_KEY_0, Env:GIT_CONFIG_VALUE_0
-          }
-      - name: Verify exact commit desktop receipt
-        id: desktop
-        shell: pwsh
-        run: |
-          $report = ./scripts/import-desktop-evidence.ps1
-          "report=$report" >> $env:GITHUB_OUTPUT
-      - uses: actions/setup-dotnet@v6
-        env:
-          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
-        with:
-          global-json-file: global.json
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.13'
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          package-manager-cache: false
-      - name: Check, build and test
-        shell: pwsh
-        run: ./scripts/check.ps1 -RequireActionRuntimes
-      - name: Publish and verify release ZIP
-        id: package
-        shell: pwsh
-        env:
-          PACKAGE_VERSION: ${{ needs.auto-version.outputs.version || github.event.release.tag_name || inputs.version }}
-          DESKTOP_REPORT: ${{ steps.desktop.outputs.report }}
-        run: |
-          $version = $env:PACKAGE_VERSION
-          if (-not $version -and $env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -eq 'refs/heads/main') {
-            throw 'Automatic prerelease version was not selected.'
-          }
-          if (-not $version) { $version = "v0.0.0-ci.$env:GITHUB_RUN_NUMBER.g$($env:GITHUB_SHA.Substring(0, 12))" }
-          $package = ./scripts/package-release.ps1 -Version $version -DesktopReport $env:DESKTOP_REPORT -SourceCommit $env:GITHUB_SHA
-          "directory=$($package.directory)" >> $env:GITHUB_OUTPUT
-          "version=$version" >> $env:GITHUB_OUTPUT
-      - name: Transfer release package
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-release-package
-          path: ${{ steps.package.outputs.directory }}/*
-          if-no-files-found: error
-          retention-days: 7
-      - name: Save check logs and imported desktop receipt
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-check-logs
-          path: artifacts/checks/
-          if-no-files-found: warn
-          retention-days: 14
-  verify:
-    name: Verify transferred package
-    needs: package
-    runs-on: windows-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/download-artifact@v7
-        with:
-          name: windows-release-package
-          path: release-package
-      - name: Verify checksum and summarize validation
-        shell: pwsh
-        env:
-          PACKAGE_VERSION: ${{ needs.package.outputs.version }}
-          RELEASE_PRERELEASE: ${{ github.event_name == 'release' && toJSON(github.event.release.prerelease) || '' }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $archive = Join-Path $PWD "release-package/SnapBar-$env:PACKAGE_VERSION-win-x64.zip"
-          $checksum = "$archive.sha256"
-          ./scripts/test-release-package.ps1 -Archive $archive -Version $env:PACKAGE_VERSION -Commit $env:GITHUB_SHA -ReleasePrerelease $env:RELEASE_PRERELEASE
-          $expected = (Get-Content -LiteralPath $checksum -Raw -Encoding utf8).Split(' ')[0]
-          $summary = @(
-            "Package verified: SnapBar-$env:PACKAGE_VERSION-win-x64.zip",
-            "Source commit: $env:GITHUB_SHA",
-            "SHA-256: $expected",
-            "Event: $env:GITHUB_EVENT_NAME",
-            'Download the windows-release-package artifact from this workflow run.',
-            'Push main automatically publishes a prerelease after all verification; other pushes and manual validation produce artifacts only.',
-            'Interactive Release desktop tests ran locally before push; their receipt matches this commit.'
-          ) -join "`n`n"
-          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, $summary + "`n", [Text.UTF8Encoding]::new($false))
+          $changes = ./scripts/get-push-changes.ps1 -Before $env:PUSH_BEFORE -After $env:GITHUB_SHA -Ref $env:GITHUB_REF
+          "desktop=$($changes.Desktop.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "website=$($changes.Website.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+  windows-package:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'push' || needs.changes.outputs.desktop == 'true') }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/windows-package.yml
+    with:
+      version: ${{ inputs.version || '' }}
   website:
-    name: Deploy website after publishing downloads
-    needs: [auto-release, upload]
-    if: ${{ !cancelled() && (needs.auto-release.result == 'success' || needs.upload.result == 'success') }}
+    name: Deploy website
+    needs: [changes, windows-package]
+    if: >-
+      ${{ !cancelled() &&
+          ((needs.windows-package.result == 'success' &&
+            (github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))) ||
+           (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+            needs.changes.outputs.desktop == 'false' && needs.changes.outputs.website == 'true')) }}
     permissions:
       contents: read
       pages: write
       id-token: write
     uses: ./.github/workflows/pages.yml
-  upload:
-    name: Attach downloads to GitHub Release
-    if: github.event_name == 'release'
-    needs: verify
-    runs-on: windows-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/download-artifact@v7
-        with:
-          name: windows-release-package
-          path: release-package
-      - name: Upload verified assets without replacing existing downloads
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_PRERELEASE: ${{ toJSON(github.event.release.prerelease) }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $archive = Join-Path $PWD "release-package/SnapBar-$env:RELEASE_TAG-win-x64.zip"
-          $checksum = "$archive.sha256"
-          ./scripts/test-release-package.ps1 -Archive $archive -Version $env:RELEASE_TAG -Commit $env:GITHUB_SHA -ReleasePrerelease $env:RELEASE_PRERELEASE
-          & gh release upload $env:RELEASE_TAG $archive $checksum --repo $env:GH_REPO
-          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed; existing assets were not overwritten.' }
-  auto-release:
-    name: Publish automatic main prerelease
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [auto-version, package, verify]
-    runs-on: windows-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/download-artifact@v7
-        with:
-          name: windows-release-package
-          path: release-package
-      - name: Create draft, upload verified assets and publish prerelease
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PACKAGE_VERSION: ${{ needs.package.outputs.version }}
-          PREVIOUS_TAG: ${{ needs.auto-version.outputs.previous-tag }}
-        run: |
-          ./scripts/publish-auto-release.ps1 -Version $env:PACKAGE_VERSION -Commit $env:GITHUB_SHA -PackageDirectory (Join-Path $PWD 'release-package') -PreviousTag $env:PREVIOUS_TAG
-          $summary = "Published prerelease [$env:PACKAGE_VERSION](https://github.com/$env:GH_REPO/releases/tag/$env:PACKAGE_VERSION)"
-          [IO.File]::AppendAllText($env:GITHUB_STEP_SUMMARY, $summary + "`n", [Text.UTF8Encoding]::new($false))

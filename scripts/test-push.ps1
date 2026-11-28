@@ -34,7 +34,7 @@ try {
     $null = Invoke-FixtureGit @('config', 'user.email', 'fixture@example.invalid')
     $null = Invoke-FixtureGit @('config', 'core.autocrlf', 'false')
     $null = Invoke-FixtureGit @('config', 'core.hooksPath', '.githooks')
-    foreach ($file in @('common.ps1', 'desktop-evidence.ps1', 'pre-push.ps1', 'import-desktop-evidence.ps1')) {
+    foreach ($file in @('common.ps1', 'desktop-evidence.ps1', 'pre-push.ps1', 'import-desktop-evidence.ps1', 'get-push-changes.ps1')) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination (Join-Path $fixture "scripts/$file")
     }
     Write-PushFixture (Join-Path $fixture '.githooks/pre-push') ([IO.File]::ReadAllText((Join-Path $originalRepo '.githooks/pre-push')))
@@ -61,14 +61,14 @@ Write-SnapBarJson (Join-Path (Split-Path $run -Parent) 'latest.json') $report
     $commit = Get-SnapBarCommit 'HEAD'
     $zero = '0' * 40
     Check-Push 'deletions and evidence-only pushes need no desktop run' {
-        Assert-Push (@(Get-SnapBarPushCommits @("(delete) $zero refs/heads/old $commit")).Count -eq 0)
-        Assert-Push (@(Get-SnapBarPushCommits @("refs/notes/local $commit refs/notes/snapbar-desktop $zero")).Count -eq 0)
+        Assert-Push (@(Get-SnapBarPushCommitsRequiringDesktop @("(delete) $zero refs/heads/old $commit")).Count -eq 0)
+        Assert-Push (@(Get-SnapBarPushCommitsRequiringDesktop @("refs/notes/local $commit refs/notes/snapbar-desktop $zero")).Count -eq 0)
     }
     Check-Push 'push input rejects malformed updates and deduplicates branch/tag commits' {
-        Reject-Push { Get-SnapBarPushCommits @('broken') }
+        Reject-Push { Get-SnapBarPushCommitsRequiringDesktop @('broken') }
         $null = Invoke-FixtureGit @('tag', '-a', 'v1.2.3', '-m', 'fixture tag')
         $tag = (Invoke-FixtureGit @('rev-parse', 'v1.2.3')) -join ''
-        Assert-Push (@(Get-SnapBarPushCommits @("refs/heads/main $commit refs/heads/main $zero", "refs/tags/v1.2.3 $tag refs/tags/v1.2.3 $zero")).Count -eq 1)
+        Assert-Push (@(Get-SnapBarPushCommitsRequiringDesktop @("refs/heads/main $commit refs/heads/main $zero", "refs/tags/v1.2.3 $tag refs/tags/v1.2.3 $zero")).Count -eq 1)
     }
     Check-Push 'clean gate rejects unstaged staged untracked and hidden tracked changes' {
         Assert-SnapBarCleanCommit $commit
@@ -161,21 +161,51 @@ Write-SnapBarJson (Join-Path (Split-Path $run -Parent) 'latest.json') $report
         }
         finally { $script:SnapBarRepo = $fixture }
     }
-    Check-Push 'failed desktop tests block actual push and leave remote branch unchanged' {
+    Check-Push 'website and documentation push skips desktop evidence' {
+        $null = New-Item -ItemType Directory -Path (Join-Path $fixture 'site')
+        Write-PushFixture (Join-Path $fixture 'site/index.html') '<p>Website</p>'
+        Write-PushFixture (Join-Path $fixture 'README.md') '# Documentation'
+        $null = Invoke-FixtureGit @('add', 'site/index.html', 'README.md')
+        $null = Invoke-FixtureGit @('-c', 'core.hooksPath=', 'commit', '-m', 'fixture: update website and docs')
+        $script:websiteCommit = Get-SnapBarCommit 'HEAD'
+        $classify = Join-Path $fixture 'scripts/get-push-changes.ps1'
+        $changes = & $classify -Before $commit -After $script:websiteCommit -Ref 'refs/heads/main'
+        Assert-Push (-not $changes.Desktop -and $changes.Website)
+        $changes = & $classify -Before $commit -After $script:websiteCommit -Ref 'refs/pull/1/merge'
+        Assert-Push (-not $changes.Desktop -and $changes.Website)
+        Assert-Push ((& $classify -Before $commit -After $script:websiteCommit -Ref 'refs/tags/v1.2.4').Desktop)
+        Assert-Push ((& $classify -Before $zero -After $script:websiteCommit -Ref 'refs/heads/new').Desktop)
+        Assert-Push ((& $classify -Before $script:websiteCommit -After $commit -Ref 'refs/heads/main').Desktop)
+        Write-PushFixture (Join-Path $fixture 'artifacts/fail') 'fail if desktop runs'
+        $null = Invoke-FixtureGit @('push', $remote, 'main')
+        Assert-Push ((& git --git-dir=$remote rev-parse refs/heads/main) -eq $script:websiteCommit)
+        $null = & git --git-dir=$remote notes --ref=refs/notes/snapbar-desktop show $script:websiteCommit 2>&1
+        Assert-Push ($LASTEXITCODE -ne 0)
+        Remove-Item -LiteralPath (Join-Path $fixture 'artifacts/fail')
+    }
+    Check-Push 'a docs commit atop desktop changes still requires desktop evidence for the full push' {
         Write-PushFixture (Join-Path $fixture 'change.txt') 'next commit'
         $null = Invoke-FixtureGit @('add', 'change.txt')
         $null = Invoke-FixtureGit @('-c', 'core.hooksPath=', 'commit', '-m', 'fixture: next commit')
+        $desktopCommit = Get-SnapBarCommit 'HEAD'
+        Write-PushFixture (Join-Path $fixture 'README.md') '# More documentation'
+        $null = Invoke-FixtureGit @('add', 'README.md')
+        $null = Invoke-FixtureGit @('-c', 'core.hooksPath=', 'commit', '-m', 'fixture: docs follow-up')
+        $head = Get-SnapBarCommit 'HEAD'
+        $classify = Join-Path $fixture 'scripts/get-push-changes.ps1'
+        $changes = & $classify -Before $desktopCommit -After $head -Ref 'refs/heads/main'
+        Assert-Push (-not $changes.Desktop -and -not $changes.Website)
         Write-PushFixture (Join-Path $fixture 'artifacts/fail') 'fail'
         $null = & git -C $fixture push $remote main 2>&1
         Assert-Push ($LASTEXITCODE -ne 0)
-        Assert-Push ((& git --git-dir=$remote rev-parse refs/heads/main) -eq $commit)
+        Assert-Push ((& git --git-dir=$remote rev-parse refs/heads/main) -eq $script:websiteCommit)
         Remove-Item -LiteralPath (Join-Path $fixture 'artifacts/fail')
     }
     Check-Push 'notes upload rejection blocks actual branch push' {
         Write-PushFixture (Join-Path $remote 'hooks/pre-receive') "#!/bin/sh`nwhile read old new ref; do`n  if [ `"`$ref`" = refs/notes/snapbar-desktop ]; then exit 1; fi`ndone`n"
         $null = & git -C $fixture push $remote main 2>&1
         Assert-Push ($LASTEXITCODE -ne 0)
-        Assert-Push ((& git --git-dir=$remote rev-parse refs/heads/main) -eq $commit)
+        Assert-Push ((& git --git-dir=$remote rev-parse refs/heads/main) -eq $script:websiteCommit)
         Remove-Item -LiteralPath (Join-Path $remote 'hooks/pre-receive')
     }
     Check-Push 'subsequent push preserves earlier commit receipts and accepts annotated tags' {

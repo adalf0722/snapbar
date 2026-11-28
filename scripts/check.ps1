@@ -1,4 +1,4 @@
-param([switch]$Staged, [switch]$RequireActionRuntimes)
+param([switch]$Staged, [switch]$RequireActionRuntimes, [switch]$SkipDesktop)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'workflow-checks.ps1')
@@ -49,19 +49,21 @@ try {
     if (-not $Staged) {
         & git diff --check
         if ($LASTEXITCODE -ne 0) { throw 'Working tree whitespace check failed.' }
-        & (Join-Path $PSScriptRoot 'test-version.ps1')
-        & (Join-Path $PSScriptRoot 'test-tooling.ps1')
         & (Join-Path $PSScriptRoot 'test-push.ps1')
-        & (Join-Path $PSScriptRoot 'test-auto-release.ps1')
         & (Join-Path $PSScriptRoot 'test-release-notes.ps1')
         & (Join-Path $PSScriptRoot 'test-release-baseline.ps1')
         & (Join-Path $PSScriptRoot 'test-site.ps1')
-        & (Join-Path $PSScriptRoot 'build.ps1')
-        $run = New-SnapBarRun 'action-runner'
-        $result = Invoke-SnapBarActionRunner $run -RequireRuntimes:$RequireActionRuntimes
-        Write-SnapBarJson (Join-Path $run 'report.json') $result
-        Assert-SnapBarCommand $result
-        if ($RequireActionRuntimes) { Assert-SnapBarActionRunnerEvidence $result }
+        if (-not $SkipDesktop) {
+            & (Join-Path $PSScriptRoot 'test-version.ps1')
+            & (Join-Path $PSScriptRoot 'test-tooling.ps1')
+            & (Join-Path $PSScriptRoot 'test-auto-release.ps1')
+            & (Join-Path $PSScriptRoot 'build.ps1')
+            $run = New-SnapBarRun 'action-runner'
+            $result = Invoke-SnapBarActionRunner $run -RequireRuntimes:$RequireActionRuntimes
+            Write-SnapBarJson (Join-Path $run 'report.json') $result
+            Assert-SnapBarCommand $result
+            if ($RequireActionRuntimes) { Assert-SnapBarActionRunnerEvidence $result }
+        }
     }
     Write-Host 'Repository checks passed.'
 }

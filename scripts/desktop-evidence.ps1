@@ -18,7 +18,7 @@ function Assert-SnapBarCleanCommit([string]$Commit) {
     }
 }
 
-function Get-SnapBarPushCommits([string[]]$Lines) {
+function Get-SnapBarPushCommitsRequiringDesktop([string[]]$Lines) {
     $commits = [Collections.Generic.HashSet[string]]::new()
     foreach ($line in $Lines) {
         if (-not $line.Trim()) { continue }
@@ -26,7 +26,9 @@ function Get-SnapBarPushCommits([string[]]$Lines) {
         if ($parts.Count -ne 4 -or $parts[1] -notmatch '^[0-9a-f]{40,64}$' -or $parts[3] -notmatch '^[0-9a-f]{40,64}$') { throw 'Invalid pre-push input.' }
         if ($parts[2] -eq $script:SnapBarDesktopNotes -or $parts[1] -match '^0+$') { continue }
         if ($parts[2] -notmatch '^refs/(heads|tags)/') { throw 'Push validation supports branches, tags and the desktop notes ref only.' }
-        $null = $commits.Add((Get-SnapBarCommit $parts[1]))
+        $commit = Get-SnapBarCommit $parts[1]
+        $changes = & (Join-Path $PSScriptRoot 'get-push-changes.ps1') -Before $parts[3] -After $commit -Ref $parts[2]
+        if ($changes.Desktop) { $null = $commits.Add($commit) }
     }
     return @($commits)
 }

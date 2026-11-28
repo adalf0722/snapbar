@@ -2,7 +2,7 @@ param([Parameter(Mandatory)][string]$Remote)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'desktop-evidence.ps1')
 $lines = [Console]::In.ReadToEnd() -split '\r?\n'
-$commits = @(Get-SnapBarPushCommits $lines)
+$commits = @(Get-SnapBarPushCommitsRequiringDesktop $lines)
 if (-not $commits.Count) { exit 0 }
 foreach ($commit in $commits) { Assert-SnapBarCleanCommit $commit }
 Write-Host 'Push gate: exit SnapBar normally; avoid typing or copying during the full Release desktop tests.'
