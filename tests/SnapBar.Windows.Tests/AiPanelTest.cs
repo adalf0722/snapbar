@@ -72,8 +72,7 @@ internal static class AiPanelTest
                 var originalPane = Pane("AiOriginalPane"); var resultPane = Pane("AiResultPane");
                 Check(originalPane.IsVisible && resultPane.IsVisible && !Button(panel, "AiCopy").IsEnabled
                     && Children<FlowDocumentScrollViewer>(originalPane).Any(v => new TextRange(v.Document.ContentStart, v.Document.ContentEnd).Text.Contains("**keep original markers**")), "AI opens with literal original and an explained result placeholder");
-                Button(panel, "AiCopyOriginal").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                Check(Clipboard.GetText() == snapshot.Text, "AI original copy is available before generation");
+                Check(await AiClipboardTest.CopyExactAsync(panel, "AiCopyOriginal", snapshot.Text), "AI original copy is available before generation");
                 Check(!Children<Expander>(panel).Single().IsExpanded, "AI category filter starts collapsed"); Snapshot(panel, "original.png");
                 var list = Children<ScrollViewer>(panel).Single(s => AutomationProperties.GetAutomationId(s) == "AiCommandList");
                 var initialCommands = Children<Button>(panel).Where(b => AutomationProperties.GetAutomationId(b).StartsWith("AiPrompt_", StringComparison.Ordinal)).ToArray();
@@ -164,10 +163,8 @@ internal static class AiPanelTest
                 delayed = new(TaskCreationOptions.RunContinuationsAsynchronously); client.Handler = (_, _, _) => delayed.Task;
                 pending = panel.SubmitAsync("late"); panel.InvalidateTarget(); delayed.SetResult(new(true, "late ignored")); await pending;
                 Check(panel.Session.Current?.Text == "third result" && !panel.TargetValid, "AI invalidated target rejects a client completion that ignored cancellation");
-                Button(panel, "AiCopyOriginal").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                Check(Clipboard.GetText() == snapshot.Text, "AI invalidated source still offers exact original copying");
-                Button(panel, "AiCopy").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                Check(Clipboard.GetText() == "third result", "AI result copy stays independent from original reading and copying");
+                Check(await AiClipboardTest.CopyExactAsync(panel, "AiCopyOriginal", snapshot.Text), "AI invalidated source still offers exact original copying");
+                Check(await AiClipboardTest.CopyExactAsync(panel, "AiCopy", "third result"), "AI result copy stays independent from original reading and copying");
                 Check(Text("AiSourceStatus").Text.Contains("複製結果"), "AI invalidated result status matches its copy action");
                 var settingsDialog = new AiSettingsWindow(preferences) { Owner = panel }; settingsDialog.Show(); settingsDialog.Activate();
                 var settingsHandle = new WindowInteropHelper(settingsDialog).Handle; Native.SetForegroundWindow(settingsHandle);
@@ -207,10 +204,7 @@ internal static class AiPanelTest
                         && !bottom.IsEmpty && bottom.Top >= 0 && bottom.Bottom <= scroll.ActualHeight + 1,
                         "AI long " + sample.Name + " exposes the complete last line at scroll end"); Snapshot(panel, "long-" + sample.Name + "-bottom.png");
                 }
-                Button(panel, "AiCopy").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-                var exactCopy = Clipboard.GetText() == markdown;
-                if (!exactCopy) Console.WriteLine($"COPY DIAGNOSTIC viewing-original={panel.Session.ViewingOriginal}; write-busy={Children<TextBlock>(panel).Any(t => t.Text == "剪貼簿忙碌，請稍後再試。")}; result-matches={panel.Session.Current?.Text == markdown}; result-length={panel.Session.Current?.Text.Length}; expected-length={markdown.Length}; clipboard-length={Clipboard.GetText().Length}; session-busy={panel.Session.Busy}");
-                Check(exactCopy, "AI long Markdown copying preserves the exact raw response");
+                Check(await AiClipboardTest.CopyExactAsync(panel, "AiCopy", markdown), "AI long Markdown copying preserves the exact raw response");
                 panel.Width = 680; panel.Height = 500; panel.UpdateLayout();
                 var smallViewer = Children<FlowDocumentScrollViewer>(Children<ContentControl>(panel).Single(c => AutomationProperties.GetAutomationId(c) == "AiResultContent")).Single(); var smallScroll = Children<ScrollViewer>(smallViewer).Single();
                 smallScroll.ScrollToBottom(); panel.UpdateLayout();

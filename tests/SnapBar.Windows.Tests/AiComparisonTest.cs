@@ -64,8 +64,8 @@ internal static class AiComparisonTest
                 && added.Any(r => r.TextDecorations.Contains(TextDecorations.Underline[0]))
                 && string.Concat(removed.Select(r => r.Text)) == source && string.Concat(added.Select(r => r.Text)) == client.Result,
                 "AI differences preserve full literal text and distinguish removal and insertion without relying on color");
-            Click("AiCopy"); check(Clipboard.GetText() == client.Result, "AI difference mode copies the exact raw result");
-            Click("AiCopyOriginal"); check(Clipboard.GetText() == source, "AI difference mode copies the exact original");
+            check(await AiClipboardTest.CopyExactAsync(panel, "AiCopy", client.Result), "AI difference mode copies the exact raw result");
+            check(await AiClipboardTest.CopyExactAsync(panel, "AiCopyOriginal", source), "AI difference mode copies the exact original");
             snapshot(panel, "reading-differences.png");
             Click("AiToggleDifferences");
             var splitter = Children<GridSplitter>(panel).Single(); var grid = (Grid)splitter.Parent;
